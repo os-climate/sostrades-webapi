@@ -1,0 +1,5 @@
+variable,value,lower_bnd,upper_bnd,enable_variable,activated_elem
+x,1.0,0.0,10.0,True,[True]
+z,"[5.0, 5.0]","[-10.0, 0.0]","[10.0, 10.0]",True,"[True, True]"
+y_1,1.0,-100.0,100.0,True,[True]
+y_2,1.0,-100.0,100.0,True,[True]

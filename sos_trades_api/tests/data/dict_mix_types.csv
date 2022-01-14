@@ -1,0 +1,5 @@
+variable,value
+a,
+b,None
+c,"[1, None, 3]"
+d,test

@@ -1,0 +1,86 @@
+//this template contains all information on configuration of sostradesweb API in local execution
+{
+  // Environment type for the application. Mainly used to change logging level and to restrict some feature.
+  // ‘PRODUCTION’, ‘DEVEOPMENT’ and ‘UNIT_TEST’ are the taking into account values
+  "ENVIRONMENT": "DEVELOPMENT",
+
+  // Application data are stored in MySQL database using python SqlAchemy ORM
+  "SQL_ALCHEMY_DATABASE": {
+    "HOST" : "", //server network IP
+    "PORT" : ,//server_port
+    "USER_ENV_VAR": "SQL_ACCOUNT",//Name of the environment variable that will store username used for connection
+    "PASSWORD_ENV_VAR": "SQL_PASSWORD",//Name of the environment variable that will store password used for connection
+    "DATABASE_NAME": "",// database name
+    // Enable or not SSL settings to connect to database (true or false)
+    "SSL": true
+  },
+
+  // Enable signals to get notified before and after changes are committed to the database.
+  // Set to False (for performance reason)
+  "SQLALCHEMY_TRACK_MODIFICATIONS": false,
+
+  // Logging data are stored in a separated database.
+  // This database is not access using the ORM, the following information must be set:
+  "LOGGING_DATABASE": {
+    "HOST": "", //server network IP
+    "PORT": ,// server_port
+    "USER_ENV_VAR": "LOG_USER", //Name of the environment variable that will store username use for connection,
+    "PASSWORD_ENV_VAR": "LOG_PASSWORD", //Name of the environment variable that will store password use for connection
+    "DATABASE_NAME": "",
+    // Enable or not SSL settings to connect to database (true or false)
+    "SSL": true
+  },
+
+  // Token management section
+  // flask-jwt-extended library configuration
+  //--------------------------------------------------------------
+  // name of the environment variable that will store the secret key
+  "SECRET_KEY_ENV_VAR": "SECRET_KEY",
+  // Where to look for a JWT when processing a request.
+  // The available options are "headers", "cookies", "query_string", and "json"
+  "JWT_TOKEN_LOCATION": "headers",
+  // How long an access token should be valid before it expires (in seconds)
+  "JWT_ACCESS_TOKEN_EXPIRES": 18000,
+  // How long a refresh token should be valid before it expires (in seconds)
+  "JWT_REFRESH_TOKEN_EXPIRES": 36000,
+  //--------------------------------------------------------------
+
+  // SoSTrades user account that will be created by default,
+  // and on which all SoSTrades processes will be attached (mainly used for development and validation environment),
+  // can be let empty
+  "DEFAULT_GROUP_MANAGER_ACCOUNT": "SoSTrades_Dev",
+
+  // Boolean to know if  test account has to be created the first time the application is launched
+  "CREATE_STANDARD_USER_ACCOUNT": true,
+
+  // LDAP server url
+  "LDAP_SERVER" : "",
+  //Base request to access LDAP, for exemple "OU=Persons,DC=eu,DC=corp"
+  "LDAP_BASE_DN" : "",
+  //Request filter, for exemple: "userPrincipalName=%s@eu.corp" with ‚"%s" set to the username that is currently trying to logged in
+  "LDAP_FILTER" : "",
+  // Formatted string to build username for exemple: "%s@eu.corp"
+  "LDAP_USERNAME" : "",
+
+  //SMTP server address used to send email for platform access
+  "SMTP_SERVER" : "",
+  //Platform support email address
+  "SMTP_SOS_TRADES_ADDR" : "",
+
+  // Name of application environment version
+  "SOS_TRADES_ENVIRONMENT" : "Local",
+  // SoSTrades API backend address from inside the cluster
+  "SOS_TRADES_K8S_DNS": "",
+  // Public IP of the front-end application that use the current API server
+  "SOS_TRADES_FRONT_END_DNS": "",
+
+  // Endpoint of the Ontology server
+  "SOS_TRADES_ONTOLOGY_ENDPOINT": "",
+
+  // List of additional modules to check for processes.
+  "SOS_TRADES_PROCESS_REPOSITORY": ["sos_trades_core.sos_processes.test"],
+
+  // Absolute path to the SSL certificate to communicate with the ontology server
+  "INTERNAL_SSL_CERTIFICATE": ""
+
+}

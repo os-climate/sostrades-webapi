@@ -1,0 +1,162 @@
+'''
+Copyright 2022 Airbus SAS
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+tools methods to manage coedition features
+"""
+
+from sos_trades_api.base_server import app, db
+from datetime import datetime, timezone
+
+from sos_trades_api.models.database_models import StudyCoeditionUser, User, StudyCase, Notification, \
+    StudyCaseChange
+
+
+class UserCoeditionAction:
+    JOIN_ROOM = 'connection'
+    LEAVE_ROOM = 'disconnection'
+    SAVE = 'save'
+    SUBMISSION = 'submission'
+    EXECUTION = 'execution'
+    CLAIM = 'claim'
+    RELOAD = 'reload'
+    DELETE = 'delete'
+
+
+class CoeditionMessage:
+    JOIN_ROOM = 'User has entered the study case.'
+    LEAVE_ROOM = 'User just leaved the study case.'
+    SAVE = 'User just saved the study case.'
+    SUBMISSION = 'User just submitted to execution the study case.'
+    EXECUTION = 'Study case execution just started.'
+    CLAIM = 'User just claimed the study case execution right.'
+    RELOAD = 'User just reload the study case.'
+
+
+def add_user_to_room(user_id, study_case_id):
+    """ Add user to a room (room id = study_case_id)
+    """
+
+    # Check if user is already in room
+    user_study_exist = StudyCoeditionUser.query.filter(
+        StudyCoeditionUser.user_id == user_id).filter(
+            StudyCoeditionUser.study_case_id == study_case_id).first()
+
+    if user_study_exist is None:
+        new_user_room = StudyCoeditionUser()
+        new_user_room.user_id = user_id
+        new_user_room.study_case_id = study_case_id
+
+        db.session.add(new_user_room)
+        db.session.commit()
+
+
+def remove_user_from_room(user_id, study_case_id):
+    """ Remove user from a room (room id = study_id)
+    """
+
+    user_removed_room = StudyCoeditionUser.query.filter(
+        StudyCoeditionUser.user_id == user_id).filter(
+            StudyCoeditionUser.study_case_id == study_case_id).first()
+
+    if user_removed_room is not None:
+        db.session.delete(user_removed_room)
+        db.session.commit()
+
+
+def remove_user_from_all_rooms(user_id):
+    """ Remove user from all rooms
+    """
+
+    user_to_delete = StudyCoeditionUser.query.filter(
+        StudyCoeditionUser.user_id == user_id).all()
+
+    if len(user_to_delete) > 0:
+        for utd in user_to_delete:
+            db.session.delete(utd)
+        db.session.commit()
+
+
+def get_user_list_in_room(study_case_id):
+    """ Get user list present in a room (room id = study_case_id)
+    """
+
+    users_in_room = User.query.join(StudyCoeditionUser).join(StudyCase).filter(
+        StudyCoeditionUser.study_case_id == study_case_id).filter(StudyCoeditionUser.user_id == User.id).all()
+
+    result = [ur.serialize() for ur in users_in_room]
+
+    return result
+
+
+def add_notification_db(study_case_id, user, CodeditionType):
+    """ Add coedition study notification to database
+    """
+
+    new_notification = Notification()
+    new_notification.author = f'{user.firstname} {user.lastname}'
+    new_notification.study_case_id = study_case_id
+    new_notification.created = datetime.now()
+
+    if CodeditionType == UserCoeditionAction.JOIN_ROOM:
+        new_notification.type = UserCoeditionAction.JOIN_ROOM
+        new_notification.message = CoeditionMessage.JOIN_ROOM
+
+    elif CodeditionType == UserCoeditionAction.LEAVE_ROOM:
+        new_notification.type = UserCoeditionAction.LEAVE_ROOM
+        new_notification.message = CoeditionMessage.LEAVE_ROOM
+
+    elif CodeditionType == UserCoeditionAction.SAVE:
+        new_notification.type = UserCoeditionAction.SAVE
+        new_notification.message = CoeditionMessage.SAVE
+
+    elif CodeditionType == UserCoeditionAction.SUBMISSION:
+        new_notification.type = UserCoeditionAction.SUBMISSION
+        new_notification.message = CoeditionMessage.SUBMISSION
+
+    elif CodeditionType == UserCoeditionAction.EXECUTION:
+        new_notification.type = UserCoeditionAction.EXECUTION
+        new_notification.message = CoeditionMessage.EXECUTION
+
+    elif CodeditionType == UserCoeditionAction.CLAIM:
+        new_notification.type = UserCoeditionAction.CLAIM
+        new_notification.message = CoeditionMessage.CLAIM
+
+    # Save notification
+    db.session.add(new_notification)
+    db.session.commit()
+
+    return new_notification.id
+
+
+def add_change_db(notification_id, variable_id, variable_type, change_type, new_value,
+                  old_value, old_value_blob, last_modified):
+    """ Add study change to database
+    """
+    new_change = StudyCaseChange()
+
+    new_change.notification_id = notification_id
+    new_change.variable_id = variable_id
+    new_change.variable_type = variable_type
+    new_change.change_type = change_type
+    new_change.new_value = new_value
+    new_change.old_value = old_value
+    new_change.old_value_blob = old_value_blob
+    new_change.last_modified = last_modified
+
+    # Save change
+    db.session.add(new_change)
+    db.session.commit()

@@ -1,0 +1,5 @@
+include LICENSE
+include NOTICE
+include README.md
+recursive-include * *.yaml
+recursive-include * *.json

@@ -1,0 +1,14 @@
+__pycache__
+.project
+.pydevproject
+.settings/
+coverage.xml
+nosetests.xml
+.coverage
+sos_trades_api/app.db
+sos_trades_api/version.info
+build/
+dist/
+sos_trades_api.egg-info/
+sos_trades_api/secret/adminPassword
+sos_trades_api/secret/standardUserPassword
