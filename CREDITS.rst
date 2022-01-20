@@ -46,7 +46,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
     BSD 3-Clause
     
 `passlib <https://passlib.readthedocs.io/en/stable/>`_
-    BSD 
+    BSD 3-Clause
 
 `flask-jwt-extended <https://flask-jwt-extended.readthedocs.io/en/stable/>`_
     MIT
