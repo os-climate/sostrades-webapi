@@ -166,8 +166,8 @@ icon-mapping:
   SumBusinessValueBlockDiscipline: fas fa-calculator fa-fw
   SoSOptimScenario: fas fa-bezier-curve fa-fw
   Design_Var_Discipline: fas fa-drafting-compass fa-fw
-  LandUseDiscipline: fab fa-buffer fa-fw
-  LandUseV1Discipline: fab fa-buffer fa-fw
+  LandUseDiscipline: fas fa-globe-europe fa-fw
+  LandUseV1Discipline: fas fa-globe-europe fa-fw
   HydrogenLiquefactionDiscipline: fas fa-tint fa-fw
   LiquidHydrogenDiscipline: fas fa-tint fa-fw
   TSPValueBlockDiscipline: fas fa-hammer fa-fw
@@ -216,8 +216,13 @@ icon-mapping:
   AllResourceDiscipline: fas fa-globe fa-fw
   DemandDistributionDiscipline: fas fa-bezier-curve fa-fw
   AgricultureDiscipline: fas fa-seedling fa-fw
+  ForestDiscipline: fas fa-tree fa-fw
   ServicesUpgradesDiscipline: fas fa-concierge-bell
   OneInvestDiscipline: fas fa-share-alt fa-fw
   CO2FleetDiscipline: fas fa-smog fa-fw
   EnergySimpleDiscipline: fas fa-gas-pump fa-fw
   OPEXDiscipline: fas fa-money-bill-alt fa-fw
+  CAPEXDiscipline: fas fa-money-bill-alt fa-fw
+  ManufacturerValueBlockDiscipline: fas fa-file-invoice-dollar fa-fw
+  PolicyDiscipline: fas fa-balance-scale fa-fw
+  SumValueAssessmentActorValueBlockDiscipline: fas fa-calculator fa-fw
