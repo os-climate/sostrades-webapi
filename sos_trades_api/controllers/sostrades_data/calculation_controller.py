@@ -327,25 +327,8 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
                 raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
 
             file_path = get_raw_logs(study_id=study_case_id)
-            if file_path:
+            if os.path.isfile(file_path):
                 result = file_tail(file_path, 200)
-
-            print(file_path, result)
-            # if study_case_execution_id is None:
-            #     study_case_execution_id = study_case.current_execution_id
-            #
-            # # Get all study case associated execution logs (including last execution logs)
-            # # Ordered by descending identifier to show them from the newest to
-            # # the latest
-            #
-            # result = StudyCaseExecutionLog.query \
-            #     .filter(StudyCaseExecutionLog.study_case_id == study_case_id)\
-            #     .filter(or_(
-            #         StudyCaseExecutionLog.study_case_execution_id is None,
-            #         StudyCaseExecutionLog.study_case_execution_id == study_case_execution_id))\
-            #     .order_by(StudyCaseExecutionLog.id.desc()).limit(300).all()
-            #
-            # result.reverse()
 
         except Exception as ex:
             print(ex)
