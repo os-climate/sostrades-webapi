@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_logs, get_raw_logs
+from sos_trades_api.tools.code_tools import file_tail
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Calculation case Functions
@@ -323,21 +326,27 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
             if study_case is None:
                 raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
 
-            if study_case_execution_id is None:
-                study_case_execution_id = study_case.current_execution_id
+            file_path = get_raw_logs(study_id=study_case_id)
+            if file_path:
+                result = file_tail(file_path, 200)
 
-            # Get all study case associated execution logs (including last execution logs)
-            # Ordered by descending identifier to show them from the newest to
-            # the latest
+            print(file_path, result)
+            # if study_case_execution_id is None:
+            #     study_case_execution_id = study_case.current_execution_id
+            #
+            # # Get all study case associated execution logs (including last execution logs)
+            # # Ordered by descending identifier to show them from the newest to
+            # # the latest
+            #
+            # result = StudyCaseExecutionLog.query \
+            #     .filter(StudyCaseExecutionLog.study_case_id == study_case_id)\
+            #     .filter(or_(
+            #         StudyCaseExecutionLog.study_case_execution_id is None,
+            #         StudyCaseExecutionLog.study_case_execution_id == study_case_execution_id))\
+            #     .order_by(StudyCaseExecutionLog.id.desc()).limit(300).all()
+            #
+            # result.reverse()
 
-            result = StudyCaseExecutionLog.query \
-                .filter(StudyCaseExecutionLog.study_case_id == study_case_id)\
-                .filter(or_(
-                    StudyCaseExecutionLog.study_case_execution_id is None,
-                    StudyCaseExecutionLog.study_case_execution_id == study_case_execution_id))\
-                .order_by(StudyCaseExecutionLog.id.desc()).limit(300).all()
-
-            result.reverse()
         except Exception as ex:
             print(ex)
         finally:
