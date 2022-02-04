@@ -16,7 +16,7 @@ limitations under the License.
 
 from flask import Response, request, make_response, jsonify, abort
 
-from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
+from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case
 
 from sos_trades_api.base_server import app, study_case_cache
 
@@ -55,3 +55,34 @@ def get_study_case_link(study_id: int):
 
     abort(405)
 
+
+@app.route(f'/saas/load-study-case/<int:study_id>', methods=['GET'])
+def load_study(study_id: int):
+    """
+    Return
+
+    @return:
+    """
+
+    if request.method == "GET":
+
+        msg = ""
+        status_code = 200
+
+        try:
+            # do stuff here
+            pass
+
+        except Exception as e:
+
+            msg = str(e)
+            status_code = 400
+
+        finally:
+            payload = {
+                "message": msg
+            }
+
+        return make_response(jsonify(payload), status_code)
+
+    abort(405)
