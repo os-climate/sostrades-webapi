@@ -18,6 +18,7 @@ limitations under the License.
 import time
 from flask import request, make_response, jsonify, abort
 
+
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
 from sos_trades_api.models.database_models import AccessRights
@@ -26,6 +27,7 @@ from sos_trades_api.tools.authentication.authentication import AuthenticationErr
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case
 from sos_trades_saas.controller.saas_module_controller import filter_tree_node_data, filter_children_data
+
 
 from sos_trades_api.base_server import app, study_case_cache
 from sos_trades_saas.tools.credentials import restricted_viewer_required
@@ -140,15 +142,34 @@ def load_study(study_id: int, timeout: int = 30):
     abort(405)
 
 
-@app.route(f'/saas/monitor/study-case/<int:study_id>', methods=['GET'])
-@auth_required
-@restricted_viewer_required
-def monitor_study_execution(study_id: int):
-    try:
+@app.route(f'/saas/load-study-case/<int:study_id>', methods=['GET'])
+def load_study(study_id: int):
+    """
+    Return
 
-        return make_response(jsonify(calculation_status(study_id)), 200)
+    @return:
+    """
 
-    except Exception as e:
-        abort(400, str(e))
+    if request.method == "GET":
 
+        msg = ""
+        status_code = 200
+
+        try:
+            # do stuff here
+            pass
+
+        except Exception as e:
+
+            msg = str(e)
+            status_code = 400
+
+        finally:
+            payload = {
+                "message": msg
+            }
+
+        return make_response(jsonify(payload), status_code)
+
+    abort(405)
 
