@@ -15,19 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import time
+
 from flask import request, make_response, jsonify, abort
 
-
-from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
-from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required,\
-    get_authenticated_user
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case
-from sos_trades_saas.controller.saas_module_controller import filter_tree_node_data, filter_children_data
-
 
 from sos_trades_api.base_server import app, study_case_cache
 from sos_trades_saas.tools.credentials import restricted_viewer_required
@@ -53,6 +46,33 @@ def login():
     try:
         username = request.json.get('username')
         password = request.json.get('password')
+
+
+# TODO user / group credentials
+# TODO optional timeout on  *load_study*
+
+
+@app.route(f'/saas/login', methods=['POST'])
+def login():
+    """
+    Return bearer access token
+
+    @return: json response like {'access_token': access_token}
+    """
+
+    if request.json is None:
+        abort(400, "'username' and 'password' not found in request")
+
+    elif request.json.get('username') is None:
+        abort(400, "'username' not found in request")
+
+    elif request.json.get('password') is None:
+        abort(400, "'password' not found in request")
+
+    try:
+        username = request.json.get('username')
+        password = request.json.get('password')
+
 
         access_token, _, _, _ = authenticate_user_standard(username, password)
 
@@ -143,7 +163,9 @@ def load_study(study_id: int, timeout: int = 30):
 
 
 @app.route(f'/saas/load-study-case/<int:study_id>', methods=['GET'])
-def load_study(study_id: int):
+@app.route(f'/saas/load-study-case/<int:study_id>/<int:timeout>', methods=['GET'])
+@auth_required
+def load_study(study_id: int, timeout: int = 30):
     """
     Return
 
@@ -154,6 +176,7 @@ def load_study(study_id: int):
 
         msg = ""
         status_code = 200
+        print(timeout)
 
         try:
             # do stuff here

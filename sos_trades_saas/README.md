@@ -1,13 +1,10 @@
-<<<<<<< HEAD
+
 # SoSTrades SAAS
-=======
-# SoSTrades_SAAS
->>>>>>> cf64e9d (route to study)
 
 
 ## Purpose
 
-<<<<<<< HEAD
+
 This API is designed to offer some access point for command line requests.
 
 
@@ -56,19 +53,5 @@ This API is designed to offer some access point for command line requests.
     - *data*: dictionary of editable input or numerical discipline
     - *children*: list of children data
   - *study_name* : loaded study name
-
-
-=======
-This API is designed to offer some acces point.
-TBC...
-
-## Exposed routes
-
-### GUI study link
-
-1/ url 
-2/ response content
-3/ misc
->>>>>>> cf64e9d (route to study)
 
 
