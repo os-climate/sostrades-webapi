@@ -15,9 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-
+import time
 from flask import request, make_response, jsonify, abort
 
+from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
 from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case
@@ -47,7 +48,10 @@ def login():
         username = request.json.get('username')
         password = request.json.get('password')
 
+from sos_trades_saas.controller.saas_module_controller import filter_tree_node_data, filter_children_data
 
+
+from sos_trades_api.base_server import app, study_case_cache
 # TODO user / group credentials
 # TODO optional timeout on  *load_study*
 
@@ -173,26 +177,33 @@ def load_study(study_id: int, timeout: int = 30):
     """
 
     if request.method == "GET":
-
-        msg = ""
-        status_code = 200
-        print(timeout)
+        user_id = 2
+        study_access_right = AccessRights.MANAGER
 
         try:
-            # do stuff here
-            pass
+            status_code = 200
 
-        except Exception as e:
+            # Study loader
+            loaded_study = load_study_case(study_id, study_access_right, user_id)
+            study_manager = light_load_study_case(study_id)  # TODO: for _ in range
+            if not study_manager.loaded:
+                time.sleep(3)
+                loaded_study = load_study_case(study_id, study_access_right, user_id)
 
-            msg = str(e)
-            status_code = 400
+            tree_node = loaded_study.treenode
 
-        finally:
             payload = {
-                "message": msg
+                "message": "Load success",
+                "study_name": loaded_study.study_case.name,
+                "tree_node": {
+                    "data": filter_tree_node_data(tree_node=tree_node),
+                    "children": filter_children_data(tree_node=tree_node)
+                }
             }
+        except Exception as e:
+            status_code = 400
+            payload = {"message": str(e)}
 
         return make_response(jsonify(payload), status_code)
-
     abort(405)
 
