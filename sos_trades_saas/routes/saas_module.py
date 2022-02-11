@@ -18,7 +18,6 @@ limitations under the License.
 import time
 from flask import request, make_response, jsonify, abort
 
-from werkzeug.exceptions import BadRequest
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
 from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required,\
@@ -55,8 +54,6 @@ from sos_trades_saas.controller.saas_module_controller import filter_tree_node_d
 
 
 from sos_trades_api.base_server import app, study_case_cache
-# TODO user / group credentials
-# TODO optional timeout on  *load_study*
 
 
 @app.route(f'/saas/login', methods=['POST'])
@@ -184,6 +181,7 @@ def load_study(study_id: int, timeout: int = 30):
     """
 
     if request.method == "GET":
+
         user = get_authenticated_user()
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
@@ -209,8 +207,11 @@ def load_study(study_id: int, timeout: int = 30):
                     "children": filter_children_data(tree_node=tree_node)
                 }
             }
-            return make_response(jsonify(payload), 200)
+
         except Exception as e:
-            abort(400, str(e))
+            status_code = 400
+            payload = {"message": str(e)}
+
+        return make_response(jsonify(payload), status_code)
     abort(405)
 
