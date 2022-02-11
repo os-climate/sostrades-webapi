@@ -18,6 +18,7 @@ limitations under the License.
 import time
 from flask import request, make_response, jsonify, abort
 
+from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
 from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required,\
@@ -54,6 +55,7 @@ from sos_trades_saas.controller.saas_module_controller import filter_tree_node_d
 
 
 from sos_trades_api.base_server import app, study_case_cache
+from sos_trades_saas.tools.credentials import restricted_viewer_required
 
 
 @app.route(f'/saas/login', methods=['POST'])
@@ -166,52 +168,14 @@ def load_study(study_id: int, timeout: int = 30):
     abort(405)
 
 
-@app.route(f'/saas/load-study-case/<int:study_id>', methods=['GET'])
-@app.route(f'/saas/load-study-case/<int:study_id>/<int:timeout>', methods=['GET'])
+@app.route(f'/saas/monitor/study-case/<int:study_id>', methods=['GET'])
 @auth_required
-def load_study(study_id: int, timeout: int = 30):
-    """
-    Return dictionary instance containing loaded study
-    :rtype: dict
-    :return: dictionary like:
-        {
-            'study_name': 'this is 'study_id name',
-            'tree_node': 'this contains filtered 'treenode' data
-        }
-    """
+@restricted_viewer_required
+def monitor_study_execution(study_id: int):
+    try:
 
-    if request.method == "GET":
+        return make_response(jsonify(calculation_status(study_id)), 200)
 
-        user = get_authenticated_user()
-        study_case_access = StudyCaseAccess(user.id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest('You do not have the necessary rights to load this study case')
-        study_access_right = study_case_access.get_user_right_for_study(study_id)
-
-        try:
-            loaded_study = load_study_case(study_id, study_access_right, user.id)
-            for _ in range(timeout):
-                study_manager = light_load_study_case(study_id)
-                if not study_manager.loaded:
-                    time.sleep(3)
-                    loaded_study = load_study_case(study_id, study_access_right, user.id)
-                else:
-                    break
-
-            tree_node = loaded_study.treenode
-
-            payload = {
-                "study_name": loaded_study.study_case.name,
-                "tree_node": {
-                    "data": filter_tree_node_data(tree_node=tree_node),
-                    "children": filter_children_data(tree_node=tree_node)
-                }
-            }
-
-        except Exception as e:
-            status_code = 400
-            payload = {"message": str(e)}
-
-        return make_response(jsonify(payload), status_code)
-    abort(405)
+    except Exception as e:
+        abort(400, str(e))
 
