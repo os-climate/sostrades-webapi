@@ -48,7 +48,9 @@ This API is designed to offer some access point for command line requests.
 
 - loaded study content description :
   - *treenode* : 
-  - *etc...* :
+    - *data*: dictionary of editable input or numerical discipline
+    - *children*: list of children data
+  - *study_name* : loaded study name
 
 
 
