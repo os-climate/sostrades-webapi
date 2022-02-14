@@ -22,16 +22,25 @@ from datetime import datetime, timezone
 from sos_trades_api.models.database_models import StudyCaseValidation
 
 
-def invalidate_discipline_after_save(study_case_id, user_fullname, user_department, namespace, discipline_name):
+def invalidate_namespace_after_save(study_case_id, user_fullname, user_department, namespace):
     """
-        Retrieve a discipline data validation status, if discipline was data validated invalidate it
+       If a variable has been changed, retrieve the node validation status, if the node was validated
+       that invalidate it. The user have to check changes.
+
+        :param: study_case_id, id of the studycase
+        :type: integer
+        :param: user_fullname, user's information that did the validation
+        :type: user
+        :param: user_department, user's information that did the validation
+        :type: user
+        :param: namespace, namespace of the data validated
+        :type: string
+
     """
     with app.app_context():
         sc_val_query = StudyCaseValidation.query.\
             filter(StudyCaseValidation.study_case_id == study_case_id).\
-            filter(StudyCaseValidation.validation_type == StudyCaseValidation.VALIDATION_DATA).\
             filter(StudyCaseValidation.namespace == namespace).\
-            filter(StudyCaseValidation.discipline_name == discipline_name).\
             order_by(StudyCaseValidation.id.desc()).first()
 
         # Existing validation found, if validated creating invalidating entry
@@ -41,37 +50,21 @@ def invalidate_discipline_after_save(study_case_id, user_fullname, user_departme
             new_study_validation.validation_user = user_fullname
             new_study_validation.validation_user_department = user_department
             new_study_validation.namespace = namespace
-            new_study_validation.discipline_name = discipline_name
             new_study_validation.validation_state = StudyCaseValidation.NOT_VALIDATED
             new_study_validation.validation_comment = 'Automatic invalidation after data change(s)'
-            new_study_validation.validation_type = StudyCaseValidation.VALIDATION_DATA
             new_study_validation.validation_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
             db.session.add(new_study_validation)
-            db.session.commit()
-
-        # Even if no validation, safely remove graph validation for the entire study
-        clean_graph_validation_from_study_case(study_case_id)
-
-
-def clean_graph_validation_from_study_case(study_case_id):
-    """
-    Retrieve a study case all graph validation information and delete them
-    """
-    with app.app_context():
-        sc_graph_val_del_query = StudyCaseValidation.query.filter(StudyCaseValidation.study_case_id == study_case_id).\
-            filter(StudyCaseValidation.validation_type == StudyCaseValidation.VALIDATION_GRAPH).all()
-
-        if len(sc_graph_val_del_query) > 0:
-            for val_item in sc_graph_val_del_query:
-                db.session.delete(val_item)
             db.session.commit()
 
 
 def clean_obsolete_data_validation_entries(study_case_manager):
     """
     Retrieve a study case all data validation information and delete obsolete ones (case configure removing nodes
-    for example)
+    for example). Remove in database all validation if a parameter does not exist anymore.
+    For example in case of a multi-scenario,
+    if a node is validated with a scenario 1,2,3,4 and if we change a parameter of scenario 3, a new scenario "4"
+    is created with others parameter and we have to delete the validation of the previous scenario "4".
     """
     with app.app_context():
         all_validations_query = StudyCaseValidation.query.filter(StudyCaseValidation.study_case_id ==
@@ -82,12 +75,7 @@ def clean_obsolete_data_validation_entries(study_case_manager):
 
         for key in disciplines_dict:
             # Removing from all validations query, validation entries still valid
-            all_validations_query = list(filter(lambda val: f'{val.namespace}.{val.discipline_name}' !=
-                                                            f'{disciplines_dict[key]["ns_reference"].value}.'
-                                                            f'{disciplines_dict[key]["model_name_full_path"]}'
-                                                            and
-                                                            f'{val.namespace}.{val.discipline_name}' !=
-                                                            f'{disciplines_dict[key]["ns_reference"].value}.Data',
+            all_validations_query = list(filter(lambda val: val.namespace != disciplines_dict[key]["ns_reference"].value,
                                                 all_validations_query))
 
         # After previous loop all_validations_query only contains obsolete validations entries, removing them
