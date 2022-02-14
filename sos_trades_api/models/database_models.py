@@ -682,11 +682,8 @@ class StudyCaseExecutionLog(db.Model):
 
 class StudyCaseValidation(db.Model):
 
-    VALIDATED = 'validated'
-    NOT_VALIDATED = 'not_validated'
-
-    VALIDATION_DATA = 'data'
-    VALIDATION_GRAPH = 'graph'
+    VALIDATED = 'Validated'
+    NOT_VALIDATED = 'Invalidated'
 
     id = Column(Integer, primary_key=True)
     study_case_id = Column(Integer,
@@ -695,10 +692,8 @@ class StudyCaseValidation(db.Model):
                                ondelete="CASCADE",
                                name='fk_study_case_validation_study_case_id'))
     namespace = Column(Text, index=False, unique=False)
-    discipline_name = Column(Text, index=False, unique=False)
     validation_comment = Column(Text, index=False, unique=False)
     validation_state = Column(String(64), index=False, unique=False)
-    validation_type = Column(String(64), index=False, unique=False)
     validation_date = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     validation_user = Column(Text, index=False, unique=False)
     validation_user_department = Column(String(64), index=False, unique=False)
@@ -711,10 +706,8 @@ class StudyCaseValidation(db.Model):
         return {
             'study_case_id': self.study_case_id,
             'namespace': self.namespace,
-            'discipline_name': self.discipline_name,
             'validation_comment': self.validation_comment,
             'validation_state': self.validation_state,
-            'validation_type': self.validation_type,
             'validation_date': self.validation_date,
             'validation_user': self.validation_user,
             'validation_user_department': self.validation_user_department

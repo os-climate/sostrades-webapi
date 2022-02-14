@@ -38,10 +38,8 @@ def study_case_validation(study_id):
         app.logger.info(get_authenticated_user())
         user = get_authenticated_user()
         namespace = request.json.get('namespace', None)
-        discipline_name = request.json.get('discipline_name', None)
         status = request.json.get('status', None)
         comment = request.json.get('comment', None)
-        validation_type = request.json.get('validation_type', None)
 
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id)
@@ -53,19 +51,14 @@ def study_case_validation(study_id):
         missing_parameter = []
         if namespace is None:
             missing_parameter.append('Missing mandatory parameter: namespace')
-        if discipline_name is None:
-            missing_parameter.append('Missing mandatory parameter: discipline_name')
+
         if status is None:
             missing_parameter.append('Missing mandatory parameter: status')
         if comment is None:
             missing_parameter.append('Missing mandatory parameter: comment')
-        if validation_type is None:
-            missing_parameter.append('Missing mandatory parameter: validation_type')
 
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
 
-        resp = make_response(jsonify(add_study_case_validation(study_id, user, validation_type,
-                                                               namespace, discipline_name,
-                                                               status, comment)), 200)
+        resp = make_response(jsonify(add_study_case_validation(study_id, user, namespace, status, comment)), 200)
         return resp
