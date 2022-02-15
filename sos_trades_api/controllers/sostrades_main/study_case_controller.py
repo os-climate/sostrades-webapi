@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 
 from sos_trades_api.tools.code_tools import isevaluatable
-from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_discipline_after_save
+from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sos_trades_core.execution_engine.data_manager import DataManager
 from sos_trades_api.config import Config
 from sos_trades_api.base_server import db, app, study_case_cache
@@ -484,9 +484,9 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 else:
                     values[parameter['variableId']] = value
 
-                # Unvalidate all linked validation discipline
-                invalidate_discipline_after_save(study_manager.study.id, user_fullname, user_department,
-                                                 parameter['namespace'], parameter['discipline'])
+                # Invalidate all linked validation discipline
+                invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
+                                                parameter['namespace'])
 
         if not study_manager.load_in_progress:
             study_manager.load_in_progress = True
