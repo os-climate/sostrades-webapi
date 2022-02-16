@@ -111,8 +111,8 @@ icon-mapping:
   RessourcesDisc: fas fa-cubes fa-fw
   StaticNrcSubsystemDiscipline: fas fa-money-bill-alt fa-fw
   RCSubSystemBasicBOMDiscipline: fas fa-money-bill-alt fa-fw
-  SumRCSubSystemsDiscipline: fas fa-plus-circle-alt fa-fw
-  SumNRCSubSystemsDiscipline: fas fa-plus-circle-alt fa-fw
+  SumRCSubSystemsDiscipline: fas fa-circle-plus fa-fw
+  SumNRCSubSystemsDiscipline: fas fa-circle-plus fa-fw
   BiomassDryDiscipline: fas fa-tree fa-fw
   ManagedWoodDiscipline: fas fa-tree fa-fw
   ManagedWoodResiduesDiscipline: fas fa-tree fa-fw
@@ -127,7 +127,7 @@ icon-mapping:
   GMFReaderExplore: fas fa-globe-americas fa-fw
   GMFReaderOfficial: fas fa-globe-americas fa-fw
   GMFOfficialDiscipline: fas fa-globe-americas fa-fw
-  GMFAPIwrapperDiscipline: fas fa-link
+  GMFAPIwrapperDiscipline: fas fa-link fa-fw
   SoSVerySimpleMultiScenario: fas fa-stream fa-fw
   SoSMultiScenario: fas fa-stream fa-fw
   TradesDiscipline: fas fa-poll fa-fw
@@ -189,7 +189,7 @@ icon-mapping:
   WorkforceDiscipline: fas fa-male fa-fw
   WIPDiscipline: fas fa-wrench fa-fw
   SoSMorphMatrixEval: fas fa-border-all fa-fw
-  CoalDiscipline: fas fa-cloud-meatball fa_fw
+  CoalDiscipline: fas fa-cloud-meatball fa-fw
   UraniumDiscipline: fas fa-radiation fa-fw
   GasDiscipline: fas fa-gas-pump fa-fw
   OilDiscipline: fas fa-oil-can fa-fw
@@ -217,7 +217,7 @@ icon-mapping:
   DemandDistributionDiscipline: fas fa-bezier-curve fa-fw
   AgricultureDiscipline: fas fa-seedling fa-fw
   ForestDiscipline: fas fa-tree fa-fw
-  ServicesUpgradesDiscipline: fas fa-concierge-bell
+  ServicesUpgradesDiscipline: fas fa-concierge-bell fa-fw
   OneInvestDiscipline: fas fa-share-alt fa-fw
   CO2FleetDiscipline: fas fa-smog fa-fw
   EnergySimpleDiscipline: fas fa-gas-pump fa-fw
