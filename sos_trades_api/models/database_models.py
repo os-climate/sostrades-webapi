@@ -134,6 +134,7 @@ class Group(db.Model):
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
     description = Column(String(255))
     confidential = Column(Boolean, default=False)
+    is_default_applicative_group = Column(Boolean, default=False)
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -144,7 +145,8 @@ class Group(db.Model):
             'creator_id': self.creator_id,
             'creation_date': self.creation_date,
             'description': self.description,
-            'confidential': self.confidential
+            'confidential': self.confidential,
+            'is_default_applicative_group': self.is_default_applicative_group,
         }
 
 

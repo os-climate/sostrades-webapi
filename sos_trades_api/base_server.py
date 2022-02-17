@@ -35,7 +35,6 @@ from os.path import dirname, join
 
 
 # Create  flask server and set local configuration
-
 server_name = __name__
 if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
@@ -63,7 +62,7 @@ try:
     import sos_trades_api
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
-    from sos_trades_api.models.database_models import User, Group
+    from sos_trades_api.models.database_models import User, Group, UserProfile
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 
     app_mysql_handler = ApplicationMySQLHandler(
@@ -142,7 +141,7 @@ def database_process_setup():
             # Retrieve group from configuration to set admin as default
             # user manager
             group_manager_account_account = Group.query.filter(
-                Group.name == app.config['DEFAULT_GROUP_MANAGER_ACCOUNT']).first()
+                Group.is_default_applicative_group).first()
 
             app.logger.info(
                 'Starting loading available processes and references')
@@ -163,6 +162,51 @@ def database_process_setup():
 
     return database_initialized
 
+def database_create_admin_user():
+    '''
+        Set initial data into db:
+        create Administrator account and set password
+        create test_user account and set password
+        create default group ALL_users
+    '''
+    from sos_trades_api.controllers.sostrades_data.user_controller import create_administrator_account
+    create_administrator_account()
+
+def database_create_standard_user(username, email, firstname, lastname):
+    '''
+        Set initial data into db:
+        create Administrator account and set password
+        create test_user account and set password
+        create default group ALL_users
+    '''
+    from sos_trades_api.controllers.sostrades_data.user_controller import create_standard_user_account
+    create_standard_user_account(username, email, firstname, lastname)
+
+
+def database_reset_admin_password():
+    '''
+        Reset Administrator password if account already exist
+    '''
+    database_reset_user_password(User.APPLICATIVE_ACCOUNT_NAME)
+
+
+def database_reset_user_password(username):
+    '''
+        Reset user password if account already exist
+        :param:username, username of the user
+    '''
+    from sos_trades_api.controllers.sostrades_data.user_controller import reset_user_password
+
+    reset_user_password(username)
+
+def database_rename_group(old_group_name, new_group_name):
+    '''
+        rename a group from old_group_name to new_group_name
+    '''
+    from sos_trades_api.controllers.sostrades_data.group_controller import rename_group
+
+    rename_group(old_group_name, new_group_name)
+
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -175,8 +219,68 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         database_process_setup()
 
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('create_admin_user')
+    @with_appcontext
+    def create_admin_user():
+        """ admin and test user creation and default group creation database setup
+        """
+        database_create_admin_user()
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('create_standard_user')
+    @click.argument('username')
+    @click.argument('email')
+    @click.argument('firstname')
+    @click.argument('lastname')
+    @with_appcontext
+    def create_standard_user(username, email, firstname, lastname):
+        """ standard creation associated to ALl_user group
+        :param:username, the identification name of the user, must be unique in users database
+        :param:email, email of the user, must be unique in users database
+        :param:firstname, first name of the user
+        :param:lastname, last name of the user
+        """
+        database_create_standard_user(username, email, firstname, lastname)
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('reset_admin_password')
+    @with_appcontext
+    def reset_admin_password():
+        """ admin and test user creation and default group creation database setup
+        """
+        database_reset_admin_password()
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('reset_standard_user_password')
+    @click.argument('username')
+    @with_appcontext
+    def reset_standard_user_password(username):
+        """ reset the password of a user with this username
+        :param:username, the user name of the user
+        """
+        database_reset_user_password(username)
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('rename_applicative_group')
+    @click.argument('new_name')
+    @with_appcontext
+    def rename_applicative_group(new_name):
+        """ rename a group from old_name to new_name
+        """
+        database_rename_group(Group.SOS_TRADES_DEV_GROUP, new_name)
 
     app.cli.add_command(init_process)
+    app.cli.add_command(create_admin_user)
+    app.cli.add_command(create_standard_user)
+    app.cli.add_command(rename_applicative_group)
+    app.cli.add_command(reset_admin_password)
+    app.cli.add_command(reset_standard_user_password)
 
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):

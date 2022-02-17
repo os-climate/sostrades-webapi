@@ -1,7 +1,7 @@
 """Default Access rights
 
 Revision ID: 039eba317a4e
-Revises: b4c65e383551
+Revises: e87facea6cda
 Create Date: 2021-10-05 17:55:07.102252
 
 """
@@ -13,7 +13,7 @@ from sos_trades_api.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '039eba317a4e'
-down_revision = 'b4c65e383551'
+down_revision = 'e87facea6cda'
 branch_labels = None
 depends_on = None
 

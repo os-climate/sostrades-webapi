@@ -21,6 +21,7 @@ from tempfile import gettempdir
 import uuid
 import json
 
+
 # -----------------------------------------------------------------------------
 # Modify configuration file for test purpose
 # As the test can be launch simultaneously, having the same target database can drive to
@@ -139,6 +140,12 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
             migration_folder = os.path.join(os.path.dirname(
                 os.path.dirname(root_file)), 'migrations')
             upgrade(directory=migration_folder)
+
+            from sos_trades_api.controllers.sostrades_data.user_controller import create_test_user_account,\
+                create_administrator_account
+            create_administrator_account()
+            create_test_user_account()
+
 
     @classmethod
     def tearDownClass(cls):

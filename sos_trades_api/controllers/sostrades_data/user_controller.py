@@ -19,18 +19,19 @@ User Functions
 """
 import traceback
 from datetime import datetime, timezone
-from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, StudyCase
+from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, StudyCase, AccessRights
 from sos_trades_api.tools.smtp.smtp_service import send_right_update_mail, send_password_reset_mail
 from sos_trades_api.tools.authentication.password_generator import check_password, InvalidPassword
 from sos_trades_api.tools.right_management.access_right import is_user_admin
+from sos_trades_api.tools.authentication.password_generator import generate_password
+from os.path import dirname, join, exists
 from sqlalchemy import or_, and_, func
 from sos_trades_api.base_server import db, app
-from sos_trades_api.config import Config
-from os.path import join
-from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data import group_controller
-import shutil
 import uuid
+from sos_trades_api import __file__ as sos_trades_api_file
+from os import makedirs
+import errno
 
 
 class UserError(Exception):
@@ -378,3 +379,197 @@ def change_user_password(token, password):
     else:
         app.logger.error(f'Reset token not found in database, token value {token}')
         raise InvalidUser(f'User cannot be found in the database')
+
+def create_administrator_account():
+    '''
+        Create administrator account if it does not already exists
+    '''
+    adminProfile = UserProfile.query.filter_by(
+        name=UserProfile.ADMIN_PROFILE).first()
+
+    users_by_email = User.query.filter_by(email=User.APPLICATIVE_ACCOUNT_EMAIL)
+    users_by_name = User.query.filter_by(email=User.APPLICATIVE_ACCOUNT_NAME)
+    if users_by_email is not None and users_by_email.count() == 0 and \
+            users_by_name is not None and users_by_name.count() == 0:
+        try:
+            user = User()
+            user.username = User.APPLICATIVE_ACCOUNT_NAME
+            user.firstname = User.APPLICATIVE_ACCOUNT_NAME
+            user.lastname = ''
+            user.email = User.APPLICATIVE_ACCOUNT_EMAIL
+            user.user_profile_id = adminProfile.id
+
+            # Automatically generate a password inforce policy
+            password = generate_password(20)
+
+            # Set password to user
+            user.set_password(password)
+
+            db.session.add(user)
+
+        except Exception as exc:
+            raise exc
+
+        try:
+            __set_password_in_secret_path(password, 'adminPassword', 'Administrator')
+        except Exception as exc:
+            db.session.rollback()
+            raise exc
+
+        db.session.commit()
+
+def create_test_user_account():
+    # Profile => study user
+    study_user_profile = UserProfile.query.filter_by(
+        name=UserProfile.STUDY_USER).first()
+    # Default group => all_users
+    all_user_group = Group.query.filter_by(name=Group.ALL_USERS_GROUP).first()
+    # group right => member
+    member_right = AccessRights.query.filter_by(
+        access_right=AccessRights.MEMBER).first()
+    if study_user_profile is not None and all_user_group is not None and member_right is not None:
+        users = User.query.filter_by(
+            username=User.STANDARD_USER_ACCOUNT_NAME).first()
+
+        if users is None:
+
+            try:
+                user = User()
+                user.username = User.STANDARD_USER_ACCOUNT_NAME
+                user.email = User.STANDARD_USER_ACCOUNT_EMAIL
+                user.firstname = User.STANDARD_USER_ACCOUNT_NAME
+                user.lastname = ''
+
+                user.user_profile_id = study_user_profile.id
+
+                # Autmatically generate a password inforce policy
+                password = generate_password(20)
+
+                # Set password to user
+                user.set_password(password)
+
+                db.session.add(user)
+                db.session.flush()
+
+                user_access_group = GroupAccessUser()
+                user_access_group.group_id = all_user_group.id
+                user_access_group.user_id = user.id
+                user_access_group.right_id = member_right.id
+                db.session.add(user_access_group)
+            except Exception as exc:
+                raise exc
+
+            try:
+                __set_password_in_secret_path(password, 'standardUserPassword', 'Standard user')
+            except Exception as exc:
+                db.session.rollback()
+                raise exc
+
+            db.session.commit()
+
+def create_standard_user_account(username, email, firstname, lastname):
+
+    # Profile => study user
+    study_user_profile = UserProfile.query.filter_by(
+        name=UserProfile.STUDY_USER).first()
+
+    # Default group => all_users
+    all_user_group = Group.query.filter_by(name=Group.ALL_USERS_GROUP).first()
+
+    # group right => member
+    member_right = AccessRights.query.filter_by(
+        access_right=AccessRights.MEMBER).first()
+
+    if study_user_profile is not None and all_user_group is not None and member_right is not None:
+
+        usersByName = User.query.filter_by(
+            username=username).first()
+
+        usersByEmail = User.query.filter_by(
+            email=email).first()
+
+        if usersByName is None and usersByEmail is None:
+
+            try:
+                user = User()
+                user.username = username
+                user.email = email
+                user.firstname = firstname
+                user.lastname = lastname
+                user.account_source = User.LOCAL_ACCOUNT
+
+                user.user_profile_id = study_user_profile.id
+
+                # Autmatically generate a password inforce policy
+                password = generate_password(20)
+
+                # Set password to user
+                user.set_password(password)
+
+                db.session.add(user)
+                db.session.flush()
+
+                user_access_group = GroupAccessUser()
+                user_access_group.group_id = all_user_group.id
+                user_access_group.user_id = user.id
+                user_access_group.right_id = member_right.id
+                db.session.add(user_access_group)
+            except Exception as exc:
+                raise exc
+
+            try:
+                __set_password_in_secret_path(password, f'{username}_Password', 'Standard user')
+            except Exception as exc:
+                db.session.rollback()
+                raise exc
+
+            db.session.commit()
+
+def reset_user_password(username):
+    '''
+    Generate and save a new password for the user with the username = USERNAME
+    The password is then saved in a file on the local repository
+    '''
+    user = User.query.filter_by(username=username).first()
+
+    if user is not None:
+        try:
+            # Automatically generate a password inforce policy
+            password = generate_password(20)
+            print(f"password generated: {password}")
+            # Set password to user
+            user.set_password(password)
+
+            db.session.add(user)
+
+        except Exception as exc:
+            raise exc
+
+        try:
+            __set_password_in_secret_path(password, f'{username}_Password', username)
+        except Exception as exc:
+            print(f"error while writing in file: {exc.description}")
+            db.session.rollback()
+            raise exc
+
+        db.session.commit()
+
+def __set_password_in_secret_path(password, file_name, user_name):
+    # Write password in a file to let platform installer
+    # retrieve it
+    root_folder = dirname(sos_trades_api_file)
+    secret_path = join(root_folder, 'secret')
+
+    if not exists(secret_path):
+        try:
+            makedirs(secret_path)
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+    secret_filepath = join(secret_path, file_name)
+    with open(secret_filepath, 'w') as f:
+        f.write(password)
+        f.close()
+    print(
+        f'{user_name} password created, password in {secret_filepath} file, delete it after copying it in a secret store')
