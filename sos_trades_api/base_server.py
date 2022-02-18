@@ -195,9 +195,9 @@ def database_reset_user_password(username):
         Reset user password if account already exist
         :param:username, username of the user
     '''
-    from sos_trades_api.controllers.sostrades_data.user_controller import reset_user_password
+    from sos_trades_api.controllers.sostrades_data.user_controller import reset_local_user_password_by_name
 
-    reset_user_password(username)
+    reset_local_user_password_by_name(username)
 
 def database_rename_group(old_group_name, new_group_name):
     '''

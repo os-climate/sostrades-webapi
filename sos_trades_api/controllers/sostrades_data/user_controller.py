@@ -525,7 +525,7 @@ def create_standard_user_account(username, email, firstname, lastname):
 
             db.session.commit()
 
-def reset_user_password(username):
+def reset_local_user_password_by_name(username):
     '''
     Generate and save a new password for the user with the username = USERNAME
     The password is then saved in a file on the local repository
