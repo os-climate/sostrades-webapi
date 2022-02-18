@@ -199,13 +199,13 @@ def database_reset_user_password(username):
 
     reset_local_user_password_by_name(username)
 
-def database_rename_group(old_group_name, new_group_name):
+def database_rename_applicative_group(new_group_name):
     '''
         rename a group from old_group_name to new_group_name
     '''
-    from sos_trades_api.controllers.sostrades_data.group_controller import rename_group
+    from sos_trades_api.controllers.sostrades_data.group_controller import rename_applicative_group
 
-    rename_group(old_group_name, new_group_name)
+    rename_applicative_group(new_group_name)
 
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
@@ -273,7 +273,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     def rename_applicative_group(new_name):
         """ rename a group from old_name to new_name
         """
-        database_rename_group(Group.SOS_TRADES_DEV_GROUP, new_name)
+        database_rename_applicative_group(new_name)
 
     app.cli.add_command(init_process)
     app.cli.add_command(create_admin_user)
