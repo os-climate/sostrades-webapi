@@ -142,7 +142,7 @@ def delete_group(group_id):
     raise InvalidGroup(
         f'The following group with group_id : {group_id}, cannot be found in database')
 
-def rename_group(old_group_name, new_group_name):
+def rename_applicative_group(new_group_name):
     """
         rename a group from database
 
@@ -152,11 +152,8 @@ def rename_group(old_group_name, new_group_name):
         :type: string
         """
     # Get db group object
-    query_group = Group.query.filter(Group.name == old_group_name).first()
+    query_group = Group.query.filter(Group.is_default_applicative_group).first()
     query_new_group = Group.query.filter(Group.name == new_group_name).first()
-    if query_group is None:
-        raise InvalidGroup(
-            f'The following group with group name : {old_group_name}, cannot be found in database')
 
     if query_new_group is not None:
         raise InvalidGroup(
@@ -165,4 +162,4 @@ def rename_group(old_group_name, new_group_name):
     if query_group is not None and query_new_group is None:
         query_group.name = new_group_name
         db.session.commit()
-        print (f'The group ({old_group_name}) has been renamed into {new_group_name}')
+        print (f'The group has been renamed into {new_group_name}')
