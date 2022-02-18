@@ -468,11 +468,13 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         value = value.set_index('variable')['value'].to_dict()
                     else:
                         # dataframe, check array element types
-                        if 'dataframe_descriptor' in study_manager.execution_engine.dm.data_dict[uuid_param].keys():
+                        if 'dataframe_descriptor' in study_manager.execution_engine.dm.data_dict[uuid_param].keys() and \
+                                study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor'] is not None:
+
                             df_descriptor = study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor']
                             for colname in df_descriptor.keys():
                                 type = df_descriptor[colname]
-                                if (type[0] == "array"):
+                                if type[0] == "array":
                                     list_array =[]
                                     for row in list(value[colname]):
                                         list_array.append(array(row))
