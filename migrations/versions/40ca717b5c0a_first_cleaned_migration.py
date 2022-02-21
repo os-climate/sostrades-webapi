@@ -89,6 +89,7 @@ def upgrade():
     sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('confidential', sa.Boolean(), nullable=True),
+    sa.Column('is_default_applicative_group', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['creator_id'], ['user.id'], name='fk_group_creator_id'),
     sa.PrimaryKeyConstraint('id')
     )

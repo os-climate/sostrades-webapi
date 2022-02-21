@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.database_models import Group, GroupAccessUser, AccessRights, StudyCase
-from sos_trades_api.base_server import db
+from sos_trades_api.models.database_models import Group, GroupAccessUser, AccessRights, StudyCase, User
+from sos_trades_api.base_server import db, app
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from shutil import rmtree
 
@@ -141,3 +141,25 @@ def delete_group(group_id):
 
     raise InvalidGroup(
         f'The following group with group_id : {group_id}, cannot be found in database')
+
+def rename_applicative_group(new_group_name):
+    """
+        rename a group from database
+
+        :params: old_group_name, current name of the group
+        :type: string
+        :params: new_group_name, new name of the group
+        :type: string
+        """
+    # Get db group object
+    query_group = Group.query.filter(Group.is_default_applicative_group).first()
+    query_new_group = Group.query.filter(Group.name == new_group_name).first()
+
+    if query_new_group is not None:
+        raise InvalidGroup(
+            f'The following group with group name : {new_group_name}, already exists in database')
+
+    if query_group is not None and query_new_group is None:
+        query_group.name = new_group_name
+        db.session.commit()
+        print (f'The group has been renamed into {new_group_name}')

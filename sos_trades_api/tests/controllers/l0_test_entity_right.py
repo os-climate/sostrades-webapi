@@ -72,7 +72,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                 test_user, 'Default user test not found in database, check migrations')
             self.test_user_id = test_user.id
             default_group = Group.query \
-                .filter(Group.name == DatabaseUnitTestConfiguration.app.config['DEFAULT_GROUP_MANAGER_ACCOUNT']).first()
+                .filter(Group.is_default_applicative_group).first()
             self.default_group_id = default_group.id
 
             # Retrieve test process id
