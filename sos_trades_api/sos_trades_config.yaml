@@ -226,3 +226,11 @@ icon-mapping:
   ManufacturerValueBlockDiscipline: fa-solid fa-file-invoice-dollar fa-fw
   PolicyDiscipline: fa-solid fa-balance-scale fa-fw
   SumValueAssessmentActorValueBlockDiscipline: fa-solid fa-calculator fa-fw
+  IndependentInvestDiscipline: fa-solid fa-coins fa-fw
+  CCTechnoDiscipline: fa-solid fa-air-freshener fa-fw
+  CSTechnoDiscipline: fa-solid fa-truck-loading fa-fw
+  FossilTechnoDiscipline: fa-solid fa-smog fa-fw
+  RenewableTechnoDiscipline: fa-solid fa-fan fa-fw
+  FossilSimpleTechnoDiscipline: fa-solid fa-smog fa-fw
+  RenewableSimpleTechnoDiscipline: fa-solid fa-fan fa-fw
+
