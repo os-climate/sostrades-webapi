@@ -19,8 +19,8 @@ import time
 from flask import request, make_response, jsonify, abort
 
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
-from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
+from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required,\
     get_authenticated_user
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
@@ -109,19 +109,20 @@ def load_study(study_id: int, timeout: int = 30):
             study_case_access = StudyCaseAccess(user.id)
             study_access_right = study_case_access.get_user_right_for_study(study_id)
 
-            loaded_study = load_study_case(study_id, study_access_right, user.id)
+            load_study_case(study_id, study_access_right, user.id)
             for _ in range(timeout):
 
                 study_manager = light_load_study_case(study_id)
 
                 if not study_manager.loaded:
-                    time.sleep(1)
-                    loaded_study = load_study_case(study_id, study_access_right, user.id)
+                    time.sleep(3)
                 else:
                     break
 
+            loaded_study = load_study_case(study_id, study_access_right, user.id)
+
             tree_node = loaded_study.treenode
-            status_code = 200
+            # TODO pas robuste si treenode vide
 
             payload = {
                 "study_name": loaded_study.study_case.name,
@@ -131,11 +132,11 @@ def load_study(study_id: int, timeout: int = 30):
                 }
             }
 
-        except Exception as e:
-            status_code = 400
-            payload = {"message": str(e)}
+            return make_response(jsonify(payload), 200)
 
-        return make_response(jsonify(payload), status_code)
+        except Exception as e:
+            abort(400, str(e))
+
     abort(405)
 
 

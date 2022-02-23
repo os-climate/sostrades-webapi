@@ -42,9 +42,9 @@ def restricted_viewer_required(func):
             if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
                 raise AccessDenied('You do not have the necessary rights to access this study case')
 
-            return func(*args, **kwargs)
-
         except Exception as e:
             abort(403, str(e))
+
+        return func(*args, **kwargs)
 
     return wrapper
