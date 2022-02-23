@@ -112,4 +112,3 @@ def postprocess(study_id):
     study_manager = light_load_study_case(study_id)
     execute_calculation(study_id, "user_test")
     return Response({"hello": "hello you"}, status=200)
-
