@@ -19,8 +19,8 @@ import time
 from flask import request, make_response, jsonify, abort
 
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
-from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
+from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.tools.authentication.authentication import AuthenticationError, auth_required,\
     get_authenticated_user
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
