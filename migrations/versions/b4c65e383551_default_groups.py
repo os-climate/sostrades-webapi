@@ -1,7 +1,7 @@
 """Default Groups
 
 Revision ID: b4c65e383551
-Revises: a499f2a1fc01
+Revises: 039eba317a4e
 Create Date: 2021-10-05 17:54:14.072536
 
 """
@@ -13,39 +13,31 @@ from sos_trades_api.base_server import app, db
 
 # revision identifiers, used by Alembic.
 revision = 'b4c65e383551'
-down_revision = 'a499f2a1fc01'
+down_revision = '039eba317a4e'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
     try:
-        # Retrieve administrator applicative account
-        administrator_applicative_account = User.query.filter(
-            User.username == User.APPLICATIVE_ACCOUNT_NAME).first()
-
-        if administrator_applicative_account is None:
-            raise ValueError(
-                'No administrative account found in database, cannot apply revision')
-
         # Create 'All users' group
         all_users_group = Group()
         all_users_group.name = Group.ALL_USERS_GROUP
         all_users_group.description = Group.ALL_USERS_GROUP_DESCRIPTION
-        all_users_group.creator_id = administrator_applicative_account.id
         all_users_group.confidential = False
         db.session.add(all_users_group)
 
         # Create 'SosTradesDev' group
         sos_trades_group = Group()
-        sos_trades_group.name = app.config['DEFAULT_GROUP_MANAGER_ACCOUNT']
+        sos_trades_group.name = Group.SOS_TRADES_DEV_GROUP
         sos_trades_group.description = Group.SOS_TRADES_DEV_GROUP_DESCRIPTION
-        sos_trades_group.creator_id = administrator_applicative_account.id
         sos_trades_group.confidential = False
+        sos_trades_group.is_default_applicative_group = True
         db.session.add(sos_trades_group)
 
         db.session.commit()
-    except:
+    except Exception as exc:
+        raise exc
         db.session.rollback()
 
 
@@ -63,7 +55,7 @@ def downgrade():
 
     # Check if 'SoSTrades_Dev' group exist, if not nothing will be done
     sos_trades_group = Group.query.filter(
-        Group.name == app.config['DEFAULT_GROUP_MANAGER_ACCOUNT']).first()
+        Group.name == Group.SOS_TRADES_DEV_GROUP).first()
 
     if sos_trades_group is not None:
         # Next remove all related right

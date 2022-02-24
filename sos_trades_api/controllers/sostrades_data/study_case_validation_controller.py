@@ -36,18 +36,14 @@ def get_study_case_validation_list(study_case_id):
     return sc_val_query
 
 
-def add_study_case_validation(study_case_id, user, validation_type, namespace, discipline_name, status, comment):
+def add_study_case_validation(study_case_id, user, namespace, status, comment):
     """
         create and save a study case validation
         :param: study_case_id, id of the studycase
         :type: integer
         :param: user, user that did the validation
         :type: user
-        :param: validation_type, type of valisation (data or graph)
-        :type: string
         :param: namespace, namespace of the data validated
-        :type: string
-        :param: discipline_name, discipline of the data validated
         :type: string
         :param: status, state of the validation (validated or not)
         :type: string
@@ -59,10 +55,8 @@ def add_study_case_validation(study_case_id, user, validation_type, namespace, d
     new_study_validation.validation_user = f'{user.firstname} {user.lastname}'
     new_study_validation.validation_user_department = user.department
     new_study_validation.namespace = namespace
-    new_study_validation.discipline_name = discipline_name
     new_study_validation.validation_state = status
     new_study_validation.validation_comment = comment
-    new_study_validation.validation_type = validation_type
     new_study_validation.validation_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
     db.session.add(new_study_validation)

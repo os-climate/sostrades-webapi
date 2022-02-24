@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 
 from sos_trades_api.tools.code_tools import isevaluatable
-from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_discipline_after_save
+from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sos_trades_core.execution_engine.data_manager import DataManager
 from sos_trades_api.config import Config
 from sos_trades_api.base_server import db, app, study_case_cache
@@ -48,6 +48,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
     study_case_manager_loading_from_study
 from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from numpy import array
 
 def create_study_case(user_id, name, repository_name, process_name, group_id, reference, from_type=None):
     """
@@ -465,6 +466,20 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         value['variable'] = value.variable.astype(str)
                         # In case of dict convert the dataframe to dict
                         value = value.set_index('variable')['value'].to_dict()
+                    else:
+                        # dataframe, check array element types
+                        if 'dataframe_descriptor' in study_manager.execution_engine.dm.data_dict[uuid_param].keys() and \
+                                study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor'] is not None:
+
+                            df_descriptor = study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor']
+                            for colname in df_descriptor.keys():
+                                type = df_descriptor[colname]
+                                if type[0] == "array":
+                                    list_array =[]
+                                    for row in list(value[colname]):
+                                        list_array.append(array(row))
+
+                                    value[colname] = tuple(list_array)
                 else:
                     # Add standard parameter change
                     try:
@@ -484,9 +499,9 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 else:
                     values[parameter['variableId']] = value
 
-                # Unvalidate all linked validation discipline
-                invalidate_discipline_after_save(study_manager.study.id, user_fullname, user_department,
-                                                 parameter['namespace'], parameter['discipline'])
+                # Invalidate all linked validation discipline
+                invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
+                                                parameter['namespace'])
 
         if not study_manager.load_in_progress:
             study_manager.load_in_progress = True
