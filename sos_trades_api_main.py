@@ -45,32 +45,11 @@ if __name__ == '__main__':
     from sos_trades_api import main_server
     from sos_trades_api.config import Config
     from sos_trades_core.tools.sos_logger import SoSLogging
-    from sos_trades_api.base_server import PRODUCTION
     from sos_trades_api.tools.logger.reference_mysql_handler import ReferenceMySQLHandler
     from sos_trades_api.models.database_models import ReferenceStudy, StudyCaseExecution
     from importlib import import_module
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
     from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
-    config = Config()
-
-    # For development purpose assign envrionnement variable
-    if os.environ['FLASK_ENV'] != PRODUCTION:
-
-        if os.environ.get(config.execution_strategy_env_var) is None:
-            if sys.platform == "win32":
-                os.environ[config.execution_strategy_env_var] = 'subprocess'
-            else:
-                os.environ[config.execution_strategy_env_var] = 'subprocess'
-            main_server.app.logger.info(
-                f'value not found environment variable {config.execution_strategy_env_var}. Set it to default: {os.environ[config.execution_strategy_env_var]}')
-        else:
-            main_server.app.logger.info(
-                f'value found environment variable {config.execution_strategy_env_var}: {os.environ[config.execution_strategy_env_var]}')
-
-
-    # - Consistency check on server environment (every variables must be provided)
-    if os.environ['FLASK_ENV'] == PRODUCTION:
-        config.check()
 
     if args['execute'] is not None:
 
@@ -231,5 +210,3 @@ if __name__ == '__main__':
                 generation_log.exception(
                     f'Unable to start generation of {args["generate"]}: element not found in database')
         generation_log_handler.flush()
-    else:
-        main_server.app.run(host='0.0.0.0', port='5000')
