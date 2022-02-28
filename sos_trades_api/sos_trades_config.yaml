@@ -108,7 +108,7 @@ icon-mapping:
   PlasmaCrackingDiscipline: fa-solid fa-hospital-symbol fa-fw
   PyrolysisDiscipline: fa-solid fa-fire fa-fw
   Energy_Mix_Discipline: fa-solid fa-battery-full fa-fw
-  RessourcesDisc: fa-solid fa-cubes fa-fw
+  ResourcesDisc: fa-solid fa-cubes fa-fw
   StaticNrcSubsystemDiscipline: fa-solid fa-money-bill-alt fa-fw
   RCSubSystemBasicBOMDiscipline: fa-solid fa-money-bill-alt fa-fw
   SumRCSubSystemsDiscipline: fa-solid fa-circle-plus fa-fw
@@ -169,6 +169,8 @@ icon-mapping:
   LandUseDiscipline: fa-solid fa-globe-europe fa-fw
   LandUseV1Discipline: fa-solid fa-globe-europe fa-fw
   HydrogenLiquefactionDiscipline: fa-solid fa-tint fa-fw
+  HefaDecarboxylationDiscipline: fa-solid fa-gas-pump fa-fw
+  HefaDeoxygenationDiscipline: fa-solid fa-gas-pump fa-fw
   LiquidHydrogenDiscipline: fa-solid fa-tint fa-fw
   TSPValueBlockDiscipline: fa-solid fa-hammer fa-fw
   WeightedNRCDiscipline: fa-solid fa-money-bill-alt fa-fw
@@ -233,4 +235,9 @@ icon-mapping:
   RenewableTechnoDiscipline: fa-solid fa-fan fa-fw
   FossilSimpleTechnoDiscipline: fa-solid fa-smog fa-fw
   RenewableSimpleTechnoDiscipline: fa-solid fa-fan fa-fw
+  DirectAirCaptureTechnoDiscipline: fa-solid fa-globe-europe fa-fw
+  FlueGasTechnoDiscipline: fa-solid fa-cloud fa-fw
+  CarbonStorageTechnoDiscipline: fa-solid fa-truck-loading fa-fw
+  ConsumptionCO2EmissionsDiscipline: fa-solid fa-cloud fa-fw
+  CCUS_Discipline: fa-solid fa-air-freshener fa-fw
 
