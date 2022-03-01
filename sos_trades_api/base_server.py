@@ -49,6 +49,7 @@ UNIT_TEST = 'UNIT_TEST'
 
 try:
     config = Config()
+    config.check()
     flask_config_dict = config.get_flask_config_dict()
     app.config.update(flask_config_dict)
 
@@ -103,7 +104,7 @@ try:
     app.json_encoder = CustomJsonEncoder
 except Exception as error:
     app.logger.error(
-        f'The following error occurs when trying to load configuration file in located :{os.environ["SOS_TRADES_SERVER_CONFIGURATION"]}\n{error} ')
+        f'The following error occurs when trying to initialize server\n{error} ')
     raise error
     exit(-1)
 
