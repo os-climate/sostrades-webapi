@@ -240,6 +240,33 @@ class UserStudyPreference(db.Model):
         }
 
 
+class UserStudyFavorite(db.Model):
+    """UserStudyFavorite class"""
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer,
+                     ForeignKey(
+                         f'{User.__tablename__}.id',
+                         ondelete="CASCADE",
+                         name='fk_user_study_favorite_user_id'),
+                     nullable=False)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f'{StudyCase.__tablename__}.id',
+                               ondelete="CASCADE",
+                               name='fk_user_study_favorite_study_case_id'),
+                           nullable=False)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'study_case_id': self.study_case_id,
+        }
+
+
 class AccessRights(db.Model):
 
     MANAGER = 'Manager'

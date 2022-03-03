@@ -50,7 +50,7 @@ class StudyCaseDto:
         self.is_commenter = False
         self.is_restricted_viewer = False
         self.disabled = False
-
+        self.isFavorite = False
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -63,7 +63,6 @@ class StudyCaseDto:
             self.repository_display_name = study_case_instance.repository
             self.disabled = study_case_instance.disabled
             self.study_type = 'Study'
-
 
             # Retrieve group owner
             owner_right = AccessRights.query.filter(
@@ -114,4 +113,5 @@ class StudyCaseDto:
         result.update({'is_contributor': self.is_contributor})
         result.update({'is_commenter': self.is_commenter})
         result.update({'is_restricted_viewer': self.is_restricted_viewer})
+        result.update({'isFavorite': self.isFavorite})
         return result
