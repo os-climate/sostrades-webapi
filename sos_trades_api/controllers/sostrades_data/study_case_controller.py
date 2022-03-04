@@ -26,7 +26,7 @@ from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import Notification, StudyCaseChange, \
-    StudyCaseExecutionLog, UserStudyPreference, StudyCase
+    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -44,7 +44,10 @@ def get_user_shared_study_case(user_id):
 
     result = []
     study_case_access = StudyCaseAccess(user_id)
+
     all_user_studies = study_case_access.user_study_cases
+    all_user_studies = sorted(
+        all_user_studies, key=lambda res: res.creation_date, reverse=True)
 
     if len(all_user_studies) > 0:
         # Apply Ontology
@@ -53,6 +56,13 @@ def get_user_shared_study_case(user_id):
 
         for user_study in all_user_studies:
             process_key = f'{user_study.repository}.{user_study.process}'
+
+            # Get all favorite studies by user
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
+            # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
+            for study in user_favorite_study:
+                if study.study_case_id == user_study.id:
+                    user_study.isFavorite = True
 
             if process_key not in processes_metadata:
                 processes_metadata.append(process_key)
@@ -69,8 +79,8 @@ def get_user_shared_study_case(user_id):
             sc.apply_ontology(process_metadata, repository_metadata)
             result.append(sc)
 
-        result = sorted(
-            result, key=lambda res: res.creation_date, reverse=True)
+            result = sorted(
+                result, key=lambda res: res.isFavorite, reverse=True)
 
     return result
 
@@ -304,3 +314,73 @@ def set_user_authorized_execution(study_case_id, user_id):
         raise InvalidStudy(f'Unable to find in database the study case with id {study_case_id}')
 
     return 'You successfully claimed Execution ability'
+
+
+def get_study_of_favorite_study_by_user(user_id):
+    """
+    Get study of all user's favorite study
+        :param: user_id, user that did add a favorite study
+        :type: integer
+    """
+
+    result = []
+    user_favorite_studies = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
+
+    for favorite in user_favorite_studies:
+        study = StudyCase.query.filter(StudyCase.id == favorite.study_case_id).first()
+        result.append(study)
+
+    return result
+
+
+def add_favorite_study_case(study_case_id, user_id):
+    """
+      create and save a new favorite study case for a user
+        :param: study_case_id, id of the study_case
+        :type: integer
+        :param: user_id, user that did add a favorite study
+        :type: integer
+
+    """
+
+    favorite_study = UserStudyFavorite.query.filter(
+            and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+
+    # Creation of a favorite study
+    if favorite_study is None:
+        new_favorite_study = UserStudyFavorite()
+        new_favorite_study.study_case_id = study_case_id
+        new_favorite_study.user_id = user_id
+        db.session.add(new_favorite_study)
+        db.session.commit()
+
+        return new_favorite_study
+
+    else:
+        study_case = StudyCase.query.filter(
+            and_(StudyCase.id == study_case_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+        raise Exception(f'The study "{study_case.name}" is already in your favorite studies')
+
+
+def remove_favorite_study_case(study_case_id, user_id):
+    """
+      remove a favorite study case for a user
+        :param: study_case_id, id of the study_case
+        :type: integer
+        :param: user_id, user that did add a favorite study
+        :type: integer
+
+    """
+    favorite_study = UserStudyFavorite.query.filter(
+        and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+
+    if favorite_study is not None:
+        try:
+            db.session.delete(favorite_study)
+            db.session.commit()
+
+        except Exception as ex:
+            db.session.rollback()
+            raise ex
+    else:
+        raise Exception(f'You cannot remove a study that is not in your favorite study')
