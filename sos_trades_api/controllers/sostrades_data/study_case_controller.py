@@ -44,7 +44,10 @@ def get_user_shared_study_case(user_id):
 
     result = []
     study_case_access = StudyCaseAccess(user_id)
+
     all_user_studies = study_case_access.user_study_cases
+    all_user_studies = sorted(
+        all_user_studies, key=lambda res: res.creation_date, reverse=True)
 
     if len(all_user_studies) > 0:
         # Apply Ontology
@@ -76,8 +79,8 @@ def get_user_shared_study_case(user_id):
             sc.apply_ontology(process_metadata, repository_metadata)
             result.append(sc)
 
-        result = sorted(
-            result, key=lambda res: res.isFavorite, reverse=True)
+            result = sorted(
+                result, key=lambda res: res.isFavorite, reverse=True)
 
     return result
 
