@@ -530,7 +530,7 @@ class Notification(db.Model):
     created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
         """
         return {
             'id': self.id,
@@ -696,7 +696,7 @@ class StudyCaseExecutionLog(db.Model):
     exception = Column(Text, index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -728,7 +728,7 @@ class StudyCaseValidation(db.Model):
     validation_user_department = Column(String(64), index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -800,7 +800,7 @@ class ReferenceStudyExecutionLog(db.Model):
     exception = Column(Text, index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -810,4 +810,29 @@ class ReferenceStudyExecutionLog(db.Model):
             'created': self.created,
             'message': self.message,
             'exception': self.exception
+        }
+
+
+class Link(db.Model):
+
+    """Link class"""
+
+    id = Column(Integer, primary_key=True)
+    url = Column(String(512), index=True, nullable=False)
+    label = Column(String(32), index=False, nullable=False)
+    description = Column(String(32), index=False, nullable=False)
+    user_id = Column(Integer, ForeignKey(f'{User.__tablename__}.id', name='fk_link_user_id'), nullable=True)
+    last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'id': self.id,
+            'url': self.url,
+            'label': self.label,
+            'description': self.description,
+            'user_id': self.user_id,
+            'last_modified': self.last_modified
         }
