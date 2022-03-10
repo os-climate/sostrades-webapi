@@ -21,7 +21,7 @@ def upgrade():
     op.create_table('link',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('url', sa.String(length=512), nullable=False),
-    sa.Column('label', sa.String(length=32), nullable=False),
+    sa.Column('label', sa.String(length=64), nullable=False),
     sa.Column('description', sa.String(length=300), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('last_modified', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),

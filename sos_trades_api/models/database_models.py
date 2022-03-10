@@ -819,8 +819,8 @@ class Link(db.Model):
 
     id = Column(Integer, primary_key=True)
     url = Column(String(512), index=True, nullable=False)
-    label = Column(String(32), index=False, nullable=False)
-    description = Column(String(32), index=False, nullable=False)
+    label = Column(String(64), index=False, nullable=False)
+    description = Column(String(300), index=False, nullable=False)
     user_id = Column(Integer, ForeignKey(f'{User.__tablename__}.id', name='fk_link_user_id'), nullable=True)
     last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
