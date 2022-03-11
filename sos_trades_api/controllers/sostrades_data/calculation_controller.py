@@ -24,7 +24,6 @@ import logging
 from datetime import datetime, timezone
 import os
 import signal
-from sqlalchemy import or_
 import threading
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
 from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, \
@@ -117,7 +116,7 @@ def execute_calculation(study_id, username):
 
         config = Config()
 
-        if config.execution_strategy == 'thread':
+        if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
 
             # Enable logging on execution
             study.add_execution_identifier = True
@@ -141,7 +140,7 @@ def execute_calculation(study_id, username):
 
             exec_thread = ExecutionEngineThread(study, execution_logger)
             exec_thread.start()
-        elif config.execution_strategy == 'subprocess':
+        elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_SUBPROCESS:
             log_file = study.raw_log_file_path_absolute()
             exec_subprocess = ExecutionEngineSubprocess(study.study.current_execution_id, log_file)
             pid = exec_subprocess.run()
@@ -149,7 +148,7 @@ def execute_calculation(study_id, username):
             new_study_case_execution.process_identifier = pid
             db.session.add(new_study_case_execution)
             db.session.commit()
-        elif config.execution_strategy == 'kubernetes':
+        elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             log_file = study.raw_log_file_path_relative()
             exec_kubernetes = ExecutionEngineKubernetes()
             pod_name = exec_kubernetes.run(study.study, log_file)
