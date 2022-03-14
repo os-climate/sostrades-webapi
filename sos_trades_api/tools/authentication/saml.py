@@ -97,6 +97,7 @@ def manage_saml_assertion(flask_request):
 
         user_infos = User()
         user_infos.username = request_user_identifier
+        user_infos.account_source = User.IDP_ACCOUNT
 
         user_infos.firstname = request_user_attributes[SSO_FIRST_NAME]
         user_infos.lastname = request_user_attributes[SSO_LAST_NAME]

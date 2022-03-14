@@ -111,7 +111,8 @@ class User(UserMixin, db.Model):
             'lastname': self.lastname,
             'userprofile': self.user_profile_id,
             'email': self.email,
-            'department': self.department
+            'department': self.department,
+            'internal_account': self.account_source == User.LOCAL_ACCOUNT
         }
 
 

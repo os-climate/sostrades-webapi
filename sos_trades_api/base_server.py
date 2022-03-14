@@ -163,6 +163,7 @@ def database_process_setup():
 
     return database_initialized
 
+
 def database_create_admin_user():
     '''
         Set initial data into db:
@@ -172,6 +173,7 @@ def database_create_admin_user():
     '''
     from sos_trades_api.controllers.sostrades_data.user_controller import create_administrator_account
     create_administrator_account()
+
 
 def database_create_standard_user(username, email, firstname, lastname):
     '''
@@ -200,6 +202,7 @@ def database_reset_user_password(username):
 
     reset_local_user_password_by_name(username)
 
+
 def database_rename_applicative_group(new_group_name):
     '''
         rename a group from old_group_name to new_group_name
@@ -207,6 +210,51 @@ def database_rename_applicative_group(new_group_name):
     from sos_trades_api.controllers.sostrades_data.group_controller import rename_applicative_group
 
     rename_applicative_group(new_group_name)
+
+
+def database_change_user_profile(username, new_profile=None):
+    """
+        Update a user profile
+    :param username: user identifier
+    :param new_profile: profile name to set (if not set then remove user profile)
+    """
+    from sos_trades_api.models.database_models import User, UserProfile
+
+    with app.app_context():
+        try:
+            # Retrieve user account
+            user = User.query.filter(User.username == username).first()
+
+            if user is None:
+                raise Exception(f'User {username} not found')
+
+            # Get old user profile for logging purpose"
+            old_user_profile = UserProfile.query.filter(UserProfile.id == user.user_profile_id).first()
+            old_user_profile_name = None
+            if old_user_profile is not None:
+                old_user_profile_name = old_user_profile.name
+
+            # Get information's about new profile
+            new_profile_id = None
+            if new_profile is not None:
+                new_user_profile = UserProfile.query.filter(UserProfile.name == new_profile).first()
+                if new_user_profile is None:
+                    raise Exception(f'Profile {new_profile} not found')
+                else:
+                    new_profile_id = new_user_profile.id
+
+            # Update the user if changed is required
+            if not user.user_profile_id == new_profile_id:
+                user.user_profile_id = new_profile_id
+                db.session.add(user)
+                db.session.commit()
+                app.logger.info(f'User {username} profile changed from {old_user_profile_name} to {new_profile}')
+            else:
+                app.logger.info(f'Profile already up-to-date')
+
+        except:
+            app.logger.exception(
+                'An error occurs during database setup')
 
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
@@ -276,12 +324,29 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         database_rename_applicative_group(new_name)
 
+
+    @click.command('change_user_profile')
+    @click.argument('username')
+    @click.option('-p', '--profile', type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER]), default=None)
+    @with_appcontext
+    def change_user_profile(username, profile):
+        """ update user profile
+        :param:username, the identification name of the user
+        :param:profile, profile value , 'Study user', 'Study manager' or nothing to set no profile
+        """
+
+        app.logger.setLevel(0)
+        if profile is None or len(profile) == 0:
+            profile = None
+        database_change_user_profile(username, profile)
+
     app.cli.add_command(init_process)
     app.cli.add_command(create_admin_user)
     app.cli.add_command(create_standard_user)
     app.cli.add_command(rename_applicative_group)
     app.cli.add_command(reset_admin_password)
     app.cli.add_command(reset_standard_user_password)
+    app.cli.add_command(change_user_profile)
 
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):
