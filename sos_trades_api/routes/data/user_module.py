@@ -72,10 +72,13 @@ def create_user():
     return resp
 
 
-@app.route(f'/api/data/user', methods=['PUT'])
+@app.route(f'/api/data/user/<int:user_identifier>', methods=['POST'])
 @auth_required
 @study_manager_profile
-def update_user():
+def update_user(user_identifier):
+
+    if user_identifier is None or user_identifier <= 0:
+        raise BadRequest(f'Invalid argument value for user_identifier.\nReceived {user_identifier}, expected stricly positive integer')
 
     # Proceeding after rights verification
     user_id_updated = request.json.get('id', None)
@@ -100,6 +103,9 @@ def update_user():
 
     if len(missing_parameter) > 0:
         raise BadRequest('\n'.join(missing_parameter))
+
+    if not user_id_updated == user_identifier:
+        raise BadRequest('Invalid payload identifier regard url parameter')
 
     new_profile, mail_send = update_user_controller(
         user_id_updated, firstname, lastname, username, email, user_profile_id)

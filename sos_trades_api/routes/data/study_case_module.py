@@ -21,7 +21,7 @@ from sos_trades_api.models.database_models import AccessRights, StudyCase
 from sos_trades_api.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    get_change_file_stream, discipline_icon_mapping, get_user_shared_study_case, get_logs, get_raw_logs,
+    get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, get_study_of_favorite_study_by_user,
     add_favorite_study_case, remove_favorite_study_case)
@@ -123,13 +123,6 @@ def get_user_authorized_process_studies():
     resp = make_response(
         jsonify(get_user_authorised_studies_for_process(user.id, process_name, repository_name)), 200)
     return resp
-
-
-@app.route(f'/api/data/study-case/icon-mapping', methods=['get'])
-@auth_required
-def get_discipline_icon_mapping():
-    return make_response(
-        jsonify(discipline_icon_mapping()), 200)
 
 
 @app.route(f'/api/data/study-case/logs/download', methods=['POST'])

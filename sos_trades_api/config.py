@@ -43,8 +43,6 @@ class Config():
     #
     # FLASK CONFIGURATION SECTION END
 
-    CONFIG_FILENAME = 'sos_trades_config.yaml'
-
     # Environment configuration variable names
     CONFIG_DATA_ROOT_DIR_ENV_VAR = "SOS_TRADES_DATA"
     CONFIG_REFERENCE_ROOT_DIR_ENV_VAR = "SOS_TRADES_REFERENCES"
@@ -61,8 +59,6 @@ class Config():
         """Constructor
         """
 
-#         self.repository_list = ['dev']
-        self.icon_mapping = {}
         self.__server_config_file = {}
 
         self.__data_root_dir = ''
@@ -94,15 +90,6 @@ class Config():
         self.eeb_path = self.CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR
         self.rsa_root_dir_env_var = self.CONFIG_RSA_ROOT_DIR_ENV_VAR
         self.data_root_dir_env_var = self.CONFIG_DATA_ROOT_DIR_ENV_VAR
-
-        filepath = join(BASEDIR, Config.CONFIG_FILENAME)
-        if Path(filepath).is_file():
-            with open(filepath) as file:
-                config_data = yaml.safe_load(file)
-                self.icon_mapping = config_data['icon-mapping']
-        else:
-            raise Exception(
-                f'Application configuration file {Config.CONFIG_FILENAME} not found')
 
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
