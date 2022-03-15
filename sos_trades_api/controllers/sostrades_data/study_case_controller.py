@@ -191,13 +191,6 @@ def get_user_authorised_studies_for_process(user_id, process_name, repository_na
     return result
 
 
-def discipline_icon_mapping():
-    """"
-        Return icon_mapping
-    """
-    return Config().icon_mapping
-
-
 def get_logs(study_id=None):
     """"
         Retrieve a study case execution logs, write them in a file, return the filename
