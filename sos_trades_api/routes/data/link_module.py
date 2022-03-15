@@ -72,7 +72,7 @@ def create():
     return resp
 
 
-@app.route(f'/api/data/link/<int:link_identifier>', methods=['PUT'])
+@app.route(f'/api/data/link/<int:link_identifier>', methods=['POST'])
 @auth_required
 def update_link_by_id(link_identifier):
     """
