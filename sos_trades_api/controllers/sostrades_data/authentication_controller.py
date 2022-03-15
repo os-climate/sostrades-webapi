@@ -89,6 +89,7 @@ def authenticate_user_standard(username, password):
     if user:
 
         user, is_new_user = manage_user(user, app.logger)
+        email = user.email
 
         if is_new_user:
             mail_send = send_new_user_mail(user)
@@ -96,8 +97,8 @@ def authenticate_user_standard(username, password):
         app.logger.info(f'"{username}" successfully logged (with LDAP)')
 
         return (
-            create_access_token(identity=user.email),
-            create_refresh_token(identity=user.email),
+            create_access_token(identity=email),
+            create_refresh_token(identity=email),
             is_new_user,
             mail_send
         )

@@ -64,20 +64,22 @@ def get_authenticated_user():
     """
     identity = get_jwt_identity()
 
-    users = User.query.filter_by(email=identity)
+    with app.app_context():
+        users = User.query.filter_by(email=identity)
 
-    if users is not None and users.count() > 0:
-        user = users.first()
+        if users is not None and users.count() > 0:
+            user = users.first()
+            db.session.expunge(user)
 
-        if user.is_logged:
-            if user.reset_uuid is not None and user.account_source == User.LOCAL_ACCOUNT:
-                raise PasswordResetRequested()
+            if user.is_logged:
+                if user.reset_uuid is not None and user.account_source == User.LOCAL_ACCOUNT:
+                    raise PasswordResetRequested()
+                else:
+                    return user
             else:
-                return user
-        else:
-            raise AccessDenied(identity)
+                raise AccessDenied(identity)
 
-    raise UserNotFound(identity)
+        raise UserNotFound(identity)
 
 
 def auth_required(func):
