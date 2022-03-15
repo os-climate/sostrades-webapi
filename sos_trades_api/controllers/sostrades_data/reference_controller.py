@@ -19,7 +19,7 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
-from sos_trades_api.base_server import db, app, PRODUCTION, ENVIRONMENT
+from sos_trades_api.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -28,6 +28,7 @@ from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_pods_status
+from sos_trades_api.config import Config
 
 
 def get_all_references(user_id, logger):
@@ -117,7 +118,7 @@ def get_reference_generation_status(ref_gen_id):
     if ref_generation is not None:
         result = ref_generation
         # Get pod status
-        if app.config[ENVIRONMENT] == PRODUCTION:
+        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             pod_status = kubernetes_service_pods_status(
                 ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
         else:

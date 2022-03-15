@@ -340,10 +340,13 @@ class Config():
         :return string (sql alchemy full uri)
         :raise ValueError exception
         """
-        if len(self.__sql_alchemy_full_uri) == 0:
-            ssl_str = '?ssl=true' if self.sql_alchemy_database_ssl is True else ''
 
-            self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{ssl_str}'
+        # Add charset to have unicode 7 support from mysql
+        uri_suffix = '?charset=utf8mb4'
+        if len(self.__sql_alchemy_full_uri) == 0:
+            uri_suffix = f'{uri_suffix}&ssl=true' if self.sql_alchemy_database_ssl is True else ''
+
+            self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}'
         return self.__sql_alchemy_full_uri
 
     @property

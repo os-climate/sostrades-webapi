@@ -17,10 +17,11 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Reference Functions
 """
-from sos_trades_api.base_server import db, app, PRODUCTION, ENVIRONMENT
+from sos_trades_api.base_server import db
 from sos_trades_api.models.database_models import ReferenceStudy
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_generate
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
+from sos_trades_api.config import Config
 
 
 def generate_reference(repository_name, process_name, usecase_name, user_id):
@@ -58,7 +59,7 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         db.session.add(gen_ref_status)
         db.session.commit()
-        if app.config[ENVIRONMENT] == PRODUCTION:
+        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             # Launch pod whom generate the ref
             pod_name = kubernetes_service_generate(
                 reference_path, gen_ref_status.id, user_id)
