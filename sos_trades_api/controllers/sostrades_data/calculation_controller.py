@@ -70,6 +70,8 @@ def execute_calculation(study_id, username):
     try:
         calculation_semaphore.acquire()
 
+        config = Config()
+
         # Retrieve StudyCase object to get current execution and check
         # its status
         study_case = StudyCase.query.filter(
@@ -113,8 +115,6 @@ def execute_calculation(study_id, username):
 
         # Create backup file if it does not exists
         study.study_case_manager_save_backup_files()
-
-        config = Config()
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
 
