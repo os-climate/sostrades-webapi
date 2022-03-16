@@ -127,8 +127,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             # Create user and group
             created_group = create_group(
                 self.test_user_id, self.group_name, self.group_description, self.group_confidential)
-            created_user = add_user(self.firstname, self.lastname, self.username,
-                                    self.password, self.email, self.user_profile_id)
+            created_user, password_link = add_user(self.firstname, self.lastname, self.username,
+                                                   self.password, self.email, self.user_profile_id)
             # Give membership right to created user to created group
             member_rights = AccessRights.query.filter(
                 AccessRights.access_right == AccessRights.MEMBER).first()

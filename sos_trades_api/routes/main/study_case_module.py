@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, abort, jsonify, make_response, send_file
+from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest
 import json
@@ -31,8 +31,8 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 @auth_required
 def study_cases():
     if request.method == 'POST':
-        app.logger.info(get_authenticated_user())
-        user = get_authenticated_user()
+        user = session['user']
+
         name = request.json.get('name', None)
         repository = request.json.get('repository', None)
         process = request.json.get('process', None)
@@ -64,8 +64,7 @@ def study_cases():
             user.id, name, repository, process, group_id, reference, from_type)), 200)
         return resp
     else:
-        app.logger.info(get_authenticated_user())
-        user = get_authenticated_user()
+        user = session['user']
         studies = request.json.get('studies')
 
         if studies is not None:
@@ -94,7 +93,7 @@ def load_study_case_by_id(study_id):
     if study_id is not None:
 
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
@@ -121,7 +120,7 @@ def load_study_case_by_id(study_id):
 def copy_study_case_by_id(study_id):
 
     if study_id is not None:
-        user = get_authenticated_user()
+        user = session['user']
 
         new_name = request.json.get('new_name', None)
         group_id = request.json.get('group_id', None)
@@ -135,8 +134,6 @@ def copy_study_case_by_id(study_id):
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
 
-        # Checking if user can access study data
-        user = get_authenticated_user()
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
@@ -157,8 +154,7 @@ def copy_study_case_by_id(study_id):
 def update_study_parameters_by_study_case_id(study_id):
 
     if study_id is not None:
-        # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
@@ -201,8 +197,7 @@ def update_study_parameters_by_study_case_id(study_id):
 def get_study_parameter_file_by_study_case_id(study_id):
     if study_id is not None:
 
-        # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
@@ -226,8 +221,7 @@ def get_study_parameter_file_by_study_case_id(study_id):
 @auth_required
 def get_study_data_file_by_study_case_id(study_id):
     if study_id is not None:
-        # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
@@ -245,8 +239,7 @@ def get_study_data_file_by_study_case_id(study_id):
 def copy_study_discipline_data_by_study_case_id(study_id):
 
     if study_id is not None:
-        # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
@@ -280,8 +273,7 @@ def copy_study_discipline_data_by_study_case_id(study_id):
 def reload_study_discipline_data_by_study_case_id(study_id):
     if study_id is not None:
 
-        # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)

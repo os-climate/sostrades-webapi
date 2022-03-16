@@ -25,6 +25,7 @@ from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGrou
 
 APP_MODULE_ADMIN = 'ADMIN'
 APP_MODULE_STUDY = 'STUDY'
+APP_MODULE_STUDY_MANAGER = 'STUDY_MANAGER'
 
 
 def get_applicative_module(user_profile_id):
@@ -45,7 +46,7 @@ def get_applicative_module(user_profile_id):
         if profile.name == UserProfile.ADMIN_PROFILE:
             result = [APP_MODULE_ADMIN]
         if profile.name == UserProfile.STUDY_MANAGER:
-            result = [APP_MODULE_STUDY]
+            result = [APP_MODULE_STUDY, APP_MODULE_STUDY_MANAGER]
         elif profile.name == UserProfile.STUDY_USER:
             result = [APP_MODULE_STUDY]
 
@@ -73,7 +74,7 @@ def has_access_to(user_profile_id, applicative_module):
         if profile.name == UserProfile.ADMIN_PROFILE:
             result = applicative_module == APP_MODULE_ADMIN
         if profile.name == UserProfile.STUDY_MANAGER:
-            result = applicative_module == APP_MODULE_ADMIN or applicative_module == APP_MODULE_STUDY
+            result = applicative_module == APP_MODULE_STUDY_MANAGER or applicative_module == APP_MODULE_STUDY
         elif profile.name == UserProfile.STUDY_USER:
             result = applicative_module == APP_MODULE_STUDY
 

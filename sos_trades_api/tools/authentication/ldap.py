@@ -89,6 +89,7 @@ def check_credentials(username, password):
     user_infos.email = 'n/a'
     user_infos.department = 'n/a'
     user_infos.company = 'n/a'
+    user_infos.account_source = User.IDP_ACCOUNT
 
     try:
         if LDAP_GIVEN_NAME in result[0][1]:

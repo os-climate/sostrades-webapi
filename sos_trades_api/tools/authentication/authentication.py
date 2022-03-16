@@ -20,12 +20,14 @@ Authentication tooling function
 from datetime import datetime, timezone
 from flask_jwt_extended import get_jwt_identity
 from functools import wraps
-from flask import abort
+from flask import abort, session
 from flask_jwt_extended import verify_jwt_in_request,verify_jwt_refresh_token_in_request
 from jwt.exceptions import InvalidSignatureError
 from sos_trades_api.base_server import db, app
 from sos_trades_api.models.database_models import User, Group, AccessRights, GroupAccessUser, UserProfile
-
+from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.tools.right_management import access_right
+from werkzeug.exceptions import BadRequest, Unauthorized
 
 class AuthenticationError(Exception):
     """Base Authentication Exception"""
@@ -62,20 +64,22 @@ def get_authenticated_user():
     """
     identity = get_jwt_identity()
 
-    users = User.query.filter_by(email=identity)
+    with app.app_context():
+        users = User.query.filter_by(email=identity)
 
-    if users is not None and users.count() > 0:
-        user = users.first()
+        if users is not None and users.count() > 0:
+            user = users.first()
+            db.session.expunge(user)
 
-        if user.is_logged:
-            if user.reset_uuid is not None and user.account_source == User.LOCAL_ACCOUNT:
-                raise PasswordResetRequested()
+            if user.is_logged:
+                if user.reset_uuid is not None and user.account_source == User.LOCAL_ACCOUNT:
+                    raise PasswordResetRequested()
+                else:
+                    return user
             else:
-                return user
-        else:
-            raise AccessDenied(identity)
+                raise AccessDenied(identity)
 
-    raise UserNotFound(identity)
+        raise UserNotFound(identity)
 
 
 def auth_required(func):
@@ -86,8 +90,34 @@ def auth_required(func):
     def wrapper(*args, **kwargs):
         try:
             verify_jwt_in_request()
-            get_authenticated_user()
+            user = get_authenticated_user()
+            session['user'] = user
             return func(*args, **kwargs)
+        except (UserNotFound, AccountInactive, AccessDenied, InvalidSignatureError) as error:
+            app.logger.error('authorization failed: %s', error)
+            abort(403)
+    return wrapper
+
+
+def study_manager_profile(func):
+    """
+    View decorator - require valid access token
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+
+            if 'user' not in session:
+                message = 'Authorization failed: user not authenticated'
+                app.logger.error(message)
+                raise AccessDenied(message)
+
+            user = session['user']
+            if has_access_to(user.user_profile_id, access_right.APP_MODULE_STUDY_MANAGER):
+                return func(*args, **kwargs)
+            else:
+                raise Unauthorized(
+                    'You are not allowed to access this resource')
         except (UserNotFound, AccountInactive, AccessDenied, InvalidSignatureError) as error:
             app.logger.error('authorization failed: %s', error)
             abort(403)
@@ -126,7 +156,7 @@ def manage_user(user, logger):
     :return: tuple (database user object, new inserted user or not)
     """
 
-    newUser = False
+    new_user = False
 
     # - Check if the user is known in database
     users = User.query.filter_by(email=user.email)
@@ -171,7 +201,7 @@ def manage_user(user, logger):
                 f'Default group ({Group.ALL_USERS_GROUP}) not found, user "{user.email}" has not been assigned with a default group')
 
         # - Add user in database
-        newUser = True
+        new_user = True
         db.session.add(user)
 
         if group_access_user is not None:
@@ -180,14 +210,16 @@ def manage_user(user, logger):
                 f'User {user.email} added to database into {Group.ALL_USERS_GROUP} group')
 
     else:
+
         temp_department = user.department
         temp_company = user.company
         user = users.first()
         user.department = temp_department
         user.company = temp_company
-        user.last_login_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
+    user.last_login_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
     user.is_logged = True
+
     db.session.commit()
 
-    return user, newUser
+    return user, new_user
