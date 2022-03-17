@@ -17,7 +17,8 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Authentication tooling function
 """
-from datetime import datetime, timezone
+from datetime import datetime
+import pytz
 from flask_jwt_extended import get_jwt_identity
 from functools import wraps
 from flask import abort, session
@@ -28,7 +29,6 @@ from sos_trades_api.models.database_models import User, Group, AccessRights, Gro
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
 from werkzeug.exceptions import BadRequest, Unauthorized
-
 class AuthenticationError(Exception):
     """Base Authentication Exception"""
 
@@ -140,48 +140,57 @@ def auth_refresh_required(func):
     return wrapper
 
 
-def manage_user(user, logger):
+def manage_user(logged_user, logger):
     """
     Method that check the user given as parameter and apply action regarding:
     - if user is existing in database
     - apply some default right regarding user department
 
-    :params: user, user to manager
+    :params: logged_user, logged user to manage
     :type: sos_trades_api.models.database_models.User
 
-    :params: logger, logger instance to use to log message (this one is given as argument to avoir circular import)
+    :params: logger, logger instance to use to log message (this one is given as argument to avoid circular import)
     :type: Logger
 
 
     :return: tuple (database user object, new inserted user or not)
     """
 
-    new_user = False
+    is_new = False
+    managed_user = None
 
     # - Check if the user is known in database
-    users = User.query.filter_by(email=user.email)
+    users = User.query.filter_by(email=logged_user.email)
 
     if users is not None and users.count() == 0:
 
         # In this case the user does not exist in database, by default a new user will be created
         # with a default profile and a default group
 
+        managed_user = User()
+        managed_user.init_from_user(logged_user)
+
         # Retrieve user profile : "Study user"
         study_profile = UserProfile.query.filter(
             UserProfile.name == UserProfile.STUDY_USER).first()
 
         if study_profile is not None:
-            user.user_profile_id = study_profile.id
-            db.session.add(user)
+            managed_user.user_profile_id = study_profile.id
         else:
             logger.error(
-                f'Default user profile ({UserProfile.STUDY_USER}) not found, user "{user.email}" has not been assigned with a default profile')
+                f'Default user profile ({UserProfile.STUDY_USER}) not found, user "{managed_user.email}" has not been assigned with a default profile')
 
+        # User is basically created, so commit in database
+       #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.is_logged = True
+        db.session.add(managed_user)
+        db.session.flush()
+
+        # Next manage user default group access
         # Retrieve group 'All users'
         all_users_group = Group.query.filter(
             Group.name == Group.ALL_USERS_GROUP).first()
 
-        group_access_user = None
         if all_users_group is not None:
 
             member_right = AccessRights.query.filter(
@@ -190,36 +199,35 @@ def manage_user(user, logger):
             if member_right is not None:
                 group_access_user = GroupAccessUser()
                 group_access_user.group_id = all_users_group.id
-                group_access_user.user_id = user.id
+                group_access_user.user_id = managed_user.id
                 group_access_user.right_id = member_right.id
+                db.session.add(group_access_user)
+                db.session.commit()
+                logger.info(
+                    f'User {managed_user.email} added to database into {Group.ALL_USERS_GROUP} group')
 
             else:
                 logger.error(
-                    f'Default access right ({AccessRights.MEMBER}) not found, user "{user.email}" has not been assigned with a default access right')
+                    f'Default access right ({AccessRights.MEMBER}) not found, user "{managed_user.email}" has not been assigned with a default access right')
         else:
             logger.error(
-                f'Default group ({Group.ALL_USERS_GROUP}) not found, user "{user.email}" has not been assigned with a default group')
+                f'Default group ({Group.ALL_USERS_GROUP}) not found, user "{managed_user.email}" has not been assigned with a default group')
 
-        # - Add user in database
-        new_user = True
-        db.session.add(user)
-
-        if group_access_user is not None:
-            db.session.add(group_access_user)
-            logger.info(
-                f'User {user.email} added to database into {Group.ALL_USERS_GROUP} group')
+        is_new = True
 
     else:
 
-        temp_department = user.department
-        temp_company = user.company
-        user = users.first()
-        user.department = temp_department
-        user.company = temp_company
+        temp_department = logged_user.department
+        temp_company = logged_user.company
+        managed_user = users.first()
+        managed_user.department = temp_department
+        managed_user.company = temp_company
 
-    user.last_login_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
-    user.is_logged = True
+        # Update user state (and information from previous else block if needed)
+        #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.is_logged = True
 
-    db.session.commit()
+        db.session.add(managed_user)
+        db.session.commit()
 
-    return user, new_user
+    return managed_user, is_new
