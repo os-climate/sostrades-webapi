@@ -88,8 +88,8 @@ def authenticate_user_standard(username, password):
 
     if user:
 
-        user, is_new_user = manage_user(user, app.logger)
         email = user.email
+        user, is_new_user = manage_user(user, app.logger)
 
         if is_new_user:
             mail_send = send_new_user_mail(user)
@@ -119,8 +119,6 @@ def authenticate_user_saml(flask_request):
     :return: tuple (access_token, refresh_token, url to redirect authentication)
 
     """
-    is_new_user = False
-    user = None
 
     try:
         saml_user, return_url = manage_saml_assertion(flask_request)
@@ -130,13 +128,14 @@ def authenticate_user_saml(flask_request):
 
     if saml_user:
 
+        email = saml_user.email
         user, is_new_user = manage_user(saml_user, app.logger)
 
         if is_new_user:
             send_new_user_mail(user)
 
-        access_token = create_access_token(identity=user.email)
-        refresh_token = create_refresh_token(identity=user.email)
+        access_token = create_access_token(identity=email)
+        refresh_token = create_refresh_token(identity=email)
 
         app.logger.info(f'"{user.username}" successfully logged (with SAML)')
 

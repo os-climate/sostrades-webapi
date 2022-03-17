@@ -17,13 +17,14 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Database models
 """
-import os
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, UniqueConstraint, LargeBinary
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
 from sos_trades_api.base_server import db
+from datetime import datetime
+import pytz
 
 
 class UserProfile(db.Model):
@@ -81,8 +82,30 @@ class User(UserMixin, db.Model):
                              nullable=True)
     reset_uuid = Column(String(length=36), nullable=True)
     account_source = Column(String(length=64), nullable=False, server_default=LOCAL_ACCOUNT)
-    last_login_date = Column(DateTime(timezone=True), server_default=func.now())
-    last_password_reset_date = Column(DateTime(timezone=True), server_default=func.now())
+    last_login_date = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
+    last_password_reset_date = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
+
+    def init_from_user(self, user):
+        """
+        Iniitialize current user instance using another without
+        :param user: user to copy data
+        """
+
+        if user is not None:
+            self.id = user.id
+            self.username = user.username
+            self.firstname = user.firstname
+            self.lastname = user.lastname
+            self.email = user.email
+            self.department = user.department
+            self.company = user.company
+            self.password_hash = user.password_hash
+            self.is_logged = user.is_logged
+            self.user_profile_id = user.user_profile_id
+            self.reset_uuid = user.reset_uuid
+            self.account_source = user.account_source
+            self.last_login_date = user.last_login_date
+            self.last_password_reset_date = user.last_password_reset_date
 
     def __repr__(self):
         """ Overload of the class representation
@@ -104,6 +127,7 @@ class User(UserMixin, db.Model):
     def serialize(self):
         """ json serializer for dto purpose
         """
+        print(self.last_login_date)
         return {
             'id': self.id,
             'username': self.username,
@@ -112,7 +136,8 @@ class User(UserMixin, db.Model):
             'userprofile': self.user_profile_id,
             'email': self.email,
             'department': self.department,
-            'internal_account': self.account_source == User.LOCAL_ACCOUNT
+            'internal_account': self.account_source == User.LOCAL_ACCOUNT,
+            'last_login_date': self.last_login_date
         }
 
 
