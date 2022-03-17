@@ -221,5 +221,5 @@ def plotly_render(study_id: int):
         "study_id": study_id,
         "graphs": graphs,
     }
-    return render_template("test.html", data=payload)
+    return render_template("plot.html", data=payload)
 
