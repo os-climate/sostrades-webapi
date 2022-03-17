@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plotly title</title>
+</head>
+<body>
+    <h1>Chart for {{data.study_id}} - study case.</h1>
+
+        {% for discipline_name, discipline_values in data.graphs.items() %}
+            <p>Discipline: {{discipline_name}}</p>
+            {% for index, graphs in discipline_values.items() %}
+                <p>For post_processings n°{{index}}</p>
+                {% for graph in graphs %}
+                    <p>{{graph|safe}}</p>
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+</body>
+</html>

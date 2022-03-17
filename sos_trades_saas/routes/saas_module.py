@@ -16,7 +16,8 @@ limitations under the License.
 '''
 
 import time
-from flask import request, make_response, jsonify, abort
+import plotly.graph_objects as go
+from flask import request, make_response, jsonify, abort, render_template
 
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
@@ -53,6 +54,7 @@ def login():
 
 from sos_trades_saas.controller.saas_module_controller import filter_tree_node_data, filter_children_data
 
+from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 
 from sos_trades_api.base_server import app, study_case_cache
 from sos_trades_saas.tools.credentials import restricted_viewer_required
@@ -147,7 +149,7 @@ def load_study(study_id: int, timeout: int = 30):
                 else:
                     break
 
-            loaded_study = load_study_case(study_id, study_access_right, user.id)
+            loaded_study = load_study_case(study_id, study_access_right, 2)
 
             tree_node = loaded_study.treenode
             # TODO pas robuste si treenode vide
@@ -178,4 +180,46 @@ def monitor_study_execution(study_id: int):
 
     except Exception as e:
         abort(400, str(e))
+
+
+@app.route(f'/saas/plot/<int:study_id>', methods=['GET'])
+@auth_required
+def plotly_render(study_id: int):
+    user = get_authenticated_user()
+    study_case_access = StudyCaseAccess(user.id)
+    study_access_right = study_case_access.get_user_right_for_study(study_id)
+
+    if not study_access_right.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+        abort(400, f'Invalid access rights to render study case {study_id}')
+
+    study_manager = light_load_study_case(study_id)
+
+    post_processing_factory = PostProcessingFactory()
+
+    complete_post_process = post_processing_factory.get_all_post_processings(
+        study_manager.execution_engine,
+        as_json=True,
+        filters_only=False)
+
+    graphs = {}
+    for discipline_name, discipline_values in complete_post_process.items():
+
+        graphs[discipline_name] = {}
+
+        for index, discipline_value in enumerate(discipline_values):
+
+            post_processings = discipline_value.post_processings
+            figs = []
+
+            for post_processing in post_processings:
+                fig = go.Figure(post_processing)
+                figs.append(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+
+            graphs[discipline_name].update({str(index): figs})
+
+    payload = {
+        "study_id": study_id,
+        "graphs": graphs,
+    }
+    return render_template("test.html", data=payload)
 
