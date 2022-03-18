@@ -10,7 +10,7 @@
         {% for discipline_name, discipline_values in data.graphs.items() %}
             <p>Discipline: {{discipline_name}}</p>
             {% for index, graphs in discipline_values.items() %}
-                <p>For post_processings n°{{index}}</p>
+                <p>For post_processings {{index}}</p>
                 {% for graph in graphs %}
                     <p>{{graph|safe}}</p>
                 {% endfor %}

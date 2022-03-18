@@ -15,7 +15,7 @@ limitations under the License.
 '''
 # Set server name
 import os
-os.environ['SERVER_NAME'] = 'SAAS_SERVER'
+os.environ['SERVER_NAME'] = 'API_V0_SERVER'
 
 from sos_trades_api import base_server
 
@@ -23,4 +23,8 @@ app = base_server.app
 db = base_server.db
 
 # load & register APIs
-from sos_trades_saas.routes import *
+from sos_trades_api.routes.api_v0 import *
+
+# load & register templates
+app.template_folder = "../sos_trades_api/templates/api_v0"
+
