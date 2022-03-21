@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest, Unauthorized
 
 from sos_trades_api.base_server import app
@@ -50,7 +50,7 @@ def create():
     Create a new Link in database
     """
 
-    user = get_authenticated_user()
+    user = session['user']
     url = request.json.get('url', None)
     label = request.json.get('label', None)
     description = request.json.get('description', None)
@@ -80,7 +80,7 @@ def update_link_by_id(link_identifier):
     :param link_identifier: link identifier to retrieve
     """
 
-    user = get_authenticated_user()
+    user = session['user']
 
     if link_identifier is None or link_identifier <= 0:
         raise BadRequest(f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer')
