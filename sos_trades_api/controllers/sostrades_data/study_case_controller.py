@@ -317,11 +317,18 @@ def get_study_of_favorite_study_by_user(user_id):
     """
 
     result = []
-    user_favorite_studies = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-
-    for favorite in user_favorite_studies:
-        study = StudyCase.query.filter(StudyCase.id == favorite.study_case_id).first()
-        result.append(study)
+    study_case_access = StudyCaseAccess(user_id)
+    all_user_studies = study_case_access.user_study_cases
+    all_user_studies = sorted(
+        all_user_studies, key=lambda res: res.creation_date, reverse=True)
+    for user_study in all_user_studies:
+        # Get all favorite studies by user
+        user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
+        # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
+        for study in user_favorite_study:
+            if study.study_case_id == user_study.id:
+                user_study.isFavorite = True
+                result.append(user_study)
 
     return result
 

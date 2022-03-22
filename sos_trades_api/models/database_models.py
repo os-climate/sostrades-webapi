@@ -136,8 +136,7 @@ class User(UserMixin, db.Model):
             'userprofile': self.user_profile_id,
             'email': self.email,
             'department': self.department,
-            'internal_account': self.account_source == User.LOCAL_ACCOUNT,
-            'last_login_date': self.last_login_date
+            'internal_account': self.account_source == User.LOCAL_ACCOUNT
         }
 
 
