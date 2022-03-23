@@ -5,12 +5,12 @@
     <title>Plotly title</title>
 </head>
 <body>
-    <h1>Chart for {{data.study_id}} - study case.</h1>
+    <h1>Chart for study case {{data.study_id}}</h1>
 
-        {% for discipline_name, discipline_values in data.graphs.items() %}
-            <p>Discipline: {{discipline_name}}</p>
-            {% for index, graphs in discipline_values.items() %}
-                <p>For post_processings {{index}}</p>
+        {% for discipline_name, discipline_values in data.graphs_dict.items() %}
+            <h3>Discipline: {{discipline_name}}</h3>
+            {% for graphs in discipline_values %}
+                <h5>For post_processing {{loop.index0}}</h5>
                 {% for graph in graphs %}
                     <p>{{graph|safe}}</p>
                 {% endfor %}

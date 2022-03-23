@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Copyright 2022 Airbus SAS
 
@@ -13,22 +14,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-# Set server name
-import os
-os.environ['SERVER_NAME'] = 'API_V0_SERVER'
 
-from sos_trades_api import base_server, __file__
+from typing import Dict
 
-app = base_server.app
-db = base_server.db
 
-# register templates
-app.template_folder = os.path.join(
-    os.path.dirname(__file__),
-    "templates",
-    "api_v0"
-)
+def flatten_tree_node(tree_node: Dict) -> Dict:
+    """
+    Recursively flatten a loaded study tree node
 
-# load & register APIs
-from sos_trades_api.routes.api_v0 import *
+    :param tree_node: tree node with 'data' and 'children' keys
+    :type: dict
 
+    :return: {disc: disc_values} flatten tree node
+    :rtype: dict
+    """
+    flattened_tree_node = tree_node.get("data", {})
+
+    for child in tree_node.get("children", []):
+        flattened_tree_node.update(flatten_tree_node(child))
+
+    return flattened_tree_node
