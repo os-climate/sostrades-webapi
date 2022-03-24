@@ -135,7 +135,6 @@ def update_study_parameters_by_study_case_id(study_id: int):
                 parameter_json["namespace"], parameter_json["var_name"] = tuple(parameter_json.get("variableId").rsplit('.', 1))
                 parameters_to_save.append(parameter_json)
 
-        print(files_info)
         resp = update_study_parameters(study_id, get_authenticated_user(), files, files_info, parameters_to_save)
         return make_response(jsonify(resp), 200)
 
