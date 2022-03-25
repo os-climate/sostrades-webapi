@@ -22,6 +22,7 @@ tools methods to manage behaviour around StudyCase
 
 import traceback
 import sys
+from time import time
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.database_models import StudyCase, \
     ReferenceStudy, StudyCaseExecutionLog, ReferenceStudyExecutionLog
@@ -99,6 +100,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
     """
     from sos_trades_api.base_server import app
     try:
+        start_time = time()
         sleep()
         app.logger.info(
             f'Loading in background {study_case_manager.study.name}')
@@ -106,22 +108,31 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
         study_case_manager.loaded = False
 
         study_case_manager.load_data(display_treeview=False)
+        load_data_time = time()
 
         study_case_manager.load_disciplines_data()
+        load_discipline_data_time = time()
 
         study_case_manager.execution_engine.dm.treeview = None
 
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
+        treeview_generation_time = time()
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
+        study_case_manager.n2_diagram = generate_n2_matrix(study_case_manager)
+        n2_diagram_time = time()
 
-        study_case_manager.n2_diagram = n2_diagram
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
         app.logger.info(
-            f'End background loading {study_case_manager.study.name}')
+            f'End background loading {study_case_manager.study.name}, total time {n2_diagram_time - start_time} seconds')
+        app.logger.info(f'Elapsed time synthesis:\n')
+        app.logger.info(f'Data load {load_data_time - start_time} seconds\n')
+        app.logger.info(f'Discipline data load {load_discipline_data_time - load_data_time} seconds\n')
+        app.logger.info(f'treeview gen. {treeview_generation_time - load_discipline_data_time} seconds\n')
+        app.logger.info(f'n2 gen. {n2_diagram_time - treeview_generation_time} seconds')
+
     except Exception as ex:
         study_case_manager.loaded = False
         study_case_manager.load_in_progress = False
