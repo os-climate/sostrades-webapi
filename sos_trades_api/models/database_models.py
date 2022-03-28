@@ -29,7 +29,6 @@ import pytz
 
 class UserProfile(db.Model):
 
-    ADMIN_PROFILE = 'Administrator'
     STUDY_USER = 'Study user'
     STUDY_MANAGER = 'Study manager'
 
@@ -55,9 +54,6 @@ class UserProfile(db.Model):
 
 
 class User(UserMixin, db.Model):
-
-    APPLICATIVE_ACCOUNT_NAME = 'Administrator'
-    APPLICATIVE_ACCOUNT_EMAIL = f'{APPLICATIVE_ACCOUNT_NAME}@sostrades.com'
 
     STANDARD_USER_ACCOUNT_NAME = 'user_test'
     STANDARD_USER_ACCOUNT_EMAIL = f'{STANDARD_USER_ACCOUNT_NAME}@sostrades.com'

@@ -183,7 +183,7 @@ def manage_user(logged_user, logger):
                 f'Default user profile ({UserProfile.STUDY_USER}) not found, user "{managed_user.email}" has not been assigned with a default profile')
 
         # User is basically created, so commit in database
-       #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
         managed_user.is_logged = True
         db.session.add(managed_user)
         db.session.flush()
@@ -226,7 +226,7 @@ def manage_user(logged_user, logger):
         managed_user.company = temp_company
 
         # Update user state (and information from previous else block if needed)
-        #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
         managed_user.is_logged = True
 
         db.session.add(managed_user)

@@ -76,15 +76,6 @@ flask db init_process
 ```
 All the process will be associated to the default applicative group named "SoSTrades_Dev".
 
-#### Database create administrator account
-If you want to create an administrator account, with manager rights:
-
-```bash
-flask db create_admin_user
-```
-The user created will be associated with 'Administrator' as username and 'Administrator@sostrades.com' as email address.
-The password will be stored on the local server for the user to retrieve it.
-
 #### Database create standard account
 If you want to create a local standard user account:
 
@@ -92,14 +83,6 @@ If you want to create a local standard user account:
 flask db create_standard_user username email firstname lastname
 ```
 the username, email firstname and lastname arguments should be filled with the user information.
-
-#### Database reset administrator password
-If you want to reset the password of the administrator user
-
-```bash
-flask db reset_admin_password
-```
-The updated password will be saved in a file on the local server.
 
 #### Database reset user password
 If you want to reset the password of a user
