@@ -5,16 +5,23 @@
     <title>Plotly title</title>
 </head>
 <body>
-    <h1>Chart for study case {{data.study_id}}</h1>
-
-        {% for discipline_name, discipline_values in data.graphs_dict.items() %}
-            <h3>Discipline: {{discipline_name}}</h3>
+    <div id="main_title" style="text-align: center;">
+        <h1>Chart for study case {{data.study_name}} - {{data.study_id}}</h1>
+    </div>
+    {% for discipline_name, discipline_values in data.graphs_dict.items() %}
+        <div class="discipline_title" style="text-align: center;">
+            <h3>{{discipline_name}}</h3>
+        </div>
+        <div class="discipline_graphs" style="display: flex; flex-wrap: wrap;  justify-content: center;">
             {% for graphs in discipline_values %}
-                <h5>For post_processing {{loop.index0}}</h5>
                 {% for graph in graphs %}
-                    <p>{{graph|safe}}</p>
+                    <div class="graph" style="flex: 1 2 500px;">
+                    {{graph|safe}}
+                    </div>
                 {% endfor %}
             {% endfor %}
-        {% endfor %}
+
+        </div>
+    {% endfor %}
 </body>
 </html>
