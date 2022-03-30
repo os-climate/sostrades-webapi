@@ -86,7 +86,7 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/parameter', methods=['POST'])
+@app.route(f'/api/v0/study-case/<int:study_id>/parameters', methods=['POST'])
 @auth_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def update_study_parameters_by_study_case_id(study_id: int):
@@ -142,7 +142,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/parameter/<parameter>/download', methods=['GET'])
+@app.route(f'/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
 @auth_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_parameter_file_by_study_case_id(study_id: int, parameter: str):
@@ -150,6 +150,11 @@ def get_study_parameter_file_by_study_case_id(study_id: int, parameter: str):
     Return fileIO for study parameter
     """
     try:
+        if request.json is None:
+            abort(400, "'parameter_key' not found in request")
+
+        parameter = request.json.get('parameter_key')
+
         light_load_study_case(study_id)
 
         return send_file(get_file_stream(study_id, parameter),
