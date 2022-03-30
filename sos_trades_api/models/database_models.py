@@ -17,13 +17,14 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Database models
 """
-import os
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, UniqueConstraint, LargeBinary
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
 from sos_trades_api.base_server import db
+from datetime import datetime
+import pytz
 
 
 class UserProfile(db.Model):
@@ -81,8 +82,30 @@ class User(UserMixin, db.Model):
                              nullable=True)
     reset_uuid = Column(String(length=36), nullable=True)
     account_source = Column(String(length=64), nullable=False, server_default=LOCAL_ACCOUNT)
-    last_login_date = Column(DateTime(timezone=True), server_default=func.now())
-    last_password_reset_date = Column(DateTime(timezone=True), server_default=func.now())
+    last_login_date = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
+    last_password_reset_date = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
+
+    def init_from_user(self, user):
+        """
+        Iniitialize current user instance using another without
+        :param user: user to copy data
+        """
+
+        if user is not None:
+            self.id = user.id
+            self.username = user.username
+            self.firstname = user.firstname
+            self.lastname = user.lastname
+            self.email = user.email
+            self.department = user.department
+            self.company = user.company
+            self.password_hash = user.password_hash
+            self.is_logged = user.is_logged
+            self.user_profile_id = user.user_profile_id
+            self.reset_uuid = user.reset_uuid
+            self.account_source = user.account_source
+            self.last_login_date = user.last_login_date
+            self.last_password_reset_date = user.last_password_reset_date
 
     def __repr__(self):
         """ Overload of the class representation
@@ -104,6 +127,7 @@ class User(UserMixin, db.Model):
     def serialize(self):
         """ json serializer for dto purpose
         """
+        print(self.last_login_date)
         return {
             'id': self.id,
             'username': self.username,
@@ -111,7 +135,8 @@ class User(UserMixin, db.Model):
             'lastname': self.lastname,
             'userprofile': self.user_profile_id,
             'email': self.email,
-            'department': self.department
+            'department': self.department,
+            'internal_account': self.account_source == User.LOCAL_ACCOUNT
         }
 
 
@@ -237,6 +262,33 @@ class UserStudyPreference(db.Model):
             'user_id': self.user_id,
             'study_case_id': self.study_case_id,
             'preference': self.preference
+        }
+
+
+class UserStudyFavorite(db.Model):
+    """UserStudyFavorite class"""
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer,
+                     ForeignKey(
+                         f'{User.__tablename__}.id',
+                         ondelete="CASCADE",
+                         name='fk_user_study_favorite_user_id'),
+                     nullable=False)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f'{StudyCase.__tablename__}.id',
+                               ondelete="CASCADE",
+                               name='fk_user_study_favorite_study_case_id'),
+                           nullable=False)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'study_case_id': self.study_case_id,
         }
 
 
@@ -503,7 +555,7 @@ class Notification(db.Model):
     created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
         """
         return {
             'id': self.id,
@@ -669,7 +721,7 @@ class StudyCaseExecutionLog(db.Model):
     exception = Column(Text, index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -701,7 +753,7 @@ class StudyCaseValidation(db.Model):
     validation_user_department = Column(String(64), index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -773,7 +825,7 @@ class ReferenceStudyExecutionLog(db.Model):
     exception = Column(Text, index=False, unique=False)
 
     def serialize(self):
-        """ json serilizer for dto purpose
+        """ json serializer for dto purpose
             datamanager attribute is not serialize because is is intended to be only server side data
         """
 
@@ -783,4 +835,29 @@ class ReferenceStudyExecutionLog(db.Model):
             'created': self.created,
             'message': self.message,
             'exception': self.exception
+        }
+
+
+class Link(db.Model):
+
+    """Link class"""
+
+    id = Column(Integer, primary_key=True)
+    url = Column(String(512), index=True, nullable=False)
+    label = Column(String(64), index=False, nullable=False)
+    description = Column(String(300), index=False, nullable=False)
+    user_id = Column(Integer, ForeignKey(f'{User.__tablename__}.id', name='fk_link_user_id'), nullable=True)
+    last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'id': self.id,
+            'url': self.url,
+            'label': self.label,
+            'description': self.description,
+            'user_id': self.user_id,
+            'last_modified': self.last_modified
         }

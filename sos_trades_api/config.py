@@ -43,12 +43,15 @@ class Config():
     #
     # FLASK CONFIGURATION SECTION END
 
-    CONFIG_FILENAME = 'sos_trades_config.yaml'
-
     # Environment configuration variable names
     CONFIG_DATA_ROOT_DIR_ENV_VAR = "SOS_TRADES_DATA"
     CONFIG_REFERENCE_ROOT_DIR_ENV_VAR = "SOS_TRADES_REFERENCES"
     CONFIG_EXECUTION_STRATEGY_ENV_VAR = "SOS_TRADES_EXECUTION_STRATEGY"  # for values : 'subprocess', 'kubernetes'
+
+    CONFIG_EXECUTION_STRATEGY_THREAD = 'thread'
+    CONFIG_EXECUTION_STRATEGY_SUBPROCESS = 'subprocess'
+    CONFIG_EXECUTION_STRATEGY_K8S = 'kubernetes'
+
     CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR = "EEB_PATH"
     CONFIG_RSA_ROOT_DIR_ENV_VAR = "SOS_TRADES_RSA"
 
@@ -56,14 +59,14 @@ class Config():
         """Constructor
         """
 
-#         self.repository_list = ['dev']
-        self.icon_mapping = {}
         self.__server_config_file = {}
 
         self.__data_root_dir = ''
         self.__reference_root_dir = ''
 
-        self.__available_strategies = ['thread', 'subprocess', 'kubernetes']
+        self.__available_strategies = [Config.CONFIG_EXECUTION_STRATEGY_THREAD,
+                                       Config.CONFIG_EXECUTION_STRATEGY_SUBPROCESS,
+                                       Config.CONFIG_EXECUTION_STRATEGY_K8S]
         self.__execution_strategy = ''
 
         self.__eeb_configuration_filepath = ''
@@ -88,21 +91,12 @@ class Config():
         self.rsa_root_dir_env_var = self.CONFIG_RSA_ROOT_DIR_ENV_VAR
         self.data_root_dir_env_var = self.CONFIG_DATA_ROOT_DIR_ENV_VAR
 
-        filepath = join(BASEDIR, Config.CONFIG_FILENAME)
-        if Path(filepath).is_file():
-            with open(filepath) as file:
-                config_data = yaml.safe_load(file)
-                self.icon_mapping = config_data['icon-mapping']
-        else:
-            raise Exception(
-                f'Application configuration file {Config.CONFIG_FILENAME} not found')
-
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
                 self.__server_config_file = json.load(server_conf_file)
         else:
             raise Exception(
-                f'Ennvironment variable "SOS_TRADES_SERVER_CONFIGURATION" not found')
+                f'Environment variable "SOS_TRADES_SERVER_CONFIGURATION" not found')
 
     def check(self):
         """ Make a check on mandatory parameter to make sure configuration is correct
@@ -110,12 +104,19 @@ class Config():
         information to initialize
         """
         # pylint: disable=unused-variable
+
+        # -------------------------------------------------------------------
+        # This first section check all mandatory data needs to run the server
         data_root_dir = self.data_root_dir
         reference_root_dir = self.reference_root_dir
-        execution_strategy = self.execution_strategy
-        eeb_filepath = self.eeb_filepath
         rsa_public_key_file = self.rsa_public_key_file
         rsa_private_key_file = self.rsa_private_key_file
+
+        # Execution strategy is mandatory. If kubernetes is chosen then check
+        # if calculation manifest is available
+        if self.execution_strategy is Config.CONFIG_EXECUTION_STRATEGY_K8S:
+            eeb_filepath = self.eeb_filepath
+
         # pylint: enable=unused-variable
 
     @property
@@ -326,10 +327,13 @@ class Config():
         :return string (sql alchemy full uri)
         :raise ValueError exception
         """
-        if len(self.__sql_alchemy_full_uri) == 0:
-            ssl_str = '?ssl=true' if self.sql_alchemy_database_ssl is True else ''
 
-            self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{ssl_str}'
+        # Add charset to have unicode 7 support from mysql
+        uri_suffix = '?charset=utf8mb4'
+        if len(self.__sql_alchemy_full_uri) == 0:
+            uri_suffix = f'{uri_suffix}&ssl=true' if self.sql_alchemy_database_ssl is True else ''
+
+            self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}'
         return self.__sql_alchemy_full_uri
 
     @property

@@ -13,17 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, abort, jsonify, make_response, send_file
+from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.models.database_models import AccessRights
+from sos_trades_api.models.database_models import AccessRights, StudyCase
 from sos_trades_api.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    get_change_file_stream, discipline_icon_mapping, get_user_shared_study_case, get_logs, get_raw_logs,
+    get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
-    save_study_case_preference, set_user_authorized_execution)
+    save_study_case_preference, set_user_authorized_execution, get_study_of_favorite_study_by_user,
+    add_favorite_study_case, remove_favorite_study_case)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
@@ -45,7 +46,7 @@ def get_study_parameter_change_file_by_study_case_id(study_id):
     if study_id is not None:
 
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
@@ -76,7 +77,7 @@ def check_study_case_access_right(study_id):
     if study_id is not None:
 
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
@@ -92,7 +93,7 @@ def check_study_case_access_right(study_id):
 def study_case_notifications(study_id):
     if request.method == 'GET':
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to get study notifications
         # (Commenter)
         study_case_access = StudyCaseAccess(user.id)
@@ -109,8 +110,8 @@ def study_case_notifications(study_id):
 @app.route(f'/api/data/study-case/process', methods=['POST'])
 @auth_required
 def get_user_authorized_process_studies():
-    user = get_authenticated_user()
-
+    # Checking if user can access study data
+    user = session['user']
     repository_name = request.json.get('repository_name', None)
     process_name = request.json.get('process_name', None)
 
@@ -124,17 +125,10 @@ def get_user_authorized_process_studies():
     return resp
 
 
-@app.route(f'/api/data/study-case/icon-mapping', methods=['get'])
-@auth_required
-def get_discipline_icon_mapping():
-    return make_response(
-        jsonify(discipline_icon_mapping()), 200)
-
-
 @app.route(f'/api/data/study-case/logs/download', methods=['POST'])
 @auth_required
 def get_study_case_logs():
-    user = get_authenticated_user()
+
     study_id = request.json.get('studyid', None)
 
     if study_id is None:
@@ -151,7 +145,7 @@ def get_study_case_logs():
 @app.route(f'/api/data/study-case/raw-logs/download', methods=['POST'])
 @auth_required
 def get_study_case_raw_logs():
-    user = get_authenticated_user()
+
     study_id = request.json.get('studyid', None)
 
     if study_id is None:
@@ -168,11 +162,10 @@ def get_study_case_raw_logs():
 @app.route(f'/api/data/study-case/<int:study_id>/preference', methods=['GET', 'POST'])
 @auth_required
 def load_study_case_preference_by_id(study_id):
-
     if study_id is not None:
 
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
@@ -214,7 +207,7 @@ def load_study_case_preference_by_id(study_id):
 def update_user_authorized_for_execution(study_id):
     if study_id is not None:
         # Checking if user can access study data
-        user = get_authenticated_user()
+        user = session['user']
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
@@ -225,3 +218,34 @@ def update_user_authorized_for_execution(study_id):
         resp = make_response(jsonify(set_user_authorized_execution(study_id, user.id)), 200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
+@app.route(f'/api/data/study-case/favorite', methods=['GET', 'POST', 'DELETE'])
+@auth_required
+def favorite_study():
+
+    # Checking if user can access study data
+    user = session['user']
+    if request.method == 'GET':
+        resp = make_response(jsonify(get_study_of_favorite_study_by_user(user.id)), 200)
+        return resp
+
+    elif request.method == 'POST':
+
+        study_id = request.json.get('study_id', None)
+        if study_id is None:
+            raise BadRequest('Missing mandatory parameter: study_id')
+
+        add_favorite_study_case(study_id, user.id)
+        resp = make_response(jsonify('Study added in favorite study'), 200)
+
+        return resp
+
+    elif request.method == 'DELETE':
+        study_favorite_id = StudyCase.id
+        if study_favorite_id is None:
+            raise BadRequest('Missing mandatory parameter: study_id')
+
+        remove_favorite_study_case(study_favorite_id, user.id)
+        resp = make_response(jsonify('Study removed from favorite study'), 200)
+        return resp

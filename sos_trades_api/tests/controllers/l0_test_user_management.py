@@ -74,8 +74,8 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_data.user_controller import add_user
         from sos_trades_api.models.database_models import User
         with DatabaseUnitTestConfiguration.app.app_context():
-            created_user = add_user(self.firstname, self.lastname, self.username,
-                                    self.password, self.email, self.user_profile_id)
+            created_user, password_link = add_user(self.firstname, self.lastname, self.username,
+                                                   self.password, self.email, self.user_profile_id)
             created_user_from_db = User.query \
                 .filter(User.username == self.username).first()
             self.assertEqual(

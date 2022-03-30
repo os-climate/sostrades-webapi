@@ -130,7 +130,10 @@ def add_user(firstname, lastname, username, password, email, user_profile_id):
     db.session.add(new_user)
     db.session.commit()
 
-    return new_user
+    # Send an email for renewing password to user
+    password_link = reset_user_password(new_user.id)
+
+    return new_user, password_link
 
 
 def update_user(user_id, firstname, lastname, username, email, user_profile_id):
