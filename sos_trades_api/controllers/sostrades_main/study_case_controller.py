@@ -609,6 +609,25 @@ def get_study_data_stream(study_id):
     return zip_path
 
 
+def get_study_data_file_path(study_id) -> str:
+    """
+    Return file path where study has stored its data
+
+    :param study_id: id of the study to export
+    :type study_id: integer
+
+    """
+    study_manager = study_case_cache.get_study_case(study_id, False)
+
+    try:
+        data_file_path = study_manager.study_data_file_path()
+
+    except Exception as error:
+        raise InvalidFile(
+            f'The following study file raise this error while trying to read it : {error}')
+    return data_file_path
+
+
 def copy_study_discipline_data(study_id, discipline_from, discipline_to):
     """
         Copy discipline data from a discipline to another
