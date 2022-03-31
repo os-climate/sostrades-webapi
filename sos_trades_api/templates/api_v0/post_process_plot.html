@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plotly title</title>
+</head>
+<body>
+    <div id="main_title" style="text-align: center;">
+        <h1>Chart for study case {{data.study_name}} - {{data.study_id}}</h1>
+    </div>
+    {% for discipline_name, discipline_values in data.graphs_dict.items() %}
+        <div class="discipline_title" style="text-align: center;">
+            <h3>{{discipline_name}}</h3>
+        </div>
+        <div class="discipline_graphs" style="display: flex; flex-wrap: wrap;  justify-content: center;">
+            {% for graphs in discipline_values %}
+                {% for graph in graphs %}
+                    <div class="graph" style="flex: 1 2 500px;">
+                    {{graph|safe}}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+        </div>
+    {% endfor %}
+</body>
+</html>

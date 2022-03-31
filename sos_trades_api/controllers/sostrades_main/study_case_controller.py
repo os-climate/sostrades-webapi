@@ -233,26 +233,26 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     if study_manager.has_error:
         raise Exception(study_manager.error_message)
 
-    # TEMP USER_ID
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
 
-    process_metadata = load_processes_metadata(
-        [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
+    if study_manager.loaded is True and study_manager.load_in_progress is False:
+        process_metadata = load_processes_metadata(
+            [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
 
-    repository_metadata = load_repositories_metadata(
-        [loaded_study_case.study_case.repository])
+        repository_metadata = load_repositories_metadata(
+            [loaded_study_case.study_case.repository])
 
-    loaded_study_case.study_case.apply_ontology(
-        process_metadata, repository_metadata)
+        loaded_study_case.study_case.apply_ontology(
+            process_metadata, repository_metadata)
 
-    if study_access_right == AccessRights.MANAGER:
-        loaded_study_case.study_case.is_manager = True
-    elif study_access_right == AccessRights.CONTRIBUTOR:
-        loaded_study_case.study_case.is_contributor = True
-    elif study_access_right == AccessRights.COMMENTER:
-        loaded_study_case.study_case.is_commenter = True
-    else:
-        loaded_study_case.study_case.is_restricted_viewer = True
+        if study_access_right == AccessRights.MANAGER:
+            loaded_study_case.study_case.is_manager = True
+        elif study_access_right == AccessRights.CONTRIBUTOR:
+            loaded_study_case.study_case.is_contributor = True
+        elif study_access_right == AccessRights.COMMENTER:
+            loaded_study_case.study_case.is_commenter = True
+        else:
+            loaded_study_case.study_case.is_restricted_viewer = True
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
@@ -607,6 +607,25 @@ def get_study_data_stream(study_id):
         raise InvalidFile(
             f'The following study file raise this error while trying to read it : {error}')
     return zip_path
+
+
+def get_study_data_file_path(study_id) -> str:
+    """
+    Return file path where study has stored its data
+
+    :param study_id: id of the study to export
+    :type study_id: integer
+
+    """
+    study_manager = study_case_cache.get_study_case(study_id, False)
+
+    try:
+        data_file_path = study_manager.study_data_file_path
+
+    except Exception as error:
+        raise InvalidFile(
+            f'The following study file raise this error while trying to read it : {error}')
+    return data_file_path
 
 
 def copy_study_discipline_data(study_id, discipline_from, discipline_to):
