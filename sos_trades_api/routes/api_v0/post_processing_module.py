@@ -91,6 +91,7 @@ def get_post_processing_html(study_id: int):
 
         payload = {
             "study_id": study_id,
+            "study_name": study_manager.study.name,
             "graphs_dict": graphs_dict,
         }
         return render_template("post_process_plot.html", data=payload)

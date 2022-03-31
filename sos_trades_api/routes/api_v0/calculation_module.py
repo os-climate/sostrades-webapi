@@ -25,7 +25,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status, execute_calculation
 
 
-@app.route(f'/api/v0/calculation/execute/<int:study_id>', methods=['GET'])
+@app.route(f'/api/v0/calculation/execute/<int:study_id>', methods=['POST'])
 @auth_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def study_case_execution(study_id: int):
