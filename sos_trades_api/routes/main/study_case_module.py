@@ -229,14 +229,14 @@ def get_study_data_file_by_study_case_id(study_id):
                 'You do not have the necessary rights to retrieve this information about study case')
 
         # Proceeding after rights verification
-        file_path = get_study_data_file_path(study_id)
+        file_path = get_study_data_stream(study_id)
         return send_file(file_path)
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
 @app.route(f'/api/main/study-case/<int:study_id>/download/raw', methods=['POST'])
 @auth_required
-def get_study_data_file_by_study_case_id(study_id):
+def get_study_data_raw_file_by_study_case_id(study_id):
     if study_id is not None:
         user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
@@ -246,7 +246,7 @@ def get_study_data_file_by_study_case_id(study_id):
                 'You do not have the necessary rights to retrieve this information about study case')
 
         # Proceeding after rights verification
-        file_path = get_study_data_stream(study_id)
+        file_path = get_study_data_file_path(study_id)
         return send_file(file_path)
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
