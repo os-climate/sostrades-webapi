@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Authentication tooling function
@@ -181,7 +183,7 @@ def manage_user(logged_user, logger):
                 f'Default user profile ({UserProfile.STUDY_USER}) not found, user "{managed_user.email}" has not been assigned with a default profile')
 
         # User is basically created, so commit in database
-       #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
         managed_user.is_logged = True
         db.session.add(managed_user)
         db.session.flush()
@@ -224,10 +226,44 @@ def manage_user(logged_user, logger):
         managed_user.company = temp_company
 
         # Update user state (and information from previous else block if needed)
-        #managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
+        managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
         managed_user.is_logged = True
 
         db.session.add(managed_user)
         db.session.commit()
 
     return managed_user, is_new
+
+
+def has_user_access_right(access_right):
+    """
+    View decorator
+
+    Checks that authenticated user has wanted access right
+
+    :param access_right: access right to check
+    :type: AccessRights
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                study_id = kwargs.get("study_id")
+                if study_id is None:
+                    raise KeyError('You must have "study_id" parameter to check access right')
+
+                # Verify user has study case authorisation on study
+                study_case_access = StudyCaseAccess(get_authenticated_user().id)
+
+                if not study_case_access.check_user_right_for_study(access_right, study_id):
+                    raise AccessDenied('You do not have the necessary rights to access this study case')
+
+            except Exception as e:
+                abort(403, str(e))
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+

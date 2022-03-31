@@ -54,8 +54,6 @@ def authenticate_user_standard(username, password):
     if app.config['CREATE_STANDARD_USER_ACCOUNT'] is True:
         users_list.append(User.STANDARD_USER_ACCOUNT_NAME)
 
-    users_list.append(User.APPLICATIVE_ACCOUNT_NAME)
-
     try:
         no_ldap = ldap_available() is False
         is_builtin_user = username in users_list
