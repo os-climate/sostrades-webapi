@@ -123,7 +123,6 @@ class User(UserMixin, db.Model):
     def serialize(self):
         """ json serializer for dto purpose
         """
-        print(self.last_login_date)
         return {
             'id': self.id,
             'username': self.username,
