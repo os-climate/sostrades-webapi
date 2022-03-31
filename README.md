@@ -101,6 +101,20 @@ flask db rename_applicative_group new_name
 ```
 The new name of the applicative group will be passed in argument
 
+#### User profile changes
+If you want to change the profile of a user
+
+```bash
+flask change_user_profile <username> -p <profile>
+```
+This way is the only allowed to promote a user to "Study manager" profile which enable access to some monitoring 
+panels in the application.
+
+Profiles that can be set are "Study user" (default for all new user) and "Study manager".
+
+Profile argument is optional, if not set than the user profile will be set to "No profile" which disallow access to all
+application features.
+
 
 ## Server configuration
 ### configuration
