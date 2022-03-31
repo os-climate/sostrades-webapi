@@ -145,7 +145,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
 @app.route(f'/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
 @auth_required
 @has_user_access_right(AccessRights.COMMENTER)
-def get_study_parameter_file_by_study_case_id(study_id: int, parameter: str):
+def get_study_parameter_file_by_study_case_id(study_id: int):
     """
     Return fileIO for study parameter
     """
