@@ -54,7 +54,6 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             self.user_profile_id = 2
             # Set field to update
             self.new_email = 'mailhasbeenmodified@airbus.com'
-            self.admin_user_id = 1  # Admin has id 1
 
     def tearDown(self):
         super().tearDown()
@@ -120,21 +119,12 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
                 .filter(User.id == user_id).first()
             self.assertIsNone(deleted_user,
                               'User has not been deleted successfully')
-            # Ensure we can't delete admin user
-            try:
-                delete_user(self.admin_user_id)
-                raise Exception('Can delete admin.')
-            except:
-                pass
 
     def test_05_get_user_profile_list(self):
         from sos_trades_api.controllers.sostrades_data.user_controller import get_user_profile_list
-        from sos_trades_api.models.database_models import UserProfile
         with DatabaseUnitTestConfiguration.app.app_context():
             user_profile_list = get_user_profile_list()
             # Ensure the first one retrieved is not Admin profile and length is
             # >= 1
             self.assertNotEqual(len(user_profile_list), 0,
                                 'Empty profile list')
-            self.assertNotEqual(user_profile_list[0].name, UserProfile.ADMIN_PROFILE,
-                                'First profile retrieved is admin')

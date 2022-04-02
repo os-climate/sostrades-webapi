@@ -343,22 +343,25 @@ def add_favorite_study_case(study_case_id, user_id):
 
     """
 
-    favorite_study = UserStudyFavorite.query.filter(
-            and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+    favorite_study = UserStudyFavorite.query \
+        .filter(UserStudyFavorite.user_id == user_id) \
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
 
     # Creation of a favorite study
     if favorite_study is None:
         new_favorite_study = UserStudyFavorite()
         new_favorite_study.study_case_id = study_case_id
         new_favorite_study.user_id = user_id
+
         db.session.add(new_favorite_study)
         db.session.commit()
 
         return new_favorite_study
 
     else:
-        study_case = StudyCase.query.filter(
-            and_(StudyCase.id == study_case_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+        study_case = StudyCase.query\
+            .filter(StudyCase.id == study_case_id)\
+            .filter(UserStudyFavorite.study_case_id == study_case_id).first()
         raise Exception(f'The study "{study_case.name}" is already in your favorite studies')
 
 
@@ -371,8 +374,9 @@ def remove_favorite_study_case(study_case_id, user_id):
         :type: integer
 
     """
-    favorite_study = UserStudyFavorite.query.filter(
-        and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+    favorite_study = UserStudyFavorite.query\
+        .filter(UserStudyFavorite.user_id == user_id)\
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
 
     if favorite_study is not None:
         try:

@@ -71,7 +71,7 @@ def get_study_case_entities_rights(user_id, study_id):
             for study_access in study_cases_access_groups:
                 study_entity.add_access_db_object(study_access, user_id)
 
-        return clean_entity_rights_from_applicative_account(study_entity)
+        return study_entity
 
 
 def get_process_entities_rights(user_id, process_id):
@@ -99,7 +99,7 @@ def get_process_entities_rights(user_id, process_id):
             for process_access in processes_access_groups:
                 process_entity.add_access_db_object(process_access, user_id)
 
-        return clean_entity_rights_from_applicative_account(process_entity)
+        return process_entity
 
 
 def get_group_entities_rights(user_id, group_id):
@@ -110,7 +110,8 @@ def get_group_entities_rights(user_id, group_id):
     group_entity = GroupEntityRights(group_id=group_id)
 
     # Only group manager and owners can request this
-    if group.check_user_right_for_group(AccessRights.MANAGER, group_id=group_id) or group.check_user_right_for_group(AccessRights.OWNER, group_id=group_id):
+    if group.check_user_right_for_group(AccessRights.MANAGER, group_id=group_id) or group.check_user_right_for_group(
+            AccessRights.OWNER, group_id=group_id):
         with app.app_context():
 
             # Retrieve process access on user
@@ -127,7 +128,7 @@ def get_group_entities_rights(user_id, group_id):
             for group_access in group_access_groups:
                 group_entity.add_access_db_object(group_access, user_id)
 
-        return clean_entity_rights_from_applicative_account(group_entity)
+        return group_entity
 
 
 def verify_user_authorised_for_resource(user_id, entity_rights):
@@ -161,15 +162,3 @@ def verify_user_authorised_for_resource(user_id, entity_rights):
     elif entity_rights['resourceType'] == ResourceType.SOSDISCIPLINE:
         return True
 
-
-def clean_entity_rights_from_applicative_account(entityRights):
-    """
-    remove the applicative account from the rights
-    """
-    # Retrieve applicative account id
-    for ent in entityRights.entity.entities_rights:
-        if isinstance(ent.entity_object, User):
-            if ent.entity_object.username == User.APPLICATIVE_ACCOUNT_NAME:
-                entityRights.entity.entities_rights.remove(ent)
-
-    return entityRights

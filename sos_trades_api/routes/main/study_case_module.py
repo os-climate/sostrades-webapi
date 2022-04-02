@@ -19,10 +19,10 @@ from werkzeug.exceptions import BadRequest
 import json
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
+from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
-    update_study_parameters, get_study_data_stream, copy_study_case)
+    update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path)
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
@@ -230,6 +230,23 @@ def get_study_data_file_by_study_case_id(study_id):
 
         # Proceeding after rights verification
         file_path = get_study_data_stream(study_id)
+        return send_file(file_path)
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
+@app.route(f'/api/main/study-case/<int:study_id>/download/raw', methods=['POST'])
+@auth_required
+def get_study_data_raw_file_by_study_case_id(study_id):
+    if study_id is not None:
+        user = session['user']
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve this information about study case')
+
+        # Proceeding after rights verification
+        file_path = get_study_data_file_path(study_id)
         return send_file(file_path)
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 

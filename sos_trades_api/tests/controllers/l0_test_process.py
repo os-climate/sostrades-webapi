@@ -71,43 +71,18 @@ class TestProcess(DatabaseUnitTestConfiguration):
                     self.assertEqual(len(
                         loaded_process), 1, 'Process is not present or cannot be present more than once')
 
-    def test_applicative_account_process_in_database(self):
-        """ Check that all process found in database are accessible by the applicative account
-        """
-
-        with DatabaseUnitTestConfiguration.app.app_context():
-            from sos_trades_api.models.database_models import User, Process
-            applicative_account = User.query.filter(
-                User.username == User.APPLICATIVE_ACCOUNT_NAME).first()
-
-            from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_list
-            applicative_account_process = api_get_processes_list(
-                applicative_account.id)
-
-            # Check that administrator has access to all existing process in
-            # database
-            all_database_processes = Process.query.all()
-
-            self.assertEqual(len(applicative_account_process), len(all_database_processes),
-                             'Somme processes are not accessible by the application account')
-
-            disabled_process = Process.query\
-                .filter(Process.disabled == True).all()
-            self.assertEqual(len(disabled_process), 0,
-                             'Disabled process found in db, should have been deleted.')
-
     def test_standard_account_process_in_database(self):
-        """ Check that all process found in database are accessible by the applicative account
+        """ Check that all process found in database are accessible by the standard account
         """
 
         with DatabaseUnitTestConfiguration.app.app_context():
             from sos_trades_api.models.database_models import User
-            applicative_account = User.query.filter(
+            standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
 
             from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_list
-            applicative_account_process = api_get_processes_list(
-                applicative_account.id)
+            standard_account_process = api_get_processes_list(
+                standard_account.id)
 
-            self.assertEqual(len(applicative_account_process), 0,
+            self.assertEqual(len(standard_account_process), 0,
                              'Somme processes are accessible by the test account')

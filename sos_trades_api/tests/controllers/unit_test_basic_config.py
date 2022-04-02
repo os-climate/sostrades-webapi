@@ -141,11 +141,8 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
                 os.path.dirname(root_file)), 'migrations')
             upgrade(directory=migration_folder)
 
-            from sos_trades_api.controllers.sostrades_data.user_controller import create_test_user_account,\
-                create_administrator_account
-            create_administrator_account()
+            from sos_trades_api.controllers.sostrades_data.user_controller import create_test_user_account
             create_test_user_account()
-
 
     @classmethod
     def tearDownClass(cls):
