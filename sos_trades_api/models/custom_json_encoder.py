@@ -29,6 +29,7 @@ from sos_trades_core.tools.post_processing.tables.table_style import TableStyles
 from sos_trades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from sos_trades_core.tools.post_processing.tables.instanciated_table import InstanciatedTable
 from sos_trades_core.tools.post_processing.charts.two_axes_instanciated_chart import TwoAxesInstanciatedChart
+from sos_trades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import InstantiatedPlotlyNativeChart
 
 
 from sos_trades_api.models.loaded_group import LoadedGroup
@@ -135,6 +136,8 @@ class CustomJsonEncoder(JSONEncoder):
             return o.serialize()
         elif isinstance(o, PostProcessingBundle):
             return o.to_dict()
+        elif isinstance(o, InstantiatedPlotlyNativeChart):
+            return o.to_plotly_dict()
         elif isinstance(o, set):
             return list(o)
 
