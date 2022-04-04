@@ -81,10 +81,13 @@ def get_post_processing_html(study_id: int):
         for discipline_name, discipline_values in all_post_processing_bundle.items():
             discipline_figs = []
             for discipline_value in discipline_values:
-                post_processing_figs = [
-                    go.Figure(post_processing).to_html(full_html=False, include_plotlyjs='cdn')
-                    for post_processing in discipline_value.post_processings
-                ]
+                post_processing_figs = []
+                for post_processing in discipline_value.post_processings:
+                    try:
+                        post_processing_figs.append(go.Figure(post_processing).to_html(full_html=False, include_plotlyjs='cdn'))
+                    except Exception:
+                        app.logger.exception('Error on post processing to html')
+
                 discipline_figs.append(post_processing_figs)
 
             graphs_dict[discipline_name] = discipline_figs
