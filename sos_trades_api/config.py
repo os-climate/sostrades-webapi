@@ -444,6 +444,9 @@ class Config():
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 
+        # Key for Ontology grace period
+        flask_config_dict.update({"ONTOLOGY_GRACE_PERIOD": None})
+
         # Removing keys to retrieve environment variables
         del flask_config_dict['SQL_ALCHEMY_DATABASE']
         del flask_config_dict['SECRET_KEY_ENV_VAR']
