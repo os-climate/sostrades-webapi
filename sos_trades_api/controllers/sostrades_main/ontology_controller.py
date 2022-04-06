@@ -66,7 +66,7 @@ def set_ontology_grace_period():
     it allows to avoid multiple failed request and associated loss of performance
 
     """
-    grace_period = datetime.now() + timedelta(minutes=1)
+    grace_period = datetime.now() + timedelta(minutes=10)
     app.config["ONTOLOGY_GRACE_PERIOD"] = grace_period
     app.logger.exception(
         f'An exception occurs when trying to reach Ontology server, grace period has been set to {grace_period}')
