@@ -89,8 +89,8 @@ def get_change_file_stream(notification_id, parameter_key):
     """
     Get the File from a change notification parameter
     """
-    change = StudyCaseChange.query\
-        .filter(StudyCaseChange.notification_id == notification_id)\
+    change = StudyCaseChange.query \
+        .filter(StudyCaseChange.notification_id == notification_id) \
         .filter(StudyCaseChange.variable_id == parameter_key).first()
 
     if change is not None:
@@ -319,16 +319,43 @@ def get_study_of_favorite_study_by_user(user_id):
     result = []
     study_case_access = StudyCaseAccess(user_id)
     all_user_studies = study_case_access.user_study_cases
-    all_user_studies = sorted(
+    all_user_studies_sorted = sorted(
         all_user_studies, key=lambda res: res.creation_date, reverse=True)
-    for user_study in all_user_studies:
+
+    if len(all_user_studies_sorted) > 0:
         # Get all favorite studies by user
-        user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-        # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
-        for study in user_favorite_study:
-            if study.study_case_id == user_study.id:
-                user_study.isFavorite = True
-                result.append(user_study)
+        favorite_studies = []
+        # Apply Ontology
+        processes_metadata = []
+        repositories_metadata = []
+
+        for user_study in all_user_studies_sorted:
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
+            # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
+            for study in user_favorite_study:
+                if study.study_case_id == user_study.id:
+                    user_study.isFavorite = True
+
+            if user_study.isFavorite:
+                favorite_studies.append(user_study)
+
+            process_key = f'{user_study.repository}.{user_study.process}'
+
+            if process_key not in processes_metadata:
+                processes_metadata.append(process_key)
+
+            repository_key = user_study.repository
+
+            if repository_key not in repositories_metadata:
+                repositories_metadata.append(repository_key)
+
+        process_metadata = load_processes_metadata(processes_metadata)
+        repository_metadata = load_repositories_metadata(repositories_metadata)
+
+        all_user_studies_sorted = favorite_studies
+        for sc in all_user_studies_sorted:
+            sc.apply_ontology(process_metadata, repository_metadata)
+            result.append(sc)
 
     return result
 
@@ -359,10 +386,10 @@ def add_favorite_study_case(study_case_id, user_id):
         return new_favorite_study
 
     else:
-        study_case = StudyCase.query\
-            .filter(StudyCase.id == study_case_id)\
+        study_case = StudyCase.query \
+            .filter(StudyCase.id == study_case_id) \
             .filter(UserStudyFavorite.study_case_id == study_case_id).first()
-        raise Exception(f'The study "{study_case.name}" is already in your favorite studies')
+        raise Exception(f'The study - {study_case.name} - is already in your favorite studies')
 
 
 def remove_favorite_study_case(study_case_id, user_id):
@@ -374,8 +401,13 @@ def remove_favorite_study_case(study_case_id, user_id):
         :type: integer
 
     """
-    favorite_study = UserStudyFavorite.query\
-        .filter(UserStudyFavorite.user_id == user_id)\
+    # Get the study-case thanks to study_id into UserFavoriteStudy
+    study_case = StudyCase.query \
+        .filter(StudyCase.id == study_case_id) \
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+
+    favorite_study = UserStudyFavorite.query \
+        .filter(UserStudyFavorite.user_id == user_id) \
         .filter(UserStudyFavorite.study_case_id == study_case_id).first()
 
     if favorite_study is not None:
@@ -388,3 +420,5 @@ def remove_favorite_study_case(study_case_id, user_id):
             raise ex
     else:
         raise Exception(f'You cannot remove a study that is not in your favorite study')
+
+    return f'The study, {study_case.name}, has been removed from favorite study.'

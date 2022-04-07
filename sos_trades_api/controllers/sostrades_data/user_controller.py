@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 User Functions
@@ -80,6 +82,9 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
 
     :param email: unique (database side) email for a user
     :type email: str
+
+    :param default_group_id: user default group
+    :type default_group_id: int
 
     :param user_profile_id: user profile identifier
     :type user_profile_id: int
@@ -368,8 +373,8 @@ def create_test_user_account():
 
             db.session.commit()
 
-def create_standard_user_account(username, email, firstname, lastname):
 
+def create_standard_user_account(username, email, firstname, lastname):
     # Profile => study user
     study_user_profile = UserProfile.query.filter_by(
         name=UserProfile.STUDY_USER).first()
@@ -426,6 +431,7 @@ def create_standard_user_account(username, email, firstname, lastname):
 
             db.session.commit()
 
+
 def reset_local_user_password_by_name(username):
     '''
     Generate and save a new password for the user with the username = USERNAME
@@ -455,6 +461,7 @@ def reset_local_user_password_by_name(username):
 
         db.session.commit()
 
+
 def __set_password_in_secret_path(password, file_name, user_name):
     # Write password in a file to let platform installer
     # retrieve it
@@ -474,3 +481,42 @@ def __set_password_in_secret_path(password, file_name, user_name):
         f.close()
     print(
         f'{user_name} password created, password in {secret_filepath} file, delete it after copying it in a secret store')
+
+
+def set_user_default_group(group_id, user_id):
+    """
+        change a default group into user
+
+        :param user_id: user database primary key
+        :type user_id: int
+
+        :param group_id: user default group
+        :type group_id: int
+
+    """
+    user = db.session.query(User).filter(
+        User.id == user_id).first()
+
+    # Retrieve that corresponds to the default group
+    group = Group.query.filter(Group.id == group_id).first()
+
+    if user is not None:
+
+        if group is not None:
+
+            try:
+                user.default_group_id = group_id
+                db.session.add(user)
+                db.session.commit()
+
+            except Exception as ex:
+                db.session.rollback()
+                raise ex
+
+        else:
+            raise InvalidGroup(f'Group cannot be found in the database')
+
+    else:
+        raise InvalidUser(f'User cannot be found in the database')
+
+    return f'The default group id is: {user.default_group_id}'
