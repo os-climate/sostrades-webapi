@@ -28,7 +28,6 @@ import pytz
 
 
 class UserProfile(db.Model):
-
     STUDY_USER = 'Study user'
     STUDY_MANAGER = 'Study manager'
 
@@ -54,7 +53,6 @@ class UserProfile(db.Model):
 
 
 class User(UserMixin, db.Model):
-
     STANDARD_USER_ACCOUNT_NAME = 'user_test'
     STANDARD_USER_ACCOUNT_EMAIL = f'{STANDARD_USER_ACCOUNT_NAME}@sostrades.com'
 
@@ -76,6 +74,7 @@ class User(UserMixin, db.Model):
                              ForeignKey(f'{UserProfile.__tablename__}.id',
                                         name='fk_user_user_profile_id'),
                              nullable=True)
+    default_group_id = Column(Integer, nullable=True)
     reset_uuid = Column(String(length=36), nullable=True)
     account_source = Column(String(length=64), nullable=False, server_default=LOCAL_ACCOUNT)
     last_login_date = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
@@ -97,6 +96,7 @@ class User(UserMixin, db.Model):
             self.company = user.company
             self.password_hash = user.password_hash
             self.is_logged = user.is_logged
+            self.default_group_id = user.default_group_id
             self.user_profile_id = user.user_profile_id
             self.reset_uuid = user.reset_uuid
             self.account_source = user.account_source
@@ -131,12 +131,12 @@ class User(UserMixin, db.Model):
             'userprofile': self.user_profile_id,
             'email': self.email,
             'department': self.department,
+            'default_group_id': self.default_group_id,
             'internal_account': self.account_source == User.LOCAL_ACCOUNT
         }
 
 
 class Group(db.Model):
-
     ALL_USERS_GROUP = 'All users'
     ALL_USERS_GROUP_DESCRIPTION = 'Default group for all SoSTrades users'
 
@@ -288,7 +288,6 @@ class UserStudyFavorite(db.Model):
 
 
 class AccessRights(db.Model):
-
     MANAGER = 'Manager'
     CONTRIBUTOR = 'Contributor'
     COMMENTER = 'Commenter'
@@ -312,7 +311,6 @@ class AccessRights(db.Model):
 
 
 class GroupAccessUser(db.Model):
-
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer,
                       ForeignKey(
@@ -348,7 +346,6 @@ class GroupAccessUser(db.Model):
 
 
 class GroupAccessGroup(db.Model):
-
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer,
                       ForeignKey(
@@ -388,7 +385,7 @@ class GroupAccessGroup(db.Model):
 class ProcessAccessUser(db.Model):
     SOURCE_FILE = "FILE"
     SOURCE_USER = "USER"
-    
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer,
                      ForeignKey(
@@ -408,7 +405,7 @@ class ProcessAccessUser(db.Model):
                           ondelete="CASCADE",
                           name='fk_process_access_user_right_id'))
     source = Column(String(94), unique=False, server_default=SOURCE_USER)
-    
+
     __table_args__ = (
         UniqueConstraint('user_id', 'process_id'),
     )
@@ -421,7 +418,7 @@ class ProcessAccessUser(db.Model):
             'user_id': self.user_id,
             'process_id': self.process_id,
             'right_id': self.right_id,
-            'source':self.source,
+            'source': self.source,
         }
 
 
@@ -447,7 +444,7 @@ class ProcessAccessGroup(db.Model):
                           ondelete="CASCADE",
                           name='fk_process_access_group_right_id'))
     source = Column(String(94), unique=False, server_default=SOURCE_USER)
-    
+
     __table_args__ = (
         UniqueConstraint('group_id', 'process_id'),
     )
@@ -460,12 +457,11 @@ class ProcessAccessGroup(db.Model):
             'group_id': self.group_id,
             'process_id': self.process_id,
             'right_id': self.right_id,
-            'source':self.source,
+            'source': self.source,
         }
 
 
 class StudyCaseAccessUser(db.Model):
-
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer,
                      ForeignKey(
@@ -501,7 +497,6 @@ class StudyCaseAccessUser(db.Model):
 
 
 class StudyCaseAccessGroup(db.Model):
-
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer,
                       ForeignKey(
@@ -624,7 +619,6 @@ class StudyCoeditionUser(db.Model):
 
 
 class StudyCaseExecution(db.Model):
-
     PENDING = 'PENDING'
     RUNNING = 'RUNNING'
     FINISHED = 'FINISHED'
@@ -730,7 +724,6 @@ class StudyCaseExecutionLog(db.Model):
 
 
 class StudyCaseValidation(db.Model):
-
     VALIDATED = 'Validated'
     NOT_VALIDATED = 'Invalidated'
 
@@ -834,7 +827,6 @@ class ReferenceStudyExecutionLog(db.Model):
 
 
 class Link(db.Model):
-
     """Link class"""
 
     id = Column(Integer, primary_key=True)

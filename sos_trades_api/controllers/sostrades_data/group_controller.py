@@ -20,6 +20,7 @@ from shutil import rmtree
 
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
+
 class GroupError(Exception):
     """Base Group Exception"""
 
@@ -109,6 +110,7 @@ def create_group(user_id, name, description, confidential):
         raise InvalidGroup(
             f'Group creation raise the following error : {error}')
 
+
 def delete_group(group_id):
     """
     Delete a group from database
@@ -121,7 +123,14 @@ def delete_group(group_id):
 
     if query_group is not None:
 
-        #retrieve studies in this group
+        # Retrieve all users who have as default group, the group that will be deleted and set their default group at None
+        users_by_default_group_id = db.session.query(User).filter(
+            User.default_group_id == group_id).all()
+        if users_by_default_group_id is not None:
+            for user in users_by_default_group_id:
+                user.default_group_id = None
+
+        # retrieve studies in this group
         studycases_to_delete = StudyCase.query.filter(StudyCase.group_id == group_id).all()
         # Remove group from db
         db.session.delete(query_group)
@@ -135,12 +144,11 @@ def delete_group(group_id):
         folder = StudyCaseManager.get_root_study_data_folder(group_id)
         rmtree(folder, ignore_errors=True)
 
-
-
         return f'The group (identifier {group_id}) has been deleted in the database'
 
     raise InvalidGroup(
         f'The following group with group_id : {group_id}, cannot be found in database')
+
 
 def rename_applicative_group(new_group_name):
     """
@@ -162,4 +170,38 @@ def rename_applicative_group(new_group_name):
     if query_group is not None and query_new_group is None:
         query_group.name = new_group_name
         db.session.commit()
-        print (f'The group has been renamed into {new_group_name}')
+        print(f'The group has been renamed into {new_group_name}')
+
+
+def edit_group(group_id, name, description,user_id):
+    """
+        update a group from database
+
+        :params name: New name of the group
+        :type: string
+        :params description: New description of the group
+        :type: string
+        :params user_id: User that update this link
+        """
+    # Get db group object
+    group = Group.query.filter(Group.id == group_id).first()
+
+    if group is not None:
+
+        try:
+            group.name = name
+            group.description = description
+            db.session.commit()
+
+            app.logger.info(f'The user id: "{user_id}"has been successfully updated the group {group.id}')
+
+        except Exception as ex:
+            db.session.rollback()
+            raise ex
+
+    else:
+        raise InvalidGroup(f'Group cannot be found in the database')
+
+    return group
+
+
