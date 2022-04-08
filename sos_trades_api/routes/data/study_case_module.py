@@ -241,7 +241,7 @@ def favorite_study():
             .filter(UserStudyFavorite.study_case_id == study_id).first()
 
         resp = make_response(jsonify(
-            f'The study, id = {study_id} "{study_case.name}" , has been added in favorite study'), 200
+            f'The study, {study_case.name}, has been added in favorite study'), 200
         )
 
         return resp
@@ -253,17 +253,8 @@ def delete_favorite_study(study_id):
     # Checking if user can access study data
     user = session['user']
 
-    # Get the study-case thanks to study_id into UserFavoriteStudy
-    study_case = StudyCase.query \
-        .filter(StudyCase.id == study_id) \
-        .filter(UserStudyFavorite.study_case_id == study_id).first()
-
     if study_id is None:
         raise BadRequest('Missing mandatory parameter: study_id')
 
-    remove_favorite_study_case(study_id, user.id)
-
-    response = make_response(jsonify(
-        f'The study, id = {study_id} "{study_case.name}", has been removed from favorite study'), 200
-    )
+    response = make_response(jsonify(remove_favorite_study_case(study_id, user.id)), 200)
     return response

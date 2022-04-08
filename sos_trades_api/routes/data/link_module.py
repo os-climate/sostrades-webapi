@@ -83,7 +83,7 @@ def update_link_by_id(link_identifier):
     user = session['user']
 
     if link_identifier is None or link_identifier <= 0:
-        raise BadRequest(f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer')
+        raise BadRequest(f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected strictly positive integer')
 
     id = request.json.get('id', None)
     url = request.json.get('url', None)
