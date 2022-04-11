@@ -20,58 +20,59 @@ Class that represent a model status
 
 
 class ModelStatus:
-
     def __init__(self):
         self.id = None
         self.name = ''
-        self.description = ''
-        self.model_type = None
+        self.definition = ''
+        self.type = None
         self.source = None
-        self.delivered = False
-        self.implemented = False
-        self.last_publication_date = None
-        self.validator = None
+        self.last_modification_date = None
+        self.validated_by = None
         self.validated = None
-        self.discipline = None
+        self.code_repository = None
         self.processes_using_model = None
         self.processes_using_model_list = None
         self.inputs_parameters_quantity = None
         self.outputs_parameters_quantity = None
+        self.icon = None
+        self.version = None
+        self.category = None
 
     def serialize(self):
-        """ json serializer for dto purpose
-        """
+        """json serializer for dto purpose"""
         return {
             'id': self.id,
             'name': self.name,
-            'description': self.description,
-            'model_type': self.model_type,
+            'definition': self.definition,
+            'type': self.type,
             'source': self.source,
-            'delivered': self.delivered,
-            'implemented': self.implemented,
-            'last_publication_date': self.last_publication_date,
-            'validator': self.validator,
+            'last_modification_date': self.last_modification_date,
+            'validated_by': self.validated_by,
             'validated': self.validated,
-            'discipline': self.discipline,
+            'code_repository': self.code_repository,
             'processes_using_model': self.processes_using_model,
             'processes_using_model_list': self.processes_using_model_list,
             'inputs_parameters_quantity': self.inputs_parameters_quantity,
             'outputs_parameters_quantity': self.outputs_parameters_quantity,
+            'icon': self.icon,
+            'version': self.version,
+            'category': self.category,
         }
 
     def deserialize(self, json_dict):
         self.id = json_dict['id']
         self.name = json_dict['name']
-        self.description = json_dict['description']
-        self.model_type = json_dict['model_type']
+        self.definition = json_dict['definition']
+        self.type = json_dict['type']
         self.source = json_dict['source']
-        self.delivered = json_dict['delivered']
-        self.implemented = json_dict['implemented']
-        self.last_publication_date = json_dict['last_publication_date']
-        self.validator = json_dict['validator']
+        self.last_modification_date = json_dict['last_modification_date']
+        self.validated_by = json_dict['validated_by']
         self.validated = json_dict['validated']
-        self.discipline = json_dict['discipline']
+        self.code_repository = json_dict['code_repository']
         self.processes_using_model = json_dict['processes_using_model']
         self.processes_using_model_list = json_dict['processes_using_model_list']
         self.inputs_parameters_quantity = json_dict['inputs_parameters_quantity']
         self.outputs_parameters_quantity = json_dict['outputs_parameters_quantity']
+        self.icon = json_dict['icon']
+        self.version = json_dict['version']
+        self.category = json_dict['category']
