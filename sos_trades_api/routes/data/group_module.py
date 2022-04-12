@@ -94,7 +94,7 @@ def update_group(group_id):
         raise BadRequest(
             f'Invalid argument value for group_id.\nReceived {group_id}, expected strictly positive integer')
 
-    group_id = request.json.get('group_id', None)
+    group_id = request.json.get('id', None)
     name = request.json.get('name', None)
     description = request.json.get('description', None)
 

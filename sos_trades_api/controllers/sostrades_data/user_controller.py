@@ -518,5 +518,3 @@ def set_user_default_group(group_id, user_id):
 
     else:
         raise InvalidUser(f'User cannot be found in the database')
-
-    return f'The default group id is: {user.default_group_id}'
