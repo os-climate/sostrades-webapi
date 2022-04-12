@@ -26,7 +26,7 @@ from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import Notification, StudyCaseChange, \
-    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite
+    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -56,6 +56,13 @@ def get_user_shared_study_case(user_id):
 
         for user_study in all_user_studies:
             process_key = f'{user_study.repository}.{user_study.process}'
+
+            # Get the group of the study to update his group_id and group_name DTO
+            study = StudyCase.query.filter(StudyCase.id == user_study.id).first()
+            group = Group.query.filter(Group.id == study.group_id).first()
+            if study and group is not None:
+                user_study.group_id = study.group_id
+                user_study.group_name = group.name
 
             # Get all favorite studies by user
             user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
@@ -330,6 +337,14 @@ def get_study_of_favorite_study_by_user(user_id):
         repositories_metadata = []
 
         for user_study in all_user_studies_sorted:
+
+            # Get the group of the study to update his group_id and group_name DTO
+            study = StudyCase.query.filter(StudyCase.id == user_study.id).first()
+            group = Group.query.filter(Group.id == study.group_id).first()
+            if study and group is not None:
+                user_study.group_id = study.group_id
+                user_study.group_name = group.name
+
             user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
             # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
             for study in user_favorite_study:
