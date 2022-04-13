@@ -193,7 +193,9 @@ def edit_group(group_id, name, description,user_id):
             group.description = description
             db.session.commit()
 
-            app.logger.info(f'The user id: "{user_id}"has been successfully updated the group {group.id}')
+            app.logger.info(
+                f'The user id: "{user_id}"has been successfully updated the group (id: {group_id}){group.name}"'
+            )
 
         except Exception as ex:
             db.session.rollback()

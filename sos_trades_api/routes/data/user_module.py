@@ -225,6 +225,7 @@ def change_default_group(group_id):
     if group_id is None:
         raise BadRequest('Missing mandatory parameter: group_id')
 
-    resp = make_response(set_user_default_group(group_id, user.id), 200)
+    set_user_default_group(group_id, user.id)
+    resp = make_response(jsonify(''), 200)
 
     return resp
