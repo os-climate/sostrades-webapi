@@ -49,6 +49,9 @@ class LoadedStudyCase:
         self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
 
         if not self.load_in_progress:
+
+            study_case_manager.execution_engine.dm.treeview = None
+            
             treeview = study_case_manager.execution_engine.get_treeview(
                 no_data, read_only)
             self.n2_diagram = {}
