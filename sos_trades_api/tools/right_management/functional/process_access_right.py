@@ -22,6 +22,8 @@ from sos_trades_api.models.database_models import Process, ProcessAccessUser, \
     ProcessAccessGroup, AccessRights
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from sos_trades_api.models.loaded_process import LoadedProcess
+from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.tools.right_management import access_right
 from sos_trades_core.tools.sos_logger import SoSLogging
 from sos_trades_api.base_server import db
 
@@ -41,7 +43,7 @@ class ProcessAccess(ResourceAccess):
         self.__logger = SoSLogging(
             'SoS.AccessRight', level=SoSLogging.WARNING).logger
 
-    def retrieve_user_all_process_rights(self, reference_list=None):
+    def retrieve_user_all_process_rights(self):
 
         user_process_list = db.session.query(Process, AccessRights) \
             .filter(Process.id == ProcessAccessUser.process_id) \
