@@ -14,21 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 # coding: utf-8
-from flask import jsonify, make_response
+from flask import jsonify, make_response, session
 from sos_trades_api.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_list, ProcessError
+from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
+from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user, ProcessError, api_get_processes_for_dashboard
 
 
 @app.route(f'/api/data/resources/process', methods=['GET'])
 @auth_required
-def processes_from_execution_engine():
+def get_processes_for_user():
 
-    app.logger.info(get_authenticated_user())
-    user = get_authenticated_user()
+    user = session['user']
+    app.logger.info(user)
+
     try:
         # Retrieve process list available for current user
-        processes = api_get_processes_list(user.id)
+        processes = api_get_processes_for_user(user)
+    except Exception as error:
+        raise ProcessError(
+            f'The following error occurs when trying to retrieve processes list : {str(error)}')
+
+    resp = make_response(jsonify(processes), 200)
+    return resp
+
+
+@app.route(f'/api/data/resources/process/dashboard', methods=['GET'])
+@auth_required
+@study_manager_profile
+def get_processes_for_dashboard():
+
+    user = session['user']
+    app.logger.info(user)
+
+    try:
+        processes = api_get_processes_for_dashboard()
     except Exception as error:
         raise ProcessError(
             f'The following error occurs when trying to retrieve processes list : {str(error)}')

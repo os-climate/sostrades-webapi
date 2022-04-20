@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import traceback
-from sos_trades_api.models.database_models import ReferenceStudy
+from sos_trades_api.models.database_models import ReferenceStudy, User, Process
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
 from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.models.loaded_process import LoadedProcess
+from typing import List
 
 
 class ProcessError(Exception):
@@ -39,33 +41,17 @@ class ProcessError(Exception):
         return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
 
 
-def api_get_processes_list(user_id):
+def api_get_processes_for_user(user: User) -> List[LoadedProcess]:
     """
     Ask execution engine to retrieve all available processes for the current user
+
+    :param user: user for which process has to be filtered
     """
-    process_access = ProcessAccess(user_id)
+
+    process_access = ProcessAccess(user_id=user.id)
     authorized_process_list = process_access.get_authorized_process()
 
-    # Apply Ontology
-    processes_metadata = []
-    repositories_metadata = []
-    for authorized_process in authorized_process_list:
-        process_key = f'{authorized_process.repository_id}.{authorized_process.process_id}'
-
-        if process_key not in processes_metadata:
-            processes_metadata.append(process_key)
-
-        repository_key = authorized_process.repository_id
-
-        if repository_key not in repositories_metadata:
-            repositories_metadata.append(repository_key)
-
-    process_metadata = load_processes_metadata(processes_metadata)
-    repository_metadata = load_repositories_metadata(repositories_metadata)
-
-    for authorized_process in authorized_process_list:
-        authorized_process.apply_ontology(
-            process_metadata, repository_metadata)
+    apply_ontology_to_loaded_process(authorized_process_list)
 
     # Adding reference list
     all_references = ReferenceStudy.query.filter(ReferenceStudy.execution_status == ReferenceStudy.FINISHED).all()
@@ -101,3 +87,50 @@ def api_get_processes_list(user_id):
         authorized_process_list = sorted(
             authorized_process_list, key=lambda res: res.process_name.lower())
     return authorized_process_list
+
+
+def api_get_processes_for_dashboard() -> List[LoadedProcess]:
+    """
+    Retrieve all database processes
+
+    """
+    all_processes = Process.query.all()
+
+    results = []
+
+    for process in all_processes:
+        new_loaded_process = LoadedProcess(process.id, process.name, process.process_path)
+        new_loaded_process.is_manager = True
+        results.append(new_loaded_process)
+
+    apply_ontology_to_loaded_process(results)
+
+    return results
+
+
+def apply_ontology_to_loaded_process(loaded_processes: List[LoadedProcess]) -> List[LoadedProcess]:
+    """
+    Apply ontology to each loaded process elements
+    :param loaded_processes: process on which ontology has to be applied
+    """
+
+    # Apply Ontology
+    processes_metadata = []
+    repositories_metadata = []
+    for process in loaded_processes:
+        process_key = f'{process.repository_id}.{process.process_id}'
+
+        if process_key not in processes_metadata:
+            processes_metadata.append(process_key)
+
+        repository_key = process.repository_id
+
+        if repository_key not in repositories_metadata:
+            repositories_metadata.append(repository_key)
+
+    process_metadata = load_processes_metadata(processes_metadata)
+    repository_metadata = load_repositories_metadata(repositories_metadata)
+
+    for authorized_process in loaded_processes:
+        authorized_process.apply_ontology(
+            process_metadata, repository_metadata)
