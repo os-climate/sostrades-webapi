@@ -144,7 +144,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(self.test_user_id, entities_rights)
+            apply_entities_changes(self.test_user_id, self.user_profile_id, entities_rights)
             group_access_user = GroupAccessUser.query \
                 .filter(GroupAccessUser.group_id == created_group.id) \
                 .filter(GroupAccessUser.user_id == created_user.id).first()
@@ -171,7 +171,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.entity_rights import EntityType
         with DatabaseUnitTestConfiguration.app.app_context():
             process_entities_right = get_process_entities_rights(
-                1, self.test_process_id)
+                self.test_user_id, self.user_profile_id, self.test_process_id)
             # Only test user (granted in setup) and SoSTrades Dev group should
             # have access to this resource
             for ent_r in process_entities_right.entity.entities_rights:
@@ -234,20 +234,20 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                        }
             # Created user should have access to nothing
             created_user_authorised_group = verify_user_authorised_for_resource(
-                created_user_id, entities_rights_group)
+                created_user_id, self.user_profile_id, entities_rights_group)
             created_user_authorised_sc = verify_user_authorised_for_resource(
-                created_user_id, entities_rights_study_case)
+                created_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertFalse(created_user_authorised_group,
                              'the user created must not be authorized for the resource created_group')
             self.assertFalse(created_user_authorised_sc,
                              'the user created must not be authorized for the resource study case')
             # Test user should have access to everything
             test_user_authorised_group = verify_user_authorised_for_resource(
-                self.test_user_id, entities_rights_group)
+                self.test_user_id, self.user_profile_id, entities_rights_group)
             test_user_authorised_sc = verify_user_authorised_for_resource(
-                self.test_user_id, entities_rights_study_case)
+                self.test_user_id, self.user_profile_id, entities_rights_study_case)
             test_user_authorised_process = verify_user_authorised_for_resource(
-                self.test_user_id, entities_rights_study_case)
+                self.test_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertTrue(test_user_authorised_group,
                             'test user must  be authorized for the resource created_group')
             self.assertTrue(test_user_authorised_sc,
@@ -293,7 +293,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(self.test_user_id, entities_rights)
+            apply_entities_changes(self.test_user_id, self.user_profile_id, entities_rights)
             process_access_user = ProcessAccessUser.query \
                 .filter(ProcessAccessUser.process_id == self.test_process_id) \
                 .filter(ProcessAccessUser.user_id == self.test_user_id).first()
