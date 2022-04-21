@@ -23,10 +23,12 @@ from sos_trades_api.base_server import db, app
 from sos_trades_api.models.entity_rights import \
     ProcessEntityRights, ResourceType, EntityRightsError, apply_entity_rights_changes, \
     GroupEntityRights, StudyCaseEntityRights
+from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.tools.right_management import access_right
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
-def apply_entities_changes(user_id, entity_rights):
+def apply_entities_changes(user_id, user_profile_id, entity_rights):
     """
     Save entity right changes for a user
     """
@@ -35,7 +37,7 @@ def apply_entities_changes(user_id, entity_rights):
         db_session = db.session
 
         try:
-            if verify_user_authorised_for_resource(user_id, entity_rights):
+            if verify_user_authorised_for_resource(user_id, user_profile_id, entity_rights):
                 apply_entity_rights_changes(db_session, entity_rights, user_id)
                 db_session.commit()
 
@@ -74,15 +76,16 @@ def get_study_case_entities_rights(user_id, study_id):
         return study_entity
 
 
-def get_process_entities_rights(user_id, process_id):
+def get_process_entities_rights(user_id, user_profile_id, process_id):
     """
     Get the rights of a user on a process
     """
     process = ProcessAccess(user_id)
     process_entity = ProcessEntityRights(process_id=process_id)
 
-    # Only process manager can request this
-    if process.check_user_right_for_process(AccessRights.MANAGER, process_id=process_id):
+    # Only process manager or study manager profile can request this
+    if process.check_user_right_for_process(AccessRights.MANAGER, process_id=process_id) or \
+            has_access_to(user_profile_id, access_right.APP_MODULE_STUDY_MANAGER):
         with app.app_context():
 
             # Retrieve process access on user
@@ -131,7 +134,7 @@ def get_group_entities_rights(user_id, group_id):
         return group_entity
 
 
-def verify_user_authorised_for_resource(user_id, entity_rights):
+def verify_user_authorised_for_resource(user_id, user_profile_id, entity_rights):
     """
     Check if the user has the MANAGER or OWNER rights for a resources lists
     """
@@ -139,7 +142,8 @@ def verify_user_authorised_for_resource(user_id, entity_rights):
     if entity_rights['resourceType'] == ResourceType.PROCESS:
         process = ProcessAccess(user_id)
         # only process manager can request this
-        return process.check_user_right_for_process(AccessRights.MANAGER, process_id=entity_rights['resourceId'])
+        return has_access_to(user_profile_id, access_right.APP_MODULE_STUDY_MANAGER) or \
+               process.check_user_right_for_process(AccessRights.MANAGER, process_id=entity_rights['resourceId'])
 
     # GROUP RESOURCE
     elif entity_rights['resourceType'] == ResourceType.GROUP:

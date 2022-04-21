@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.base_server import app
@@ -35,7 +35,7 @@ def change_entities_rights():
         raise BadRequest('Missing mandatory parameter: entity_rights')
 
     resp = make_response(
-        jsonify(apply_entities_changes(user.id, entity_rights)), 200)
+        jsonify(apply_entities_changes(user.id, user.user_profile_id, entity_rights)), 200)
     return resp
 
 
@@ -55,11 +55,11 @@ def study_case_entities_rights(study_id):
 @auth_required
 def process_entities_rights(process_id):
 
-    app.logger.info(get_authenticated_user())
-    user = get_authenticated_user()
+    user = session['user']
+    app.logger.info(user)
 
     resp = make_response(
-        jsonify(get_process_entities_rights(user.id, process_id)), 200)
+        jsonify(get_process_entities_rights(user.id, user.user_profile_id, process_id)), 200)
     return resp
 
 
