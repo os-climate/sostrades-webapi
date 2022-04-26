@@ -138,8 +138,6 @@ def database_process_setup():
             # user manager
             group_manager_account_account = Group.query.filter(
                 Group.is_default_applicative_group).first()
-            print(f'default group:')
-            print(group_manager_account_account)
             if group_manager_account_account is None:
                 group_manager_account_account = Group.query.filter(
                 Group.name == Group.SOS_TRADES_DEV_GROUP).first()
