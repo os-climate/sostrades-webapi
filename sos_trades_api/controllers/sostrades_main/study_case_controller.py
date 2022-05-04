@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.study_case_controller import remove_favorite_study_case
-from sos_trades_api.controllers.sostrades_data.user_controller import InvalidUser
+
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -29,6 +28,7 @@ from os import remove
 from shutil import rmtree
 from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
+import shutil
 
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
@@ -182,125 +182,130 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
     return loaded_study_case
 
 
-def edit_study(study_id, group_id, study_name, user_id):
+def edit_study(study_id, new_group_id, new_study_name, user_id):
     """
     Update the group and the study_name for a study case
-    :params: study_id, id of the study to load
-    :type: integer
-    :params: group_id, id of the new group of the study
-    :type:  integer
-    :params: study_name, name of the name study
-    :type: string
-    :params: user_id, id of the current user.
-    :type: integer
+    :param study_id: id of the study to load
+    :type study_id: integer
+    :param new_group_id: id of the new group of the study
+    :type new_group_id:  integer
+    :param new_study_name: new name of the study
+    :type new_study_name: string
+    :param user_id: id of the current user.
+    :type user_id: integer
 
     """
 
     with app.app_context():
-        study_manager_source = study_case_cache.get_study_case(
-            study_id, False)
-        # Update StudyCase name and group if there are modifications
-        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
 
-        if study_case is not None:
-            if study_case.name != study_name or study_case.group_id != group_id:
+        # Retrieve study, StudyCaseManager throw an exception if study does not exist
+        study_case_manager = StudyCaseManager(study_id)
+
+        is_study_name_updated = study_case_manager.study.name != new_study_name
+        update_group_id = study_case_manager.study.group_id != new_group_id
+        update_study_name = False
+
+        # ---------------------------------------------------------------
+        # First make update operation on data's (database and filesystem)
+
+        # Manage study name
+        if is_study_name_updated:
+
+            # Verify if the name already exist in the target group
+            study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
+                Group).join(GroupAccessUser) \
+                .filter(GroupAccessUser.user_id == user_id) \
+                .filter(Group.id == new_group_id) \
+                .filter(StudyCase.disabled == False).all()
+
+            for study in study_name_list:
+                if study.name == new_study_name:
+                    raise InvalidStudy(
+                        f'The following study case name "{new_study_name}" already exist in the database for the target group')
+            update_study_name = True
+
+        # Perform database update
+        if update_study_name or update_group_id:
+            study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
+
+            if update_study_name:
+                study_to_update.name = new_study_name
+
+            if update_group_id:
+
+                # Update the group_id of study group access
+                update_group_access = StudyCaseAccessGroup.query\
+                    .filter(StudyCaseAccessGroup.study_case_id == study_id)\
+                    .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
+
+                if update_group_access is not None:
+
+                    update_group_access.group_id = new_group_id
+                    db.session.add(update_group_access)
+
+                study_to_update.group_id = new_group_id
+
+            db.session.add(study_to_update)
+            db.session.flush()
+
+            # If group has change then move file (can only be done after the study 'add'
+            if update_group_id:
+                updated_study_case_manager = StudyCaseManager(study_id)
+
                 try:
-                    if study_case.name != study_name:
-
-                        # Verify if the name is not existing
-                        study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
-                            Group).join(GroupAccessUser) \
-                            .filter(GroupAccessUser.user_id == user_id) \
-                            .filter(Group.id == group_id) \
-                            .filter(StudyCase.disabled == False).all()
-
-                        for study in study_name_list:
-                            if study.name == study_name:
-                                raise InvalidStudy(
-                                    f'The following study case name "{study_name}" already exist in the database for the selected group')
-                        study_case.name = study_name
-
-                    if study_case.group_id != group_id:
-                        study_case.group_id = group_id
-                    db.session.commit()
-                    app.logger.info(
-                        f'The user id: "{user_id}"has been successfully updated the study {study_case.name}')
-
-                except Exception as ex:
+                    shutil.move(study_case_manager.dump_directory, updated_study_case_manager.dump_dicretory)
+                except BaseException as ex:
                     db.session.rollback()
                     raise ex
 
-                # Update the group_id of study group access
-                update_group_access = StudyCaseAccessGroup.query.filter(
-                    StudyCaseAccessGroup.study_case_id == study_id).first()
+            db.session.commit()
 
-                if update_group_access is not None:
-                    try:
-                        update_group_access.group_id = group_id
-                        db.session.commit()
-                    except Exception as ex:
-                        db.session.rollback()
-                        raise ex
+        app.logger.info(
+            f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
 
-                study_manager = study_case_cache.get_study_case(study_id, False)
+        # ---------------------------------------------------------------
+        # Next manage study case cache if the study has already been loaded
 
-                if study_manager.study.group_id != group_id or (study_manager.study.group_id != group_id and study_manager.study.name != study_name):
+        # Check if study is already in cache
+        if study_case_cache.is_study_case_cached(study_id):
 
-                    if study_manager.study.name != study_name:
-                        study_manager.study.name = study_name
-                        study_manager.study_name = study_name
+            # Remove outdated study from the cache
+            study_case_cache.delete_study_case_from_cache(study_id)
 
-                    study_manager.study.group_id = group_id
+            # Create the updated one
+            study_manager = study_case_cache.get_study_case(study_id)
 
-                    try:
+            try:
 
-                        if not study_manager.load_in_progress and not study_manager.loaded:
-                            study_manager.load_in_progress = True
-                            study_manager.loaded = False
-                            threading.Thread(
-                                target=study_case_manager_loading_from_study,
-                                args=(study_manager, False, False, study_manager_source)).start()
+                if not study_manager.load_in_progress and not study_manager.loaded:
+                    study_manager.load_in_progress = True
+                    study_manager.loaded = False
+                    threading.Thread(
+                        target=study_case_manager_loading,
+                        args=(study_manager, False, False)).start()
 
-                        if study_manager.has_error:
-                            raise Exception(study_manager.error_message)
+                if study_manager.has_error:
+                    raise Exception(study_manager.error_message)
 
-                        # Delete the old study in cache
-                        study_case_cache.delete_study_case_from_cache(study_manager_source.study.id)
-
-                        # Add data to cache
-                        study_case_cache.add_study_case_in_cache_from_values(
-                            study_case, study_manager)
-
-                        result = StudyCaseDto(study_case)
-
-                        process_metadata = load_processes_metadata(
-                            [f'{study_case.repository}.{study_case.process}'])
-                        repository_metadata = load_repositories_metadata(
-                            [study_case.repository])
-
-                        result.apply_ontology(process_metadata, repository_metadata)
-
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        study_manager.set_error(
-                            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-                        # Then propagate exception
-                        raise Exception(study_manager.error_message)
-
-                    return result
-
-                if study_manager.study.name != study_name:
-                    study_manager.study.name = study_name
-                    study_manager.study_name = study_name
-                    # Reset execution engine and load data to update the treenode's data
-                    study_manager.reset()
-                    study_manager.load_data(study_manager.dump_directory)
-
-            else:
-                return study_manager_source.study
-
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                study_manager.set_error(
+                    ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+                # Then propagate exception
+                raise Exception(study_manager.error_message)
         else:
-            raise InvalidStudy(f'Unable to find in database the study case with id {study_id}')
+            study_manager = StudyCaseManager(study_id)
+
+        result = StudyCaseDto(study_manager.study)
+
+        process_metadata = load_processes_metadata(
+            [f'{study_manager.study.repository}.{study_manager.study.process}'])
+        repository_metadata = load_repositories_metadata(
+            [study_manager.study.repository])
+
+        result.apply_ontology(process_metadata, repository_metadata)
+
+        return result
 
 
 def light_load_study_case(study_id, reload=False):
