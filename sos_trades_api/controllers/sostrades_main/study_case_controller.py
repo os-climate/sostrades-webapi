@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.controllers.sostrades_data.study_case_controller import remove_favorite_study_case
+from sos_trades_api.controllers.sostrades_data.user_controller import InvalidUser
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
@@ -36,7 +39,7 @@ from sos_trades_api.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, UserStudyFavorite
 from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
@@ -46,9 +49,10 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
     study_case_manager_update, study_case_manager_loading_from_reference, \
     study_case_manager_loading_from_usecase_data, \
     study_case_manager_loading_from_study
-from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
+from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, InvalidStudyAccessUser
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from numpy import array
+
 
 def create_study_case(user_id, name, repository_name, process_name, group_id, reference, from_type=None):
     """
@@ -176,6 +180,127 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         raise Exception(study_manager.error_message)
 
     return loaded_study_case
+
+
+def edit_study(study_id, group_id, study_name, user_id):
+    """
+    Update the group and the study_name for a study case
+    :params: study_id, id of the study to load
+    :type: integer
+    :params: group_id, id of the new group of the study
+    :type:  integer
+    :params: study_name, name of the name study
+    :type: string
+    :params: user_id, id of the current user.
+    :type: integer
+
+    """
+
+    with app.app_context():
+        study_manager_source = study_case_cache.get_study_case(
+            study_id, False)
+        # Update StudyCase name and group if there are modifications
+        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+
+        if study_case is not None:
+            if study_case.name != study_name or study_case.group_id != group_id:
+                try:
+                    if study_case.name != study_name:
+
+                        # Verify if the name is not existing
+                        study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
+                            Group).join(GroupAccessUser) \
+                            .filter(GroupAccessUser.user_id == user_id) \
+                            .filter(Group.id == group_id) \
+                            .filter(StudyCase.disabled == False).all()
+
+                        for study in study_name_list:
+                            if study.name == study_name:
+                                raise InvalidStudy(
+                                    f'The following study case name "{study_name}" already exist in the database for the selected group')
+                        study_case.name = study_name
+
+                    if study_case.group_id != group_id:
+                        study_case.group_id = group_id
+                    db.session.commit()
+                    app.logger.info(
+                        f'The user id: "{user_id}"has been successfully updated the study {study_case.name}')
+
+                except Exception as ex:
+                    db.session.rollback()
+                    raise ex
+
+                # Update the group_id of study group access
+                update_group_access = StudyCaseAccessGroup.query.filter(
+                    StudyCaseAccessGroup.study_case_id == study_id).first()
+
+                if update_group_access is not None:
+                    try:
+                        update_group_access.group_id = group_id
+                        db.session.commit()
+                    except Exception as ex:
+                        db.session.rollback()
+                        raise ex
+
+                study_manager = study_case_cache.get_study_case(study_id, False)
+
+                if study_manager.study.group_id != group_id or (study_manager.study.group_id != group_id and study_manager.study.name != study_name):
+
+                    if study_manager.study.name != study_name:
+                        study_manager.study.name = study_name
+                        study_manager.study_name = study_name
+
+                    study_manager.study.group_id = group_id
+
+                    try:
+
+                        if not study_manager.load_in_progress and not study_manager.loaded:
+                            study_manager.load_in_progress = True
+                            study_manager.loaded = False
+                            threading.Thread(
+                                target=study_case_manager_loading_from_study,
+                                args=(study_manager, False, False, study_manager_source)).start()
+
+                        if study_manager.has_error:
+                            raise Exception(study_manager.error_message)
+
+                        # Delete the old study in cache
+                        study_case_cache.delete_study_case_from_cache(study_manager_source.study.id)
+
+                        # Add data to cache
+                        study_case_cache.add_study_case_in_cache_from_values(
+                            study_case, study_manager)
+
+                        result = StudyCaseDto(study_case)
+
+                        process_metadata = load_processes_metadata(
+                            [f'{study_case.repository}.{study_case.process}'])
+                        repository_metadata = load_repositories_metadata(
+                            [study_case.repository])
+
+                        result.apply_ontology(process_metadata, repository_metadata)
+
+                    except:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        study_manager.set_error(
+                            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+                        # Then propagate exception
+                        raise Exception(study_manager.error_message)
+
+                    return result
+
+                if study_manager.study.name != study_name:
+                    study_manager.study.name = study_name
+                    study_manager.study_name = study_name
+                    # Reset execution engine and load data to update the treenode's data
+                    study_manager.reset()
+                    study_manager.load_data(study_manager.dump_directory)
+
+            else:
+                return study_manager_source.study
+
+        else:
+            raise InvalidStudy(f'Unable to find in database the study case with id {study_id}')
 
 
 def light_load_study_case(study_id, reload=False):
@@ -689,4 +814,6 @@ def clean_database_with_disabled_study_case(logger=None):
         logger.info(f'Study case identifier to remove: {study_identifiers}')
 
         delete_study_cases(study_identifiers)
+
+
 
