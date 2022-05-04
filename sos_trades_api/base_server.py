@@ -40,6 +40,10 @@ if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
 
 app = Flask(server_name)
+app.logger.propagate = False
+
+for handler in app.logger.handlers:
+    handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
 
 
 # Env constant
@@ -142,6 +146,7 @@ def database_process_setup():
                 group_manager_account_account = Group.query.filter(
                 Group.name == Group.SOS_TRADES_DEV_GROUP).first()
                 print('No default group have been found. Group Sostrades_dev is get by default')
+
             app.logger.info(
                 'Starting loading available processes and references')
             update_database_with_process(additional_repository_list=additional_repository_list,
@@ -243,10 +248,20 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # Add custom command on flask cli to execute database setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command('init_process')
+    @click.option('-d', '--debug', is_flag=True)
     @with_appcontext
-    def init_process():
-        """ Execute process and reference database setup
+    def init_process(debug):
         """
+        Execute process and reference database setup
+
+        :param debug: show DEBIG log
+        :type debug: boolean
+        """
+
+        if debug:
+            app.logger.setLevel(logging.DEBUG)
+        else:
+            app.logger.setLevel(logging.INFO)
         database_process_setup()
 
     # Add custom command on flask cli to execute database init data setup
@@ -355,3 +370,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
                 'name': 'Internal Server Error',
                 'description': str(error)
             }), 500
+
+
+if __name__ == "main":
+    database_process_setup()
