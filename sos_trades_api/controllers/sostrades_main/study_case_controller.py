@@ -39,7 +39,7 @@ from sos_trades_api.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, UserStudyFavorite
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution
 from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
@@ -49,7 +49,8 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
     study_case_manager_update, study_case_manager_loading_from_reference, \
     study_case_manager_loading_from_usecase_data, \
     study_case_manager_loading_from_study
-from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, InvalidStudyAccessUser
+from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, \
+    InvalidStudyExecution
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from numpy import array
 
@@ -196,21 +197,27 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
     """
 
-    with app.app_context():
+    study_case_execution_status = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id)[-1]
+    if study_case_execution_status.execution_status == StudyCaseExecution.RUNNING \
+    or study_case_execution_status.execution_status == StudyCaseExecution.PENDING:
+
+        raise InvalidStudyExecution("You cannot edit a study during a calculation's run")
+
+    else:
 
         # Retrieve study, StudyCaseManager throw an exception if study does not exist
         study_case_manager = StudyCaseManager(study_id)
 
-        is_study_name_updated = study_case_manager.study.name != new_study_name
+        update_study_name = study_case_manager.study.name != new_study_name
         update_group_id = study_case_manager.study.group_id != new_group_id
-        update_study_name = False
 
         # ---------------------------------------------------------------
         # First make update operation on data's (database and filesystem)
 
-        # Manage study name
-        if is_study_name_updated:
+        # Perform database update
+        if update_study_name or update_group_id:
 
+            study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
             # Verify if the name already exist in the target group
             study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
                 Group).join(GroupAccessUser) \
@@ -222,43 +229,38 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                 if study.name == new_study_name:
                     raise InvalidStudy(
                         f'The following study case name "{new_study_name}" already exist in the database for the target group')
-            update_study_name = True
-
-        # Perform database update
-        if update_study_name or update_group_id:
-            study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
 
             if update_study_name:
                 study_to_update.name = new_study_name
 
             if update_group_id:
 
-                # Update the group_id of study group access
                 update_group_access = StudyCaseAccessGroup.query\
                     .filter(StudyCaseAccessGroup.study_case_id == study_id)\
                     .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
+
+                study_to_update.group_id = new_group_id
+
+                # Update the group_id of study group access
 
                 if update_group_access is not None:
 
                     update_group_access.group_id = new_group_id
                     db.session.add(update_group_access)
-
-                study_to_update.group_id = new_group_id
+                    db.session.commit()
 
             db.session.add(study_to_update)
-            db.session.flush()
+            db.session.commit()
 
-            # If group has change then move file (can only be done after the study 'add'
+            # If group has change then move file (can only be done after the study 'add')
             if update_group_id:
                 updated_study_case_manager = StudyCaseManager(study_id)
-
                 try:
-                    shutil.move(study_case_manager.dump_directory, updated_study_case_manager.dump_dicretory)
+                    # study_case_manager.move_study_case_folder(new_group_id, study_id)
+                    shutil.move(study_case_manager.dump_directory, updated_study_case_manager.dump_directory)
                 except BaseException as ex:
                     db.session.rollback()
                     raise ex
-
-            db.session.commit()
 
         app.logger.info(
             f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
@@ -273,7 +275,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
             study_case_cache.delete_study_case_from_cache(study_id)
 
             # Create the updated one
-            study_manager = study_case_cache.get_study_case(study_id)
+            study_manager = study_case_cache.get_study_case(study_id, False)
 
             try:
 
@@ -296,14 +298,16 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
         else:
             study_manager = StudyCaseManager(study_id)
 
-        result = StudyCaseDto(study_manager.study)
+        result = LoadedStudyCase(study_manager, False, False, user_id)
+        # Modifying study case to add access right of creator (Manager)
+        result.study_case.is_manager = True
 
         process_metadata = load_processes_metadata(
-            [f'{study_manager.study.repository}.{study_manager.study.process}'])
+            [f'{result.study_case.repository}.{result.study_case.process}'])
         repository_metadata = load_repositories_metadata(
-            [study_manager.study.repository])
+            [result.study_case.repository])
 
-        result.apply_ontology(process_metadata, repository_metadata)
+        result.study_case.apply_ontology(process_metadata, repository_metadata)
 
         return result
 
