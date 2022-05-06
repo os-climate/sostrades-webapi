@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+from sqlalchemy import desc
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -197,13 +197,12 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
     """
 
-    study_case_execution_status = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id)[-1]
-    if study_case_execution_status.execution_status == StudyCaseExecution.RUNNING \
-    or study_case_execution_status.execution_status == StudyCaseExecution.PENDING:
+    # Check if the study is not in calculation execution
+    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id)\
+        .order_by(desc(StudyCaseExecution.id)).first()
 
-        raise InvalidStudyExecution("You cannot edit a study during a calculation's run")
-
-    else:
+    if study_case_execution is None or (study_case_execution.execution_status != StudyCaseExecution.RUNNING and
+                                        study_case_execution.execution_status != StudyCaseExecution.PENDING):
 
         # Retrieve study, StudyCaseManager throw an exception if study does not exist
         study_case_manager = StudyCaseManager(study_id)
@@ -230,27 +229,55 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                     raise InvalidStudy(
                         f'The following study case name "{new_study_name}" already exist in the database for the target group')
 
-            if update_study_name:
-                study_to_update.name = new_study_name
+            # Retrieve the study group access
+            update_group_access = StudyCaseAccessGroup.query \
+                .filter(StudyCaseAccessGroup.study_case_id == study_id) \
+                .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
+            try:
+                if update_study_name:
+                    study_to_update.name = new_study_name
 
-            if update_group_id:
+                if update_group_id:
 
-                update_group_access = StudyCaseAccessGroup.query\
-                    .filter(StudyCaseAccessGroup.study_case_id == study_id)\
-                    .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
+                    study_to_update.group_id = new_group_id
 
-                study_to_update.group_id = new_group_id
+                    if update_group_access is not None:
 
-                # Update the group_id of study group access
+                        update_group_access.group_id = new_group_id
+                        db.session.add(update_group_access)
+                        db.session.commit()
 
-                if update_group_access is not None:
+                        # Retrieve the owner of the study
+                        update_study_case_access_user = StudyCaseAccessUser.query \
+                            .filter(StudyCaseAccessUser.study_case_id == study_id).first()
 
-                    update_group_access.group_id = new_group_id
-                    db.session.add(update_group_access)
-                    db.session.commit()
+                        if update_study_case_access_user is not None:
+                            # Retrieve if the owner of the study has access at new group
+                            group_access_user = GroupAccessUser.query \
+                                .filter(GroupAccessUser.group_id == new_group_id) \
+                                .filter(GroupAccessUser.user_id == update_study_case_access_user.user_id).first()
 
-            db.session.add(study_to_update)
-            db.session.commit()
+                            if group_access_user is None:
+                                # Add Remove Right of owner the owner of the study he hasn't access at the group
+                                remove_right = AccessRights.query.filter(
+                                    AccessRights.access_right == AccessRights.REMOVE).first()
+                                update_study_case_access_user.right_id = remove_right.id
+
+                                # Add Owner Right if the owner of the study has access at the group
+                            else:
+                                owner_right = AccessRights.query.filter(
+                                    AccessRights.access_right == AccessRights.OWNER).first()
+                                if update_study_case_access_user.right_id != owner_right.id:
+                                    update_study_case_access_user.right_id = owner_right.id
+                            db.session.add(update_study_case_access_user)
+                            db.session.commit()
+
+                db.session.add(study_to_update)
+                db.session.commit()
+
+            except Exception as ex:
+                db.session.rollback()
+            raise ex
 
             # If group has change then move file (can only be done after the study 'add')
             if update_group_id:
@@ -310,6 +337,10 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
         result.study_case.apply_ontology(process_metadata, repository_metadata)
 
         return result
+
+    else:
+
+        raise InvalidStudyExecution("This study is running, you cannot edit it during its run.")
 
 
 def light_load_study_case(study_id, reload=False):

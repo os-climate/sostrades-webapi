@@ -81,6 +81,9 @@ class StudyCaseAccess(ProcessAccess):
                 if not new_study_dto.disabled:
                     self.user_study_cases.append(new_study_dto)
 
+                if ust[1].access_right == AccessRights.REMOVE:
+                    self.__raw_study_case_list.remove(new_study_dto)
+                    self.user_study_cases.remove(new_study_dto)
         # store user_group_list_ids
         user_group_ids = [g.id for g in self.user_groups_list]
 
