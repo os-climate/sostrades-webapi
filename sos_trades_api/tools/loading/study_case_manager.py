@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import shutil
+from tempfile import gettempdir
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -79,7 +82,7 @@ class StudyCaseManager(BaseStudyManager):
         self.__root_dir = self.get_root_study_data_folder(self.__study.group_id, self.__study.id)
 
         super().__init__(self.__study.repository,
-                         self.__study.process, self.__study.name, self.__root_dir, yield_method=sleep, logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'))
+                         self.__study.process,  self.__study.name, self.__root_dir, yield_method=sleep, logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'))
 
         self.__study_database_logger = None
         self.__create_logger(logger_bulk_transaction)
@@ -394,3 +397,25 @@ class StudyCaseManager(BaseStudyManager):
 
         return data_root_dir
 
+    def move_study_case_folder(self, group_id, study_id):
+
+        """
+        Update the group of the study
+
+               :param:group_id, id of the group
+               :type: int
+               :param:study_id, id of the study_case
+               :type: int
+               """
+        if group_id and study_id is not None:
+            # Move the folder of study in "SoSTrades_persistence" from the older group to the new group
+            file_path_initial = self.dump_directory
+            if file_path_initial is not None:
+                self.__root_dir = self.get_root_study_data_folder(group_id, study_id)
+                try:
+                    shutil.move(file_path_initial,  self.__root_dir)
+                    self.dump_directory = self.__root_dir
+                except BaseException as ex:
+                    raise ex
+            else:
+                raise FileNotFoundError('The folder does not exist')
