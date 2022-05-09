@@ -247,37 +247,12 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                         db.session.add(update_group_access)
                         db.session.commit()
 
-                        # Retrieve the owner of the study
-                        update_study_case_access_user = StudyCaseAccessUser.query \
-                            .filter(StudyCaseAccessUser.study_case_id == study_id).first()
-
-                        if update_study_case_access_user is not None:
-                            # Retrieve if the owner of the study has access at new group
-                            group_access_user = GroupAccessUser.query \
-                                .filter(GroupAccessUser.group_id == new_group_id) \
-                                .filter(GroupAccessUser.user_id == update_study_case_access_user.user_id).first()
-
-                            if group_access_user is None:
-                                # Add Remove Right of owner the owner of the study he hasn't access at the group
-                                remove_right = AccessRights.query.filter(
-                                    AccessRights.access_right == AccessRights.REMOVE).first()
-                                update_study_case_access_user.right_id = remove_right.id
-
-                                # Add Owner Right if the owner of the study has access at the group
-                            else:
-                                owner_right = AccessRights.query.filter(
-                                    AccessRights.access_right == AccessRights.OWNER).first()
-                                if update_study_case_access_user.right_id != owner_right.id:
-                                    update_study_case_access_user.right_id = owner_right.id
-                            db.session.add(update_study_case_access_user)
-                            db.session.commit()
-
                 db.session.add(study_to_update)
                 db.session.commit()
 
             except Exception as ex:
                 db.session.rollback()
-            raise ex
+                raise ex
 
             # If group has change then move file (can only be done after the study 'add')
             if update_group_id:
