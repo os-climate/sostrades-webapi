@@ -54,6 +54,9 @@ class InvalidFile(StudyCaseError):
     """Invalid file (Raise an error while trying to read the file)"""
 
 
+class InvalidStudyExecution(StudyCaseError):
+    """Invalid study because of execution"""
+
 """
 STUDY CASES ERROR - END
 """

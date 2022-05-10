@@ -33,6 +33,7 @@ class UserCoeditionAction:
     EXECUTION = 'execution'
     CLAIM = 'claim'
     RELOAD = 'reload'
+    EDIT = 'edit'
     DELETE = 'delete'
 
 
