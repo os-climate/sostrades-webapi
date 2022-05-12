@@ -21,16 +21,15 @@ from tempfile import gettempdir
 import io
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sos_trades_api.config import Config
 from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import Notification, StudyCaseChange, \
-    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group
+    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group, StudyCaseExecution
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
-from sqlalchemy.sql.expression import and_
+from sqlalchemy.sql.expression import and_, desc
 import json
 from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
@@ -64,12 +63,20 @@ def get_user_shared_study_case(user_id):
                 user_study.group_id = study.group_id
                 user_study.group_name = group.name
 
-            # Get all favorite studies by user
-            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-            # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
-            for study in user_favorite_study:
-                if study.study_case_id == user_study.id:
-                    user_study.isFavorite = True
+            # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id) \
+                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
+
+            if user_favorite_study is not None:
+                user_study.is_favorite = True
+
+            # Get current status of the study's execution calculation
+            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == user_study.id) \
+                .order_by(desc(StudyCaseExecution.id)).first()
+            if study_case_execution is None:
+                user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+            else:
+                user_study.execution_status = study_case_execution.execution_status
 
             if process_key not in processes_metadata:
                 processes_metadata.append(process_key)
@@ -79,15 +86,14 @@ def get_user_shared_study_case(user_id):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
 
-        process_metadata = load_processes_metadata(processes_metadata)
-        repository_metadata = load_repositories_metadata(repositories_metadata)
+            process_metadata = load_processes_metadata(processes_metadata)
+            repository_metadata = load_repositories_metadata(repositories_metadata)
 
-        for sc in all_user_studies:
-            sc.apply_ontology(process_metadata, repository_metadata)
-            result.append(sc)
+            user_study.apply_ontology(process_metadata, repository_metadata)
+            result.append(user_study)
 
-            result = sorted(
-                result, key=lambda res: res.isFavorite, reverse=True)
+        result = sorted(
+            result, key=lambda res: res.is_favorite, reverse=True)
 
     return result
 
@@ -330,8 +336,6 @@ def get_study_of_favorite_study_by_user(user_id):
         all_user_studies, key=lambda res: res.creation_date, reverse=True)
 
     if len(all_user_studies_sorted) > 0:
-        # Get all favorite studies by user
-        favorite_studies = []
         # Apply Ontology
         processes_metadata = []
         repositories_metadata = []
@@ -345,32 +349,38 @@ def get_study_of_favorite_study_by_user(user_id):
                 user_study.group_id = study.group_id
                 user_study.group_name = group.name
 
-            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-            # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
-            for study in user_favorite_study:
-                if study.study_case_id == user_study.id:
-                    user_study.isFavorite = True
+            # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)\
+                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
 
-            if user_study.isFavorite:
-                favorite_studies.append(user_study)
+            if user_favorite_study is not None:
+                user_study.is_favorite = True
 
-            process_key = f'{user_study.repository}.{user_study.process}'
+                # Get current status of the study's execution calculation
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.study_case_id == user_study.id) \
+                    .order_by(desc(StudyCaseExecution.id)).first()
+                if study_case_execution is None:
+                    user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+                else:
+                    user_study.execution_status = study_case_execution.execution_status
 
-            if process_key not in processes_metadata:
-                processes_metadata.append(process_key)
+                process_key = f'{user_study.repository}.{user_study.process}'
 
-            repository_key = user_study.repository
+                if process_key not in processes_metadata:
+                    processes_metadata.append(process_key)
 
-            if repository_key not in repositories_metadata:
-                repositories_metadata.append(repository_key)
+                repository_key = user_study.repository
 
-        process_metadata = load_processes_metadata(processes_metadata)
-        repository_metadata = load_repositories_metadata(repositories_metadata)
+                if repository_key not in repositories_metadata:
+                    repositories_metadata.append(repository_key)
 
-        all_user_studies_sorted = favorite_studies
-        for sc in all_user_studies_sorted:
-            sc.apply_ontology(process_metadata, repository_metadata)
-            result.append(sc)
+                process_metadata = load_processes_metadata(processes_metadata)
+                repository_metadata = load_repositories_metadata(repositories_metadata)
+
+                user_study.apply_ontology(process_metadata, repository_metadata)
+
+                result.append(user_study)
 
     return result
 
