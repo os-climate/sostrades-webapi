@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import io
+import os
+
 from sqlalchemy import desc
 
 """
@@ -39,7 +42,8 @@ from sos_trades_api.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy, \
+    ReferenceStudyExecutionLog
 from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
@@ -59,7 +63,6 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
     """
     Create a study case for the user, adding reference data if specified
     """
-
     study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
         Group).join(GroupAccessUser) \
         .filter(GroupAccessUser.user_id == user_id) \
@@ -86,6 +89,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
     owner_right = AccessRights.query.filter(
         AccessRights.access_right == AccessRights.OWNER).first()
     if owner_right is not None:
+
         new_user_access = StudyCaseAccessUser()
         new_user_access.right_id = owner_right.id
         new_user_access.study_case_id = studycase.id
@@ -129,6 +133,31 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                 # Get ref generation ID associated to this ref
                 reference_identifier = f'{repository_name}.{process_name}.{reference}'
 
+                # Generate execution status
+                reference_study = ReferenceStudy.query.filter(ReferenceStudy.name == reference)\
+                    .filter(ReferenceStudy.reference_path == reference_identifier).first()
+                if reference_study is not None:
+                    user = User.query.filter(User.id == user_id).first()
+                    status = reference_study.execution_status
+                    if reference_study.execution_status == ReferenceStudy.UNKNOWN:
+                        status = StudyCaseExecution.NOT_EXECUTED
+                    try:
+                        new_study_case_execution = StudyCaseExecution()
+                        new_study_case_execution.study_case_id = studycase.id
+                        new_study_case_execution.execution_status = status
+                        new_study_case_execution.creation_date = datetime.now().astimezone(timezone.utc).replace(
+                            tzinfo=None)
+                        new_study_case_execution.requested_by = user.username
+                        db.session.add(new_study_case_execution)
+                        db.session.commit()
+                    except Exception as ex:
+                        db.session.rollback()
+                        raise ex
+                    studycase.current_execution_id = new_study_case_execution.id
+                    db.session.add(studycase)
+                    db.session.commit()
+
+
                 if not study_manager.load_in_progress and not study_manager.loaded:
                     study_manager.load_in_progress = True
                     study_manager.loaded = False
@@ -147,7 +176,6 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
 
         if study_manager.has_error:
             raise Exception(study_manager.error_message)
-
         loaded_study_case = LoadedStudyCase(study_manager, False, False, user_id)
 
         studycase = study_manager.study
@@ -172,6 +200,8 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
 
         # Modifying study case to add access right of creator (Manager)
         loaded_study_case.study_case.is_manager = True
+        if not loaded_study_case.study_case.execution_status:
+            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -354,6 +384,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     :type: boolean
     """
 
+    # Get execution status
+    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
+        .order_by(desc(StudyCaseExecution.id)).first()
     study_manager = study_case_cache.get_study_case(study_id, False)
 
     if reload:
@@ -374,6 +407,11 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         raise Exception(study_manager.error_message)
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
+
+    if study_case_execution is not None:
+        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+    else:
+        loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
     if study_manager.loaded is True and study_manager.load_in_progress is False:
         process_metadata = load_processes_metadata(
@@ -454,6 +492,25 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             db.session.add(new_group_access)
             db.session.commit()
 
+        # Copy the last study case execution and then update study_id, creation date and request_by.
+        study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
+            .order_by(desc(StudyCaseExecution.id)).first()
+        user = User.query.filter(User.id == user_id).first()
+        if study_execution is not None:
+            new_study_execution = StudyCaseExecution()
+            new_study_execution.study_case_id = studycase.id
+            new_study_execution.execution_status = study_execution.execution_status
+            new_study_execution.execution_type = study_execution.execution_type
+            new_study_execution.creation_date = modify_date
+            new_study_execution.requested_by = user.username
+
+            db.session.add(new_study_execution)
+            db.session.commit()
+
+            studycase.current_execution_id = new_study_execution.id
+            db.session.add(studycase)
+            db.session.commit()
+
         # result structure
         result = None
 
@@ -464,12 +521,24 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             if not study_manager.load_in_progress and not study_manager.loaded:
                 study_manager.load_in_progress = True
                 study_manager.loaded = False
+
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
                     args=(study_manager, False, False, study_manager_source)).start()
 
             if study_manager.has_error:
                 raise Exception(study_manager.error_message)
+
+            # Copy log file from studyExecutionLog
+            if study_execution is not None:
+                file_path_initial = study_manager_source.raw_log_file_path_absolute()
+                file_path_final = study_manager.raw_log_file_path_absolute()
+                # Check if file_path_initial exist
+                if os.path.exists(file_path_initial):
+                    try:
+                        shutil.copy(file_path_initial, file_path_final)
+                    except BaseException as ex:
+                        raise ex
 
             # Add data to cache
             study_case_cache.add_study_case_in_cache_from_values(
