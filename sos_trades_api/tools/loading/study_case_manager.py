@@ -13,9 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import shutil
-from tempfile import gettempdir
-
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -396,26 +393,3 @@ class StudyCaseManager(BaseStudyManager):
                 data_root_dir = join(data_root_dir, str(study_case_id))
 
         return data_root_dir
-
-    def move_study_case_folder(self, group_id, study_id):
-
-        """
-        Update the group of the study
-
-               :param:group_id, id of the group
-               :type: int
-               :param:study_id, id of the study_case
-               :type: int
-               """
-        if group_id and study_id is not None:
-            # Move the folder of study in "SoSTrades_persistence" from the older group to the new group
-            file_path_initial = self.dump_directory
-            if file_path_initial is not None:
-                self.__root_dir = self.get_root_study_data_folder(group_id, study_id)
-                try:
-                    shutil.move(file_path_initial,  self.__root_dir)
-                    self.dump_directory = self.__root_dir
-                except BaseException as ex:
-                    raise ex
-            else:
-                raise FileNotFoundError('The folder does not exist')
