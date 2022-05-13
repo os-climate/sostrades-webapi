@@ -111,6 +111,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         # Persist data using the current persistance strategy
         study_manager.dump_data(study_manager.dump_directory)
         study_manager.dump_disciplines_data(study_manager.dump_directory)
+        status = StudyCaseExecution.NOT_EXECUTED
 
         # Loading data for study created empty
         if reference is None:
