@@ -260,31 +260,31 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
 
-        # Retrieve ongoing generation from db
-        with app.app_context():
-            ref_generation = ReferenceStudy.query.filter(
-                ReferenceStudy.reference_path == reference_identifier).first()
-
-            # Retrieve logs (if available) from ref generation and add it to
-            # the sc log
-            if ref_generation is not None:
-                reference_generation_logs = ReferenceStudyExecutionLog.query.filter(
-                    ReferenceStudyExecutionLog.reference_id == ref_generation.id). \
-                    order_by(ReferenceStudyExecutionLog.id.asc()
-                             ).limit(300).all()
-
-                for logs in reference_generation_logs:
-                    scel = StudyCaseExecutionLog()
-
-                    scel.created = logs.created
-                    scel.name = logs.name
-                    scel.log_level_name = logs.log_level_name
-                    scel.message = logs.message
-                    scel.exception = logs.exception
-                    scel.study_case_id = study_case_manager.study.id
-
-                    db.session.add(scel)
-                    db.session.commit()
+        # # Retrieve ongoing generation from db
+        # with app.app_context():
+        #     ref_generation = ReferenceStudy.query.filter(
+        #         ReferenceStudy.reference_path == reference_identifier).first()
+        #
+        #     # Retrieve logs (if available) from ref generation and add it to
+        #     # the sc log
+        #     if ref_generation is not None:
+        #         reference_generation_logs = ReferenceStudyExecutionLog.query.filter(
+        #             ReferenceStudyExecutionLog.reference_id == ref_generation.id). \
+        #             order_by(ReferenceStudyExecutionLog.id.asc()
+        #                      ).limit(300).all()
+        #
+        #         for logs in reference_generation_logs:
+        #             scel = StudyCaseExecutionLog()
+        #
+        #             scel.created = logs.created
+        #             scel.name = logs.name
+        #             scel.log_level_name = logs.log_level_name
+        #             scel.message = logs.message
+        #             scel.exception = logs.exception
+        #             scel.study_case_id = study_case_manager.study.id
+        #
+        #             db.session.add(scel)
+        #             db.session.commit()
 
         # Persist data using the current persistance strategy
         study_case_manager.dump_data(study_case_manager.dump_directory)
