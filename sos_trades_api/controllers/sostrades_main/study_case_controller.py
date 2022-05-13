@@ -140,7 +140,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
                         args=(study_manager, False, False, reference_folder, reference_identifier)).start()
-
+                    '''
                     # Generate execution status
                     reference_study = ReferenceStudy.query.filter(ReferenceStudy.name == reference) \
                         .filter(ReferenceStudy.reference_path == reference_identifier).first()
@@ -164,6 +164,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                         studycase.current_execution_id = new_study_case_execution.id
                         db.session.add(studycase)
                         db.session.commit()
+                    '''
 
             elif from_type == 'UsecaseData':
 
