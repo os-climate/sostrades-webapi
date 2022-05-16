@@ -91,6 +91,9 @@ try:
     app.logger.info(
         f'{os.environ["FLASK_ENV"]} environment configuration loaded')
 
+    # Identity provider checks
+
+    # -------- SAML V2 provider
     # Test if SAML settings file path is filled
     if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
         app.logger.info('SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
@@ -98,11 +101,26 @@ try:
         app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
 
         # Check that the settings.json file is present:
-        settings_json_file = os.environ['SAML_V2_METADATA_FOLDER']
-        if not os.path.exists(settings_json_file):
-            app.logger.info('SSO settings.json file not found, SSO will be disabled')
+        sso_path = os.environ['SAML_V2_METADATA_FOLDER']
+        if not os.path.exists(sso_path):
+            app.logger.info('SSO folder not found, SSO will be disabled')
         else:
-            app.logger.info('SSO settings.json file found')
+            app.logger.info('SSO folder file found')
+
+    # -------- Github oauth provider
+    if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
+        app.logger.info('GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
+    else:
+        app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
+        if not os.path.exists(settings_json_file):
+            app.logger.info('GitHub IdP/oauth settings.json file not found, SSO will be disabled')
+        else:
+            app.logger.info('GitHub IdP/oauth settings.json file found')
+
+
 
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
