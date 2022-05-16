@@ -199,27 +199,24 @@ def login_info_api():
         abort(403)
 
 
-@app.route(f'/api/data/github/oauth', methods=['GET'])
-def github_oauth_is_available():
-
-    github_settings = GitHubSettings()
-
-    return jsonify(github_settings.is_available), 200
-
-
 @app.route(f'/api/data/github/oauth/authorize', methods=['GET'])
 def github_oauth_authorize():
 
     github_settings = GitHubSettings()
 
-    params = {
-        'client_id': github_settings.github_client_id,
-        'scope': 'read:user user:email',
-        'state': GitHubSettings.get_state(),
-        'allow_signup': 'true'
-    }
-    url = furl(github_settings.authorize_url).set(params)
-    return redirect(str(url), 302)
+    github_oauth_url = ''
+
+    if github_settings.is_available:
+
+        params = {
+            'client_id': github_settings.github_client_id,
+            'scope': 'read:user user:email',
+            'state': GitHubSettings.get_state(),
+            'allow_signup': 'true'
+        }
+        github_oauth_url = furl(github_settings.authorize_url).set(params).url
+
+    return make_response(jsonify(github_oauth_url), 200)
 
 
 @app.route(f'/api/data/github/oauth/callback', methods=['GET'])
