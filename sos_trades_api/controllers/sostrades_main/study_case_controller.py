@@ -503,7 +503,9 @@ def copy_study_case(study_id, new_name, group_id, user_id):
 
         if study_execution is not None:
 
-            if study_execution.execution_status == StudyCaseExecution.RUNNING or StudyCaseExecution.PENDING or StudyCaseExecution.STOPPED:
+            if study_execution.execution_status == StudyCaseExecution.RUNNING \
+                    or study_execution.execution_status == StudyCaseExecution.STOPPED \
+                    or study_execution.execution_status == StudyCaseExecution.PENDING:
                 status = StudyCaseExecution.NOT_EXECUTED
             else:
                 status = study_execution.execution_status
