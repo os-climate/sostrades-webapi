@@ -139,7 +139,6 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         # Persist data using the current persistance strategy
         study_manager.dump_data(study_manager.dump_directory)
         study_manager.dump_disciplines_data(study_manager.dump_directory)
-        
 
         # Loading data for study created empty
         if reference is None:
@@ -202,10 +201,6 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
 
         # Modifying study case to add access right of creator (Manager)
         loaded_study_case.study_case.is_manager = True
-        if not loaded_study_case.study_case.execution_status:
-            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
-        else:
-            loaded_study_case.study_case.execution_status = status
 
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -551,16 +546,16 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_case_cache.update_study_case_modification_date(
                 studycase.id, studycase.modification_date)
 
-            # Copy log file from studyExecutionLog
-            if study_execution is not None:
-                file_path_initial = study_manager_source.raw_log_file_path_absolute()
-                file_path_final = study_manager.raw_log_file_path_absolute()
-                # Check if file_path_initial exist
-                if os.path.exists(file_path_initial):
-                    try:
-                        shutil.copy(file_path_initial, file_path_final)
-                    except BaseException as ex:
-                        raise ex
+            # # Copy log file from studyExecutionLog
+            # if study_execution is not None:
+            #     file_path_initial = study_manager_source.raw_log_file_path_absolute()
+            #     file_path_final = study_manager.raw_log_file_path_absolute()
+            #     # Check if file_path_initial exist
+            #     if os.path.exists(file_path_initial):
+            #         try:
+            #             shutil.copy(file_path_initial, file_path_final)
+            #         except BaseException as ex:
+            #             raise ex
 
             result = StudyCaseDto(studycase)
 
