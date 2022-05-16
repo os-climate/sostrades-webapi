@@ -1,0 +1,6 @@
+{
+    "GITHUB_CLIENT_ID": "",
+    "GITHUB_CLIENT_SECRET": "",
+    "GITHUB_API_URL": "https://github.com/api/v3/",
+    "GITHUB_AUTH_URL": "https://github.com/login/oauth/"
+}
