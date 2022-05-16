@@ -500,11 +500,14 @@ def copy_study_case(study_id, new_name, group_id, user_id):
         study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
             .order_by(desc(StudyCaseExecution.id)).first()
         user = User.query.filter(User.id == user_id).first()
-        if study_execution.execution_status == StudyCaseExecution.RUNNING or StudyCaseExecution.PENDING or StudyCaseExecution.STOPPED:
-            status = StudyCaseExecution.NOT_EXECUTED
-        else:
-            status = study_execution.execution_status
+
         if study_execution is not None:
+
+            if study_execution.execution_status == StudyCaseExecution.RUNNING or StudyCaseExecution.PENDING or StudyCaseExecution.STOPPED:
+                status = StudyCaseExecution.NOT_EXECUTED
+            else:
+                status = study_execution.execution_status
+                
             new_study_execution = StudyCaseExecution()
             new_study_execution.study_case_id = studycase.id
             new_study_execution.execution_status = status
