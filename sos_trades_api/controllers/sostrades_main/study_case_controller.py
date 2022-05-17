@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import io
 import os
 
 from sqlalchemy import desc
+
+from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -28,7 +29,6 @@ import pandas as pd
 from os.path import join
 from tempfile import gettempdir
 from os import remove
-from shutil import rmtree
 from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 import shutil
@@ -42,8 +42,7 @@ from sos_trades_api.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy, \
-    ReferenceStudyExecutionLog
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy
 from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
@@ -63,6 +62,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
     """
     Create a study case for the user, adding reference data if specified
     """
+    status = ""
     study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
         Group).join(GroupAccessUser) \
         .filter(GroupAccessUser.user_id == user_id) \
@@ -201,6 +201,12 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
 
         # Modifying study case to add access right of creator (Manager)
         loaded_study_case.study_case.is_manager = True
+
+        if not loaded_study_case.study_case.execution_status or loaded_study_case.study_case.execution_status == SoSDiscipline.STATUS_CONFIGURE:
+            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+        else:
+            loaded_study_case.study_case.execution_status = status
+
 
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -526,7 +532,6 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_manager = study_case_cache.get_study_case(
                 studycase.id, False)
 
-
             if not study_manager.load_in_progress and not study_manager.loaded:
                 study_manager.load_in_progress = True
                 study_manager.loaded = False
@@ -546,16 +551,22 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_case_cache.update_study_case_modification_date(
                 studycase.id, studycase.modification_date)
 
-            # # Copy log file from studyExecutionLog
-            # if study_execution is not None:
-            #     file_path_initial = study_manager_source.raw_log_file_path_absolute()
-            #     file_path_final = study_manager.raw_log_file_path_absolute()
-            #     # Check if file_path_initial exist
-            #     if os.path.exists(file_path_initial):
-            #         try:
-            #             shutil.copy(file_path_initial, file_path_final)
-            #         except BaseException as ex:
-            #             raise ex
+            # Copy log file from studyExecutionLog
+            if study_execution is not None:
+                file_path_initial = study_manager_source.raw_log_file_path_absolute()
+                # Check if file_path_initial exist
+                if os.path.exists(file_path_initial):
+                    file_path_final = study_manager.raw_log_file_path_absolute()
+
+                # Create a folder if the thread 'study_case_manager_loading_from_study' does not have time to create it
+                    path_folder_final = os.path.dirname(file_path_final)
+                    if not os.path.exists(path_folder_final):
+                        os.mkdir(path_folder_final)
+
+                    try:
+                        shutil.copyfile(file_path_initial, file_path_final)
+                    except BaseException as ex:
+                        raise ex
 
             result = StudyCaseDto(studycase)
 
