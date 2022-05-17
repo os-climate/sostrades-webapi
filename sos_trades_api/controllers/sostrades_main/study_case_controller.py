@@ -32,6 +32,7 @@ from os import remove
 from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 import shutil
+from shutil import rmtree
 
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
