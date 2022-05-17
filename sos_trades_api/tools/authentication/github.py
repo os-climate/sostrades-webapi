@@ -20,10 +20,11 @@ GitHub integration to authenticate user using OAuth
 
 from sos_trades_api.tools.authentication.password_generator import generate_password
 from os import environ, path
+from datetime import datetime
 import json
 
-from sos_trades_api.models.database_models import User
-from sos_trades_api.base_server import app
+from sos_trades_api.models.database_models import User, OAuthState
+from sos_trades_api.base_server import app, db
 
 # GITHUB API KEYS
 GITHUB_LOGIN_KEY = 'login'
@@ -51,9 +52,6 @@ class GitHubSettings:
     """
     Store GitHub settings
     """
-
-    # STATIC Variables
-    states_storage = {}
 
     def __init__(self):
         """
@@ -126,9 +124,15 @@ class GitHubSettings:
         Generated a random state, store it into the inner dictionary and return it to the caller
         :return: str
         """
-        new_state = generate_password(40)
-        GitHubSettings.states_storage[new_state] = None
-        return new_state
+        new_state = OAuthState()
+        new_state.is_active = True
+        new_state.state = generate_password(64)
+        new_state.creation_date = datetime.now()
+
+        db.session.add(new_state)
+        db.session.commit()
+
+        return new_state.state
 
     @staticmethod
     def check_state(state_to_check: str):
@@ -139,8 +143,27 @@ class GitHubSettings:
         :return: bool
         """
 
-        result = state_to_check in GitHubSettings.states_storage
-        GitHubSettings.states_storage.pop(state_to_check, None)
+        result = False
+
+        database_state = OAuthState.query\
+            .filter(OAuthState.state == state_to_check)\
+            .filter(OAuthState.is_active == 1)\
+            .one()
+
+        if database_state is not None:
+            database_state.is_active = False
+            database_state.check_date = datetime.now()
+
+            second_between_create_and_check = (database_state.check_date - database_state.creation_date).total_seconds()
+
+            if second_between_create_and_check <= 60:
+                result = True
+            else:
+                result = False
+                database_state.is_invalidated = True
+
+            db.session.add(database_state)
+            db.session.commit()
 
         return result
 
