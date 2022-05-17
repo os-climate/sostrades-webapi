@@ -26,6 +26,7 @@ from sos_trades_api.models.database_models import User
 from sos_trades_api.tools.authentication.authentication import PasswordResetRequested
 from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException
 from sos_trades_api.tools.authentication.saml import manage_saml_assertion, SamlAuthenticationError
+from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.smtp.smtp_service import send_new_user_mail
 from sos_trades_api.tools.authentication.authentication import InvalidCredentials, AuthenticationError, \
     get_authenticated_user, manage_user
@@ -111,8 +112,8 @@ def authenticate_user_saml(flask_request):
     """
     Authenticate a user
 
-    :param: flask_request, a flask request object containing SAML assertion (SAML api used this request)
-    :type: request
+    :param flask_request: a flask request object containing SAML assertion (SAML api used this request)
+    :type flask_request: request
 
     :return: tuple (access_token, refresh_token, url to redirect authentication)
 
@@ -145,6 +146,43 @@ def authenticate_user_saml(flask_request):
         )
 
     app.logger.error('User login or password is incorrect (in saml assertion)')
+    raise InvalidCredentials(
+        'User login or password is incorrect')
+
+
+def authenticate_user_github(github_api_user_response: dict, github_api_user_email_response: dict):
+    """
+    Authenticate a in the platform
+    :param github_api_user_response: response to authenticated user api
+    :type  github_api_user_response: https://docs.github.com/en/rest/users/users#get-the-authenticated-user
+    :param github_api_user_email_response: response to authenticated user email api
+    :type github_api_user_email_response: https://docs.github.com/en/rest/users/emails#about-the-emails-api
+
+    :return: tuple (access_token, refresh_token, url to redirect authentication)
+    """
+
+    if github_api_user_response and github_api_user_email_response:
+
+        github_user, return_url = GitHubSettings.manage_github_assertion(github_api_user_response, github_api_user_email_response)
+
+        user, is_new_user = manage_user(github_user, app.logger)
+
+        if is_new_user:
+            send_new_user_mail(user)
+
+        access_token = create_access_token(identity=github_user.email)
+        refresh_token = create_refresh_token(identity=github_user.email)
+
+        app.logger.info(f'"{user.username}" successfully logged (with GitHub/OAuth)')
+
+        return (
+            access_token,
+            refresh_token,
+            return_url,
+            user
+        )
+
+    app.logger.error('User login or password is incorrect (in github assertion)')
     raise InvalidCredentials(
         'User login or password is incorrect')
 
