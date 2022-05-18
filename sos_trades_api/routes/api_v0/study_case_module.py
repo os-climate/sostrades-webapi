@@ -16,12 +16,12 @@ limitations under the License.
 '''
 
 import time
-from flask import request, make_response, abort, jsonify, send_file
+from flask import request, make_response, abort, jsonify, send_file, session
 
 from sos_trades_api.base_server import app, study_case_cache
-from sos_trades_api.models.database_models import AccessRights, StudyCaseChange
+from sos_trades_api.models.database_models import AccessRights, StudyCaseChange, StudyCase
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
-    update_study_parameters, get_file_stream
+    update_study_parameters, get_file_stream, copy_study_case
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
 from sos_trades_api.tools.authentication.authentication import has_user_access_right, auth_required, \
     get_authenticated_user
@@ -81,6 +81,35 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
                 payload[disc] = {key: value for key, value in disc_values.items() if key in wanted_keys}
 
         return make_response(jsonify(payload), 200)
+
+    except Exception as e:
+        abort(400, str(e))
+
+
+@app.route(f'/api/v0/study-case/<int:study_id>/copy', methods=['POST'])
+@auth_required
+@has_user_access_right(AccessRights.CONTRIBUTOR)
+def copy_study_case_by_id(study_id):
+    """
+      Copy a existing study
+      """
+    try:
+        if study_id is not None:
+            user = session['user']
+            new_study_name = request.json.get('new_study_name', None)
+
+            if new_study_name is None:
+                abort(400, "Missing mandatory parameter: new_name")
+
+            # Retrieve the source study
+            copy_study_identifier = copy_study_case(study_id, new_study_name, None, user.id)
+
+            # Proceeding after rights verification
+            resp = make_response(jsonify(copy_study_identifier), 200)
+            return resp
+
+        else:
+            abort(400, 'Missing mandatory parameter: study identifier in url')
 
     except Exception as e:
         abort(400, str(e))
@@ -182,3 +211,5 @@ def get_study_case_url(study_id: int):
 
     except Exception as e:
         abort(400, str(e))
+
+
