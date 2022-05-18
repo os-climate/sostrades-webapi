@@ -63,7 +63,8 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
     """
     Create a study case for the user, adding reference data if specified
     """
-    status = ""
+    status = StudyCaseExecution.NOT_EXECUTED
+
     study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
         Group).join(GroupAccessUser) \
         .filter(GroupAccessUser.user_id == user_id) \
@@ -457,8 +458,14 @@ def copy_study_case(study_id, new_name, group_id, user_id):
         study_manager_source = study_case_cache.get_study_case(
             study_id, False)
 
+        # Check if the new group exist, otherwise retrieve source_study's group
+        if group_id is None:
+            study_case_group_id = study_manager_source.study.group_id
+        else:
+            study_case_group_id = group_id
+
         study_name_list = StudyCase.query.join(StudyCaseAccessGroup).filter(
-            StudyCaseAccessGroup.group_id == group_id).all()
+            StudyCaseAccessGroup.group_id == study_case_group_id).all()
 
         for snl in study_name_list:
             if snl.name == new_name:
@@ -470,7 +477,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
 
         # Initialize the new study case object in database
         studycase = StudyCase()
-        studycase.group_id = group_id
+        studycase.group_id = study_case_group_id
         studycase.repository = study_manager_source.study.repository
         studycase.name = new_name
         studycase.process = study_manager_source.study.process
@@ -492,7 +499,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             db.session.commit()
 
             new_group_access = StudyCaseAccessGroup()
-            new_group_access.group_id = group_id
+            new_group_access.group_id = study_case_group_id
             new_group_access.study_case_id = studycase.id
             new_group_access.right_id = owner_right.id
             db.session.add(new_group_access)
@@ -502,7 +509,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
         study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
             .order_by(desc(StudyCaseExecution.id)).first()
         user = User.query.filter(User.id == user_id).first()
-
+        status = StudyCaseExecution.NOT_EXECUTED
         if study_execution is not None:
 
             if study_execution.execution_status == StudyCaseExecution.RUNNING \
@@ -511,7 +518,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
                 status = StudyCaseExecution.NOT_EXECUTED
             else:
                 status = study_execution.execution_status
-                
+
             new_study_execution = StudyCaseExecution()
             new_study_execution.study_case_id = studycase.id
             new_study_execution.execution_status = status
@@ -559,7 +566,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
                 if os.path.exists(file_path_initial):
                     file_path_final = study_manager.raw_log_file_path_absolute()
 
-                # Create a folder if the thread 'study_case_manager_loading_from_study' does not have time to create it
+                    # Create a folder if the thread 'study_case_manager_loading_from_study' does not have time to create it
                     path_folder_final = os.path.dirname(file_path_final)
                     if not os.path.exists(path_folder_final):
                         os.mkdir(path_folder_final)
@@ -577,7 +584,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
                 [studycase.repository])
 
             result.apply_ontology(process_metadata, repository_metadata)
-
+            result.execution_status = status
             # Modifying study case to add access right of creator (Manager)
             result.is_manager = True
 
