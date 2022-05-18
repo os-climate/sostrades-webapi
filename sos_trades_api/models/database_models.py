@@ -849,3 +849,27 @@ class Link(db.Model):
             'user_id': self.user_id,
             'last_modified': self.last_modified
         }
+
+
+class OAuthState(db.Model):
+    """Link class"""
+
+    id = Column(Integer, primary_key=True)
+    is_active = Column(Boolean, default=False)
+    is_invalidated = Column(Boolean, default=False)
+    state = Column(String(64), index=False, nullable=False)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    check_date = Column(DateTime(timezone=True), server_default=None, nullable=True)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'id': self.id,
+            'is_active': self.is_active,
+            'is_invalidated': self.is_invalidated,
+            'state': self.state,
+            'creation_date': self.creation_date,
+            'check_date': self.check_date
+        }
