@@ -17,20 +17,21 @@ limitations under the License.
 
 import time
 from flask import request, make_response, abort, jsonify, send_file, session
+from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.base_server import app, study_case_cache
-from sos_trades_api.models.database_models import AccessRights, StudyCaseChange, StudyCase
+from sos_trades_api.models.database_models import AccessRights, StudyCaseChange
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
     update_study_parameters, get_file_stream, copy_study_case
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
-from sos_trades_api.tools.authentication.authentication import has_user_access_right, auth_required, \
-    get_authenticated_user
+from sos_trades_api.tools.authentication.authentication import has_user_access_right, api_key_required
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
 @app.route(f'/api/v0/study-case/<int:study_id>', methods=['GET'])
 @app.route(f'/api/v0/study-case/<int:study_id>/<int:timeout>', methods=['GET'])
-@auth_required
+@api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def load_study_case_by_id(study_id: int, timeout: int = 30):
     """
@@ -45,7 +46,7 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
 
     try:
 
-        user = get_authenticated_user()
+        user = session['user']
         study_case_access = StudyCaseAccess(user.id)
         study_access_right = study_case_access.get_user_right_for_study(study_id)
 
@@ -87,7 +88,7 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
 
 
 @app.route(f'/api/v0/study-case/<int:study_id>/copy', methods=['POST'])
-@auth_required
+@api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def copy_study_case_by_id(study_id):
     """
@@ -116,12 +117,15 @@ def copy_study_case_by_id(study_id):
 
 
 @app.route(f'/api/v0/study-case/<int:study_id>/parameters', methods=['POST'])
-@auth_required
+@api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def update_study_parameters_by_study_case_id(study_id: int):
     """
     Update a study parameters
     """
+
+    user = session['user']
+
     # Preliminary checks
     if not request.files and not request.json:
         abort(400, "No files or parameters found in request.")
@@ -164,7 +168,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
                 parameter_json["namespace"], parameter_json["var_name"] = tuple(parameter_json.get("variableId").rsplit('.', 1))
                 parameters_to_save.append(parameter_json)
 
-        resp = update_study_parameters(study_id, get_authenticated_user(), files, files_info, parameters_to_save)
+        resp = update_study_parameters(study_id, user, files, files_info, parameters_to_save)
         return make_response(jsonify(resp), 200)
 
     except Exception as e:
@@ -172,7 +176,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
 
 
 @app.route(f'/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
-@auth_required
+@api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_parameter_file_by_study_case_id(study_id: int):
     """
@@ -194,7 +198,7 @@ def get_study_parameter_file_by_study_case_id(study_id: int):
 
 
 @app.route(f'/api/v0/study-case/<int:study_id>/url', methods=['GET'])
-@auth_required
+@api_key_required
 def get_study_case_url(study_id: int):
     """
     Return study-case web-GUI url
@@ -211,5 +215,20 @@ def get_study_case_url(study_id: int):
 
     except Exception as e:
         abort(400, str(e))
+
+
+@app.route(f'/api/v0/study-case/<int:study_id>/logs', methods=['GET'])
+@api_key_required
+@has_user_access_right(AccessRights.COMMENTER)
+def get_study_case_raw_logs(study_id):
+
+    file_path = get_raw_logs(study_id=study_id)
+
+    if file_path:
+        resp = send_file(file_path)
+        return resp
+    else:
+        resp = make_response(jsonify('No logs found.'), 404)
+        return resp
 
 
