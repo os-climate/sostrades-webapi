@@ -301,7 +301,7 @@ def database_create_api_key(group_name, api_key_name):
         db.session.commit()
 
         app.logger.info('The following api key has been created')
-        app.logger.info(device.serialize())
+        app.logger.info(device)
 
 
 def database_renew_api_key(group_name):
@@ -333,7 +333,7 @@ def database_renew_api_key(group_name):
         db.session.commit()
 
         app.logger.info('The following api key has been updated')
-        app.logger.info(device.serialize())
+        app.logger.info(device)
 
 
 def database_revoke_api_key(group_name):
@@ -361,7 +361,7 @@ def database_revoke_api_key(group_name):
         db.session.commit()
 
         app.logger.info('The following api key has been deleted')
-        app.logger.info(device.serialize())
+        app.logger.info(device)
 
 
 def database_list_api_key():
@@ -380,7 +380,7 @@ def database_list_api_key():
         else:
             app.logger.info('Existing api key list')
             for device in devices:
-                app.logger.info(device.serialize())
+                app.logger.info(device)
 
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
