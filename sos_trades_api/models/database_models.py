@@ -899,6 +899,21 @@ class Device(db.Model):
             'group_id': self.group_id
         }
 
+    def __repr__(self):
+        """
+        serialize for log purpose this class
+        :return:  str
+        """
+
+        builder = [
+            f'id: {self.id}',
+            f'device_name: {self.device_name}',
+            f'device_key: {self.device_key}',
+            f'group_id: {self.group_id}'
+        ]
+
+        return '\n'.join(builder)
+
     @staticmethod
     def create_key():
         return uuid.uuid4().hex
