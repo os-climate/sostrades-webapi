@@ -23,14 +23,18 @@ from datetime import datetime
 import pytz
 from flask_jwt_extended import get_jwt_identity
 from functools import wraps
-from flask import abort, session
+from flask import abort, session, request
 from flask_jwt_extended import verify_jwt_in_request,verify_jwt_refresh_token_in_request
 from jwt.exceptions import InvalidSignatureError
+import base64
 from sos_trades_api.base_server import db, app
-from sos_trades_api.models.database_models import User, Group, AccessRights, GroupAccessUser, UserProfile
+from sos_trades_api.models.database_models import User, Group, AccessRights, GroupAccessUser, UserProfile, Device
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
+from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
 from werkzeug.exceptions import BadRequest, Unauthorized
+
+
 class AuthenticationError(Exception):
     """Base Authentication Exception"""
 
@@ -94,6 +98,101 @@ def auth_required(func):
             verify_jwt_in_request()
             user = get_authenticated_user()
             session['user'] = user
+            return func(*args, **kwargs)
+        except (UserNotFound, AccountInactive, AccessDenied, InvalidSignatureError) as error:
+            app.logger.error('authorization failed: %s', error)
+            abort(403)
+    return wrapper
+
+
+def set_user_from_api_key(authorization):
+    """
+    Extract api-key information from authorization header
+    authorization header has the following form: Bearer base64encodedkey
+
+    Once decoded the key has the following form: <apikey>:<user-identifier>
+    :param authorization: bearer with base64 encoded key
+    :type authorization: str
+    :return: User
+    """
+
+    # Checks that Authorization is a Bearer token
+    if 'Bearer' not in authorization:
+        abort(401, 'Missing Authorization header')
+
+    # Extract token from value and do the base64 decoding
+    bearer_token = authorization.replace('Bearer ', '')
+    decoded_bearer_token = base64.b64decode(bearer_token).decode('utf-8')
+
+    api_key = ''
+    user_identifier = ''
+
+    # User-identifier is optional so check if token contains only key or the key and user
+    if ':' not in decoded_bearer_token:
+        api_key = decoded_bearer_token
+    else:
+        split_decoded_bearer_token = decoded_bearer_token.split(':')
+
+        if len(split_decoded_bearer_token) > 2:
+            abort(401, 'Missing Authorization header')
+        api_key = split_decoded_bearer_token[0]
+        user_identifier = split_decoded_bearer_token[1]
+
+    # Check api key validity
+    api_key_device = Device.query.filter(Device.device_key == api_key).first()
+
+    if api_key_device is None:
+        abort(401, 'Invalid api-key')
+
+    # Get api-key associated group
+    api_key_group = Group.query.filter(Group.id == api_key_device.group_id).one()
+
+    if api_key_group is None:
+        abort(401, 'Invalid api-key')
+
+    # If user-identifier is not set then get the group owner as user
+    # otherwise check the user is member of the group
+    user = None
+    if user_identifier == '':
+        result = db.session.query(User, Group, GroupAccessUser, AccessRights) \
+            .filter(User.id == GroupAccessUser.user_id) \
+            .filter(Group.id == GroupAccessUser.group_id) \
+            .filter(Group.id == api_key_group.id) \
+            .filter(GroupAccessUser.right_id == AccessRights.id) \
+            .filter(AccessRights.access_right == AccessRights.OWNER).first()
+
+        if result is None:
+            abort(403, 'Api-key unauthorized')
+        user = result.User
+    else:
+        user = User.query.filter(User.email == user_identifier).one()
+        group = GroupAccess(user.id)
+        is_member_of_group = \
+            group.check_user_right_for_group(AccessRights.MANAGER, group_id=api_key_group.id) or \
+            group.check_user_right_for_group(AccessRights.MEMBER, group_id=api_key_group.id) or \
+            group.check_user_right_for_group(AccessRights.OWNER, group_id=api_key_group.id)
+
+        if not is_member_of_group:
+            abort(403, 'User unauthorized')
+
+    session['user'] = user
+    session['group'] = api_key_group
+
+
+def api_key_required(func):
+    """
+    View decorator - require valid api key
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            if request.headers:
+                auth_header = request.headers.get('Authorization', None)
+
+                if not auth_header:
+                    abort(401, 'Missing Authorization header')
+                set_user_from_api_key(auth_header)
+
             return func(*args, **kwargs)
         except (UserNotFound, AccountInactive, AccessDenied, InvalidSignatureError) as error:
             app.logger.error('authorization failed: %s', error)
@@ -247,13 +346,20 @@ def has_user_access_right(access_right):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+
+            if 'user' not in session:
+                message = 'Authorization failed: user not authenticated'
+                app.logger.error(message)
+                raise AccessDenied(message)
+
             try:
+                user = session['user']
                 study_id = kwargs.get("study_id")
                 if study_id is None:
                     raise KeyError('You must have "study_id" parameter to check access right')
 
                 # Verify user has study case authorisation on study
-                study_case_access = StudyCaseAccess(get_authenticated_user().id)
+                study_case_access = StudyCaseAccess(user.id)
 
                 if not study_case_access.check_user_right_for_study(access_right, study_id):
                     raise AccessDenied('You do not have the necessary rights to access this study case')
