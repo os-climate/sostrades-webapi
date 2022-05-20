@@ -51,7 +51,7 @@ def study_case_execution(study_id: int):
 
         execute_calculation(study_id, user.username)
 
-        return redirect(url_for('study_case_execution_status', study_id=study_id))
+        return make_response(jsonify(calculation_status(study_id)), 200)
 
     except Exception as e:
         abort(400, str(e))
