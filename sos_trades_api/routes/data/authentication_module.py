@@ -199,6 +199,13 @@ def login_info_api():
         abort(403)
 
 
+@app.route(f'/api/data/github/oauth/available', methods=['GET'])
+def github_oauth_is_available():
+    github_settings = GitHubSettings()
+
+    return make_response(jsonify(github_settings.is_available), 200)
+
+
 @app.route(f'/api/data/github/oauth/authorize', methods=['GET'])
 def github_oauth_authorize():
 
