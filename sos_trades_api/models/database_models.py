@@ -25,6 +25,7 @@ from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
 from sos_trades_api.base_server import db
 from datetime import datetime
 import pytz
+import uuid
 
 
 class UserProfile(db.Model):
@@ -815,7 +816,6 @@ class ReferenceStudyExecutionLog(db.Model):
 
     def serialize(self):
         """ json serializer for dto purpose
-            datamanager attribute is not serialize because is is intended to be only server side data
         """
 
         return {
@@ -873,3 +873,48 @@ class OAuthState(db.Model):
             'creation_date': self.creation_date,
             'check_date': self.check_date
         }
+
+
+class Device(db.Model):
+    """
+    Class that allow to manage API access (non user access)
+    """
+
+    id = db.Column(Integer, primary_key=True)
+    device_name = Column(String(80))
+    device_key = Column(String(80))
+    group_id = db.Column(Integer, ForeignKey(f'{Group.__tablename__}.id', ondelete="CASCADE", name='fk_device_group_id'))
+
+    def __init__(self):
+        self.device_key = Device.create_key()
+
+    def serialize(self):
+        """
+        json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'device_name': self.device_name,
+            'device_key': self.device_key,
+            'group_id': self.group_id
+        }
+
+    def __repr__(self):
+        """
+        serialize for log purpose this class
+        :return:  str
+        """
+
+        builder = [
+            f'id: {self.id}',
+            f'device_name: {self.device_name}',
+            f'device_key: {self.device_key}',
+            f'group_id: {self.group_id}'
+        ]
+
+        return '\n'.join(builder)
+
+    @staticmethod
+    def create_key():
+        return uuid.uuid4().hex
+

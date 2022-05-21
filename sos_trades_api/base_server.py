@@ -261,6 +261,128 @@ def database_change_user_profile(username, new_profile=None):
                 'An error occurs during database setup')
 
 
+def database_create_api_key(group_name, api_key_name):
+    """
+    Create a new api key for the given group in database
+    :param group_name: Group identifier to assign api key
+    :type group_name: str
+    :param api_key_name: Name to set to the api key
+    :type api_key_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device, GroupAccessUser, AccessRights
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(User, Group, GroupAccessUser, AccessRights) \
+            .filter(User.id == GroupAccessUser.user_id) \
+            .filter(Group.id == GroupAccessUser.group_id) \
+            .filter(Group.name == group_name) \
+            .filter(GroupAccessUser.right_id == AccessRights.id) \
+            .filter(AccessRights.access_right == AccessRights.OWNER).first()
+
+        if result is None:
+            app.logger.error('To generate an api key, the group must exist and have a user as group OWNER.')
+            exit()
+
+        group = result.Group
+
+        device_already_exist = Device.query.filter(Device.group_id == group.id).first()
+
+        if device_already_exist:
+            app.logger.error('There is already an api key available for this group')
+            exit()
+
+        device = Device()
+        device.device_name = api_key_name
+        device.group_id = group.id
+
+        db.session.add(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been created')
+        app.logger.info(device)
+
+
+def database_renew_api_key(group_name):
+    """
+    Renew api key for the given group in database
+    :param group_name: Group identifier with assigned api key
+    :type group_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(Group, Device) \
+            .filter(Group.id == Device.group_id) \
+            .filter(Group.name == group_name).first()
+
+        if result is None:
+            app.logger.error('No api key found for this group')
+            exit()
+
+        device = result.Device
+
+        # Update key value
+        temp_device = Device()
+        device.device_key = temp_device.device_key
+
+        db.session.add(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been updated')
+        app.logger.info(device)
+
+
+def database_revoke_api_key(group_name):
+    """
+    Revoke api key for the given group in database
+    :param group_name: Group identifier with assigned api key
+    :type group_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(Group, Device) \
+            .filter(Group.id == Device.group_id) \
+            .filter(Group.name == group_name).first()
+
+        if result is None:
+            app.logger.error('No api key found for this group.')
+            exit()
+
+        device = result.Device
+
+        db.session.delete(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been deleted')
+        app.logger.info(device)
+
+
+def database_list_api_key():
+    """
+    list all database api key
+    """
+
+    from sos_trades_api.models.database_models import Device
+
+    with app.app_context():
+        # First check that group has an owner
+        devices = Device.query.all()
+
+        if len(devices) == 0:
+            app.logger.info('No api key found')
+        else:
+            app.logger.info('Existing api key list')
+            for device in devices:
+                app.logger.info(device)
+
+
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
@@ -336,11 +458,63 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             profile = None
         database_change_user_profile(username, profile)
 
+
+    @click.command('create_api_key')
+    @click.argument('group_name')
+    @click.argument('api_key_name')
+    @with_appcontext
+    def create_api_key(group_name, api_key_name):
+        """ create an api key
+        :param group_name: the group name to assign api key
+        :type group_name: str
+        :param api_key_name: name to set to the api key
+        :type group_name: str
+        """
+
+        database_create_api_key(group_name, api_key_name)
+
+
+    @click.command('renew_api_key')
+    @click.argument('group_name')
+    @with_appcontext
+    def renew_api_key(group_name):
+        """ update an api key
+        :param group_name: the group name to renew api key
+        :type group_name: str
+        """
+
+        database_renew_api_key(group_name)
+
+
+    @click.command('revoke_api_key')
+    @click.argument('group_name')
+    @with_appcontext
+    def revoke_api_key(group_name):
+        """ revoke an api key
+        :param: group_name, the group name to revoke api key
+        :type group_name: str
+        """
+
+        database_revoke_api_key(group_name)
+
+
+    @click.command('list_api_key')
+    @with_appcontext
+    def list_api_key():
+        """ List all database api key
+        """
+
+        database_list_api_key()
+
     app.cli.add_command(init_process)
     app.cli.add_command(create_standard_user)
     app.cli.add_command(rename_applicative_group)
     app.cli.add_command(reset_standard_user_password)
     app.cli.add_command(change_user_profile)
+    app.cli.add_command(create_api_key)
+    app.cli.add_command(renew_api_key)
+    app.cli.add_command(revoke_api_key)
+    app.cli.add_command(list_api_key)
 
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):
