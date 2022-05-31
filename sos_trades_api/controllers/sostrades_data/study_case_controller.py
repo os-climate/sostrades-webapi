@@ -21,16 +21,15 @@ from tempfile import gettempdir
 import io
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sos_trades_api.config import Config
 from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import Notification, StudyCaseChange, \
-    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite
+    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group, StudyCaseExecution
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
-from sqlalchemy.sql.expression import and_
+from sqlalchemy.sql.expression import and_, desc
 import json
 from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
@@ -57,12 +56,27 @@ def get_user_shared_study_case(user_id):
         for user_study in all_user_studies:
             process_key = f'{user_study.repository}.{user_study.process}'
 
-            # Get all favorite studies by user
-            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-            # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
-            for study in user_favorite_study:
-                if study.study_case_id == user_study.id:
-                    user_study.isFavorite = True
+            # Get the group of the study to update his group_id and group_name DTO
+            study = StudyCase.query.filter(StudyCase.id == user_study.id).first()
+            group = Group.query.filter(Group.id == study.group_id).first()
+            if study and group is not None:
+                user_study.group_id = study.group_id
+                user_study.group_name = group.name
+
+            # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id) \
+                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
+
+            if user_favorite_study is not None:
+                user_study.is_favorite = True
+
+            # Get current status of the study's execution calculation
+            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == user_study.id) \
+                .order_by(desc(StudyCaseExecution.id)).first()
+            if study_case_execution is None:
+                user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+            else:
+                user_study.execution_status = study_case_execution.execution_status
 
             if process_key not in processes_metadata:
                 processes_metadata.append(process_key)
@@ -72,15 +86,14 @@ def get_user_shared_study_case(user_id):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
 
-        process_metadata = load_processes_metadata(processes_metadata)
-        repository_metadata = load_repositories_metadata(repositories_metadata)
+            process_metadata = load_processes_metadata(processes_metadata)
+            repository_metadata = load_repositories_metadata(repositories_metadata)
 
-        for sc in all_user_studies:
-            sc.apply_ontology(process_metadata, repository_metadata)
-            result.append(sc)
+            user_study.apply_ontology(process_metadata, repository_metadata)
+            result.append(user_study)
 
-            result = sorted(
-                result, key=lambda res: res.isFavorite, reverse=True)
+        result = sorted(
+            result, key=lambda res: res.is_favorite, reverse=True)
 
     return result
 
@@ -89,8 +102,8 @@ def get_change_file_stream(notification_id, parameter_key):
     """
     Get the File from a change notification parameter
     """
-    change = StudyCaseChange.query\
-        .filter(StudyCaseChange.notification_id == notification_id)\
+    change = StudyCaseChange.query \
+        .filter(StudyCaseChange.notification_id == notification_id) \
         .filter(StudyCaseChange.variable_id == parameter_key).first()
 
     if change is not None:
@@ -319,15 +332,54 @@ def get_study_of_favorite_study_by_user(user_id):
     result = []
     study_case_access = StudyCaseAccess(user_id)
     all_user_studies = study_case_access.user_study_cases
-    all_user_studies = sorted(
+    all_user_studies_sorted = sorted(
         all_user_studies, key=lambda res: res.creation_date, reverse=True)
-    for user_study in all_user_studies:
-        # Get all favorite studies by user
-        user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id).all()
-        # Retrieve each study using the user's favorite studies and apply the boolean "isFavorite" at True
-        for study in user_favorite_study:
-            if study.study_case_id == user_study.id:
-                user_study.isFavorite = True
+
+    if len(all_user_studies_sorted) > 0:
+        # Apply Ontology
+        processes_metadata = []
+        repositories_metadata = []
+
+        for user_study in all_user_studies_sorted:
+
+            # Get the group of the study to update his group_id and group_name DTO
+            study = StudyCase.query.filter(StudyCase.id == user_study.id).first()
+            group = Group.query.filter(Group.id == study.group_id).first()
+            if study and group is not None:
+                user_study.group_id = study.group_id
+                user_study.group_name = group.name
+
+            # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
+            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)\
+                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
+
+            if user_favorite_study is not None:
+                user_study.is_favorite = True
+
+                # Get current status of the study's execution calculation
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.study_case_id == user_study.id) \
+                    .order_by(desc(StudyCaseExecution.id)).first()
+                if study_case_execution is None:
+                    user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+                else:
+                    user_study.execution_status = study_case_execution.execution_status
+
+                process_key = f'{user_study.repository}.{user_study.process}'
+
+                if process_key not in processes_metadata:
+                    processes_metadata.append(process_key)
+
+                repository_key = user_study.repository
+
+                if repository_key not in repositories_metadata:
+                    repositories_metadata.append(repository_key)
+
+                process_metadata = load_processes_metadata(processes_metadata)
+                repository_metadata = load_repositories_metadata(repositories_metadata)
+
+                user_study.apply_ontology(process_metadata, repository_metadata)
+
                 result.append(user_study)
 
     return result
@@ -343,23 +395,26 @@ def add_favorite_study_case(study_case_id, user_id):
 
     """
 
-    favorite_study = UserStudyFavorite.query.filter(
-            and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+    favorite_study = UserStudyFavorite.query \
+        .filter(UserStudyFavorite.user_id == user_id) \
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
 
     # Creation of a favorite study
     if favorite_study is None:
         new_favorite_study = UserStudyFavorite()
         new_favorite_study.study_case_id = study_case_id
         new_favorite_study.user_id = user_id
+
         db.session.add(new_favorite_study)
         db.session.commit()
 
         return new_favorite_study
 
     else:
-        study_case = StudyCase.query.filter(
-            and_(StudyCase.id == study_case_id, UserStudyFavorite.study_case_id == study_case_id)).first()
-        raise Exception(f'The study "{study_case.name}" is already in your favorite studies')
+        study_case = StudyCase.query \
+            .filter(StudyCase.id == study_case_id) \
+            .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+        raise Exception(f'The study - {study_case.name} - is already in your favorite studies')
 
 
 def remove_favorite_study_case(study_case_id, user_id):
@@ -371,8 +426,14 @@ def remove_favorite_study_case(study_case_id, user_id):
         :type: integer
 
     """
-    favorite_study = UserStudyFavorite.query.filter(
-        and_(UserStudyFavorite.user_id == user_id, UserStudyFavorite.study_case_id == study_case_id)).first()
+    # Get the study-case thanks to study_id into UserFavoriteStudy
+    study_case = StudyCase.query \
+        .filter(StudyCase.id == study_case_id) \
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+
+    favorite_study = UserStudyFavorite.query \
+        .filter(UserStudyFavorite.user_id == user_id) \
+        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
 
     if favorite_study is not None:
         try:
@@ -384,3 +445,5 @@ def remove_favorite_study_case(study_case_id, user_id):
             raise ex
     else:
         raise Exception(f'You cannot remove a study that is not in your favorite study')
+
+    return f'The study, {study_case.name}, has been removed from favorite study.'

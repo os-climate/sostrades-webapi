@@ -17,7 +17,7 @@ from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.models.database_models import AccessRights, StudyCase
+from sos_trades_api.models.database_models import AccessRights, StudyCase, UserStudyFavorite
 from sos_trades_api.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
@@ -128,7 +128,6 @@ def get_user_authorized_process_studies():
 @app.route(f'/api/data/study-case/logs/download', methods=['POST'])
 @auth_required
 def get_study_case_logs():
-
     study_id = request.json.get('studyid', None)
 
     if study_id is None:
@@ -145,7 +144,6 @@ def get_study_case_logs():
 @app.route(f'/api/data/study-case/raw-logs/download', methods=['POST'])
 @auth_required
 def get_study_case_raw_logs():
-
     study_id = request.json.get('studyid', None)
 
     if study_id is None:
@@ -220,10 +218,9 @@ def update_user_authorized_for_execution(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route(f'/api/data/study-case/favorite', methods=['GET', 'POST', 'DELETE'])
+@app.route(f'/api/data/study-case/favorite', methods=['GET', 'POST'])
 @auth_required
 def favorite_study():
-
     # Checking if user can access study data
     user = session['user']
     if request.method == 'GET':
@@ -237,15 +234,27 @@ def favorite_study():
             raise BadRequest('Missing mandatory parameter: study_id')
 
         add_favorite_study_case(study_id, user.id)
-        resp = make_response(jsonify('Study added in favorite study'), 200)
+
+        # Get the study-case thanks to study_id into UserFavoriteStudy
+        study_case = StudyCase.query \
+            .filter(StudyCase.id == study_id) \
+            .filter(UserStudyFavorite.study_case_id == study_id).first()
+
+        resp = make_response(jsonify(
+            f'The study, {study_case.name}, has been added in favorite study'), 200
+        )
 
         return resp
 
-    elif request.method == 'DELETE':
-        study_favorite_id = StudyCase.id
-        if study_favorite_id is None:
-            raise BadRequest('Missing mandatory parameter: study_id')
 
-        remove_favorite_study_case(study_favorite_id, user.id)
-        resp = make_response(jsonify('Study removed from favorite study'), 200)
-        return resp
+@app.route(f'/api/data/study-case/<int:study_id>/favorite', methods=['DELETE'])
+@auth_required
+def delete_favorite_study(study_id):
+    # Checking if user can access study data
+    user = session['user']
+
+    if study_id is None:
+        raise BadRequest('Missing mandatory parameter: study_id')
+
+    response = make_response(jsonify(remove_favorite_study_case(study_id, user.id)), 200)
+    return response

@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 User Functions
@@ -22,7 +24,6 @@ from datetime import datetime, timezone
 from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, StudyCase, AccessRights
 from sos_trades_api.tools.smtp.smtp_service import send_right_update_mail, send_password_reset_mail
 from sos_trades_api.tools.authentication.password_generator import check_password, InvalidPassword
-from sos_trades_api.tools.right_management.access_right import is_user_admin
 from sos_trades_api.tools.authentication.password_generator import generate_password
 from os.path import dirname, join, exists
 from sqlalchemy import or_, and_, func
@@ -32,6 +33,7 @@ import uuid
 from sos_trades_api import __file__ as sos_trades_api_file
 from os import makedirs
 import errno
+from typing import List
 
 
 class UserError(Exception):
@@ -55,47 +57,41 @@ class InvalidUser(UserError):
     """Invalid study"""
 
 
-def get_user_list():
+def get_user_list() -> List[User]:
+    """Ask database to retrieve all users information's
     """
-    Ask database to retrieve all users informations
-
-    List is filtered to not retrieve applicative administration account
-
-    :returns: sos_trades_api.models.database_models.User[]
-    """
-    users_query = User.query.filter(
-        User.username != User.APPLICATIVE_ACCOUNT_NAME).all()
+    users_query = User.query.all()
 
     return users_query
 
 
-def add_user(firstname, lastname, username, password, email, user_profile_id):
-    """
-    Create a new user in database
+def add_user(firstname, lastname, username, password, email, user_profile_id) -> User:
+    """Create a new user in database
 
-    :params: firstname, user first name
-    :type: string
+    :param firstname: user first name
+    :type firstname: str
 
-    :params: lastname, user last name
-    :type: string
+    :param lastname: user last name
+    :type lastname: str
 
-    :params: username, unique (database side) identifier for a user
-    :type: string
+    :param username: unique (database side) identifier for a user
+    :type username: str
 
-    :params: password, user password
-    :type: string
+    :param password: user password
+    :type password: str
 
-    :params: email, unique (database side) email for a user
-    :type: string
+    :param email: unique (database side) email for a user
+    :type email: str
 
-    :params: user_profile_id, user profile identifier (some restriction are applied  concerning applicative administrator profile)
-    :type: integer
+    :param default_group_id: user default group
+    :type default_group_id: int
 
-    :return: sos_trades_webapi.models.database_models.User
+    :param user_profile_id: user profile identifier
+    :type user_profile_id: int
     """
 
     # --
-    # Make some check abour user creation restriction
+    # Make some check about user creation restriction
 
     # First check for duplicate unique entries (username and email)
     duplicate_users = User.query.filter(
@@ -106,18 +102,6 @@ def add_user(firstname, lastname, username, password, email, user_profile_id):
             f'Failed to add a user with duplicated database entries username {username} or email {email}')
         raise InvalidUser(
             f'A user with the same username or email already exist in database')
-
-    # Check user profile (APPLICATIVE ADMINISTRATOR) profile cannot be assigned
-    applicative_administrator_profile = UserProfile.query.filter(
-        UserProfile.name == UserProfile.ADMIN_PROFILE).first()
-
-    if user_profile_id == applicative_administrator_profile.id:
-        # Dissallow user creation with this profile but does not information
-        # about the true reason
-        app.logger.error(
-            f'Trying to add a user username {username} / email {email} with applicative administrator profile')
-        raise InvalidUser(
-            f'User profile identifier "{user_profile_id}" does not exist in database')
 
     new_user = User()
     new_user.firstname = firstname
@@ -136,32 +120,29 @@ def add_user(firstname, lastname, username, password, email, user_profile_id):
     return new_user, password_link
 
 
-def update_user(user_id, firstname, lastname, username, email, user_profile_id):
-    """
-    Update an existing user in database
+def update_user(user_id, firstname, lastname, username, email, user_profile_id) -> (bool, bool):
+    """Update an existing user in database
 
-    :params: user_id, user database primary key
-    :type: integer
+    Return information about profile change (first boolean) and mail sent about this change(second boolean)
 
-    :params: firstname, user first name
-    :type: string
+    :param user_id: user database primary key
+    :type user_id: int
 
-    :params: lastname, user last name
-    :type: string
+    :param firstname: user first name
+    :type firstname: str
 
-    :params: username, unique (database side) identifier for a user
-    :type: string
+    :param lastname: user last name
+    :type lastname: str
 
-    :params: password, user password
-    :type: string
+    :param username: unique (database side) identifier for a user
+    :type username: str
 
-    :params: email, unique (database side) email for a user
-    :type: string
+    :param email: unique (database side) email for a user
+    :type email: str
 
-    :params: user_profile_id, user profile identifier (some restriction are applied  concerning applicative administrator profile)
-    :type: integer
+    :param user_profile_id: user profile identifier
+    :type user_profile_id: int
 
-    :return: sos_trades_webapi.models.database_models.User
     """
     new_profile = False
     mail_send = False
@@ -170,14 +151,6 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id):
         User.id == user_id).first()
 
     if user_to_update is not None:
-
-        # Check if user to update is the APPLICATIVE ADMINISTRATOR ACCOUNT
-        if user_to_update.username == User.APPLICATIVE_ACCOUNT_NAME:
-            # Dissallow user update for administrator applicative account but does not information
-            # about the true reason
-            app.logger.error(
-                f'User not found in database, requested id {user_id}')
-            raise InvalidUser(f'User not found in database')
 
         # First check for duplicate unique entries (username and email)
         duplicate_users = User.query.filter(
@@ -188,19 +161,6 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id):
                 f'Trying to update a user with duplicated database entries username {username} or email {email}')
             raise InvalidUser(
                 f'A user with the same username or email already exist in database')
-
-        # Check user profile (APPLICATIVE ADMINISTRATOR) profile cannot be
-        # assigned
-        applicative_administrator_profile = UserProfile.query.filter(
-            UserProfile.name == UserProfile.ADMIN_PROFILE).first()
-
-        if applicative_administrator_profile.id == user_profile_id:
-            # Dissallow user creation with this profile but does not information
-            # about the true reason
-            app.logger.error(
-                f'Trying to add a user username {username} / email {email} with applicative administrator profile')
-            raise InvalidUser(
-                f'User profile identifier "{user_profile_id}" does not exist in database')
 
         user_to_update.firstname = firstname
         user_to_update.lastname = lastname
@@ -213,21 +173,20 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id):
         try:
             db.session.commit()
             # Sending warning mail if user profile changed
-            if(old_user_profile != user_profile_id):
+            if old_user_profile != user_profile_id:
                 new_profile = True
-                if user_profile_id is None:
-                    profilename = 'No profile'
-                else:
+                profile_name = 'No profile'
+                if user_profile_id is not None:
                     profile_name_query = UserProfile.query.filter(
                         UserProfile.id == user_profile_id).first()
-                    if not profile_name_query is None:
-                        profilename = profile_name_query.name
+                    if profile_name_query is not None:
+                        profile_name = profile_name_query.name
                     else:
-                        profilename = 'No profile'
+                        profile_name = 'No profile'
 
-                mail_send = send_right_update_mail(user_to_update, profilename)
+                mail_send = send_right_update_mail(user_to_update, profile_name)
 
-            return(new_profile, mail_send)
+            return new_profile, mail_send
 
         except Exception as error:
             app.logger.exception(
@@ -242,25 +201,18 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id):
         f'User not found in database')
 
 
-def delete_user(user_id):
-    """
-    Delete an existing user from database
+def delete_user(user_id) -> str:
+    """Delete an existing user from database
 
-    :param user_id, user database primary key
-    :type integer
+    Return message according to the user deletion
+
+    :param user_id: user database primary key
+    :type user_id: int
     """
-    #get user from db
+
     user_to_delete = User.query.filter(User.id == user_id).first()
 
     if user_to_delete is not None:
-
-        # Check if user to update is the APPLICATIVE ADMINISTRATOR ACCOUNT
-        if user_to_delete.username == User.APPLICATIVE_ACCOUNT_NAME:
-            # Dissallow user update for administrator applicative account but does not information
-            # about the true reason
-            app.logger.error(
-                f'User not found in database, requested id {user_id}')
-            raise InvalidUser(f'User not found in database')
 
         # Select group with user in
         query_group = Group.query.join(GroupAccessUser).filter(Group.id == GroupAccessUser.group_id
@@ -295,24 +247,19 @@ def delete_user(user_id):
         f'User cannot be found in the database')
 
 
-def get_user_profile_list():
+def get_user_profile_list() -> List[UserProfile]:
+    """Ask database to retrieved different existing user profiles
     """
-    Ask database to retrieved different existing user profiles
+    user_profiles = UserProfile.query.all()
 
-    List is filtered to not retrieve applicative administration profile
-    """
-    user_profile_query = UserProfile.query.filter(
-        UserProfile.name != UserProfile.ADMIN_PROFILE).all()
-
-    return user_profile_query
+    return user_profiles
 
 
 def reset_user_password(user_id):
-    """
-       Reset password of an existing user from database
+    """Reset password of an existing user from database
 
-       :param user_id, user database primary key
-       :type integer
+    :param user_id: user database primary key
+    :type user_id: int
     """
 
     # Get user from db
@@ -343,14 +290,13 @@ def reset_user_password(user_id):
 
 
 def change_user_password(token, password):
-    """
-       Change password of an existing user from database
+    """Change password of an existing user from database
 
-       :param token, user reset uuid token
-       :type str
+    :param token: user reset uuid token
+    :type token: str
 
-       :param password, new user password
-       :type str
+    :param password: new user password
+    :type password: str
     """
 
     # Get user from db using token uuid
@@ -359,12 +305,6 @@ def change_user_password(token, password):
     if user is not None and user.account_source == User.LOCAL_ACCOUNT:
 
         try:
-            # Changing admin password is not allowed using API
-            if is_user_admin(user.id):
-                app.logger.error(f'Token has been set to Administrator profile account {token}')
-                raise InvalidUser(
-                    f'User cannot be found in the database')
-
             if check_password(password):
                 user.set_password(password)
                 user.last_password_reset_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
@@ -383,43 +323,6 @@ def change_user_password(token, password):
         app.logger.error(f'Reset token not found in database, token value {token}')
         raise InvalidUser(f'User cannot be found in the database')
 
-def create_administrator_account():
-    '''
-        Create administrator account if it does not already exists
-    '''
-    adminProfile = UserProfile.query.filter_by(
-        name=UserProfile.ADMIN_PROFILE).first()
-
-    users_by_email = User.query.filter_by(email=User.APPLICATIVE_ACCOUNT_EMAIL)
-    users_by_name = User.query.filter_by(email=User.APPLICATIVE_ACCOUNT_NAME)
-    if users_by_email is not None and users_by_email.count() == 0 and \
-            users_by_name is not None and users_by_name.count() == 0:
-        try:
-            user = User()
-            user.username = User.APPLICATIVE_ACCOUNT_NAME
-            user.firstname = User.APPLICATIVE_ACCOUNT_NAME
-            user.lastname = ''
-            user.email = User.APPLICATIVE_ACCOUNT_EMAIL
-            user.user_profile_id = adminProfile.id
-
-            # Automatically generate a password inforce policy
-            password = generate_password(20)
-
-            # Set password to user
-            user.set_password(password)
-
-            db.session.add(user)
-
-        except Exception as exc:
-            raise exc
-
-        try:
-            __set_password_in_secret_path(password, 'adminPassword', 'Administrator')
-        except Exception as exc:
-            db.session.rollback()
-            raise exc
-
-        db.session.commit()
 
 def create_test_user_account():
     # Profile => study user
@@ -470,8 +373,8 @@ def create_test_user_account():
 
             db.session.commit()
 
-def create_standard_user_account(username, email, firstname, lastname):
 
+def create_standard_user_account(username, email, firstname, lastname):
     # Profile => study user
     study_user_profile = UserProfile.query.filter_by(
         name=UserProfile.STUDY_USER).first()
@@ -528,6 +431,7 @@ def create_standard_user_account(username, email, firstname, lastname):
 
             db.session.commit()
 
+
 def reset_local_user_password_by_name(username):
     '''
     Generate and save a new password for the user with the username = USERNAME
@@ -557,6 +461,7 @@ def reset_local_user_password_by_name(username):
 
         db.session.commit()
 
+
 def __set_password_in_secret_path(password, file_name, user_name):
     # Write password in a file to let platform installer
     # retrieve it
@@ -576,3 +481,40 @@ def __set_password_in_secret_path(password, file_name, user_name):
         f.close()
     print(
         f'{user_name} password created, password in {secret_filepath} file, delete it after copying it in a secret store')
+
+
+def set_user_default_group(group_id, user_id):
+    """
+        change a default group into user
+
+        :param user_id: user database primary key
+        :type user_id: int
+
+        :param group_id: user default group
+        :type group_id: int
+
+    """
+    user = db.session.query(User).filter(
+        User.id == user_id).first()
+
+    # Retrieve that corresponds to the default group
+    group = Group.query.filter(Group.id == group_id).first()
+
+    if user is not None:
+
+        if group is not None:
+
+            try:
+                user.default_group_id = group_id
+                db.session.add(user)
+                db.session.commit()
+
+            except Exception as ex:
+                db.session.rollback()
+                raise ex
+
+        else:
+            raise InvalidGroup(f'Group cannot be found in the database')
+
+    else:
+        raise InvalidUser(f'User cannot be found in the database')

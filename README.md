@@ -6,11 +6,11 @@
 pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org 
 
 ###Python path
-It is necessary to add the SoSTrades_WebAPI folder to the PYTHONPATH.
+It is necessary to add the sostrades-webapi folder to the PYTHONPATH.
 
 ### Dependencies
-SoSTrades_WebAPI needs Sos_trades_core to run, so the Sos_trades_core folder needs to be added to the PYTHONPATH 
-and the Sos_trades_core package installation needs to be done.
+sostrades-webapi needs sostrades-core to run, so the sostrades-core folder needs to be added to the PYTHONPATH 
+and the sostrades-core package installation needs to be done.
 
 ## Database migration
 
@@ -18,7 +18,7 @@ Alembic (the migration framework used by Flask-Migrate) will make these schema c
 
 To accomplish this seemingly difficult task, Alembic maintains a migration repository, which is a directory in which it stores its migration scripts. Each time a change is made to the database schema, a migration script is added to the repository with the details of the change. To apply the migrations to a database, these migration scripts are executed in the sequence they were created.
 
-### Create the migration repository (already done)
+### Create the migration repository
 ```bash
 flask db init
 ```
@@ -76,15 +76,6 @@ flask db init_process
 ```
 All the process will be associated to the default applicative group named "SoSTrades_Dev".
 
-#### Database create administrator account
-If you want to create an administrator account, with manager rights:
-
-```bash
-flask db create_admin_user
-```
-The user created will be associated with 'Administrator' as username and 'Administrator@sostrades.com' as email address.
-The password will be stored on the local server for the user to retrieve it.
-
 #### Database create standard account
 If you want to create a local standard user account:
 
@@ -92,14 +83,6 @@ If you want to create a local standard user account:
 flask db create_standard_user username email firstname lastname
 ```
 the username, email firstname and lastname arguments should be filled with the user information.
-
-#### Database reset administrator password
-If you want to reset the password of the administrator user
-
-```bash
-flask db reset_admin_password
-```
-The updated password will be saved in a file on the local server.
 
 #### Database reset user password
 If you want to reset the password of a user
@@ -117,6 +100,20 @@ If you want to rename the Sostrades applicative group named "SoSTrades_Dev" by d
 flask db rename_applicative_group new_name
 ```
 The new name of the applicative group will be passed in argument
+
+#### User profile changes
+If you want to change the profile of a user
+
+```bash
+flask change_user_profile <username> -p <profile>
+```
+This way is the only allowed to promote a user to "Study manager" profile which enable access to some monitoring 
+panels in the application.
+
+Profiles that can be set are "Study user" (default for all new user) and "Study manager".
+
+Profile argument is optional, if not set than the user profile will be set to "No profile" which disallow access to all
+application features.
 
 
 ## Server configuration
@@ -142,15 +139,24 @@ In addition to the configuration file, some other entry are setup using environm
 - LOG_USER=Depending on the value set in the configuration file, store sql user account
 - LOG_PASSWORD=Depending on the value set in the configuration file, store sql user password
 - SECRET_KEY=Depending on the value set in the configuration file, store server secret key
-- SAML_V2_METADATA_FOLDER=the folder path where the settings.json file is
+- SAML_V2_METADATA_FOLDER=the folder path where the settings.json file is located
+- GITHUB_OAUTH_SETTINGS=the full path (including file) to the settings.json file that contains Github OAuth settings
 
 ### SSO configuration
 - set the SAML v2 'settings.json' file for the SSO authentication (the file must have this name 'settings.json')
-into the folder 'sostrades_webapi\configuration\saml'.
-A template of this file is located in the 'sostrades_webapi\configuration_template\saml' folder.
+into the folder 'sostrades-webapi\configuration\saml'.
+A template of this file is located in the 'sostrades-webapi\configuration_template\saml' folder.
 All explanations on how to fill it are accessible here: https://github.com/onelogin/python3-saml.
 - in the '.flaskenv' file, set the variable SAML_V2_METADATA_FOLDER with the folder path where the settings.json is.
-The path can be relative like: 'sostrades_webapi\configuration_template\saml'.
+The path can be relative like: 'sostrades-webapi\configuration_template\saml'.
+
+### GitHub OAuth configuration
+- regarding the template file located in sostrades-webapi\configuration_template\github-oauth fill all the required values
+(Information's about Github oauth apps can be found here https://docs.github.com/en/developers/apps/building-oauth-apps)
+- 'GITHUB_CLIENT_ID' and 'GITHUB_CLIENT_SECRET' are values generated when a Github OAuth pass is created
+- 'GITHUB_API_URL' and 'GITHUB_AUTH_URL' are GitHub endpoint to use in the protocol workflow (by default respectively "https://github.com/api/v3/" and "https://github.com/login/oauth/")
+They can be overridden to match Github Enterprise instance like 'https://<my-organization-ghe.com>/api/v3/' and 'https://<my-organization-ghe.com>/login/oauth/'
+- GITHUB_OAUTH_SETTINGS environment variable must be set and target a value like '/my/github/settings/folder/setting.json'
 
 ## Server test configuration
 ### configuration
@@ -158,7 +164,7 @@ As the server configuration, tests need also a configuration file to initialize 
 Configuration file is in JSON format. A template of this file is available here:
 sostrades_webapi\configuration_template\development_configuration_template.json.
 
-The key regarding LDAP, JWT Token and SMTP server are not needed to be filled.
+The key regarding LDAP, JWT Token and SMTP server are optional.
 
 ### environment configuration
 As the server configuration some environment variable are needed

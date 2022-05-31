@@ -13,16 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class that represent entities : User or Group with associated rights (relative to a Resource)
 """
 import abc
 from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
-from sos_trades_api.models.database_models import StudyCaseAccessGroup,\
-    StudyCaseAccessUser, Group, User, ProcessAccessGroup, ProcessAccessUser,\
+from sos_trades_api.models.database_models import StudyCaseAccessGroup, \
+    StudyCaseAccessUser, Group, User, ProcessAccessGroup, ProcessAccessUser, \
     AccessRights, GroupAccessGroup, GroupAccessUser
 from sqlalchemy import or_
+from sos_trades_api.base_server import db
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 
 
@@ -113,7 +116,6 @@ class EntityRights:
 
 
 def apply_entity_rights_changes(db_session, json_data, user_id):
-
     new_entity = EntityRights()
     new_entity.deserialize(json_data)
 
@@ -235,7 +237,7 @@ class ProcessEntityRights():
 
                 if update_object is not None:
                     update_object.right_id = entity_change.selected_right
-                    #set source to USER so that it is set as a user action
+                    # set source to USER so that it is set as a user action
                     update_object.source = ProcessAccessGroup.SOURCE_USER
 
             else:  # Remove object
@@ -263,9 +265,9 @@ class ProcessEntityRights():
 
                 if update_object is not None:
                     update_object.right_id = entity_change.selected_right
-                    #set source to USER so that it is set as a user action
+                    # set source to USER so that it is set as a user action
                     update_object.source = ProcessAccessUser.SOURCE_USER
-                    
+
             else:  # Remove object
                 self.check_not_last_process_manager(entity_change)
                 delete_object = ProcessAccessUser.query.filter(
@@ -465,6 +467,11 @@ class GroupEntityRights():
                     GroupAccessUser.id == entity_change.id).first()
 
                 if delete_object is not None:
+                    # Set default group at None
+                    user = User.query.filter(User.id == entity_change.entity_object.id).first()
+
+                    if self.entity.resource_id == user.default_group_id:
+                        user.default_group_id = None
                     db_session.delete(delete_object)
 
     def check_not_last_owner_or_manager(self, entity_change):
@@ -557,7 +564,7 @@ class StudyCaseEntityRights():
 
         self.entity.available_rights = []
 
-        if owner_right is not None and manager_right is not None and contributor_right is not None\
+        if owner_right is not None and manager_right is not None and contributor_right is not None \
                 and commenter_right is not None and restricted_viewer_right is not None:
             self.entity.available_rights.append(
                 AccessRightsSelectable(owner_right))

@@ -18,32 +18,28 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    userProfiles = UserProfile.query.all()
+    user_profiles = UserProfile.query.all()
 
-    if userProfiles is not None and len(userProfiles) == 0:
-        admin_profile = UserProfile()
-        admin_profile.name = UserProfile.ADMIN_PROFILE
-        admin_profile.description = 'Administrator account to manage SoSTrades application'
-        db.session.add(admin_profile)
+    if user_profiles is not None and len(user_profiles) == 0:
 
         study_manager_profile = UserProfile()
         study_manager_profile.name = UserProfile.STUDY_MANAGER
-        study_manager_profile.description = 'Study manager (manager rights on study) account for SoSTrades application'
+        study_manager_profile.description = 'Study manager (platform access rights) account for SoSTrades application'
         db.session.add(study_manager_profile)
 
         study_user_profile = UserProfile()
         study_user_profile.name = UserProfile.STUDY_USER
-        study_user_profile.description = 'Study user (basic rights) account for SoSTrades application'
+        study_user_profile.description = 'Study user (user rights) account for SoSTrades application'
         db.session.add(study_user_profile)
 
         db.session.commit()
 
 
 def downgrade():
-    userProfiles = UserProfile.query.all()
+    user_profiles = UserProfile.query.all()
 
-    if userProfiles is not None and len(userProfiles) > 0:
+    if user_profiles is not None and len(user_profiles) > 0:
 
-        for userProfile in userProfiles:
-            db.session.delete(userProfile)
+        for user_profile in user_profiles:
+            db.session.delete(user_profile)
         db.session.commit()

@@ -19,9 +19,9 @@ depends_on = None
 
 
 def upgrade():
-    accessRights = AccessRights.query.all()
+    access_rights = AccessRights.query.all()
 
-    if accessRights is not None and len(accessRights) == 0:
+    if access_rights is not None and len(access_rights) == 0:
         manager_right = AccessRights()
         manager_right.access_right = AccessRights.MANAGER
         manager_right.description = 'Access right manager'
@@ -62,9 +62,9 @@ def upgrade():
 
 def downgrade():
 
-    accessRights = AccessRights.query.all()
+    access_rights = AccessRights.query.all()
 
-    if accessRights is not None and len(accessRights) > 0:
-        for accessRight in accessRights:
-            db.session.delete(accessRight)
+    if access_rights is not None and len(access_rights) > 0:
+        for access_right in access_rights:
+            db.session.delete(access_right)
         db.session.commit()

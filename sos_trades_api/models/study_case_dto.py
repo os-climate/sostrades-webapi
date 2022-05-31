@@ -17,8 +17,7 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class that represent a study case data transfert object with group information
 """
-from sos_trades_api.models.database_models import Group, StudyCaseAccessGroup, \
-    StudyCase, AccessRights
+from sos_trades_api.models.database_models import Group, StudyCaseAccessGroup, AccessRights
 
 
 class StudyCaseDto:
@@ -38,6 +37,7 @@ class StudyCaseDto:
         self.repository_display_name = ''
         self.creation_date = ''
         self.modification_date = ''
+        self.execution_status = ''
         self.study_type = ''
         self.group_name = ''
         self.group_id = None
@@ -50,7 +50,7 @@ class StudyCaseDto:
         self.is_commenter = False
         self.is_restricted_viewer = False
         self.disabled = False
-        self.isFavorite = False
+        self.is_favorite = False
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -102,6 +102,7 @@ class StudyCaseDto:
         result.update({'repository_display_name': self.repository_display_name})
         result.update({'creation_date': self.creation_date})
         result.update({'modification_date': self.modification_date})
+        result.update({'execution_status': self.execution_status})
         result.update({'study_type': self.study_type})
         result.update({'group_name': self.group_name})
         result.update({'group_id': self.group_id})
@@ -113,5 +114,6 @@ class StudyCaseDto:
         result.update({'is_contributor': self.is_contributor})
         result.update({'is_commenter': self.is_commenter})
         result.update({'is_restricted_viewer': self.is_restricted_viewer})
-        result.update({'isFavorite': self.isFavorite})
+        result.update({'is_favorite': self.is_favorite})
+
         return result

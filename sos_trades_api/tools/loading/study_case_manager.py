@@ -79,7 +79,7 @@ class StudyCaseManager(BaseStudyManager):
         self.__root_dir = self.get_root_study_data_folder(self.__study.group_id, self.__study.id)
 
         super().__init__(self.__study.repository,
-                         self.__study.process, self.__study.name, self.__root_dir, yield_method=sleep, logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'))
+                         self.__study.process,  self.__study.name, self.__root_dir, yield_method=sleep, logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'))
 
         self.__study_database_logger = None
         self.__create_logger(logger_bulk_transaction)
@@ -393,4 +393,3 @@ class StudyCaseManager(BaseStudyManager):
                 data_root_dir = join(data_root_dir, str(study_case_id))
 
         return data_root_dir
-

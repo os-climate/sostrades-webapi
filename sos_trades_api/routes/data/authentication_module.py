@@ -20,14 +20,17 @@ Login/logout APIs
 from flask import request, make_response, abort, session, redirect
 from flask.json import jsonify
 import os
+import requests
+from furl import furl
 from sos_trades_api.base_server import app
 
 from sos_trades_api.controllers.sostrades_data.authentication_controller import \
     (authenticate_user_standard, deauthenticate_user, refresh_authentication, AuthenticationError,
-     authenticate_user_saml)
+     authenticate_user_saml, authenticate_user_github)
 
 from sos_trades_api.tools.authentication.authentication import auth_required, auth_refresh_required, \
     get_authenticated_user
+from sos_trades_api.tools.authentication.github import GitHubSettings
 from urllib.parse import urlparse, urlencode
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
@@ -194,3 +197,80 @@ def login_info_api():
     except AuthenticationError as error:
         app.logger.error('authentication error: %s', error)
         abort(403)
+
+
+@app.route(f'/api/data/github/oauth/available', methods=['GET'])
+def github_oauth_is_available():
+    github_settings = GitHubSettings()
+
+    return make_response(jsonify(github_settings.is_available), 200)
+
+
+@app.route(f'/api/data/github/oauth/authorize', methods=['GET'])
+def github_oauth_authorize():
+
+    github_settings = GitHubSettings()
+
+    github_oauth_url = ''
+
+    if github_settings.is_available:
+
+        params = {
+            'client_id': github_settings.github_client_id,
+            'scope': 'read:user user:email',
+            'state': GitHubSettings.get_state(),
+            'allow_signup': 'true'
+        }
+        github_oauth_url = furl(github_settings.authorize_url).set(params).url
+
+    return make_response(jsonify(github_oauth_url), 200)
+
+
+@app.route(f'/api/data/github/oauth/callback', methods=['GET'])
+def github_oauth():
+
+    if 'code' not in request.args:
+        return jsonify(error="404_no_code"), 404
+
+    if 'state' not in request.args:
+        return jsonify(error="404_no_state"), 404
+
+    if not GitHubSettings.check_state(request.args['state']):
+        return jsonify(error="404_invalid_state"), 404
+
+    github_settings = GitHubSettings()
+
+    payload = {
+        'client_id': github_settings.github_client_id,
+        'client_secret': github_settings.github_client_secret,
+        'code': request.args['code']
+    }
+
+    headers = {'Accept': 'application/json'}
+    req = requests.post(github_settings.token_url, params=payload, headers=headers, verify=False)
+    resp = req.json()
+
+    if 'access_token' not in resp:
+        return jsonify(error="404_no_access_token"), 404
+    access_token = resp["access_token"]
+
+    headers = {'Authorization': f'token {access_token}'}
+    r = requests.get(github_settings.api_url_user, headers=headers, verify=False)
+    github_api_user_response = r.json()
+    print(github_api_user_response)
+
+    r = requests.get(github_settings.api_user_user_email, headers=headers, verify=False)
+    github_api_user_email_response = r.json()
+    print(github_api_user_email_response)
+
+    app.logger.info(f'GitHub/OAuth authentication requested')
+    access_token, refresh_token, return_url, user = authenticate_user_github(github_api_user_response,
+                                                                             github_api_user_email_response)
+
+    query_parameters = {'token': f'{access_token}###{refresh_token}'}
+
+    url = f'{return_url}/saml?{urlencode(query_parameters)}'
+
+    app.logger.info(f'Github/OAuth authentication access granted to {user.email}')
+
+    return redirect(url)

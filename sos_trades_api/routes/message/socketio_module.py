@@ -181,3 +181,16 @@ def on_delete(data):
          {'author': f'{user.firstname} {user.lastname}',
           'type': UserCoeditionAction.DELETE},
          room=room)
+
+
+@socketio.on('edit')
+@auth_refresh_required
+def on_edit(data):
+    room = data['study_case_id']
+    user = get_authenticated_user()
+
+    # Emit notification
+    emit('study-edited',
+         {'author': f'{user.firstname} {user.lastname}',
+          'type': UserCoeditionAction.EDIT},
+         room=room)

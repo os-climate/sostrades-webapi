@@ -40,6 +40,10 @@ if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
 
 app = Flask(server_name)
+app.logger.propagate = False
+
+for handler in app.logger.handlers:
+    handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
 
 
 # Env constant
@@ -87,6 +91,9 @@ try:
     app.logger.info(
         f'{os.environ["FLASK_ENV"]} environment configuration loaded')
 
+    # Identity provider checks
+
+    # -------- SAML V2 provider
     # Test if SAML settings file path is filled
     if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
         app.logger.info('SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
@@ -94,11 +101,26 @@ try:
         app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
 
         # Check that the settings.json file is present:
-        settings_json_file = os.environ['SAML_V2_METADATA_FOLDER']
-        if not os.path.exists(settings_json_file):
-            app.logger.info('SSO settings.json file not found, SSO will be disabled')
+        sso_path = os.environ['SAML_V2_METADATA_FOLDER']
+        if not os.path.exists(sso_path):
+            app.logger.info('SSO folder not found, SSO will be disabled')
         else:
-            app.logger.info('SSO settings.json file found')
+            app.logger.info('SSO folder file found')
+
+    # -------- Github oauth provider
+    if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
+        app.logger.info('GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
+    else:
+        app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
+        if not os.path.exists(settings_json_file):
+            app.logger.info('GitHub IdP/oauth settings.json file not found, SSO will be disabled')
+        else:
+            app.logger.info('GitHub IdP/oauth settings.json file found')
+
+
 
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
@@ -134,20 +156,20 @@ def database_process_setup():
 
     with app.app_context():
         try:
-            # Retrieve administrator applicative account to set admin as
-            # default user manager
-            administrator_applicative_account = User.query.filter(
-                User.username == User.APPLICATIVE_ACCOUNT_NAME).first()
-
             # Retrieve group from configuration to set admin as default
             # user manager
             group_manager_account_account = Group.query.filter(
                 Group.is_default_applicative_group).first()
+            if group_manager_account_account is None:
+                group_manager_account_account = Group.query.filter(
+                Group.name == Group.SOS_TRADES_DEV_GROUP).first()
+                print('No default group have been found. Group Sostrades_dev is get by default')
 
             app.logger.info(
                 'Starting loading available processes and references')
-            update_database_with_process(additional_repository_list, app.logger,
-                                         administrator_applicative_account, group_manager_account_account)
+            update_database_with_process(additional_repository_list=additional_repository_list,
+                                         logger=app.logger,
+                                         default_manager_group=group_manager_account_account)
             update_database_with_references(app.logger)
 
             app.logger.info(
@@ -164,17 +186,6 @@ def database_process_setup():
     return database_initialized
 
 
-def database_create_admin_user():
-    '''
-        Set initial data into db:
-        create Administrator account and set password
-        create test_user account and set password
-        create default group ALL_users
-    '''
-    from sos_trades_api.controllers.sostrades_data.user_controller import create_administrator_account
-    create_administrator_account()
-
-
 def database_create_standard_user(username, email, firstname, lastname):
     '''
         Set initial data into db:
@@ -184,13 +195,6 @@ def database_create_standard_user(username, email, firstname, lastname):
     '''
     from sos_trades_api.controllers.sostrades_data.user_controller import create_standard_user_account
     create_standard_user_account(username, email, firstname, lastname)
-
-
-def database_reset_admin_password():
-    '''
-        Reset Administrator password if account already exist
-    '''
-    database_reset_user_password(User.APPLICATIVE_ACCOUNT_NAME)
 
 
 def database_reset_user_password(username):
@@ -257,25 +261,148 @@ def database_change_user_profile(username, new_profile=None):
                 'An error occurs during database setup')
 
 
+def database_create_api_key(group_name, api_key_name):
+    """
+    Create a new api key for the given group in database
+    :param group_name: Group identifier to assign api key
+    :type group_name: str
+    :param api_key_name: Name to set to the api key
+    :type api_key_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device, GroupAccessUser, AccessRights
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(User, Group, GroupAccessUser, AccessRights) \
+            .filter(User.id == GroupAccessUser.user_id) \
+            .filter(Group.id == GroupAccessUser.group_id) \
+            .filter(Group.name == group_name) \
+            .filter(GroupAccessUser.right_id == AccessRights.id) \
+            .filter(AccessRights.access_right == AccessRights.OWNER).first()
+
+        if result is None:
+            app.logger.error('To generate an api key, the group must exist and have a user as group OWNER.')
+            exit()
+
+        group = result.Group
+
+        device_already_exist = Device.query.filter(Device.group_id == group.id).first()
+
+        if device_already_exist:
+            app.logger.error('There is already an api key available for this group')
+            exit()
+
+        device = Device()
+        device.device_name = api_key_name
+        device.group_id = group.id
+
+        db.session.add(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been created')
+        app.logger.info(device)
+
+
+def database_renew_api_key(group_name):
+    """
+    Renew api key for the given group in database
+    :param group_name: Group identifier with assigned api key
+    :type group_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(Group, Device) \
+            .filter(Group.id == Device.group_id) \
+            .filter(Group.name == group_name).first()
+
+        if result is None:
+            app.logger.error('No api key found for this group')
+            exit()
+
+        device = result.Device
+
+        # Update key value
+        temp_device = Device()
+        device.device_key = temp_device.device_key
+
+        db.session.add(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been updated')
+        app.logger.info(device)
+
+
+def database_revoke_api_key(group_name):
+    """
+    Revoke api key for the given group in database
+    :param group_name: Group identifier with assigned api key
+    :type group_name: str
+    """
+
+    from sos_trades_api.models.database_models import Group, Device
+
+    with app.app_context():
+        # First check that group has an owner
+        result = db.session.query(Group, Device) \
+            .filter(Group.id == Device.group_id) \
+            .filter(Group.name == group_name).first()
+
+        if result is None:
+            app.logger.error('No api key found for this group.')
+            exit()
+
+        device = result.Device
+
+        db.session.delete(device)
+        db.session.commit()
+
+        app.logger.info('The following api key has been deleted')
+        app.logger.info(device)
+
+
+def database_list_api_key():
+    """
+    list all database api key
+    """
+
+    from sos_trades_api.models.database_models import Device
+
+    with app.app_context():
+        # First check that group has an owner
+        devices = Device.query.all()
+
+        if len(devices) == 0:
+            app.logger.info('No api key found')
+        else:
+            app.logger.info('Existing api key list')
+            for device in devices:
+                app.logger.info(device)
+
+
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command('init_process')
+    @click.option('-d', '--debug', is_flag=True)
     @with_appcontext
-    def init_process():
-        """ Execute process and reference database setup
+    def init_process(debug):
         """
-        database_process_setup()
+        Execute process and reference database setup
 
-    # Add custom command on flask cli to execute database init data setup
-    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('create_admin_user')
-    @with_appcontext
-    def create_admin_user():
-        """ admin and test user creation and default group creation database setup
+        :param debug: show DEBIG log
+        :type debug: boolean
         """
-        database_create_admin_user()
+
+        if debug:
+            app.logger.setLevel(logging.DEBUG)
+        else:
+            app.logger.setLevel(logging.INFO)
+        database_process_setup()
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
@@ -293,15 +420,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         :param:lastname, last name of the user
         """
         database_create_standard_user(username, email, firstname, lastname)
-
-    # Add custom command on flask cli to execute database init data setup
-    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('reset_admin_password')
-    @with_appcontext
-    def reset_admin_password():
-        """ admin and test user creation and default group creation database setup
-        """
-        database_reset_admin_password()
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
@@ -340,13 +458,63 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             profile = None
         database_change_user_profile(username, profile)
 
+
+    @click.command('create_api_key')
+    @click.argument('group_name')
+    @click.argument('api_key_name')
+    @with_appcontext
+    def create_api_key(group_name, api_key_name):
+        """ create an api key
+        :param group_name: the group name to assign api key
+        :type group_name: str
+        :param api_key_name: name to set to the api key
+        :type group_name: str
+        """
+
+        database_create_api_key(group_name, api_key_name)
+
+
+    @click.command('renew_api_key')
+    @click.argument('group_name')
+    @with_appcontext
+    def renew_api_key(group_name):
+        """ update an api key
+        :param group_name: the group name to renew api key
+        :type group_name: str
+        """
+
+        database_renew_api_key(group_name)
+
+
+    @click.command('revoke_api_key')
+    @click.argument('group_name')
+    @with_appcontext
+    def revoke_api_key(group_name):
+        """ revoke an api key
+        :param: group_name, the group name to revoke api key
+        :type group_name: str
+        """
+
+        database_revoke_api_key(group_name)
+
+
+    @click.command('list_api_key')
+    @with_appcontext
+    def list_api_key():
+        """ List all database api key
+        """
+
+        database_list_api_key()
+
     app.cli.add_command(init_process)
-    app.cli.add_command(create_admin_user)
     app.cli.add_command(create_standard_user)
     app.cli.add_command(rename_applicative_group)
-    app.cli.add_command(reset_admin_password)
     app.cli.add_command(reset_standard_user_password)
     app.cli.add_command(change_user_profile)
+    app.cli.add_command(create_api_key)
+    app.cli.add_command(renew_api_key)
+    app.cli.add_command(revoke_api_key)
+    app.cli.add_command(list_api_key)
 
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):
@@ -394,3 +562,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
                 'name': 'Internal Server Error',
                 'description': str(error)
             }), 500
+
+
+if __name__ == "main":
+    database_process_setup()

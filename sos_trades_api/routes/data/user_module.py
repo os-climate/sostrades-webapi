@@ -17,10 +17,13 @@ from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest, Unauthorized
 
 from sos_trades_api.base_server import app
+from sos_trades_api.models.database_models import Group, User
 from sos_trades_api.tools.authentication.password_generator import generate_password
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user, study_manager_profile
+from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user, \
+    study_manager_profile
 from sos_trades_api.controllers.sostrades_data.user_controller import add_user, update_user as update_user_controller, \
-    get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, change_user_password
+    get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, \
+    change_user_password, set_user_default_group
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
 from sos_trades_api.models.user_application_right import UserApplicationRight
@@ -29,7 +32,6 @@ from sos_trades_api.models.user_application_right import UserApplicationRight
 @app.route(f'/api/data/user', methods=['GET'])
 @auth_required
 def users():
-
     resp = make_response(jsonify(get_user_list()), 200)
     return resp
 
@@ -60,7 +62,8 @@ def create_user():
         raise BadRequest('\n'.join(missing_parameter))
 
     # Create user with a randomly generated password
-    added_user, reset_link = add_user(firstname, lastname, username, generate_password(), email, user_profile_id)
+    added_user, reset_link = add_user(
+        firstname, lastname, username, generate_password(), email, user_profile_id)
 
     app.logger.info(f'User {added_user} created')
 
@@ -76,9 +79,9 @@ def create_user():
 @auth_required
 @study_manager_profile
 def update_user(user_identifier):
-
     if user_identifier is None or user_identifier <= 0:
-        raise BadRequest(f'Invalid argument value for user_identifier.\nReceived {user_identifier}, expected stricly positive integer')
+        raise BadRequest(
+            f'Invalid argument value for user_identifier.\nReceived {user_identifier}, expected stricly positive integer')
 
     # Proceeding after rights verification
     user_id_updated = request.json.get('id', None)
@@ -100,6 +103,7 @@ def update_user(user_identifier):
         missing_parameter.append('Missing mandatory parameter: username')
     if email is None:
         missing_parameter.append('Missing mandatory parameter: email')
+        # User profile is not mandatory
 
     if len(missing_parameter) > 0:
         raise BadRequest('\n'.join(missing_parameter))
@@ -123,7 +127,6 @@ def update_user(user_identifier):
 @auth_required
 @study_manager_profile
 def delete_user():
-
     # Proceeding after rights verification
     user_id = request.json.get('user_id', None)
 
@@ -133,8 +136,8 @@ def delete_user():
     resp = make_response(jsonify(delete_user_controller(user_id)), 200)
     app.logger.info(f'User {user_id} deleted')
     return resp
-    
-    
+
+
 @app.route(f'/api/data/user/profile', methods=['GET'])
 @auth_required
 def user_profiles():
@@ -172,11 +175,12 @@ def reset_password():
     user_identifier = request.json.get('user_identifier', None)
 
     if user_identifier is None:
-        raise BadRequest ('Missing mandatory parameter: user_identifier')
+        raise BadRequest('Missing mandatory parameter: user_identifier')
 
     user = session['user']
 
-    can_reset_password = has_access_to(user.user_profile_id, access_right.APP_MODULE_STUDY_MANAGER) or user.id == user_identifier
+    can_reset_password = has_access_to(user.user_profile_id,
+                                       access_right.APP_MODULE_STUDY_MANAGER) or user.id == user_identifier
 
     if not can_reset_password:
         raise Unauthorized(
@@ -211,3 +215,17 @@ def change_password():
     change_user_password(token, password)
 
     return make_response(None, 200)
+
+
+@app.route(f'/api/data/user/default-group/<int:group_id>', methods=['POST'])
+@auth_required
+def change_default_group(group_id):
+    user = session['user']
+
+    if group_id is None:
+        raise BadRequest('Missing mandatory parameter: group_id')
+
+    set_user_default_group(group_id, user.id)
+    resp = make_response(jsonify(''), 200)
+
+    return resp

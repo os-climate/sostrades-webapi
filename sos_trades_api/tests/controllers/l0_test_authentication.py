@@ -34,15 +34,6 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
 
-        # Retrieve administrator password (for test purpose)
-        root_folder = dirname(sos_trades_api_file)
-        secret_path = join(root_folder, 'secret')
-        secret_filepath = join(secret_path, 'adminPassword')
-
-        with open(secret_filepath, 'r') as f:
-            self.admin_password = f.read()
-            f.close()
-
         # Retrieve standard user password (for test purpose)
         root_folder = dirname(sos_trades_api_file)
         secret_path = join(root_folder, 'secret')
@@ -62,14 +53,6 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
         from flask_jwt_extended import decode_token
 
         with DatabaseUnitTestConfiguration.app.app_context():
-            # Test access for applicative account
-            jwt_access, _, _, _ = authenticate_user_standard(
-                User.APPLICATIVE_ACCOUNT_NAME, self.admin_password)
-
-            decoded_token = decode_token(jwt_access)
-
-            self.assertEqual(decoded_token['identity'], User.APPLICATIVE_ACCOUNT_EMAIL,
-                             'Applicative account user is not the same than the one stored into the jwt token')
 
             # Test access for test account
             jwt_access, _, _, _ = authenticate_user_standard(
@@ -89,10 +72,6 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import User
 
         with DatabaseUnitTestConfiguration.app.app_context():
-            # Test faillure on applicative account
-            with self.assertRaises(InvalidCredentials):
-                authenticate_user_standard(
-                    User.APPLICATIVE_ACCOUNT_NAME, 'bad password')
 
             # Test faillure on test account
             with self.assertRaises(InvalidCredentials):
