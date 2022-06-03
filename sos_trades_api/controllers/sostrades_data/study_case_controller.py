@@ -24,11 +24,9 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.models.database_models import Notification, StudyCaseChange, \
-    StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group, StudyCaseExecution
+from sos_trades_api.models.database_models import Notification, StudyCaseChange,StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group, StudyCaseExecution
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
+from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata,load_repositories_metadata
 from sqlalchemy.sql.expression import and_, desc
 import json
 from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy
@@ -45,39 +43,22 @@ def get_user_shared_study_case(user_id):
     study_case_access = StudyCaseAccess(user_id)
 
     all_user_studies = study_case_access.user_study_cases
-    all_user_studies = sorted(
-        all_user_studies, key=lambda res: res.creation_date, reverse=True)
 
     if len(all_user_studies) > 0:
+
+        # Sort study using creation date
+        all_user_studies = sorted(
+            all_user_studies, key=lambda res: res.creation_date, reverse=True)
+
         # Apply Ontology
         processes_metadata = []
         repositories_metadata = []
 
+        # Iterate through study to aggregate needed information's
         for user_study in all_user_studies:
+
+            # Manage gathering of all data needed for the ontology request
             process_key = f'{user_study.repository}.{user_study.process}'
-
-            # Get the group of the study to update his group_id and group_name DTO
-            study = StudyCase.query.filter(StudyCase.id == user_study.id).first()
-            group = Group.query.filter(Group.id == study.group_id).first()
-            if study and group is not None:
-                user_study.group_id = study.group_id
-                user_study.group_name = group.name
-
-            # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
-            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id) \
-                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
-
-            if user_favorite_study is not None:
-                user_study.is_favorite = True
-
-            # Get current status of the study's execution calculation
-            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == user_study.id) \
-                .order_by(desc(StudyCaseExecution.id)).first()
-            if study_case_execution is None:
-                user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
-            else:
-                user_study.execution_status = study_case_execution.execution_status
-
             if process_key not in processes_metadata:
                 processes_metadata.append(process_key)
 
@@ -86,14 +67,41 @@ def get_user_shared_study_case(user_id):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
 
-            process_metadata = load_processes_metadata(processes_metadata)
-            repository_metadata = load_repositories_metadata(repositories_metadata)
+        process_metadata = load_processes_metadata(processes_metadata)
+        repository_metadata = load_repositories_metadata(repositories_metadata)
 
+        # Get all study identifier
+        all_study_identifier = [user_study.id for user_study in all_user_studies]
+
+        # Retrieve all favorite study
+        all_favorite_studies = UserStudyFavorite.query\
+            .filter(UserStudyFavorite.study_case_id.in_(all_study_identifier))\
+            .filter(UserStudyFavorite.user_id == user_id).all()
+        all_favorite_studies_identifier = [favorite_study.study_case_id for favorite_study in all_favorite_studies]
+
+
+        # Get all related study case execution id
+        all_study_case_execution_identifiers = [user_study.current_execution_id for user_study in filter(lambda s: s.current_execution_id is not None, all_user_studies)]
+        all_study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.in_(all_study_case_execution_identifiers)).all()
+
+        # Final loop to update study dto
+        for user_study in all_user_studies:
+
+            # Update ontology display name
             user_study.apply_ontology(process_metadata, repository_metadata)
-            result.append(user_study)
 
-        result = sorted(
-            result, key=lambda res: res.is_favorite, reverse=True)
+            # Manage favorite study list
+            if user_study.id in all_favorite_studies_identifier:
+                user_study.is_favorite = True
+
+            # Manage execution status
+            study_case_execution = list(filter(lambda sce: sce.study_case_id == user_study.id, all_study_case_execution))
+            if study_case_execution is None or len(study_case_execution) == 0:
+                user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+            else:
+                user_study.execution_status = study_case_execution[0].execution_status
+
+        result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
     return result
 
