@@ -50,7 +50,7 @@ def on_join(data):
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.JOIN_ROOM)
+                        UserCoeditionAction.JOIN_ROOM, CoeditionMessage.JOIN_ROOM)
 
     # Emit notification
     emit('room-user-update',
@@ -72,7 +72,7 @@ def on_leave(data):
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.LEAVE_ROOM)
+                        UserCoeditionAction.LEAVE_ROOM, CoeditionMessage.LEAVE_ROOM)
 
     # Emit notification
     emit('room-user-update',
@@ -121,7 +121,7 @@ def on_submit(data):
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.SUBMISSION)
+                        UserCoeditionAction.SUBMISSION, CoeditionMessage.SUBMISSION)
 
     # Emit notification
     emit('study-submitted',
@@ -140,7 +140,7 @@ def on_execute(data):
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.EXECUTION)
+                        UserCoeditionAction.EXECUTION, CoeditionMessage.EXECUTION)
 
     # Emit notification
     emit('study-executed',
@@ -159,7 +159,7 @@ def on_claim(data):
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.CLAIM)
+                        UserCoeditionAction.CLAIM, CoeditionMessage.CLAIM)
 
     # Emit notification
     emit('study-claimed',
@@ -194,3 +194,28 @@ def on_edit(data):
          {'author': f'{user.firstname} {user.lastname}',
           'type': UserCoeditionAction.EDIT},
          room=room)
+
+
+@socketio.on('validation-change')
+@auth_refresh_required
+def on_validation_change(data):
+    room = data['study_case_id']
+    user = get_authenticated_user()
+    treenode = data['treenode_data_name']
+    validation = data['validation_state']
+    message = f'User has "{validation}" the node "{treenode}"'
+
+    # Add notification to database
+    add_notification_db(data['study_case_id'], user,
+                        UserCoeditionAction.VALIDATION_CHANGE, message)
+    # Emit notification
+    emit('validation-change',
+         {'author': f'{user.firstname} {user.lastname}',
+          'type': UserCoeditionAction.VALIDATION_CHANGE,
+          'study_case_id': room,
+          'message': message,
+          'treenode_data_name': treenode,
+          'validation_state': validation},
+         room=room)
+
+
