@@ -28,4 +28,4 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api import api_v0_server
 
-    api_v0_server.app.run(host='0.0.0.0', port='5004')
+    api_v0_server.app.run(host='127.0.0.1', port='5004')
