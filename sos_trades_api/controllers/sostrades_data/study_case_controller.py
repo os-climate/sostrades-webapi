@@ -20,13 +20,27 @@ Study case Functions
 from tempfile import gettempdir
 import io
 from sos_trades_api.tools.code_tools import isevaluatable
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 from sos_trades_api.base_server import app, db
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.models.database_models import Notification, StudyCaseChange,StudyCaseExecutionLog, UserStudyPreference, StudyCase, UserStudyFavorite, Group, StudyCaseExecution
+from sos_trades_api.models.database_models import (
+    Notification,
+    StudyCaseChange,
+    StudyCaseExecutionLog,
+    UserStudyPreference,
+    StudyCase,
+    UserStudyFavorite,
+    Group,
+    StudyCaseExecution,
+)
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata,load_repositories_metadata
+from sos_trades_api.controllers.sostrades_main.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
 from sqlalchemy.sql.expression import and_, desc
 import json
 from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy
@@ -48,7 +62,8 @@ def get_user_shared_study_case(user_id):
 
         # Sort study using creation date
         all_user_studies = sorted(
-            all_user_studies, key=lambda res: res.creation_date, reverse=True)
+            all_user_studies, key=lambda res: res.creation_date, reverse=True
+        )
 
         # Apply Ontology
         processes_metadata = []
@@ -74,15 +89,27 @@ def get_user_shared_study_case(user_id):
         all_study_identifier = [user_study.id for user_study in all_user_studies]
 
         # Retrieve all favorite study
-        all_favorite_studies = UserStudyFavorite.query\
-            .filter(UserStudyFavorite.study_case_id.in_(all_study_identifier))\
-            .filter(UserStudyFavorite.user_id == user_id).all()
-        all_favorite_studies_identifier = [favorite_study.study_case_id for favorite_study in all_favorite_studies]
-
+        all_favorite_studies = (
+            UserStudyFavorite.query.filter(
+                UserStudyFavorite.study_case_id.in_(all_study_identifier)
+            )
+            .filter(UserStudyFavorite.user_id == user_id)
+            .all()
+        )
+        all_favorite_studies_identifier = [
+            favorite_study.study_case_id for favorite_study in all_favorite_studies
+        ]
 
         # Get all related study case execution id
-        all_study_case_execution_identifiers = [user_study.current_execution_id for user_study in filter(lambda s: s.current_execution_id is not None, all_user_studies)]
-        all_study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.in_(all_study_case_execution_identifiers)).all()
+        all_study_case_execution_identifiers = [
+            user_study.current_execution_id
+            for user_study in filter(
+                lambda s: s.current_execution_id is not None, all_user_studies
+            )
+        ]
+        all_study_case_execution = StudyCaseExecution.query.filter(
+            StudyCaseExecution.id.in_(all_study_case_execution_identifiers)
+        ).all()
 
         # Final loop to update study dto
         for user_study in all_user_studies:
@@ -95,7 +122,12 @@ def get_user_shared_study_case(user_id):
                 user_study.is_favorite = True
 
             # Manage execution status
-            study_case_execution = list(filter(lambda sce: sce.study_case_id == user_study.id, all_study_case_execution))
+            study_case_execution = list(
+                filter(
+                    lambda sce: sce.study_case_id == user_study.id,
+                    all_study_case_execution,
+                )
+            )
             if study_case_execution is None or len(study_case_execution) == 0:
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
@@ -110,33 +142,37 @@ def get_change_file_stream(notification_id, parameter_key):
     """
     Get the File from a change notification parameter
     """
-    change = StudyCaseChange.query \
-        .filter(StudyCaseChange.notification_id == notification_id) \
-        .filter(StudyCaseChange.variable_id == parameter_key).first()
+    change = (
+        StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_id)
+        .filter(StudyCaseChange.variable_id == parameter_key)
+        .first()
+    )
 
     if change is not None:
         if change.old_value_blob is not None:
             return BytesIO(change.old_value_blob)
 
-    raise InvalidFile(
-        f'Error, cannot retrieve change file {parameter_key}.csv')
+    raise InvalidFile(f'Error, cannot retrieve change file {parameter_key}.csv')
 
 
 def get_study_case_notifications(study_id, with_notifications):
-    """"
-        get list of study case notifications
-        :param: study_id, id of the study
-        :type: integer
-        :param: with_notifications, True to return the modifications, False return an empty list
-        :type: boolean
+    """ "
+    get list of study case notifications
+    :param: study_id, id of the study
+    :type: integer
+    :param: with_notifications, True to return the modifications, False return an empty list
+    :type: boolean
 
     """
     notification_list = []
 
     with app.app_context():
         if with_notifications:
-            notification_query = Notification.query.filter(
-                Notification.study_case_id == study_id).order_by(Notification.created.desc()).all()
+            notification_query = (
+                Notification.query.filter(Notification.study_case_id == study_id)
+                .order_by(Notification.created.desc())
+                .all()
+            )
 
             if len(notification_query) > 0:
                 for notif in notification_query:
@@ -146,11 +182,16 @@ def get_study_case_notifications(study_id, with_notifications):
                         notif.author,
                         notif.type,
                         notif.message,
-                        [])
+                        [],
+                    )
                     if notif.type == UserCoeditionAction.SAVE:
-                        changes_query = StudyCaseChange.query \
-                            .filter(StudyCaseChange.notification_id == notif.id) \
-                            .order_by(StudyCaseChange.last_modified.desc()).all()
+                        changes_query = (
+                            StudyCaseChange.query.filter(
+                                StudyCaseChange.notification_id == notif.id
+                            )
+                            .order_by(StudyCaseChange.last_modified.desc())
+                            .all()
+                        )
 
                         if len(changes_query) > 0:
                             notif_changes = []
@@ -161,10 +202,8 @@ def get_study_case_notifications(study_id, with_notifications):
                                 new_change.variable_id = ch.variable_id
                                 new_change.variable_type = ch.variable_type
                                 new_change.change_type = ch.change_type
-                                new_change.new_value = isevaluatable(
-                                    ch.new_value)
-                                new_change.old_value = isevaluatable(
-                                    ch.old_value)
+                                new_change.new_value = isevaluatable(ch.new_value)
+                                new_change.old_value = isevaluatable(ch.old_value)
                                 new_change.old_value_blob = ch.old_value_blob
                                 new_change.last_modified = ch.last_modified
                                 notif_changes.append(new_change)
@@ -178,13 +217,14 @@ def get_study_case_notifications(study_id, with_notifications):
 
 def get_user_authorised_studies_for_process(user_id, process_name, repository_name):
     """
-       Retrieve all the study cases shared with the user for the selected process and repository
+    Retrieve all the study cases shared with the user for the selected process and repository
     """
 
     result = []
     study_case_access = StudyCaseAccess(user_id)
     all_user_studies = study_case_access.get_study_cases_authorised_from_process(
-        process_name, repository_name)
+        process_name, repository_name
+    )
 
     if len(all_user_studies) > 0:
         # Apply Ontology
@@ -213,13 +253,18 @@ def get_user_authorised_studies_for_process(user_id, process_name, repository_na
 
 
 def get_logs(study_id=None):
-    """"
-        Retrieve a study case execution logs, write them in a file, return the filename
+    """ "
+    Retrieve a study case execution logs, write them in a file, return the filename
     """
     logs = []
     if study_id is not None:
-        logs = StudyCaseExecutionLog.query.filter(
-            StudyCaseExecutionLog.study_case_id == study_id).order_by(StudyCaseExecutionLog.id.desc()).all()
+        logs = (
+            StudyCaseExecutionLog.query.filter(
+                StudyCaseExecutionLog.study_case_id == study_id
+            )
+            .order_by(StudyCaseExecutionLog.id.desc())
+            .all()
+        )
         logs.reverse()
 
     if logs:
@@ -227,7 +272,9 @@ def get_logs(study_id=None):
         file_name = f'{tmp_folder}/_log'
         with io.open(file_name, "w", encoding="utf-8") as f:
             for log in logs:
-                f.write(f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n')
+                f.write(
+                    f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n'
+                )
         return file_name
 
 
@@ -250,7 +297,7 @@ def get_raw_logs(study_id):
 
 
 def load_study_case_preference(study_id, user_id):
-    """ Load study preferences for the given user
+    """Load study preferences for the given user
 
     :params: study_id, study identifier corresponding to the requested preference
     :type: integer
@@ -264,7 +311,11 @@ def load_study_case_preference(study_id, user_id):
 
     with app.app_context():
         preferences = UserStudyPreference.query.filter(
-            and_(UserStudyPreference.user_id == user_id, UserStudyPreference.study_case_id == study_id)).all()
+            and_(
+                UserStudyPreference.user_id == user_id,
+                UserStudyPreference.study_case_id == study_id,
+            )
+        ).all()
 
         if len(preferences) > 0:
             preference = preferences[0].preference
@@ -276,7 +327,7 @@ def load_study_case_preference(study_id, user_id):
 
 
 def save_study_case_preference(study_id, user_id, preference):
-    """ Load study preferences for the given user
+    """Load study preferences for the given user
 
     :params: study_id, study identifier corresponding to the requested preference
     :type: integer
@@ -290,7 +341,11 @@ def save_study_case_preference(study_id, user_id, preference):
 
     with app.app_context():
         preferences = UserStudyPreference.query.filter(
-            and_(UserStudyPreference.user_id == user_id, UserStudyPreference.study_case_id == study_id)).all()
+            and_(
+                UserStudyPreference.user_id == user_id,
+                UserStudyPreference.study_case_id == study_id,
+            )
+        ).all()
 
         current_preference = None
         if len(preferences) > 0:
@@ -310,11 +365,11 @@ def save_study_case_preference(study_id, user_id, preference):
 
 def set_user_authorized_execution(study_case_id, user_id):
     """
-        Save the user authorized for execution of a studycase
-        :param: study_case_id, id of the study case
-        :type: integer
-        :param: user_id, id of the user
-        :type: integer
+    Save the user authorized for execution of a studycase
+    :param: study_case_id, id of the study case
+    :type: integer
+    :param: user_id, id of the user
+    :type: integer
     """
     # Retrieve study case with user authorised for execution
     study_case_loaded = StudyCase.query.filter(StudyCase.id == study_case_id).first()
@@ -325,7 +380,9 @@ def set_user_authorized_execution(study_case_id, user_id):
         db.session.add(study_case_loaded)
         db.session.commit()
     else:
-        raise InvalidStudy(f'Unable to find in database the study case with id {study_case_id}')
+        raise InvalidStudy(
+            f'Unable to find in database the study case with id {study_case_id}'
+        )
 
     return 'You successfully claimed Execution ability'
 
@@ -341,7 +398,8 @@ def get_study_of_favorite_study_by_user(user_id):
     study_case_access = StudyCaseAccess(user_id)
     all_user_studies = study_case_access.user_study_cases
     all_user_studies_sorted = sorted(
-        all_user_studies, key=lambda res: res.creation_date, reverse=True)
+        all_user_studies, key=lambda res: res.creation_date, reverse=True
+    )
 
     if len(all_user_studies_sorted) > 0:
         # Apply Ontology
@@ -358,16 +416,23 @@ def get_study_of_favorite_study_by_user(user_id):
                 user_study.group_name = group.name
 
             # Retrieve study from user's favorite studies and apply the boolean "is_favorite" at True
-            user_favorite_study = UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)\
-                .filter(UserStudyFavorite.study_case_id == user_study.id).first()
+            user_favorite_study = (
+                UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)
+                .filter(UserStudyFavorite.study_case_id == user_study.id)
+                .first()
+            )
 
             if user_favorite_study is not None:
                 user_study.is_favorite = True
 
                 # Get current status of the study's execution calculation
-                study_case_execution = StudyCaseExecution.query.filter(
-                    StudyCaseExecution.study_case_id == user_study.id) \
-                    .order_by(desc(StudyCaseExecution.id)).first()
+                study_case_execution = (
+                    StudyCaseExecution.query.filter(
+                        StudyCaseExecution.study_case_id == user_study.id
+                    )
+                    .order_by(desc(StudyCaseExecution.id))
+                    .first()
+                )
                 if study_case_execution is None:
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
                 else:
@@ -395,17 +460,19 @@ def get_study_of_favorite_study_by_user(user_id):
 
 def add_favorite_study_case(study_case_id, user_id):
     """
-      create and save a new favorite study case for a user
-        :param: study_case_id, id of the study_case
-        :type: integer
-        :param: user_id, user that did add a favorite study
-        :type: integer
+    create and save a new favorite study case for a user
+      :param: study_case_id, id of the study_case
+      :type: integer
+      :param: user_id, user that did add a favorite study
+      :type: integer
 
     """
 
-    favorite_study = UserStudyFavorite.query \
-        .filter(UserStudyFavorite.user_id == user_id) \
-        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+    favorite_study = (
+        UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)
+        .filter(UserStudyFavorite.study_case_id == study_case_id)
+        .first()
+    )
 
     # Creation of a favorite study
     if favorite_study is None:
@@ -419,29 +486,37 @@ def add_favorite_study_case(study_case_id, user_id):
         return new_favorite_study
 
     else:
-        study_case = StudyCase.query \
-            .filter(StudyCase.id == study_case_id) \
-            .filter(UserStudyFavorite.study_case_id == study_case_id).first()
-        raise Exception(f'The study - {study_case.name} - is already in your favorite studies')
+        study_case = (
+            StudyCase.query.filter(StudyCase.id == study_case_id)
+            .filter(UserStudyFavorite.study_case_id == study_case_id)
+            .first()
+        )
+        raise Exception(
+            f'The study - {study_case.name} - is already in your favorite studies'
+        )
 
 
 def remove_favorite_study_case(study_case_id, user_id):
     """
-      remove a favorite study case for a user
-        :param: study_case_id, id of the study_case
-        :type: integer
-        :param: user_id, user that did add a favorite study
-        :type: integer
+    remove a favorite study case for a user
+      :param: study_case_id, id of the study_case
+      :type: integer
+      :param: user_id, user that did add a favorite study
+      :type: integer
 
     """
     # Get the study-case thanks to study_id into UserFavoriteStudy
-    study_case = StudyCase.query \
-        .filter(StudyCase.id == study_case_id) \
-        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+    study_case = (
+        StudyCase.query.filter(StudyCase.id == study_case_id)
+        .filter(UserStudyFavorite.study_case_id == study_case_id)
+        .first()
+    )
 
-    favorite_study = UserStudyFavorite.query \
-        .filter(UserStudyFavorite.user_id == user_id) \
-        .filter(UserStudyFavorite.study_case_id == study_case_id).first()
+    favorite_study = (
+        UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_id)
+        .filter(UserStudyFavorite.study_case_id == study_case_id)
+        .first()
+    )
 
     if favorite_study is not None:
         try:
