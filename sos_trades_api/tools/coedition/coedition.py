@@ -40,13 +40,13 @@ class UserCoeditionAction:
 
 class CoeditionMessage:
     JOIN_ROOM = 'User has entered the study case.'
-    LEAVE_ROOM = 'User just leaved the study case.'
+    LEAVE_ROOM = 'User just left the study case.'
     SAVE = 'User just saved the study case.'
     SUBMISSION = 'User just submitted to execution the study case.'
     EXECUTION = 'Study case execution just started.'
     CLAIM = 'User just claimed the study case execution right.'
     RELOAD = 'User just reload the study case.'
-    VALIDATION_CHANGE = 'User just change validation the study case.'
+    VALIDATION_CHANGE = 'User just changed validation state.'
 
 
 def add_user_to_room(user_id, study_case_id):
