@@ -1,6 +1,6 @@
-SOS_TRADES_SERVER_CONFIGURATION=C:\Users\GDELRVQ4\Documents\GitHub\infrastructure\local_configuration\configuration\unit_test_configuration.json
-SQL_ACCOUNT=sostrades_web_api_user
-SQL_PASSWORD=TdjL3bGv3cQfrvQlNGTR
-LOG_USER=sostrades_web_api_user
-LOG_PASSWORD=TdjL3bGv3cQfrvQlNGTR
-SECRET_KEY=t0)&s2!!aq4@08v5!jw&v_#!9yapq7amsm59&j*z+lsniwa_)d
+SOS_TRADES_SERVER_CONFIGURATION=
+SQL_ACCOUNT=
+SQL_PASSWORD=
+LOG_USER=
+LOG_PASSWORD=
+SECRET_KEY=
