@@ -8,36 +8,14 @@ This API is designed to offer some access point for command line requests.
 
 ## Exposed routes
 
-### Authentication
+### Authorization
 
-An authentication is needed for other requests. A bearer can be generated with auth login route. 
+Each request has to be authorize using an api key provided using Authorization header
 
-    https://<host>//api/v0/auth/login
-
-- POST parameters : 
-  - *username* : user name 
-  - *password* : user password 
-
-- response content :
-  - *access_token* : bearer access token
-
-```python
-import requests
-# Request API login
-response = requests.post(
-    "https://<host>//api/v0/auth/login",
-    json={
-        'username': "my_user_name",
-        'password': "my_password"
-    }
-)
-
-# Print access token 
-print(response.json().get("access_token"))
-
-# Create a bearer for further requests
-bearer = {"Authorization": "Bearer " + response.json().get("access_token")}
-```
+- Authorization header : 
+  'Authorization': 'Bearer <api_key>'
+  
+Api key has to be created and provided using flask command  'create_api_key'
 
 ### Load a study case
 
@@ -58,7 +36,7 @@ import requests, json
 # Its assumed that a bearer token as been previously requested
 response = requests.get(
     "https://<host>/api/v0/study-case/<int:study_id>",
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 print(json.dumps(response.json(), indent=4))
 # Printed response should be like
@@ -93,7 +71,7 @@ import requests, json
 response = requests.post(
     "https://<host>/api/v0/study-case/<int:study_id>/parameter/download",
     json={"parameter_key": "my.study.discipline"},
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 print(response.content.decode("utf-8"))
 # Printed content should be like
@@ -130,7 +108,7 @@ response = requests.post(
                 "unit": "the_unit",
                 "newValue": "the_new_value"
             }],
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 # File parameter
 response = requests.post(
@@ -138,7 +116,7 @@ response = requests.post(
     files={
             "my.study.discipline": open("/path/to/my/file.csv", "rb"),
         },
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 ```
 
@@ -171,7 +149,7 @@ import requests
 # Its assumed that a bearer token as been previously requested
 response = requests.post(
     "https://<host>/api/v0/calculation/execute/<int:study_id>",
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 ```
 
 ### Monitor study case calculation status
@@ -194,7 +172,7 @@ import requests
 # Its assumed that a bearer token as been previously requested
 response = requests.get(
     "https://<host>/api/v0/calculation/status/<int:study_id>",
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 print(response.json())
 # Printed response should be like
@@ -228,7 +206,7 @@ import requests
 # Its assumed that a bearer token as been previously requested
 response = requests.get(
     "https://<host>/api/v0/post-processing/<int:study_id>",
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 print(response.json())
 # Printed response should be like
@@ -255,7 +233,7 @@ import requests
 # Its assumed that a bearer token as been previously requested
 response = requests.get(
     "https://<host>/api/v0/post-processing/<int:study_id>/html",
-    headers={"Authorization": "my_bearer"})
+    headers={"Authorization": "Bearer <api_key>"})
 
 # Create an html file
 with open("/path/to/my/file", "w") as fs:
