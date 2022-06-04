@@ -194,3 +194,27 @@ def on_edit(data):
          {'author': f'{user.firstname} {user.lastname}',
           'type': UserCoeditionAction.EDIT},
          room=room)
+
+
+@socketio.on('validation-change')
+@auth_refresh_required
+def on_validation_change(data):
+    room = data['study_case_id']
+    user = get_authenticated_user()
+    treenode = data['treenode_data_name']
+    validation = data['validation_state']
+
+    # Add notification to database
+    add_notification_db(data['study_case_id'], user,
+                        UserCoeditionAction.VALIDATION_CHANGE)
+    # Emit notification
+    emit('validation-change',
+         {'author': f'{user.firstname} {user.lastname}',
+          'type': UserCoeditionAction.VALIDATION_CHANGE,
+          'study_case_id': room,
+          'message': CoeditionMessage.VALIDATION_CHANGE,
+          'treenode_data_name': treenode,
+          'validation_state': validation},
+         room=room)
+
+
