@@ -96,18 +96,24 @@ def saml_sso():
     """ sso redirection for user login
     """
 
-    req = prepare_flask_request(request)
-    auth = init_saml_auth(req)
-
-    # If AuthNRequest ID need to be stored in order to later validate it, do
-    # instead
-
     sso_built_url = ''
 
-    if len(app.config["SOS_TRADES_K8S_DNS"]) > 0:
-        sso_built_url = auth.login(
-            return_to=f'{app.config["SOS_TRADES_K8S_DNS"]}')
-        session['AuthNRequestID'] = auth.get_last_request_id()
+    try:
+        if os.environ.get('SAML_V2_METADATA_FOLDER') is not None:
+
+            # Check that the settings.json file is present:
+            sso_path = os.environ['SAML_V2_METADATA_FOLDER']
+            if os.path.exists(sso_path):
+                req = prepare_flask_request(request)
+                auth = init_saml_auth(req)
+
+                if len(app.config["SOS_TRADES_K8S_DNS"]) > 0:
+                    sso_built_url = auth.login(
+                        return_to=f'{app.config["SOS_TRADES_K8S_DNS"]}')
+                    session['AuthNRequestID'] = auth.get_last_request_id()
+    except Exception as ex:
+        app.logger.exception('The following error occurs when trying to log using SSO')
+        sso_built_url = ''
 
     return make_response(jsonify(sso_built_url), 200)
 
