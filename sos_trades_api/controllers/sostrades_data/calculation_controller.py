@@ -136,6 +136,7 @@ def execute_calculation(study_id, username):
             # Load study data if not loaded
             study.load_data(display_treeview=False)
             study.load_disciplines_data()
+            study.load_cache()
 
             exec_thread = ExecutionEngineThread(study, execution_logger)
             exec_thread.start()

@@ -62,6 +62,7 @@ def launch_calculation_study(study_identifier):
 
             study.load_data(display_treeview=False)
             study.load_disciplines_data()
+            study.load_cache()
             loading_done = True
         except:
             execution_logger.exception(
