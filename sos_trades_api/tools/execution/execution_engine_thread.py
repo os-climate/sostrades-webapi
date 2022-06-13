@@ -145,6 +145,8 @@ class ExecutionEngineThread(threading.Thread):
                             self.__study_manager.dump_directory)
                         self.__study_manager.dump_disciplines_data(
                             self.__study_manager.dump_directory)
+                        self.__study_manager.dump_cache(
+                            self.__study_manager.dump_directory)
                     except Exception as error:
                         self.__execution_logger.exception(
                             f'The following exception occurs during study dumping.\n{str(error)}')

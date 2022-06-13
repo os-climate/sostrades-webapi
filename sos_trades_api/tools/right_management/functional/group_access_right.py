@@ -22,7 +22,6 @@ from sos_trades_api.models.database_models import Group, User,\
     AccessRights, GroupAccessGroup, GroupAccessUser
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from sos_trades_api.base_server import app
-from sos_trades_core.tools.sos_logger import SoSLogging
 
 
 class GroupAccess(ResourceAccess):
@@ -34,10 +33,6 @@ class GroupAccess(ResourceAccess):
         """Constructor
         """
         ResourceAccess.__init__(self, user_id)
-
-        # Initialize execution logger
-        self.__logger = SoSLogging(
-            'SoS.AccessRight', level=SoSLogging.WARNING).logger
 
     def check_user_right_for_group(self, right_type, group_id=None):
         """ Methods that check that the given user right to have a specific right for a specific process

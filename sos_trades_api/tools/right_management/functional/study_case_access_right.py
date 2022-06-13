@@ -21,8 +21,8 @@ from sos_trades_api.models.database_models import \
     AccessRights, StudyCase, StudyCaseAccessUser, StudyCaseAccessGroup
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-from sos_trades_core.tools.sos_logger import SoSLogging
 from sos_trades_api.base_server import db
+
 
 class StudyCaseAccess(ProcessAccess):
     """ Class containing the access right of a group of SoSTrades.
@@ -40,9 +40,6 @@ class StudyCaseAccess(ProcessAccess):
         self.__raw_study_case_list = []
 
         self.retrieve_user_all_study_cases()
-        # Initialize execution logger
-        self.__logger = SoSLogging(
-            'SoS.AccessRight', level=SoSLogging.WARNING).logger
 
     def retrieve_user_all_study_cases(self):
 
