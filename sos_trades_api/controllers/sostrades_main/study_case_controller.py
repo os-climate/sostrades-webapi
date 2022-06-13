@@ -906,6 +906,12 @@ def set_study_data_file(study_identifier, files_list):
     if study_case_cache.is_study_case_cached(study_identifier):
         study_case_cache.delete_study_case_from_cache(study_identifier)
 
+    # Get date
+    modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+    study_case = StudyCase.query.filter(StudyCase.id == study_identifier).first()
+    study_case.modification_date = modify_date
+    db.session.add(study_case)
+    db.session.commit()
 
 def copy_study_discipline_data(study_id, discipline_from, discipline_to):
     """
