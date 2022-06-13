@@ -37,6 +37,7 @@ from shutil import rmtree
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sos_trades_core.execution_engine.data_manager import DataManager
+from sos_trades_core.tools.tree.serializer import DataSerializer
 from sos_trades_api.config import Config
 from sos_trades_api.base_server import db, app, study_case_cache
 
@@ -45,6 +46,7 @@ from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
     GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy
 from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
+from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -863,6 +865,46 @@ def get_study_data_file_path(study_id) -> str:
         raise InvalidFile(
             f'The following study file raise this error while trying to read it : {error}')
     return data_file_path
+
+
+def set_study_data_file(study_identifier, files_list):
+    """
+    Set study data file (overwrite the existing ones)
+    :param study_identifier: study identifier
+    :type study_identifier: int
+    :param files_list: study file to install
+    :type files_list: list of file streams
+    """
+
+    # Check expected mandatory file
+    filenames = list(files_list.keys())
+
+    if DataSerializer.pkl_filename not in filenames or DataSerializer.disc_status_filename not in filenames:
+        raise StudyCaseError('Missing mandatory data')
+
+    # Check study is not running
+    study_calculation_status = calculation_status(study_identifier)
+
+    if study_calculation_status.study_case_execution_status == StudyCaseExecution.RUNNING:
+        raise StudyCaseError('Cannot update data of a running study')
+
+    study_case_manager = StudyCaseManager(study_identifier)
+
+    # Manager overwrite of dm.pkl
+    dm_file = files_list[DataSerializer.pkl_filename]
+    dm_file.save(study_case_manager.study_data_file_path)
+
+    # Manage overwrite of disciplines_status.pkl
+    disciplines_status_file = files_list[DataSerializer.disc_status_filename]
+    disciplines_status_file.save(study_case_manager.study_discipline_file_path)
+
+    # Manage overwrite of cache.pkl (optional)
+    cache_file = files_list.get(DataSerializer.cache_filename, None)
+    if cache_file is not None:
+        cache_file.save(study_case_manager.study_cache_file_path)
+
+    if study_case_cache.is_study_case_cached(study_identifier):
+        study_case_cache.delete_study_case_from_cache(study_identifier)
 
 
 def copy_study_discipline_data(study_id, discipline_from, discipline_to):
