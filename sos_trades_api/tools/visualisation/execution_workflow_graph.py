@@ -17,7 +17,8 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
-from sos_trades_core.tools.sos_logger import SoSLogging
+
+from sos_trades_core.api import get_sos_logger
 import time
 from graphviz import Digraph
 
@@ -44,7 +45,7 @@ class SoSExecutionWorkflow():
     def get_execution_workflow_graph(self):
 
         start_time = time.time()
-        logger = SoSLogging('SoS').logger
+        logger = get_sos_logger('SoS')
         self.construct_execution_workflow_graph(
             GEMS_graph=self.GEMS_graph,
             level=0,

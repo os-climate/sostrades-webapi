@@ -59,18 +59,29 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         db.session.add(gen_ref_status)
         db.session.commit()
-        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            # Launch pod whom generate the ref
-            pod_name = kubernetes_service_generate(
-                reference_path, gen_ref_status.id, user_id)
-            # Update db by adding the pod whom generate the ref
-            gen_ref_status.kubernete_pod_name = pod_name
-            db.session.add(gen_ref_status)
+        try:
+            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+                # Launch pod whom generate the ref
+                pod_name = kubernetes_service_generate(
+                    reference_path, gen_ref_status.id, user_id)
+                # Update db by adding the pod whom generate the ref
+                gen_ref_status.kubernete_pod_name = pod_name
+                db.session.add(gen_ref_status)
+                db.session.commit()
+            else:
+                subprocess_generation = ReferenceGenerationSubprocess(
+                    gen_ref_status.id)
+                subprocess_generation.run()
+        except Exception as ex:
+            ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
+                {
+                    'execution_status': ReferenceStudy.FAILED,
+                    'generation_logs': ex,
+                    'creation_date': None,
+                }
+            )
             db.session.commit()
-        else:
-            subprocess_generation = ReferenceGenerationSubprocess(
-                gen_ref_status.id)
-            subprocess_generation.run()
+            raise ex
 
         return gen_ref_status.id
 

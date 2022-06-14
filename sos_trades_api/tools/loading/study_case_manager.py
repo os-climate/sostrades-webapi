@@ -206,7 +206,7 @@ class StudyCaseManager(BaseStudyManager):
         if study_folder_path is None:
             study_folder = self.__root_dir
 
-        return self._get_data_from_file(study_folder)
+        return super().setup_usecase(study_folder)
 
     def setup_disciplines_data(self, study_folder_path=None):
         """ Method to overload in order to provide data to the loaded study process
@@ -222,7 +222,23 @@ class StudyCaseManager(BaseStudyManager):
         if study_folder_path is None:
             study_folder = self.__root_dir
 
-        return self._get_disciplines_data_from_file(study_folder)
+        return super().setup_disciplines_data(study_folder)
+
+    def setup_cache_map_dict(self, study_folder_path=None):
+        """ Method to overload in order to provide data to the loaded study process
+        from a specific way
+
+        :params: study_folder_path, location of pickle file to load (optional parameter)
+        :type: str
+
+        :return: dictionary, {str: *}
+        """
+
+        study_folder = study_folder_path
+        if study_folder_path is None:
+            study_folder = self.__root_dir
+
+        return super().setup_cache_map_dict(study_folder)
 
     def set_error(self, error_message, disabled_study=False):
         """ set an error message on study case manager and flag True the error flag

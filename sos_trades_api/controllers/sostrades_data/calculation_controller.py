@@ -38,7 +38,7 @@ from sos_trades_api.controllers.sostrades_main.ontology_controller import load_p
 from sos_trades_api.config import Config
 from sos_trades_api.base_server import db, app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sos_trades_core.tools.sos_logger import SoSLogging
+from sos_trades_core.api import get_sos_logger
 from sqlalchemy.sql.expression import and_
 
 calculation_semaphore = threading.Semaphore()
@@ -122,8 +122,7 @@ def execute_calculation(study_id, username):
             study.add_execution_identifier = True
 
             # Initialize execution logger
-            execution_logger = SoSLogging(
-                'SoS', master=True, level=SoSLogging.INFO).logger
+            execution_logger = get_sos_logger('SoS')
 
             # If handlers has been define, link gems logger
             if execution_logger.hasHandlers():
@@ -137,6 +136,7 @@ def execute_calculation(study_id, username):
             # Load study data if not loaded
             study.load_data(display_treeview=False)
             study.load_disciplines_data()
+            study.load_cache()
 
             exec_thread = ExecutionEngineThread(study, execution_logger)
             exec_thread.start()

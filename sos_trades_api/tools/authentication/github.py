@@ -183,8 +183,14 @@ class GitHubSettings:
         user_infos = User()
         user_infos.username = github_api_user_response[GITHUB_LOGIN_KEY]
         user_infos.account_source = User.IDP_ACCOUNT
-        user_infos.firstname = GITHUB_NAME_KEY
+
+        # User first name and lastname are not provided separately on github
+        user_infos.firstname = github_api_user_response[GITHUB_NAME_KEY]
         user_infos.lastname = ''
+
+        # If user has not set its profile information, then set username as firstname to avoid missing value
+        if user_infos.firstname is None or len(user_infos.firstname) == 0:
+            user_infos.firstname = user_infos.username
 
         # Check if email is visible in user profile
         if github_api_user_response[GITHUB_MAIL_KEY]:

@@ -17,14 +17,11 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 methods to define access rights for a process
 """
-import os
+
 from sos_trades_api.models.database_models import Process, ProcessAccessUser, \
     ProcessAccessGroup, AccessRights
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from sos_trades_api.models.loaded_process import LoadedProcess
-from sos_trades_api.tools.right_management.access_right import has_access_to
-from sos_trades_api.tools.right_management import access_right
-from sos_trades_core.tools.sos_logger import SoSLogging
 from sos_trades_api.base_server import db
 
 
@@ -39,9 +36,6 @@ class ProcessAccess(ResourceAccess):
         self.user_process_list = []
         self.user_loaded_process_list = []
         self.retrieve_user_all_process_rights()
-        # Initialize execution logger
-        self.__logger = SoSLogging(
-            'SoS.AccessRight', level=SoSLogging.WARNING).logger
 
     def retrieve_user_all_process_rights(self):
 
