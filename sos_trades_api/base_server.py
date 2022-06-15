@@ -186,6 +186,53 @@ def database_process_setup():
     return database_initialized
 
 
+def database_check_study_case_state():
+    """ Check study case state in database
+    Try to load each of them and store loading status and last modification date
+    Give as outputs all study case that cannot be loaded and have more than one month
+    with no changes.
+    """
+    from datetime import datetime, timezone
+    from sos_trades_api.models.database_models import StudyCase
+    from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+
+    results = []
+
+
+    with app.app_context():
+
+        all_study_case = StudyCase.query.all()
+
+        # Try to load each of them
+        for study_case in all_study_case:
+            is_load_ok = False
+            is_date_ok = False
+            try:
+                study_case_manager = StudyCaseManager(study_case.id)
+                study_case_manager.load_data(display_treeview=False)
+                study_case_manager.load_disciplines_data()
+                study_case_manager.load_cache()
+                is_load_ok = True
+
+                current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                date_delta = current_date - study_case.modification_date
+
+                is_date_ok = date_delta.days > 30
+            except:
+                is_load_ok = False
+
+            if is_load_ok:
+                results.append(f'SUCCESS Study case {study_case.id}/{study_case.name}')
+            else:
+                if is_date_ok:
+                    results.append(f'PARTIAL Study case {study_case.id}/{study_case.name} => {date_delta.days} days')
+                else:
+                    results.append(f'FAILED  Study case {study_case.id}/{study_case.name}')
+
+        for message in results:
+            app.logger.info(message)
+
+
 def database_create_standard_user(username, email, firstname, lastname):
     '''
         Set initial data into db:
@@ -394,7 +441,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         Execute process and reference database setup
 
-        :param debug: show DEBIG log
+        :param debug: show DEBUG log
         :type debug: boolean
         """
 
@@ -403,6 +450,17 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         else:
             app.logger.setLevel(logging.INFO)
         database_process_setup()
+
+
+    @click.command('check_study_case_state')
+    @with_appcontext
+    def check_study_case_state():
+        """ Check study case state in database
+        Try to load each of them and store loading status and last modification date
+        Give as outputs all study case that cannot be loaded and have more than one month
+        with no changes.
+        """
+        database_check_study_case_state()
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
@@ -507,6 +565,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         database_list_api_key()
 
     app.cli.add_command(init_process)
+    app.cli.add_command(check_study_case_state)
     app.cli.add_command(create_standard_user)
     app.cli.add_command(rename_applicative_group)
     app.cli.add_command(reset_standard_user_password)
