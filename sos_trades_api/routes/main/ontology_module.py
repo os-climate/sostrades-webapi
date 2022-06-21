@@ -21,7 +21,7 @@ from sos_trades_api.base_server import app
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
-    load_ontology, load_models_status, load_models_links)
+    load_ontology, load_models_status, load_models_links, load_parameters, load_parameter_label_list)
 
 
 @app.route(f'/api/main/ontology', methods=['POST'])
@@ -134,3 +134,46 @@ def load_ontology_models_links():
     user = get_authenticated_user()
     process_access = ProcessAccess(user.id)
     return load_models_links(process_access.user_process_list)
+
+
+@app.route(f'/api/main/ontology/full_parameter_list', methods=['GET'])
+@auth_required
+def load_ontology_parameters():
+    """
+    Relay to ontology server to retrieve the whole sos_trades parameters
+    Object returned is a form of plotly table data structure
+
+    Returned response is with the following data structure
+        {
+            headers : string[],
+            values: array of {
+                details: string,
+                header: string,
+                value: string
+            }
+        }
+    """
+    resp = make_response(jsonify(load_parameters()))
+
+    return resp
+
+@app.route(f'/api/main/ontology/full_parameter_label_list', methods=['GET'])
+@auth_required
+def load_ontology_parameter_labels():
+    """
+    Relay to ontology server to retrieve the whole sos_trades parameter labels
+    Object returned is a form of plotly table data structure
+
+    Returned response is with the following data structure
+        {
+            headers : string[],
+            values: array of {
+                details: string,
+                header: string,
+                value: string
+            }
+        }
+    """
+    resp = make_response(jsonify(load_parameter_label_list()))
+
+    return resp
