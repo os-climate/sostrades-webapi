@@ -18,10 +18,21 @@ import os
 import time
 import argparse
 import logging
-from os.path import join, dirname
+import yaml
+import git
+import re
+from os import environ, pathsep
+from os.path import join, dirname, isdir
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from logging import DEBUG
+
+BRANCH = 'branch'
+COMMIT = 'commit'
+
+# Regular expression to remove connection info from url when token is used
+INFO_REGEXP = ':\/\/.*@'
+INFO_REPLACE = '://'
 
 
 class ReferenceStudyError(Exception):
@@ -107,6 +118,8 @@ def launch_calculation_study(study_identifier):
         elapsed_time = time.time() - start_time
         execution_logger.debug(f'Execution time : {elapsed_time} seconds')
 
+        trace_source_code(study.dump_directory, execution_logger)
+
 
 def launch_generate_reference(reference_identifier):
     """
@@ -162,7 +175,7 @@ def launch_generate_reference(reference_identifier):
             imported_usecase = getattr(imported_module, 'Study')()
         except Exception as e:
             generation_log.exception(
-                'The follozing error occurs during reference loading'
+                'The following error occurs during reference loading'
             )
             ReferenceStudy.query.filter(ReferenceStudy.id == reference_study.id).update(
                 {
@@ -196,6 +209,8 @@ def launch_generate_reference(reference_identifier):
             )
             main_server.db.session.add(ref_updated)
             main_server.db.session.commit()
+
+            trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:
             ReferenceStudy.query.filter(ReferenceStudy.id == reference_study.id).update(
                 {
@@ -212,6 +227,56 @@ def launch_generate_reference(reference_identifier):
             f'Reference/Usecase generation duration : {elapsed_time} seconds'
         )
         generation_log_handler.flush()
+
+
+def trace_source_code(traceability_folder, logger=None):
+    """
+    Regarding python path module information, extract and save all commit sha of
+    repositories used to compute the study
+    :param traceability_folder: folder to save the traceability file
+    :type traceability_folder: str
+    :param logger: logger for messages
+    :type logger: Logger
+
+    """
+
+    if logger is None:
+        logger = get_sos_logger('SoS')
+
+    traceability_dict = {}
+
+    # check for PYTHONPATH environment variable
+    python_path_libraries = environ.get('PYTHONPATH')
+
+    if python_path_libraries is not None and len(python_path_libraries) > 0:
+
+        # Set to list each library of the PYTHONPATH
+        libraries = python_path_libraries.split(pathsep)
+
+        for library_path in libraries:
+            if isdir(library_path):
+                try:
+                    repo = git.Repo(path=library_path, search_parent_directories=True)
+
+                    # Retrieve url and remove connection info from it
+                    raw_url = repo.remotes.origin.url
+                    url = re.sub(INFO_REGEXP, INFO_REPLACE, raw_url)
+
+                    branch = repo.active_branch
+                    commit = branch.commit
+
+                    traceability_dict[url] = {
+                        BRANCH: branch.name,
+                        COMMIT: commit.hexsha
+                    }
+
+                except git.exc.InvalidGitRepositoryError:
+                    logger.debug(f'{library_path} folder is not a git folder')
+                except Exception as error:
+                    logger.debug(f'{library_path} folder generates the following error while accessing with git:\n {str(error)}')
+
+    with open(join(traceability_folder, 'traceability.yaml'), 'w') as file:
+        yaml.dump(traceability_dict, file)
 
 
 if __name__ == '__main__':
