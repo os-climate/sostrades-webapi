@@ -122,20 +122,16 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
             no_data, read_only)
         treeview_generation_time = time()
 
-        study_case_manager.n2_diagram = generate_n2_matrix(study_case_manager)
-        n2_diagram_time = time()
-
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
         app.logger.info(
-            f'End background loading {study_case_manager.study.name}, total time {n2_diagram_time - start_time} seconds')
+            f'End background loading {study_case_manager.study.name}, total time {treeview_generation_time - start_time} seconds')
         app.logger.info(f'Elapsed time synthesis:\n')
         app.logger.info(f'Data load {load_data_time - start_time} seconds\n')
         app.logger.info(f'Discipline data load {load_discipline_data_time - load_data_time} seconds\n')
         app.logger.info(f'Cache load {load_cache_time - load_discipline_data_time} seconds\n')
-        app.logger.info(f'treeview gen. {treeview_generation_time - load_discipline_data_time} seconds\n')
-        app.logger.info(f'n2 gen. {n2_diagram_time - treeview_generation_time} seconds')
+        app.logger.info(f'treeview gen. {treeview_generation_time - load_cache_time} seconds\n')
 
     except Exception as ex:
         study_case_manager.loaded = False
@@ -206,9 +202,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
         clean_obsolete_data_validation_entries(study_case_manager)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -277,9 +271,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -350,9 +342,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -416,9 +406,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
