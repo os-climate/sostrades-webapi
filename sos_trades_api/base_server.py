@@ -186,23 +186,66 @@ def database_process_setup():
     return database_initialized
 
 
-def database_check_study_case_state():
+def database_check_study_case_state(with_deletion = False):
     """ Check study case state in database
     Try to load each of them and store loading status and last modification date
     Give as outputs all study case that cannot be loaded and have more than one month
     with no changes.
+
+    :param with_deletion: delete every failed or unreferenced study
+    :type with_deletion: boolean
     """
+    from os import listdir, path
     from datetime import datetime, timezone
-    from sos_trades_api.models.database_models import StudyCase
+    from urllib3.exceptions import InsecureRequestWarning
+    from urllib3 import disable_warnings
+    from sos_trades_api.models.database_models import StudyCase, Group
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
-    results = []
+    if with_deletion:
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import  delete_study_cases
+        from shutil import rmtree
+        studies_to_delete = []
+        folders_to_delete = []
 
+    disable_warnings(InsecureRequestWarning)
+
+    # Remove INFO/WARNING level to avoid pushing too many log
+    logging.disable(logging.INFO)
+    logging.disable(logging.WARNING)
+    print('Only Error, Fatal and Critical logging message will be displayed.')
+
+    study_on_disk = {}
 
     with app.app_context():
 
         all_study_case = StudyCase.query.all()
+        all_group = Group.query.all()
 
+        print(f'\nCheck file system regarding available data\'s')
+        base_path = StudyCaseManager.get_root_study_data_folder()
+
+        # Get all sub elements inside root data folder (looking for group folder)
+        group_folder_list = listdir(base_path)
+        for group_folder in group_folder_list:
+
+            # Construct the path to the current element and check the element is a folder
+            built_group_path = join(base_path, group_folder)
+            if path.isdir(built_group_path) and group_folder.isdigit():
+
+                # Get all sub elements inside group data folder (looking for study folder)
+                study_folder_list = listdir(built_group_path)
+
+                for study_folder in study_folder_list:
+                    # Construct the path to the current element and check the element is a folder
+                    built_study_path = join(built_group_path, study_folder)
+
+                    if path.isdir(built_study_path) and study_folder.isdigit():
+                        study_on_disk[int(study_folder)] = int(group_folder)
+
+        print(f'\n{len(all_study_case)} study case(s) to check.\n')
+
+        study_loaded_synthesis = []
         # Try to load each of them
         for study_case in all_study_case:
             is_load_ok = False
@@ -218,19 +261,51 @@ def database_check_study_case_state():
                 date_delta = current_date - study_case.modification_date
 
                 is_date_ok = date_delta.days > 30
+
             except:
                 is_load_ok = False
 
+            # Remove study from study_on_disk dictionary
+            if study_case.id in study_on_disk and study_on_disk[study_case.id] == study_case.group_id:
+                del study_on_disk[study_case.id]
+
+            study_group_result = list(filter(lambda g: g.id == study_case.group_id, all_group))
+            group_name = 'Unknown'
+            if len(study_group_result) == 1:
+                group_name = study_group_result[0].name
+
             if is_load_ok:
-                results.append(f'SUCCESS Study case {study_case.id}/{study_case.name}')
+                message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | SUCCESS'
             else:
                 if is_date_ok:
-                    results.append(f'PARTIAL Study case {study_case.id}/{study_case.name} => {date_delta.days} days')
+                    message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | PARTIAL'
                 else:
-                    results.append(f'FAILED  Study case {study_case.id}/{study_case.name}')
+                    message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | FAILED'
+                    if with_deletion:
+                        studies_to_delete.append(study_case.id)
+            study_loaded_synthesis.append(message)
 
-        for message in results:
-            app.logger.info(message)
+        print('\n'.join(study_loaded_synthesis))
+
+        if with_deletion and len(studies_to_delete) > 0:
+            delete_study_cases(studies_to_delete)
+            print(f'All failed database studies deleted {studies_to_delete}.')
+
+        for study_folder, group_folder in study_on_disk.items():
+            study_group_result = list(filter(lambda g: g.id == int(group_folder), all_group))
+            group_name = 'Unknown'
+            if len(study_group_result) == 1:
+                group_name = f'{study_group_result[0].name}?'
+            print(
+                f'{study_folder:<5} | {" ":<30} | {" ":<70} | {" ":<35} | {" ":<19} | {group_name:<15} | UNREFERENCED')
+
+            if with_deletion:
+                folder = join(base_path, f'{group_folder}', f'{study_folder}')
+                folders_to_delete.append(folder)
+
+        for folder in folders_to_delete:
+            rmtree(folder, ignore_errors=True)
+            print(f'Folder {folder:<128} deleted.')
 
 
 def database_create_standard_user(username, email, firstname, lastname):
@@ -265,7 +340,7 @@ def database_rename_applicative_group(new_group_name):
 
 def database_change_user_profile(username, new_profile=None):
     """
-        Update a user profile
+    Update a user profile
     :param username: user identifier
     :param new_profile: profile name to set (if not set then remove user profile)
     """
@@ -453,14 +528,18 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
 
     @click.command('check_study_case_state')
+    @click.option('-wd', '--with_deletion', is_flag=True)
     @with_appcontext
-    def check_study_case_state():
+    def check_study_case_state(with_deletion):
         """ Check study case state in database
         Try to load each of them and store loading status and last modification date
         Give as outputs all study case that cannot be loaded and have more than one month
         with no changes.
+
+        :param with_deletion: delete every failed or unreferenced study
+        :type with_deletion: boolean
         """
-        database_check_study_case_state()
+        database_check_study_case_state(with_deletion)
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
