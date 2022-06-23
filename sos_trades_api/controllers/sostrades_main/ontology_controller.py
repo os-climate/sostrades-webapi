@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Ontology Functions
@@ -211,6 +212,61 @@ def load_models_links(process_list):
         set_ontology_grace_period()
     except:
         app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+@ontology_enable({})
+def load_parameters():
+    """return parameter glossary
+
+    :return: parameters list
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/full_parameter_list'
+
+    try:
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+@ontology_enable({})
+def load_parameter_label_list():
+    """return parameter glossary
+
+    :return: parameters list
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/full_parameter_label_list'
+
+    try:
+        resp = requests.request(
+            method='POST', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
 
     return ontology_response_data
 

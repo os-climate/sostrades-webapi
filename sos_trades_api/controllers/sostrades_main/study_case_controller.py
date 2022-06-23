@@ -45,7 +45,6 @@ from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCo
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
     GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy
-from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
@@ -148,7 +147,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         if reference is None:
 
             study_manager.loaded = True
-            study_manager.n2_diagram = generate_n2_matrix(study_manager)
+            study_manager.n2_diagram = {}
             study_manager.execution_engine.dm.treeview = None
             study_manager.execution_engine.get_treeview(False, False)
 
@@ -974,6 +973,8 @@ def clean_database_with_disabled_study_case(logger=None):
         logger.info(f'Study case identifier to remove: {study_identifiers}')
 
         delete_study_cases(study_identifiers)
+
+
 
 
 
