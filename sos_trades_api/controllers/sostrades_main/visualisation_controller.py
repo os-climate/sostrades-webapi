@@ -19,6 +19,7 @@ Visualisation Functions
 """
 from sos_trades_api.base_server import study_case_cache
 from sos_trades_api.tools.visualisation.execution_workflow_graph import SoSExecutionWorkflow
+from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 
 
 class VisualisationError(Exception):
@@ -47,3 +48,20 @@ def get_execution_sequence_graph_data(study_id):
     result = execution_workflow.create_result()
 
     return result
+
+
+def get_n2_diagram_graph_data(study_id):
+    """
+    Generate n2 diagram of a loaded study
+    :param study_id: id of the study
+    :type study_id: integer
+
+    :return: dictionary
+    """
+
+    if not study_case_cache.is_study_case_cached(study_id):
+        raise VisualisationError('Study case has to be loaded first before requesting for n2 diagram')
+
+    study_case_manager = study_case_cache.get_study_case(study_id, False, False)
+
+    return generate_n2_matrix(study_case_manager)
