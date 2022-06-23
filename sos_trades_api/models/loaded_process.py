@@ -33,6 +33,16 @@ class LoadedProcess:
         self.is_manager = False
         self.is_contributor = False
         self.reference_list = None
+        self.identifier = None
+        self.uri = ''
+        self.label = ''
+        self.description = ''
+        self.category = ''
+        self.version = ''
+        self.process_repository = ''
+        self.quantity_disciplines_used = None
+        self.discipline_list = None
+        self.associated_usecases = None
 
     def apply_ontology(self, process_metadata, repository_metadata):
 
@@ -50,6 +60,18 @@ class LoadedProcess:
             if repository_metadata[self.repository_id].get('description', None) is not None:
                 self.repository_description = repository_metadata[self.repository_id]['description']
 
+    def deserialize(self, json_dict):
+        self.identifier = json_dict['id']
+        self.uri = json_dict['uri']
+        self.label = json_dict['label']
+        self.description = json_dict['description']
+        self.category = json_dict['category']
+        self.version = json_dict['version']
+        self.process_repository = json_dict['process_repository']
+        self.quantity_disciplines_used = json_dict['quantity_disciplines_used']
+        self.discipline_list = json_dict['discipline_list']
+        self.associated_usecases = json_dict['associated_usecases']
+
     def serialize(self):
         """ json serializer for dto purpose
         """
@@ -64,4 +86,14 @@ class LoadedProcess:
             'is_manager': self.is_manager,
             'is_contributor': self.is_contributor,
             'reference_list': self.reference_list,
+            'identifier': self.identifier,
+            'uri': self.uri,
+            'label': self.label,
+            'description': self.description,
+            'category': self.category,
+            'version': self.version,
+            'process_repository': self.process_repository,
+            'quantity_disciplines_used': self.quantity_disciplines_used,
+            'discipline_list': self.discipline_list,
+            'associated_usecases': self.associated_usecases
         }
