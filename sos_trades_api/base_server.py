@@ -303,9 +303,10 @@ def database_check_study_case_state(with_deletion = False):
                 folder = join(base_path, f'{group_folder}', f'{study_folder}')
                 folders_to_delete.append(folder)
 
-        for folder in folders_to_delete:
-            rmtree(folder, ignore_errors=True)
-            print(f'Folder {folder:<128} deleted.')
+        if with_deletion and len(folders_to_delete) > 0:
+            for folder in folders_to_delete:
+                rmtree(folder, ignore_errors=True)
+                print(f'Folder {folder:<128} deleted.')
 
 
 def database_create_standard_user(username, email, firstname, lastname):
