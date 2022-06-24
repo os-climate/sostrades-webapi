@@ -21,11 +21,14 @@ Implementation of abstract class AbstractStudyManager to manage study from objec
 from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, \
     Group, AccessRights
+from sos_trades_core.execution_engine.data_connector.ontology_data_connector import (
+    GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER, OntologyDataConnector)
 from sos_trades_api.base_server import db, app
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump,\
     CryptedLoadDump
 from sos_trades_api.config import Config
 from os.path import join
+
 
 import os
 
@@ -91,7 +94,6 @@ class StudyCaseManager(BaseStudyManager):
         self.__has_error = False
         self.__error_message = ""
 
-
     @property
     def study(self):
         """ return the current Study object
@@ -147,6 +149,13 @@ class StudyCaseManager(BaseStudyManager):
             self.__study_database_logger.study_case_execution_identifier = self.__study.current_execution_id
         else:
             self.__study_database_logger.study_case_execution_identifier = None
+
+    def _init_exec_engine(self):
+        super()._init_exec_engine()
+        self.execution_engine.connector_container.register_persistent_connector(
+            OntologyDataConnector.NAME,
+            GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
+            {'endpoint': app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]})
 
     def raw_log_file_path_absolute(self, specific_study_case_execution_identifier=None):
         """
