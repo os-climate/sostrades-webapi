@@ -125,6 +125,48 @@ def load_ontology(ontology_request):
 
     return ontology_response_data
 
+@ontology_enable({})
+def load_ontology_v1(ontology_request):
+    """Given a dictionary of entities, return ontology metadata
+
+    :params: request
+    :type: dict
+
+    Possible keys are:
+    {
+        'disciplines':  [disciplinesId],
+        'parameter_usages':   [parametersId],
+    }
+
+    :return: metadata dict
+        {
+        'disciplines':  {disciplinesId:metadata},
+        'parameter_usages':   {parametersId:metadata},
+    }
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/study'
+
+    data = {'study_ontology_request': ontology_request}
+
+    try:
+        resp = requests.request(
+            method='POST', url=complete_url, json=data, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
 
 @ontology_enable({})
 def load_models_status(process_list):
