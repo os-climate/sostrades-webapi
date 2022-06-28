@@ -38,7 +38,16 @@ class ProcessAccess(ResourceAccess):
         self.retrieve_user_all_process_rights()
 
     def retrieve_user_all_process_rights(self):
+        """
+        Retrieve all process in database and set access right regarding user for which the request is done
+        Algorithm work in three phase
+        1 - get process declared for the user
+        2 - get process declared for groups where the user belongs
+        3 - add all non accessible process (no rights but listed anyway)
+        :return:
+        """
 
+        # Manage retrieving of process where the user is declared
         user_process_list = db.session.query(Process, AccessRights) \
             .filter(Process.id == ProcessAccessUser.process_id) \
             .filter(ProcessAccessUser.user_id == self.user_id) \
@@ -61,6 +70,7 @@ class ProcessAccess(ResourceAccess):
         # store user_group_list_ids
         user_group_ids = [g.id for g in self.user_groups_list]
 
+        # Manage retrieving of process where the user belong to q declared groups
         # retrieve all process authorised by groups
         group_process_list = db.session.query(Process, AccessRights) \
             .filter(Process.id == ProcessAccessGroup.process_id) \
@@ -87,6 +97,20 @@ class ProcessAccess(ResourceAccess):
                     new_loaded_process.is_manager = True
                 elif gpl[1].access_right == AccessRights.CONTRIBUTOR:
                     new_loaded_process.is_contributor = True
+                self.user_loaded_process_list.append(new_loaded_process)
+
+        # Add all other process with no rights
+        all_processes = Process.query.all()
+
+        # Get all process already in the user list
+        already_manage_processes_identifier = [loaded_process.id for loaded_process in self.user_loaded_process_list]
+        for one_process in all_processes:
+
+            if one_process.id not in already_manage_processes_identifier:
+                new_loaded_process = LoadedProcess(
+                    one_process.id, one_process.name, one_process.process_path)
+                new_loaded_process.is_manager = False
+                new_loaded_process.is_contributor = False
                 self.user_loaded_process_list.append(new_loaded_process)
 
         # Sorting lists by process repository

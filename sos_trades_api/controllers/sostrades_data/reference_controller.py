@@ -62,9 +62,9 @@ def get_all_references(user_id, logger):
     process_metadata = load_processes_metadata(processes_metadata)
     repository_metadata = load_repositories_metadata(repositories_metadata)
 
-    for authorized_process in authorized_process_list:
-        authorized_process.apply_ontology(
-            process_metadata, repository_metadata)
+    #for authorized_process in authorized_process_list:
+    #    authorized_process.apply_ontology(
+    #        process_metadata, repository_metadata)
 
     for authorized_process in authorized_process_list:
         # Retrieve references for process

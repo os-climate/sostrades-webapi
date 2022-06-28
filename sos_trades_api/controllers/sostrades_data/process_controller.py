@@ -17,7 +17,7 @@ import traceback
 from sos_trades_api.models.database_models import ReferenceStudy, User, Process
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
+    load_repositories_metadata, load_ontology_processes
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.loaded_process import LoadedProcess
 from typing import List
@@ -114,23 +114,10 @@ def apply_ontology_to_loaded_process(loaded_processes: List[LoadedProcess]) -> L
     :param loaded_processes: process on which ontology has to be applied
     """
 
-    # Apply Ontology
-    processes_metadata = []
-    repositories_metadata = []
-    for process in loaded_processes:
-        process_key = f'{process.repository_id}.{process.process_id}'
-
-        if process_key not in processes_metadata:
-            processes_metadata.append(process_key)
-
-        repository_key = process.repository_id
-
-        if repository_key not in repositories_metadata:
-            repositories_metadata.append(repository_key)
-
-    process_metadata = load_processes_metadata(processes_metadata)
-    repository_metadata = load_repositories_metadata(repositories_metadata)
+    # Retrieve full processes ontology
+    processes = load_ontology_processes()
 
     for authorized_process in loaded_processes:
-        authorized_process.apply_ontology(
-            process_metadata, repository_metadata)
+        authorized_process.apply_ontology(processes)
+
+    print(processes)
