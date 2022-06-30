@@ -21,7 +21,7 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
     load_ontology, load_models_status, load_models_links, load_parameters, load_parameter_label_list,
-    load_markdown_documentation_metadata, load_ontology_processes)
+    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_v1)
 
 
 @app.route(f'/api/main/ontology', methods=['POST'])
