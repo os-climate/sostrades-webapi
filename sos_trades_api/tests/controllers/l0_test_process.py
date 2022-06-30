@@ -77,8 +77,6 @@ class TestProcess(DatabaseUnitTestConfiguration):
 
         with DatabaseUnitTestConfiguration.app.app_context():
 
-            process_access = []
-
             from sos_trades_api.models.database_models import User
             standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
