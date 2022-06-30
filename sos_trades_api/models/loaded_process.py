@@ -33,22 +33,36 @@ class LoadedProcess:
         self.is_manager = False
         self.is_contributor = False
         self.reference_list = None
+        self.identifier = None
+        self.uri = ''
+        self.description = ''
+        self.category = ''
+        self.version = ''
+        self.quantity_disciplines_used = None
+        self.discipline_list = None
+        self.associated_usecases = None
 
-    def apply_ontology(self, process_metadata, repository_metadata):
+    def apply_ontology(self, processes_ontology_metadata):
 
         process_key = f'{self.repository_id}.{self.process_id}'
 
-        if process_metadata is not None and process_key in process_metadata:
-            if process_metadata[process_key].get('label', None) is not None:
-                self.process_name = process_metadata[process_key]['label']
-            if process_metadata[process_key].get('description', None) is not None:
-                self.process_description = process_metadata[process_key]['description']
+        ontology_process_request = list(filter(lambda po: po['id'] == process_key, processes_ontology_metadata))
 
-        if repository_metadata is not None and self.repository_id in repository_metadata:
-            if repository_metadata[self.repository_id].get('label', None) is not None:
-                self.repository_name = repository_metadata[self.repository_id]['label']
-            if repository_metadata[self.repository_id].get('description', None) is not None:
-                self.repository_description = repository_metadata[self.repository_id]['description']
+        if len(ontology_process_request) == 1:
+            ontology_process = ontology_process_request[0]
+            self.deserialize(ontology_process)
+
+    def deserialize(self, json_dict):
+        self.identifier = json_dict['id']
+        self.uri = json_dict['uri']
+        self.process_name = json_dict['label']
+        self.description = json_dict['description']
+        self.category = json_dict['category']
+        self.version = json_dict['version']
+        self.repository_name = json_dict['process_repository_label']
+        self.quantity_disciplines_used = json_dict['quantity_disciplines_used']
+        self.discipline_list = json_dict['discipline_list']
+        self.associated_usecases = json_dict['associated_usecases']
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -64,4 +78,12 @@ class LoadedProcess:
             'is_manager': self.is_manager,
             'is_contributor': self.is_contributor,
             'reference_list': self.reference_list,
+            'identifier': self.identifier,
+            'uri': self.uri,
+            'description': self.description,
+            'category': self.category,
+            'version': self.version,
+            'quantity_disciplines_used': self.quantity_disciplines_used,
+            'discipline_list': self.discipline_list,
+            'associated_usecases': self.associated_usecases
         }
