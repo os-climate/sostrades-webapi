@@ -72,10 +72,13 @@ class TestProcess(DatabaseUnitTestConfiguration):
                         loaded_process), 1, 'Process is not present or cannot be present more than once')
 
     def test_standard_account_process_in_database(self):
-        """ Check that all process found in database are accessible by the standard account
+        """ Check that all process are not accessible by the standard account without right access on processes.
         """
 
         with DatabaseUnitTestConfiguration.app.app_context():
+
+            process_access = []
+
             from sos_trades_api.models.database_models import User
             standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
@@ -84,5 +87,7 @@ class TestProcess(DatabaseUnitTestConfiguration):
             standard_account_process = api_get_processes_for_user(
                 standard_account)
 
-            self.assertEqual(len(standard_account_process), 0,
+            process_filtered = filter(lambda x: x.is_manager or x.is_contributor, standard_account_process)
+
+            self.assertEqual(len((list(process_filtered))), 0,
                              'Somme processes are accessible by the test account')
