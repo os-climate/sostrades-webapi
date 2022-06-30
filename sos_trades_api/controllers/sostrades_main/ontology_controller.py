@@ -213,8 +213,7 @@ def load_models_status(process_list):
         new_model.deserialize(json_dict=md)
         model_list.append(new_model)
     models_status_sorted = sorted(
-        model_list, key=lambda x: (x.type, x.source, x.validated)
-    )
+        model_list, key=lambda x: x.name.lower().strip())
 
     return models_status_sorted
 
