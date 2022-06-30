@@ -13,15 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
-
 
 from sos_trades_api.base_server import app
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
-    load_ontology, load_ontology_v1, load_models_status, load_models_links, load_parameters, load_parameter_label_list)
+    load_ontology, load_models_status, load_models_links, load_parameters, load_parameter_label_list,
+    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_v1)
 
 
 @app.route(f'/api/main/ontology', methods=['POST'])
@@ -255,4 +255,57 @@ def load_ontology_parameter_labels():
     """
     resp = make_response(jsonify(load_parameter_label_list()))
 
+    return resp
+
+
+@app.route(f'/api/main/ontology/<string:identifier>/markdown_documentation', methods=['GET'])
+@auth_required
+def load_markdown_documentation(identifier):
+    """
+    Relay to ontology server to retrieve the whole sos_trades models links diagram
+    Object returned is a form of d3 js data structure
+
+    Returned response is with the following data structure
+        {
+            Markdown_documentation:
+                document: string,
+            }
+        }
+    """
+
+    user = session['user']
+    app.logger.info(user)
+
+    resp = make_response(jsonify(load_markdown_documentation_metadata(identifier)), 200)
+    return resp
+
+
+@app.route(f'/api/main/ontology/full_process_list', methods=['GET'])
+@auth_required
+def load_full_process_list():
+    """
+    Methods that retrieve all processes and related information
+
+    Request object has no parameters
+
+    Returned response is with the following data structure
+            process_id:{
+                uri:string,
+                id:string,
+                label: string,
+                description: string,
+                category: string,
+                version: string,
+                process_repository: string,
+                quantity_disciplines_used:int,
+                discipline_list:string list,
+                associated_usecases: string list,
+            }
+        ]
+    """
+
+    user = session['user']
+    app.logger.info(user)
+
+    resp = make_response(jsonify(load_ontology_processes()), 200)
     return resp
