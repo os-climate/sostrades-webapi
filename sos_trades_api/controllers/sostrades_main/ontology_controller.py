@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.models.loaded_process import LoadedProcess
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Ontology Functions
@@ -124,6 +126,48 @@ def load_ontology(ontology_request):
 
     return ontology_response_data
 
+@ontology_enable({})
+def load_ontology_v1(ontology_request):
+    """Given a dictionary of entities, return ontology metadata
+
+    :params: request
+    :type: dict
+
+    Possible keys are:
+    {
+        'disciplines':  [disciplinesId],
+        'parameter_usages':   [parametersId],
+    }
+
+    :return: metadata dict
+        {
+        'disciplines':  {disciplinesId:metadata},
+        'parameter_usages':   {parametersId:metadata},
+    }
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/study'
+
+    data = {'study_ontology_request': ontology_request}
+
+    try:
+        resp = requests.request(
+            method='POST', url=complete_url, json=data, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
 
 @ontology_enable({})
 def load_models_status(process_list):
@@ -169,10 +213,11 @@ def load_models_status(process_list):
         new_model.deserialize(json_dict=md)
         model_list.append(new_model)
     models_status_sorted = sorted(
-        model_list, key=lambda x: (x.type, x.source, x.validated)
-    )
+        model_list, key=lambda x: x.name.lower().strip())
 
     return models_status_sorted
+
+
 
 
 @ontology_enable({})
@@ -213,6 +258,125 @@ def load_models_links(process_list):
         app.logger.exception('An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
+
+@ontology_enable({})
+def load_parameters():
+    """return parameter glossary
+
+    :return: parameters list
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/full_parameter_list'
+
+    try:
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+@ontology_enable({})
+def load_parameter_label_list():
+    """return parameter glossary
+
+    :return: parameters list
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/full_parameter_label_list'
+
+    try:
+        resp = requests.request(
+            method='POST', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+
+@ontology_enable({})
+def load_markdown_documentation_metadata(identifier):
+    """Given a process identifier or a model identifier, return a markdown documentation
+
+       :params: identifier, identifier of process or model
+       :type: string
+
+       :return: a array of markdown documentation
+       """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+    complete_url = f'{ontology_endpoint}/markdown_documentation/{identifier}'
+
+    try:
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+
+@ontology_enable({})
+def load_ontology_processes():
+    """return process list
+
+    :params: process_list, list of process identifier
+    :type: list
+
+    :return: model status object
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/full_process_list'
+
+    try:
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path
+        )
+
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    process_list_sorted = sorted(
+        ontology_response_data, key=lambda x: x['label'].lower()
+    )
+
+    return process_list_sorted
 
 
 @ontology_enable({})
