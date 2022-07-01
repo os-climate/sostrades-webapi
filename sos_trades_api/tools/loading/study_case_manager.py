@@ -151,6 +151,7 @@ class StudyCaseManager(BaseStudyManager):
             self.__study_database_logger.study_case_execution_identifier = None
 
     def _init_exec_engine(self):
+
         super()._init_exec_engine()
         self.execution_engine.connector_container.register_persistent_connector(
             OntologyDataConnector.NAME,
@@ -283,7 +284,7 @@ class StudyCaseManager(BaseStudyManager):
         """
         """ Create an instance of the execution engine
         """
-        self._init_exec_engine()
+        self._build_execution_engine()
         self.clear_error()
         self.load_in_progress = False
         self.loaded = False
