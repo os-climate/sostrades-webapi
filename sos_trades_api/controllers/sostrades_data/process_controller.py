@@ -17,7 +17,7 @@ import traceback
 from sos_trades_api.models.database_models import ReferenceStudy, User, Process
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
+    load_repositories_metadata, load_ontology_processes
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.loaded_process import LoadedProcess
 from typing import List
@@ -47,46 +47,51 @@ def api_get_processes_for_user(user: User) -> List[LoadedProcess]:
 
     :param user: user for which process has to be filtered
     """
-
+    result = []
     process_access = ProcessAccess(user_id=user.id)
     authorized_process_list = process_access.get_authorized_process()
 
-    apply_ontology_to_loaded_process(authorized_process_list)
-
-    # Adding reference list
-    all_references = ReferenceStudy.query.filter(ReferenceStudy.execution_status == ReferenceStudy.FINISHED).all()
-
-    for authorized_process in authorized_process_list:
-        process_references = list(
-            filter(lambda ref_process: ref_process.process_id == authorized_process.id, all_references))
-        process_ref_list = []
-        for ref in process_references:
-            new_ref = StudyCaseDto()
-            new_ref.name = ref.reference_path.split(".")[-1]
-            new_ref.process_display_name = authorized_process.process_name
-            new_ref.repository_display_name = authorized_process.repository_name
-            new_ref.process = authorized_process.process_id
-            new_ref.repository = authorized_process.repository_id
-            new_ref.creation_date = ref.creation_date
-            new_ref.group_id = None
-            new_ref.group_name = 'All groups'
-
-            if ref.reference_type == ReferenceStudy.TYPE_REFERENCE:
-                new_ref.description = 'Reference study'
-                new_ref.study_type = 'Reference'
-            else:
-                new_ref.description = 'Usecase data'
-                new_ref.study_type = 'UsecaseData'
-            process_ref_list.append(new_ref)
-
-        if len(process_ref_list) > 0:
-            authorized_process.reference_list = process_ref_list
-
-    # Sort by process display name
     if len(authorized_process_list) > 0:
+
+        apply_ontology_to_loaded_process(authorized_process_list)
+
+        # Sort by process display name
         authorized_process_list = sorted(
             authorized_process_list, key=lambda res: res.process_name.lower())
-    return authorized_process_list
+
+        # Adding reference list
+        all_references = ReferenceStudy.query.filter(ReferenceStudy.execution_status == ReferenceStudy.FINISHED).all()
+
+        for authorized_process in authorized_process_list:
+            process_references = list(
+                filter(lambda ref_process: ref_process.process_id == authorized_process.id, all_references))
+            process_ref_list = []
+            for ref in process_references:
+                new_ref = StudyCaseDto()
+                new_ref.name = ref.reference_path.split(".")[-1]
+                new_ref.process_display_name = authorized_process.process_name
+                new_ref.repository_display_name = authorized_process.repository_name
+                new_ref.process = authorized_process.process_id
+                new_ref.repository = authorized_process.repository_id
+                new_ref.creation_date = ref.creation_date
+                new_ref.group_id = None
+                new_ref.group_name = 'All groups'
+
+                if ref.reference_type == ReferenceStudy.TYPE_REFERENCE:
+                    new_ref.description = 'Reference study'
+                    new_ref.study_type = 'Reference'
+                else:
+                    new_ref.description = 'Usecase data'
+                    new_ref.study_type = 'UsecaseData'
+                process_ref_list.append(new_ref)
+
+            if len(process_ref_list) > 0:
+                authorized_process.reference_list = process_ref_list
+
+        result = sorted(
+            authorized_process_list, key=lambda res: res.is_manager or res.is_contributor, reverse=True)
+
+    return result
 
 
 def api_get_processes_for_dashboard() -> List[LoadedProcess]:
@@ -114,23 +119,10 @@ def apply_ontology_to_loaded_process(loaded_processes: List[LoadedProcess]) -> L
     :param loaded_processes: process on which ontology has to be applied
     """
 
-    # Apply Ontology
-    processes_metadata = []
-    repositories_metadata = []
-    for process in loaded_processes:
-        process_key = f'{process.repository_id}.{process.process_id}'
-
-        if process_key not in processes_metadata:
-            processes_metadata.append(process_key)
-
-        repository_key = process.repository_id
-
-        if repository_key not in repositories_metadata:
-            repositories_metadata.append(repository_key)
-
-    process_metadata = load_processes_metadata(processes_metadata)
-    repository_metadata = load_repositories_metadata(repositories_metadata)
+    # Retrieve full processes ontology
+    processes = load_ontology_processes()
 
     for authorized_process in loaded_processes:
-        authorized_process.apply_ontology(
-            process_metadata, repository_metadata)
+        authorized_process.apply_ontology(processes)
+
+    print(processes)

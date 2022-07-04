@@ -23,7 +23,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
-    save_study_case_preference, set_user_authorized_execution, get_study_of_favorite_study_by_user,
+    save_study_case_preference, set_user_authorized_execution,
     add_favorite_study_case, remove_favorite_study_case)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
@@ -218,33 +218,27 @@ def update_user_authorized_for_execution(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route(f'/api/data/study-case/favorite', methods=['GET', 'POST'])
+@app.route(f'/api/data/study-case/favorite', methods=['POST'])
 @auth_required
 def favorite_study():
     # Checking if user can access study data
     user = session['user']
-    if request.method == 'GET':
-        resp = make_response(jsonify(get_study_of_favorite_study_by_user(user.id)), 200)
-        return resp
+    study_id = request.json.get('study_id', None)
+    if study_id is None:
+        raise BadRequest('Missing mandatory parameter: study_id')
 
-    elif request.method == 'POST':
+    add_favorite_study_case(study_id, user.id)
 
-        study_id = request.json.get('study_id', None)
-        if study_id is None:
-            raise BadRequest('Missing mandatory parameter: study_id')
+    # Get the study-case thanks to study_id into UserFavoriteStudy
+    study_case = StudyCase.query \
+        .filter(StudyCase.id == study_id) \
+        .filter(UserStudyFavorite.study_case_id == study_id).first()
 
-        add_favorite_study_case(study_id, user.id)
+    resp = make_response(jsonify(
+        f'The study, {study_case.name}, has been added in favorite study'), 200
+    )
 
-        # Get the study-case thanks to study_id into UserFavoriteStudy
-        study_case = StudyCase.query \
-            .filter(StudyCase.id == study_id) \
-            .filter(UserStudyFavorite.study_case_id == study_id).first()
-
-        resp = make_response(jsonify(
-            f'The study, {study_case.name}, has been added in favorite study'), 200
-        )
-
-        return resp
+    return resp
 
 
 @app.route(f'/api/data/study-case/<int:study_id>/favorite', methods=['DELETE'])

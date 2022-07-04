@@ -17,14 +17,15 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
-from sos_trades_core.tools.sos_logger import SoSLogging
+
+from sos_trades_core.api import get_sos_logger
 import time
 
 
 def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hierarchyLinks):
 
     start_time = time.time()
-    logger = SoSLogging('SoS').logger
+    logger = get_sos_logger('SoS')
 
     couplingLinks = []
     groupedLinksDict = {}

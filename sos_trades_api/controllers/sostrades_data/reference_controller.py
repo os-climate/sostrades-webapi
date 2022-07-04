@@ -62,13 +62,14 @@ def get_all_references(user_id, logger):
     process_metadata = load_processes_metadata(processes_metadata)
     repository_metadata = load_repositories_metadata(repositories_metadata)
 
-    for authorized_process in authorized_process_list:
-        authorized_process.apply_ontology(
-            process_metadata, repository_metadata)
+    #for authorized_process in authorized_process_list:
+    #    authorized_process.apply_ontology(
+    #        process_metadata, repository_metadata)
 
     for authorized_process in authorized_process_list:
         # Retrieve references for process
-        process_references = list(filter(lambda ref_process: ref_process.process_id == authorized_process.id, all_references))
+        process_references = list(filter(lambda ref_process: ref_process.process_id == authorized_process.id
+                            and (authorized_process.is_manager or authorized_process.is_contributor), all_references))
         for ref in process_references:
 
             new_usecase = StudyCaseDto()

@@ -113,25 +113,25 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
         study_case_manager.load_disciplines_data()
         load_discipline_data_time = time()
 
+        study_case_manager.load_cache()
+        load_cache_time = time()
+
         study_case_manager.execution_engine.dm.treeview = None
 
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
         treeview_generation_time = time()
 
-        study_case_manager.n2_diagram = generate_n2_matrix(study_case_manager)
-        n2_diagram_time = time()
-
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
         app.logger.info(
-            f'End background loading {study_case_manager.study.name}, total time {n2_diagram_time - start_time} seconds')
+            f'End background loading {study_case_manager.study.name}, total time {treeview_generation_time - start_time} seconds')
         app.logger.info(f'Elapsed time synthesis:\n')
         app.logger.info(f'Data load {load_data_time - start_time} seconds\n')
         app.logger.info(f'Discipline data load {load_discipline_data_time - load_data_time} seconds\n')
-        app.logger.info(f'treeview gen. {treeview_generation_time - load_discipline_data_time} seconds\n')
-        app.logger.info(f'n2 gen. {n2_diagram_time - treeview_generation_time} seconds')
+        app.logger.info(f'Cache load {load_cache_time - load_discipline_data_time} seconds\n')
+        app.logger.info(f'treeview gen. {treeview_generation_time - load_cache_time} seconds\n')
 
     except Exception as ex:
         study_case_manager.loaded = False
@@ -175,11 +175,11 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
         study_case_manager.load_data(
             from_input_dict=values, display_treeview=False, from_connectors_dict=connectors)
 
-
-
         # Persist data using the current persistence strategy
         study_case_manager.dump_data(study_case_manager.dump_directory)
         study_case_manager.dump_disciplines_data(
+            study_case_manager.dump_directory)
+        study_case_manager.dump_cache(
             study_case_manager.dump_directory)
 
         # Get date
@@ -202,9 +202,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
         clean_obsolete_data_validation_entries(study_case_manager)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -256,39 +254,16 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
         study_case_manager.load_data(reference_folder, display_treeview=False)
         study_case_manager.load_disciplines_data(reference_folder)
+        study_case_manager.load_cache(reference_folder)
 
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
 
-        # # Retrieve ongoing generation from db
-        # with app.app_context():
-        #     ref_generation = ReferenceStudy.query.filter(
-        #         ReferenceStudy.reference_path == reference_identifier).first()
-        #
-        #     # Retrieve logs (if available) from ref generation and add it to
-        #     # the sc log
-        #     if ref_generation is not None:
-        #         reference_generation_logs = ReferenceStudyExecutionLog.query.filter(
-        #             ReferenceStudyExecutionLog.reference_id == ref_generation.id). \
-        #             order_by(ReferenceStudyExecutionLog.id.asc()
-        #                      ).limit(300).all()
-        #
-        #         for logs in reference_generation_logs:
-        #             scel = StudyCaseExecutionLog()
-        #
-        #             scel.created = logs.created
-        #             scel.name = logs.name
-        #             scel.log_level_name = logs.log_level_name
-        #             scel.message = logs.message
-        #             scel.exception = logs.exception
-        #             scel.study_case_id = study_case_manager.study.id
-        #
-        #             db.session.add(scel)
-        #             db.session.commit()
-
         # Persist data using the current persistance strategy
         study_case_manager.dump_data(study_case_manager.dump_directory)
         study_case_manager.dump_disciplines_data(
+            study_case_manager.dump_directory)
+        study_case_manager.dump_cache(
             study_case_manager.dump_directory)
 
         study_case_manager.execution_engine.dm.treeview = None
@@ -296,9 +271,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -361,15 +334,15 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         study_case_manager.dump_data(study_case_manager.dump_directory)
         study_case_manager.dump_disciplines_data(
             study_case_manager.dump_directory)
+        study_case_manager.dump_cache(
+            study_case_manager.dump_directory)
 
         study_case_manager.execution_engine.dm.treeview = None
 
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 
@@ -417,6 +390,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         study_case_manager.load_data(
             source_study.dump_directory, display_treeview=False)
         study_case_manager.load_disciplines_data(source_study.dump_directory)
+        study_case_manager.load_cache(source_study.dump_directory)
 
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
@@ -425,15 +399,14 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         study_case_manager.dump_data(study_case_manager.dump_directory)
         study_case_manager.dump_disciplines_data(
             study_case_manager.dump_directory)
+        study_case_manager.dump_cache(study_case_manager.dump_directory)
 
         study_case_manager.execution_engine.dm.treeview = None
 
         study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
 
-        n2_diagram = generate_n2_matrix(study_case_manager)
-
-        study_case_manager.n2_diagram = n2_diagram
+        study_case_manager.n2_diagram = {}
         study_case_manager.loaded = True
         study_case_manager.load_in_progress = False
 

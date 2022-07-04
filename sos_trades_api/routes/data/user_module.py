@@ -214,7 +214,7 @@ def change_password():
 
     change_user_password(token, password)
 
-    return make_response(None, 200)
+    return make_response(jsonify(''), 200)
 
 
 @app.route(f'/api/data/user/default-group/<int:group_id>', methods=['POST'])
