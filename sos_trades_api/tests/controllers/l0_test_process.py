@@ -88,4 +88,4 @@ class TestProcess(DatabaseUnitTestConfiguration):
             process_filtered = filter(lambda x: x.is_manager or x.is_contributor, standard_account_process)
 
             self.assertEqual(len((list(process_filtered))), 0,
-                             'Somme processes are accessible by the test account')
+                             'Some processes are accessible by the test account')
