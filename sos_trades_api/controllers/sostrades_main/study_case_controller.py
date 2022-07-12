@@ -416,10 +416,11 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
 
-    if study_case_execution is not None:
-        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
-    else:
-        loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+    # if study_case_execution is not None:
+    #     if loaded_study_case.study_case.execution_status != SoSDiscipline.STATUS_CONFIGURE:
+    #         loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+    # else:
+    #     loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
     if study_manager.loaded is True and study_manager.load_in_progress is False:
         process_metadata = load_processes_metadata(
