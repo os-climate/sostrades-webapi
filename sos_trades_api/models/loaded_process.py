@@ -38,7 +38,7 @@ class LoadedProcess:
         self.description = ''
         self.category = ''
         self.version = ''
-        self.quantity_disciplines_used = None
+        self.quantity_disciplines_used = 0
         self.discipline_list = None
         self.associated_usecases = None
 
