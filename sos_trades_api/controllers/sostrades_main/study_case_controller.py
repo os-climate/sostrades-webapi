@@ -392,9 +392,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     :type: boolean
     """
 
-    # Get execution status
-    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
-        .order_by(desc(StudyCaseExecution.id)).first()
+    # # Get execution status
+    # study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id) \
+    #     .order_by(desc(StudyCaseExecution.id)).first()
     study_manager = study_case_cache.get_study_case(study_id, False)
 
     if reload:
