@@ -124,5 +124,3 @@ def apply_ontology_to_loaded_process(loaded_processes: List[LoadedProcess]) -> L
 
     for authorized_process in loaded_processes:
         authorized_process.apply_ontology(processes)
-
-    print(processes)
