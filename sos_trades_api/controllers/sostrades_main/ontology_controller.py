@@ -127,7 +127,7 @@ def load_ontology(ontology_request):
     return ontology_response_data
 
 @ontology_enable({})
-def load_ontology_v1(ontology_request):
+def load_ontology_usages(ontology_request):
     """Given a dictionary of entities, return ontology metadata
 
     :params: request
