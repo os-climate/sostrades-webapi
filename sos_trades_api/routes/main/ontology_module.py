@@ -21,75 +21,12 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
     load_ontology, load_models_status, load_models_links, load_parameters, load_parameter_label_list,
-    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_v1)
+    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_usages)
 
 
-@app.route(f'/api/main/ontology', methods=['POST'])
+@app.route(f'/api/main/ontology/ontology-usages', methods=['POST'])
 @auth_required
-def load_ontology_request():
-    """
-    Relay to ontology server to retrieve disciplines and parameters informations
-
-    Request object is intended with the following data structure
-        { 
-            ontology_request: {
-                disciplines: string[], // list of disciplines string identifier
-                parameters: string[] // list of parameters string identifier
-            }
-        }
-
-    Returned response is with the following data structure
-        {
-            parameters : {
-                <parameter_identifier> : {
-                    id: string
-                    datatype: string
-                    definition: string
-                    label: string
-                    quantityKind: string
-                    unit: string
-                    uri: string
-                    definitionSource: string
-                    ACLTag: string
-                }
-            }
-            disciplines {
-                <discipline_identifier>: {
-                    id: string
-                    delivered: string
-                    implemented: string
-                    label: string
-                    modelType: string
-                    originSource: string
-                    pythonClass: string
-                    uri: string
-                    validator: string
-                    validated: string
-                    icon:string
-                }
-            }
-        }
-
-    """
-
-    data_request = request.json.get('ontology_request', None)
-
-    missing_parameter = []
-    if data_request is None:
-        missing_parameter.append(
-            'Missing mandatory parameter: ontology_request')
-
-    if len(missing_parameter) > 0:
-        raise BadRequest('\n'.join(missing_parameter))
-
-    resp = make_response(jsonify(load_ontology(data_request)), 200)
-    return resp
-
-
-
-@app.route(f'/api/main/ontology/v1', methods=['POST'])
-@auth_required
-def load_ontology_request_v1():
+def load_ontology_request_usages():
     """
     Relay to ontology server to retrieve disciplines and parameters informations
 
@@ -157,7 +94,7 @@ def load_ontology_request_v1():
     if len(missing_parameter) > 0:
         raise BadRequest('\n'.join(missing_parameter))
 
-    resp = make_response(jsonify(load_ontology_v1(data_request)), 200)
+    resp = make_response(jsonify(load_ontology_usages(data_request)), 200)
     return resp
 
 
