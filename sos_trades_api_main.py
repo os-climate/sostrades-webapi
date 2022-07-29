@@ -29,6 +29,8 @@ from logging import DEBUG
 
 BRANCH = 'branch'
 COMMIT = 'commit'
+URL = 'url'
+COMMITTED_DATE = 'committed_date'
 
 # Regular expression to remove connection info from url when token is used
 INFO_REGEXP = ':\/\/.*@'
@@ -228,7 +230,7 @@ def launch_generate_reference(reference_identifier):
         generation_log_handler.flush()
 
 
-def trace_source_code(traceability_folder, logger=None):
+def trace_source_code(traceability_folder=None, logger=None, write_file=True):
     """
     Regarding python path module information, extract and save all commit sha of
     repositories used to compute the study
@@ -260,22 +262,36 @@ def trace_source_code(traceability_folder, logger=None):
                     # Retrieve url and remove connection info from it
                     raw_url = repo.remotes.origin.url
                     url = re.sub(INFO_REGEXP, INFO_REPLACE, raw_url)
+                    try:
+                        repo_name = url.split('.git')[0].split('/')[-1]
+                    except:
+                        print(f'Impossible to retrieve repo name from url {url}')
+                        repo_name = url
 
                     branch = repo.active_branch
                     commit = branch.commit
+                    commited_date = datetime.fromtimestamp(
+                        commit.committed_date, timezone.utc
+                    )
 
-                    traceability_dict[url] = {
+                    traceability_dict[repo_name] = {
+                        URL: url,
                         BRANCH: branch.name,
-                        COMMIT: commit.hexsha
+                        COMMIT: commit.hexsha,
+                        COMMITTED_DATE: commited_date.strftime("%d/%m/%Y %H:%M:%S"),
                     }
 
                 except git.exc.InvalidGitRepositoryError:
                     logger.debug(f'{library_path} folder is not a git folder')
                 except Exception as error:
-                    logger.debug(f'{library_path} folder generates the following error while accessing with git:\n {str(error)}')
+                    logger.debug(
+                        f'{library_path} folder generates the following error while accessing with git:\n {str(error)}'
+                    )
+    if write_file and isdir(traceability_folder):
+        with open(join(traceability_folder, 'traceability.yaml'), 'w') as file:
+            yaml.dump(traceability_dict, file)
 
-    with open(join(traceability_folder, 'traceability.yaml'), 'w') as file:
-        yaml.dump(traceability_dict, file)
+    return traceability_dict
 
 
 if __name__ == '__main__':
