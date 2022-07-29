@@ -265,9 +265,8 @@ def study_case_logs(study_case_id):
         result = []
         try:
 
-            results = StudyCaseLog.query\
-                .filter(StudyCase.id.like(study_case_id)
-                .order_by(StudyCaseLog.id.desc())
+            result = (StudyCaseLog.query.filter(StudyCaseLog.study_case_id == study_case_id)
+                .order_by(StudyCaseLog.id)
                 .limit(200)
                 .all())
 
