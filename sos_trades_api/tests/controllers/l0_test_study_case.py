@@ -226,37 +226,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
 
-            # delete all logs from this study
-            StudyCaseLog.query\
-            .filter(StudyCaseLog.study_case_id == study_test.id)\
-            .delete()
-            DatabaseUnitTestConfiguration.db.session.commit()
-            self.assertEqual(len(StudyCaseLog.query\
-            .filter(StudyCaseLog.study_case_id == study_test.id)\
-            .all()), 0)
-
-            #load study case
-            study_manager = study_case_cache.get_study_case(
-                study_test.id, False)
-
-            loaded_study = load_study_case(
-                study_test.id, AccessRights.MANAGER, self.test_user_id)
-
-            #  wait until study was updated (thread behind)
-            stop = False
-            counter = 0
-
-            while not stop:
-                if study_manager.load_in_progress == False and study_manager.loaded == True:
-                    stop = True
-                else:
-                    if counter > 60:
-                        self.assertTrue(
-                            False, "test_update_study_parameters update study parameter too long, check thread")
-                    counter = counter + 1
-                    sleep(1)
-
-            #check logs
+            #check that logs are created
             self.assertNotEqual(len(StudyCaseLog.query\
             .filter(StudyCaseLog.study_case_id == study_test.id)\
             .all()), 0)
