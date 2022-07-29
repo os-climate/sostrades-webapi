@@ -118,9 +118,6 @@ def execute_calculation(study_id, username):
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
 
-            # Enable logging on execution
-            study.add_execution_identifier = True
-
             # Initialize execution logger
             execution_logger = get_sos_logger('SoS')
 

@@ -69,7 +69,6 @@ def launch_calculation_study(study_identifier):
             ).first()
 
             study = StudyCaseManager(study_case_execution.study_case_id)
-            study.add_execution_identifier = True
 
             study.load_data(display_treeview=False)
             study.load_disciplines_data()

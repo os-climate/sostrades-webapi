@@ -19,13 +19,18 @@ Implementation of abstract class AbstractStudyManager to manage study from objec
 """
 
 from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
-from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, \
-    Group, AccessRights
+from sos_trades_api.models.database_models import (
+    StudyCase,
+    StudyCaseAccessGroup,
+    Group,
+    AccessRights,
+)
 from sos_trades_core.execution_engine.data_connector.ontology_data_connector import (
-    GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER, OntologyDataConnector)
+    GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
+    OntologyDataConnector,
+)
 from sos_trades_api.base_server import db, app
-from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump,\
-    CryptedLoadDump
+from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
 from os.path import join
 
@@ -33,7 +38,7 @@ from os.path import join
 import os
 
 from eventlet import sleep
-from sos_trades_api.tools.logger.execution_mysql_handler import ExecutionMySQLHandler
+from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
 from sos_trades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
@@ -60,16 +65,13 @@ class InvalidStudy(StudyCaseError):
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
 
-    def __init__(self, study_identifier, logger_bulk_transaction=False):
-        """ Constructor 
+    def __init__(self, study_identifier):
+        """
+        Constructor
 
-        :param study_identifier, database study identifier
-        :type str
+        :param study_identifier: database study identifier
+        :type study_identifier: str
 
-        :param logger_bulk_transaction,  boolean that enable or not record management by bulk regarding the database
-                Activate bulk transaction improve performance regarding calculation but it is necessary 
-                to flush data calling flush method at the end of the process
-        :type boolean
         """
         self.__study_identifier = study_identifier
         self.__study = None
@@ -79,13 +81,20 @@ class StudyCaseManager(BaseStudyManager):
         self.__rw_strategy = None
         self.__get_read_write_strategy()
 
-        self.__root_dir = self.get_root_study_data_folder(self.__study.group_id, self.__study.id)
+        self.__root_dir = self.get_root_study_data_folder(
+            self.__study.group_id, self.__study.id
+        )
 
-        super().__init__(self.__study.repository,
-                         self.__study.process,  self.__study.name, self.__root_dir, yield_method=sleep, logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'))
+        super().__init__(
+            self.__study.repository,
+            self.__study.process,
+            self.__study.name,
+            self.__root_dir,
+            yield_method=sleep,
+            logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'),
+        )
 
         self.__study_database_logger = None
-        self.__create_logger(logger_bulk_transaction)
 
         self.load_in_progress = False
         self.loaded = False
@@ -95,76 +104,57 @@ class StudyCaseManager(BaseStudyManager):
         self.__error_message = ""
 
     @property
-    def study(self):
-        """ return the current Study object
-
-        :return sos_trades_api.models.database_models.StudyCase
+    def study(self) -> StudyCase:
+        """
+        Return the current Study object
         """
         return self.__study
 
     @property
-    def study_database_logger(self):
-        """ return the current database logger handler used by the study
-
-        :return sos_trades_api.tools.logger.execution_mysql_handler.ExecutionMySQLHandler
+    def study_database_logger(self) -> StudyCaseMySQLHandler:
+        """
+        Return the current database logger handler used by the study
         """
 
         return self.__study_database_logger
 
     @property
-    def has_error(self):
-        """ return the current error flag
-
-        :return boolean
+    def has_error(self) -> bool:
+        """
+        Return the current error flag
         """
 
         return self.__has_error
 
     @property
-    def error_message(self):
-        """ return the current error message
-
-        :return string
+    def error_message(self) -> str:
+        """
+        Return the current error message
         """
 
         return self.__error_message
 
-    @property
-    def add_execution_identifier(self):
-        """ return property value (add execution identifier into database log)
-
-        :return: boolean
-        """
-        return self.__study_database_logger.study_case_execution_identifier is None
-
-    @add_execution_identifier.setter
-    def add_execution_identifier(self, value):
-        """
-
-        :param value: add or not execution identifier to database log
-        :type boolean
-        """
-
-        if value is True:
-            self.__study_database_logger.study_case_execution_identifier = self.__study.current_execution_id
-        else:
-            self.__study_database_logger.study_case_execution_identifier = None
-
     def _init_exec_engine(self):
+        """
+        Overloaded method that initialize execution engine instance
+        """
 
         super()._init_exec_engine()
         self.execution_engine.connector_container.register_persistent_connector(
             OntologyDataConnector.NAME,
             GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
-            {'endpoint': app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]})
+            {'endpoint': app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]},
+        )
 
-    def raw_log_file_path_absolute(self, specific_study_case_execution_identifier=None):
+    def raw_log_file_path_absolute(
+        self, specific_study_case_execution_identifier=None
+    ) -> str:
         """
         Build the raw log file path of the study
 
-        :param specific_study_case_execution_identifier: Optional, to retireve execution which is not the current one in
+        :param specific_study_case_execution_identifier: Optional, to retrieve execution which is not the current one in
         the study case
-        :return: str (filepath)
+        :type specific_study_case_execution_identifier: str/int
         """
 
         file_path = ''
@@ -175,18 +165,21 @@ class StudyCaseManager(BaseStudyManager):
             if specific_study_case_execution_identifier is not None:
                 study_execution_identifier = specific_study_case_execution_identifier
 
-            file_path = os.path.join(self.dump_directory,
-                                     f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log')
+            file_path = os.path.join(
+                self.dump_directory,
+                f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log',
+            )
 
         return file_path
 
-    def raw_log_file_path_relative(self, specific_study_case_execution_identifier=None):
+    def raw_log_file_path_relative(
+        self, specific_study_case_execution_identifier=None
+    ) -> str:
         """
         Build the raw log file path of the study
 
-        :param specific_study_case_execution_identifier: Optional, to retireve execution which is not the current one in
+        :param specific_study_case_execution_identifier: Optional, to retrieve execution which is not the current one in
         the study case
-        :return: str
         """
 
         file_path = ''
@@ -197,19 +190,21 @@ class StudyCaseManager(BaseStudyManager):
             if specific_study_case_execution_identifier is not None:
                 study_execution_identifier = specific_study_case_execution_identifier
 
-            file_path = os.path.join(str(self.__study.group_id),
-                                     str(self.__study.id),
-                                     f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log')
+            file_path = os.path.join(
+                str(self.__study.group_id),
+                str(self.__study.id),
+                f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log',
+            )
 
         return file_path
 
-    def setup_usecase(self, study_folder_path=None):
-        """ Method to overload in order to provide data to the loaded study process
+    def setup_usecase(self, study_folder_path=None) -> [dict]:
+        """
+        Method to overload in order to provide data to the loaded study process
+        Return a list of dictionary [{str: *}]
 
-        :param study_folder_path, location of pickle file to load (optional parameter)
-        :type str
-
-        :return list od dictionary, [{str: *}]
+        :param study_folder_path: location of pickle file to load (optional parameter)
+        :type study_folder_path: str
         """
 
         study_folder = study_folder_path
@@ -218,12 +213,14 @@ class StudyCaseManager(BaseStudyManager):
 
         return super().setup_usecase(study_folder)
 
-    def setup_disciplines_data(self, study_folder_path=None):
-        """ Method to overload in order to provide data to the loaded study process
+    def setup_disciplines_data(self, study_folder_path=None) -> dict:
+        """
+        Method to overload in order to provide data to the loaded study process
         from a specific way
+        Return a dictionary {str: *}
 
-        :param study_folder_path, location of pickle file to load (optional parameter)
-        :type str
+        :param study_folder_path: location of pickle file to load (optional parameter)
+        :type study_folder_path: str
 
         :return dictionary, {str: *}
         """
@@ -234,14 +231,14 @@ class StudyCaseManager(BaseStudyManager):
 
         return super().setup_disciplines_data(study_folder)
 
-    def setup_cache_map_dict(self, study_folder_path=None):
-        """ Method to overload in order to provide data to the loaded study process
+    def setup_cache_map_dict(self, study_folder_path=None) -> dict:
+        """
+        Method to overload in order to provide data to the loaded study process
         from a specific way
+        Return a dictionary {str: *}
 
-        :params: study_folder_path, location of pickle file to load (optional parameter)
-        :type: str
-
-        :return: dictionary, {str: *}
+        :param study_folder_path: location of pickle file to load (optional parameter)
+        :type study_folder_path: str
         """
 
         study_folder = study_folder_path
@@ -251,7 +248,15 @@ class StudyCaseManager(BaseStudyManager):
         return super().setup_cache_map_dict(study_folder)
 
     def set_error(self, error_message, disabled_study=False):
-        """ set an error message on study case manager and flag True the error flag
+        """
+        Set an error message on study case manager and flag True the error flag
+
+        :param error_message: error message to set to this study case manager
+        :type error_message: str
+
+        :param disabled_study: disable study from the platform point of view (not seen by user and deleted on the next
+        platform update
+        :type disabled_study: boolean
         """
 
         self.__has_error = True
@@ -259,7 +264,8 @@ class StudyCaseManager(BaseStudyManager):
 
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == self.__study_identifier).first()
+                StudyCase.id == self.__study_identifier
+            ).first()
             study_case.error = error_message
             study_case.disabled = disabled_study
             db.session.commit()
@@ -267,22 +273,23 @@ class StudyCaseManager(BaseStudyManager):
         self.__load_study_case_from_identifier()
 
     def clear_error(self):
-        """ Clear error on study case manager
+        """
+        Clear error on study case manager
         """
 
         self.__has_error = False
         self.__error_message = ""
 
     def update_study_case(self):
-        """ Force update of the study object from database
+        """
+        Force update of the study object from database
         """
 
         self.__load_study_case_from_identifier()
 
     def reset(self):
-        """ reset the exec_engine and force reload
         """
-        """ Create an instance of the execution engine
+        reset the exec_engine and force reload
         """
         self._build_execution_engine()
         self.clear_error()
@@ -290,49 +297,59 @@ class StudyCaseManager(BaseStudyManager):
         self.loaded = False
 
     def __load_study_case_from_identifier(self):
-        """ Methods that load a study case using the given study identifier
+        """
+        Methods that load a study case using the given study identifier
         from database
         """
 
         with app.app_context():
-            studycases = StudyCase.query.filter_by(id=self.__study_identifier)
+            study_cases = StudyCase.query.filter_by(id=self.__study_identifier)
 
-            if studycases is not None and studycases.count() > 0:
-                studycase = studycases.first()
-                db.session.expunge(studycase)
-                self.__study = studycase
+            if study_cases is not None and study_cases.count() > 0:
+                study_case = study_cases.first()
+                db.session.expunge(study_case)
+                self.__study = study_case
             else:
                 raise InvalidStudy(
-                    f'Requested study case (identifier {self.__study_identifier}) does not exist in the database')
+                    f'Requested study case (identifier {self.__study_identifier}) does not exist in the database'
+                )
 
     def __get_read_write_strategy(self):
-        """ Methods that determine and instanciate plysical strategy serialisation
+        """
+        Methods that determine and instantiate physical strategy serialisation
         """
 
         self.rw_strategy = DirectLoadDump()
 
         # Retrieve group owner
         owner_right = AccessRights.query.filter(
-            AccessRights.access_right == AccessRights.OWNER).first()
+            AccessRights.access_right == AccessRights.OWNER
+        ).first()
 
         if owner_right is not None:
-            study_group = Group.query.join(StudyCaseAccessGroup)\
-                .filter(StudyCaseAccessGroup.study_case_id == self.__study_identifier)\
-                .filter(StudyCaseAccessGroup.right_id == owner_right.id).first()
+            study_group = (
+                Group.query.join(StudyCaseAccessGroup)
+                .filter(StudyCaseAccessGroup.study_case_id == self.__study_identifier)
+                .filter(StudyCaseAccessGroup.right_id == owner_right.id)
+                .first()
+            )
 
             if study_group is not None:
                 if study_group.confidential:
                     config = Config()
-                    self.rw_strategy = CryptedLoadDump(private_key_file=config.rsa_private_key_file,
-                                                       public_key_file=config.rsa_public_key_file)
+                    self.rw_strategy = CryptedLoadDump(
+                        private_key_file=config.rsa_private_key_file,
+                        public_key_file=config.rsa_public_key_file,
+                    )
 
-    def __create_logger(self, bulk_transaction):
-        """ Add database logger dedicated to study case using execution engine
+    def attach_logger(self, bulk_transaction=False):
+        """
+        Add database logger dedicated to study case using execution engine
 
-            :param logger_bulk_transaction,  boolean that enable or not record management by bulk regarding the database
-                Activate bulk transaction improve performance regarding calculation but it is necessary 
-                to flush data calling flush method at the end of the process
-            :type boolean
+        :param bulk_transaction,  boolean that enable or not record management by bulk regarding the database
+            Activate bulk transaction improve performance regarding calculation but it is necessary
+            to flush data calling flush method at the end of the process
+        :type bulk_transaction: boolean
         """
 
         if self.__study_database_logger is None and self.logger is not None:
@@ -344,26 +361,44 @@ class StudyCaseManager(BaseStudyManager):
             if config.sql_alchemy_database_ssl is not None:
                 ssl_configuration = {"ssl": config.sql_alchemy_database_ssl}
 
-            self.__study_database_logger = ExecutionMySQLHandler(
-                config.sql_alchemy_database_name, config.sql_alchemy_server_uri,
-                ssl_configuration, self.__study_identifier, bulk_transaction)
+            self.__study_database_logger = StudyCaseMySQLHandler(
+                config.sql_alchemy_database_name,
+                config.sql_alchemy_server_uri,
+                ssl_configuration,
+                self.__study_identifier,
+                bulk_transaction,
+            )
 
-            # disable execution handler
-            # self.logger.addHandler(self.__study_database_logger)
+            self.logger.addHandler(self.__study_database_logger)
 
-    def check_study_can_reload(self):
+    def detach_logger(self):
+        """
+        Detach database logger
+        """
+
+        if self.__study_database_logger is not None and self.logger is not None:
+            self.logger.removeHandler(self.__study_database_logger)
+
+        self.__study_database_logger = None
+
+    def check_study_can_reload(self) -> bool:
         """
         Check that backup files exists
         """
+
         root_folder = Path(self.dump_directory)
 
         # check that there is backup files
-        backup_files = list(root_folder.rglob(f'*{StudyCaseManager.BACKUP_FILE_NAME}.*'))
+        backup_files = list(
+            root_folder.rglob(f'*{StudyCaseManager.BACKUP_FILE_NAME}.*')
+        )
         return len(backup_files) > 0
 
     def study_case_manager_save_backup_files(self):
-        """ Method that copy the study pickles into backup files
         """
+        Method that copy the study pickles into backup files
+        """
+
         backup_done = False
         root_folder = Path(self.dump_directory)
 
@@ -376,7 +411,12 @@ class StudyCaseManager(BaseStudyManager):
             for file in files:
                 # create backup file name
                 file_and_extension = file.name.split('.')
-                backup_file_name = file_and_extension[0] + self.BACKUP_FILE_NAME + "." + file_and_extension[1]
+                backup_file_name = (
+                    file_and_extension[0]
+                    + self.BACKUP_FILE_NAME
+                    + "."
+                    + file_and_extension[1]
+                )
 
                 # copy file into backup file:
                 copy(root_folder.joinpath(file), root_folder.joinpath(backup_file_name))
@@ -384,8 +424,10 @@ class StudyCaseManager(BaseStudyManager):
         return backup_done
 
     def study_case_manager_reload_backup_files(self):
-        """ Method that copy the study pickles backup files in place of the study pickles
         """
+        Method that copy the study pickles backup files in place of the study pickles
+        """
+
         reload_done = False
         root_folder = Path(self.dump_directory)
 
@@ -404,14 +446,17 @@ class StudyCaseManager(BaseStudyManager):
         return reload_done
 
     @staticmethod
-    def get_root_study_data_folder(group_id=None, study_case_id=None):
+    def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:
         """
-        return path of the study case or group data
-        :param:group_id, optional id of the group
-        :type: int
-        :param:study_case_id, optional id of the study_case
-        :type: int
+        Return path of the study case or group data
+
+        :param group_id: optional id of the group
+        :type group_id: int
+
+        :param study_case_id: optional id of the study_case
+        :type study_case_id: int
         """
+
         data_root_dir = join(Config().data_root_dir, 'study_case')
         if group_id is not None:
             data_root_dir = join(data_root_dir, str(group_id))

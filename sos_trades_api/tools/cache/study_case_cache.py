@@ -68,6 +68,7 @@ class StudyCaseCache:
 
         if not self.is_study_case_cached(study_case_id):
             study_case_manager = StudyCaseManager(study_case_id)
+            study_case_manager.attach_logger()
         else:
             study_case_manager = self.__exec_engine_dict[study_case_id]
             old_modification_date = study_case_manager.study.modification_date
