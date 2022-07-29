@@ -798,7 +798,7 @@ def delete_study_cases(studies):
                 folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
                 rmtree(folder, ignore_errors=True)
 
-                return f'All the studies (identifier(s) {studies}) have been deleted in the database'
+            return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
             raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
                                f'please refresh your study cases list')
