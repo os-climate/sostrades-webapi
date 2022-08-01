@@ -18,7 +18,7 @@ import traceback as tb
 import click
 
 from werkzeug.exceptions import HTTPException
-from flask import json, jsonify
+from flask import json, jsonify, session
 from flask import Flask, render_template, request
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -32,7 +32,9 @@ from sos_trades_api.config import Config
 import logging
 import os
 from os.path import dirname, join
+import time
 
+START_TIME = 'start_time'
 
 # Create  flask server and set local configuration
 server_name = __name__
@@ -259,7 +261,7 @@ def database_check_study_case_state(with_deletion = False):
 
                 current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
                 date_delta = current_date - study_case.modification_date
-
+                print(f'DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}')
                 is_date_ok = date_delta.days > 30
 
             except:
@@ -680,7 +682,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # load & register APIs
     # from sos_trades_api.routes import *
 
-
     # Register exception handler
     @app.errorhandler(Exception)
     def error_handler(error):
@@ -702,6 +703,19 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
                 'description': str(error)
             }), 500
 
+    @app.before_request
+    def before_request():
+        session[START_TIME] = time.time()
 
-if __name__ == "main":
-    database_process_setup()
+
+    @app.after_request
+    def after_request(response):
+
+        duration = 0
+        if START_TIME in session:
+            duration = time.time() - session[START_TIME]
+
+        app.logger.info(
+            f'{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.'
+        )
+        return response
