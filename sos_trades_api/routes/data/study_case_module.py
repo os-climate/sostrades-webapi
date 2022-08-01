@@ -21,7 +21,7 @@ from sos_trades_api.models.database_models import AccessRights, StudyCase, UserS
 from sos_trades_api.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs,
+    get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution,
     add_favorite_study_case, remove_favorite_study_case)
@@ -125,9 +125,30 @@ def get_user_authorized_process_studies():
     return resp
 
 
+@app.route(f'/api/data/study-case/logs/<int:study_case_id>', methods=['GET'])
+@auth_required
+def get_study_case_logs(study_case_id):
+    if study_case_id is not None:
+        # Checking if user can access study data
+        user = session['user']
+
+        # Verify user has study case authorisation to retrieve execution logs
+        # of study (RESTRICTED_VIEWER)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_id):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve execution logs of this study case')
+
+        # Proceeding after rights verification
+        resp = make_response(jsonify(study_case_logs(study_case_id)), 200)
+        return resp
+
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
 @app.route(f'/api/data/study-case/logs/download', methods=['POST'])
 @auth_required
-def get_study_case_logs():
+def get_study_case_logs_download():
     study_id = request.json.get('studyid', None)
 
     if study_id is None:
@@ -143,7 +164,7 @@ def get_study_case_logs():
 
 @app.route(f'/api/data/study-case/raw-logs/download', methods=['POST'])
 @auth_required
-def get_study_case_raw_logs():
+def get_study_case_raw_logs_download():
     study_id = request.json.get('studyid', None)
 
     if study_id is None:

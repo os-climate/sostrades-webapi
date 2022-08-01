@@ -43,7 +43,7 @@ from sos_trades_api.models.user_application_right import UserApplicationRight
 from sos_trades_api.models.model_status import ModelStatus
 from sos_trades_api.models.database_models import StudyCase, Group, User, GroupAccessUser, \
     StudyCaseExecutionLog, ReferenceStudy, StudyCaseValidation, Link
-from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights
+from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights,StudyCaseLog
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_core.tools.post_processing.post_processing_bundle import PostProcessingBundle
@@ -63,6 +63,8 @@ class CustomJsonEncoder(JSONEncoder):
         elif isinstance(o, ReferenceStudy):
             return o.serialize()
         elif isinstance(o, EntityRights):
+            return o.serialize()
+        elif isinstance(o, StudyCaseLog):
             return o.serialize()
         elif isinstance(o, EntityRight):
             return o.serialize()
