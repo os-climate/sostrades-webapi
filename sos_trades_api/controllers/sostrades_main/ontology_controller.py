@@ -218,47 +218,6 @@ def load_models_status(process_list):
     return models_status_sorted
 
 
-
-
-@ontology_enable({})
-def load_models_links(process_list):
-    """Given a process list identifier, return models lonks to those processes
-
-    :params: process_list, list of process identifier
-    :type: list
-
-    :return: models links model
-    """
-    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
-    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
-    ontology_response_data = {}
-
-    complete_url = f'{ontology_endpoint}/models/links-filtered'
-
-    linked_process_dict = {}
-    for pr in process_list:
-        if pr.process_path in linked_process_dict:
-            linked_process_dict[pr.process_path].append(pr.name)
-        else:
-            linked_process_dict[pr.process_path] = [pr.name]
-
-    data = {'linked_process_dict': linked_process_dict}
-
-    try:
-        resp = requests.request(
-            method='POST', url=complete_url, json=data, verify=ssl_path
-        )
-
-        if resp.status_code == 200:
-            ontology_response_data = resp.json()
-
-    except ConnectionError:
-        set_ontology_grace_period()
-    except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
-
-    return ontology_response_data
-
 @ontology_enable({})
 def load_parameters():
     """return parameter glossary
@@ -492,6 +451,46 @@ def load_repositories_metadata(repositories_identifier):
             method='POST', url=complete_url, json=data, verify=ssl_path
         )
 
+        if resp.status_code == 200:
+            ontology_response_data = resp.json()
+
+    except ConnectionError:
+        set_ontology_grace_period()
+    except:
+        app.logger.exception('An exception occurs when trying to reach Ontology server')
+
+    return ontology_response_data
+
+@ontology_enable({})
+def load_ontology_general_information():
+    """ Methods returning generic information concerning the current ontology
+
+        Returned response is with the following data structure
+            {
+                description:string,
+                version:string,
+                iri: string,
+                last_updated:string
+                entity_count:{
+                    'Code Repositories':integer,
+                    'Process Repositories':integer,
+                    'Processes':integer,
+                    'Models':integer,
+                    'Parameters':integer,
+                    'Usecases':integer,
+                }
+            }
+    """
+    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+    ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
+    ontology_response_data = {}
+
+    complete_url = f'{ontology_endpoint}/v1/general_information'
+
+    try:
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path
+        )
         if resp.status_code == 200:
             ontology_response_data = resp.json()
 

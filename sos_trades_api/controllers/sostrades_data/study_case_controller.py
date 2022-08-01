@@ -33,8 +33,8 @@ from sos_trades_api.models.database_models import (
     UserStudyPreference,
     StudyCase,
     UserStudyFavorite,
-    Group,
     StudyCaseExecution,
+    StudyCaseLog,
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
@@ -250,6 +250,35 @@ def get_user_authorised_studies_for_process(user_id, process_name, repository_na
             result.append(new_study)
 
     return result
+
+
+def study_case_logs(study_case_id):
+    """
+    Retrieve study case logs from database for a given study case
+
+    :param study_case_id: study case identifier
+    :type study_case_id: int
+
+    :return: StudyCaseLog[]
+    """
+    if study_case_id is not None:
+        result = []
+        try:
+
+            result = (StudyCaseLog.query.filter(StudyCaseLog.study_case_id == study_case_id)
+                .order_by(StudyCaseLog.id)
+                .limit(200)
+                .all())
+
+
+        except Exception as ex:
+            print(ex)
+        finally:
+            return result
+
+    else:
+        raise InvalidStudy(
+            f'Requested study case (identifier {study_case_id} does not exist in the database')
 
 
 def get_logs(study_id=None):

@@ -27,7 +27,7 @@ import signal
 import threading
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
 from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, \
-    StudyCaseExecutionLog, StudyCaseExecution, Process
+    StudyCaseExecutionLog, StudyCaseExecution, Process, StudyCaseLog
 from sos_trades_api.controllers.error_classes import InvalidStudy
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
@@ -102,6 +102,11 @@ def execute_calculation(study_id, username):
         db.session.add(study_case)
 
         # Clearing all log regarding the given study case
+        StudyCaseLog.query\
+            .filter(StudyCaseLog.study_case_id == study_id)\
+            .delete()
+        db.session.commit()
+        # Clearing all execution log regarding the given study case
         # But only log that does not rely to calculation (null study_case_execution_id key)
         StudyCaseExecutionLog.query\
             .filter(StudyCaseExecutionLog.study_case_id == study_id)\
@@ -117,9 +122,6 @@ def execute_calculation(study_id, username):
         study.study_case_manager_save_backup_files()
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
-
-            # Enable logging on execution
-            study.add_execution_identifier = True
 
             # Initialize execution logger
             execution_logger = get_sos_logger('SoS')

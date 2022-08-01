@@ -20,8 +20,9 @@ from sos_trades_api.base_server import app
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_main.ontology_controller import (
-    load_ontology, load_models_status, load_models_links, load_parameters, load_parameter_label_list,
-    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_usages)
+    load_models_status, load_parameters, load_parameter_label_list,
+    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_usages,
+    load_ontology_general_information)
 
 
 @app.route(f'/api/main/ontology/ontology-usages', methods=['POST'])
@@ -98,9 +99,6 @@ def load_ontology_request_usages():
     return resp
 
 
-
-
-
 @app.route(f'/api/main/ontology/models/status', methods=['GET'])
 @auth_required
 def load_ontology_models_status():
@@ -126,32 +124,6 @@ def load_ontology_models_status():
     return resp
 
 
-@app.route(f'/api/main/ontology/models/links', methods=['GET'])
-@auth_required
-def load_ontology_models_links():
-    """
-    Relay to ontology server to retrieve the whole sos_trades models links diagram
-    Object returned is a form of d3 js data structure
-
-    Returned response is with the following data structure
-        { 
-            nodes : array of {
-                id: string,
-                group: integer
-            }
-            links: array of {
-                source: string,
-                target: string,
-                value: integer
-            }
-
-        }
-    """
-    user = get_authenticated_user()
-    process_access = ProcessAccess(user.id)
-    return load_models_links(process_access.user_process_list)
-
-
 @app.route(f'/api/main/ontology/full_parameter_list', methods=['GET'])
 @auth_required
 def load_ontology_parameters():
@@ -172,6 +144,7 @@ def load_ontology_parameters():
     resp = make_response(jsonify(load_parameters()))
 
     return resp
+
 
 @app.route(f'/api/main/ontology/full_parameter_label_list', methods=['GET'])
 @auth_required
@@ -245,4 +218,33 @@ def load_full_process_list():
     app.logger.info(user)
 
     resp = make_response(jsonify(load_ontology_processes()), 200)
+    return resp
+
+
+@app.route(f'/api/main/ontology/general_information', methods=['GET'])
+@auth_required
+def load_general_information():
+    """ Methods returning generic information concerning the current ontology
+
+           Returned response is with the following data structure
+               {
+                   description:string,
+                   version:string,
+                   iri: string,
+                   last_updated:string
+                   entity_count:{
+                       'Code Repositories':integer,
+                       'Process Repositories':integer,
+                       'Processes':integer,
+                       'Models':integer,
+                       'Parameters':integer,
+                       'Usecases':integer,
+                   }
+               }
+       """
+
+    user = session['user']
+    app.logger.info(user)
+
+    resp = make_response(jsonify(load_ontology_general_information()), 200)
     return resp

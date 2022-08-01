@@ -366,7 +366,7 @@ def light_load_study_case(study_id, reload=False):
         """
 
     study_manager = study_case_cache.get_study_case(study_id, False)
-
+    study_manager.detach_logger()
     if reload:
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
@@ -376,6 +376,8 @@ def light_load_study_case(study_id, reload=False):
         study_manager.load_in_progress = True
 
         study_case_manager_loading(study_manager, False, False)
+
+    study_manager.attach_logger()
     return study_manager
 
 

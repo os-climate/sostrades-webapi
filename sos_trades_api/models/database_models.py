@@ -692,6 +692,32 @@ class StudyCaseDisciplineStatus(db.Model):
         }
 
 
+class StudyCaseLog(db.Model):
+    id = Column(Integer, primary_key=True)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f'{StudyCase.__tablename__}.id',
+                               ondelete="CASCADE",
+                               name='fk_study_case_log_study_case_id'))
+    name = Column(Text, index=False, unique=False)
+    log_level_name = Column(String(64), index=False, unique=False)
+    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    message = Column(Text, index=False, unique=False)
+    exception = Column(Text, index=False, unique=False)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'name': self.name,
+            'level': self.log_level_name,
+            'created': self.created,
+            'message': self.message,
+            'exception': self.exception
+        }
+
+
 class StudyCaseExecutionLog(db.Model):
     id = Column(Integer, primary_key=True)
     study_case_id = Column(Integer,
@@ -713,7 +739,6 @@ class StudyCaseExecutionLog(db.Model):
 
     def serialize(self):
         """ json serializer for dto purpose
-            datamanager attribute is not serialize because is is intended to be only server side data
         """
 
         return {

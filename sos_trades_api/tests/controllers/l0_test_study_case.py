@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for study procedures
@@ -213,6 +214,22 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Created study case process does not match, test set up process name used')
             self.assertEqual(loaded_study.study_case.repository, self.test_repository_name,
                              'Created study case repository does not match, test set up repository name used')
+
+    def test_study_case_log(self):
+        from sos_trades_api.models.database_models import StudyCase, AccessRights,StudyCaseLog
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
+        from sos_trades_api.base_server import study_case_cache
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_name).first()
+            self.assertIsNotNone(
+                study_test, 'Unable to retrieve study case created for test')
+
+            #check that logs are created
+            self.assertNotEqual(len(StudyCaseLog.query\
+            .filter(StudyCaseLog.study_case_id == study_test.id)\
+            .all()), 0)
 
     def test_copy_study_case(self):
         from sos_trades_api.models.database_models import StudyCase
