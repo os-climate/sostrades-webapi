@@ -31,6 +31,7 @@ BRANCH = 'branch'
 COMMIT = 'commit'
 URL = 'url'
 COMMITTED_DATE = 'committed_date'
+REPO_PATH = 'path'
 
 # Regular expression to remove connection info from url when token is used
 INFO_REGEXP = ':\/\/.*@'
@@ -230,7 +231,9 @@ def launch_generate_reference(reference_identifier):
         generation_log_handler.flush()
 
 
-def trace_source_code(traceability_folder=None, logger=None, write_file=True):
+def trace_source_code(
+    traceability_folder=None, logger=None, write_file=True, add_library_path=False
+):
     """
     Regarding python path module information, extract and save all commit sha of
     repositories used to compute the study
@@ -280,6 +283,8 @@ def trace_source_code(traceability_folder=None, logger=None, write_file=True):
                         COMMIT: commit.hexsha,
                         COMMITTED_DATE: commited_date.strftime("%d/%m/%Y %H:%M:%S"),
                     }
+                    if add_library_path:
+                        traceability_dict[repo_name][REPO_PATH] = library_path
 
                 except git.exc.InvalidGitRepositoryError:
                     logger.debug(f'{library_path} folder is not a git folder')
