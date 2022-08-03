@@ -18,7 +18,8 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.models.database_models import AccessRights
 from werkzeug.exceptions import BadRequest
-from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case
+from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
+    reset_study_from_cache_and_light_load
 from flask import abort, jsonify, make_response
 import time
 
@@ -41,6 +42,39 @@ def load_study_case_by_id(study_id):
             study_id)
         # set the study case in the cache
         study_manager = light_load_study_case(study_id)
+        if study_manager is None:
+            resp = make_response(
+                jsonify(True), 200)
+        else:
+            if study_manager.has_error:
+                app.logger.info("study manager has error")
+            resp = make_response(
+                jsonify(study_manager.loaded or study_manager.has_error), 200)
+
+        return resp
+
+    abort(403)
+
+
+@app.route(f'/api/post-processing/study-case/reset-cache/<int:study_id>', methods=['GET'])
+@auth_required
+def reset_study_from_cache_(study_id):
+    if study_id is not None:
+
+        # Checking if user can access study data
+        user = get_authenticated_user()
+
+        # Verify user has study case authorisation to load study (Restricted
+        # viewer)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to load this study case')
+        study_access_right = study_case_access.get_user_right_for_study(
+            study_id)
+        # set the study case in the cache
+
+        study_manager = reset_study_from_cache_and_light_load(study_id)
         if study_manager is None:
             resp = make_response(
                 jsonify(True), 200)
