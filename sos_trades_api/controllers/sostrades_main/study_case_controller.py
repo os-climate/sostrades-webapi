@@ -383,12 +383,10 @@ def light_load_study_case(study_id, reload=False):
 
 def reset_study_from_cache_and_light_load(study_id):
     """
-        Launch only the load study in cache
+        Reset study from cache before launch only the load study in cache
         :params: study_id, id of the study to load
         :type: integer
-        :params: study_access_right, information about the access right needed for the study
-        :type: AccessRights enum
-        """
+    """
 
     # Check if study is already in cache
     if study_case_cache.is_study_case_cached(study_id):
@@ -396,7 +394,7 @@ def reset_study_from_cache_and_light_load(study_id):
         study_case_cache.delete_study_case_from_cache(study_id)
 
         # Create the updated one
-        study_manager = study_case_cache.get_study_case(study_id, False)
+        study_case_cache.get_study_case(study_id, False)
 
     study_manager = light_load_study_case(study_id, False)
     return study_manager
