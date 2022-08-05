@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -42,6 +44,7 @@ from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLH
 from sos_trades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
+import json
 
 
 class StudyCaseError(Exception):
@@ -64,6 +67,7 @@ class InvalidStudy(StudyCaseError):
 
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
+    STUDY_FILE_NAME = "loaded_study_case.json"
 
     def __init__(self, study_identifier):
         """
@@ -444,6 +448,43 @@ class StudyCaseManager(BaseStudyManager):
             reload_done = True
 
         return reload_done
+
+    def write_loaded_study_case_in_json_file(self, loadedStudy):
+        """
+        Save study case loaded into json file for read only mode
+        :param loadedStudy: loadedstudycase to save
+        :type loadedStudy: LoadedStudyCase
+        """
+        saved = False
+        root_folder = Path(self.dump_directory)
+        if loadedStudy is not None:
+            file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+            with open(file_path, 'w+') as studyfile:
+                json.dump(loadedStudy, studyfile, cls=CustomJsonEncoder)
+                saved = True
+        return saved
+
+    def read_loaded_study_case_in_json_file(self):
+        """
+        Retrieve study case loaded from json file for read only mode
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+        loadedStudyCase = None
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as studyfile:
+                loadedStudyCase = json.load(studyfile)
+
+        return loadedStudyCase
+
+    def check_study_case_json_file_exists(self):
+        """
+        Check study case loaded into json file for read only mode exists
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+
+        return os.path.exists(file_path)
 
     @staticmethod
     def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:

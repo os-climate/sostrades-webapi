@@ -437,11 +437,11 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
 
-    # if study_case_execution is not None:
-    #     if loaded_study_case.study_case.execution_status != SoSDiscipline.STATUS_CONFIGURE:
-    #         loaded_study_case.study_case.execution_status = study_case_execution.execution_status
-    # else:
-    #     loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+    if study_manager.load_in_progress and not study_manager.loaded and study_manager.check_study_case_json_file_exists():
+        # get study case data from file and set them into the loaded study case
+        loaded_study_case = study_manager.read_loaded_study_case_in_json_file()
+        loaded_study_case["load_in_progress"] = True
+        loaded_study_case["read_only"] = True
 
     if study_manager.loaded is True and study_manager.load_in_progress is False:
         process_metadata = load_processes_metadata(
@@ -461,6 +461,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
             loaded_study_case.study_case.is_commenter = True
         else:
             loaded_study_case.study_case.is_restricted_viewer = True
+
+        # save study case into json file for read only mode
+        study_manager.write_loaded_study_case_in_json_file(loaded_study_case)
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
