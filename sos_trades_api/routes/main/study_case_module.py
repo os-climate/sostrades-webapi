@@ -23,7 +23,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
-    set_study_data_file)
+    set_study_data_file, get_study_in_read_only_mode)
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
@@ -354,3 +354,22 @@ def reload_study_discipline_data_by_study_case_id(study_id):
         return resp
 
     abort(403)
+
+@app.route(f'/api/main/study-case/read-only-mode/<int:study_id>', methods=['GET'])
+@auth_required
+def get_study_data_in_read_only_mode(study_id):
+    """
+    Retreive the study in read only mode, return none if no read only mode found
+    """
+    if study_id is not None:
+        user = session['user']
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve this information about this study case')
+
+        # Proceeding after rights verification
+        study_json = get_study_in_read_only_mode(study_id)
+        return study_json
+    raise BadRequest('Missing mandatory parameter: study identifier in url')

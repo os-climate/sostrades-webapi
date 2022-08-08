@@ -855,6 +855,26 @@ def get_study_data_stream(study_id):
             f'The following study file raise this error while trying to read it : {error}')
     return zip_path
 
+def get_study_in_read_only_mode(study_id):
+    """
+       check if a study json file exists,
+            if true, read study case in read only mode, and return the json
+            if false, return none
+        :param: study_id, id of the study to export
+        :type: integer
+    """
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    if study_manager.check_study_case_json_file_exists():
+        try:
+            loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
+            return loaded_study_json
+
+        except Exception as error:
+            raise InvalidFile(
+                f'The following study file raise this error while trying to read it : {error}')
+    else:
+        return None
+
 
 def get_study_data_file_path(study_id) -> str:
     """
