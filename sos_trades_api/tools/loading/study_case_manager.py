@@ -313,6 +313,7 @@ class StudyCaseManager(BaseStudyManager):
 
         if save_loaded_study:
             loaded_study_case = LoadedStudyCase(self, False, True, None)
+            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
             self.write_loaded_study_case_in_json_file(loaded_study_case)
 
 
