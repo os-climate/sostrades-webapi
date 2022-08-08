@@ -29,13 +29,19 @@ from sos_trades_api.base_server import db, app
 import time
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 
+class LoadStatus:
+    NONE = 'none'
+    IN_PROGESS = 'in_progress'
+    READ_ONLY_MODE = 'read_only_mode'
+    LOADED = 'loaded'
+    IN_ERROR = 'in_error'
 
 class LoadedStudyCase:
 
     def __init__(self, study_case_manager, no_data, read_only, user_id):
 
         self.study_case = StudyCaseDto(study_case_manager.study)
-        self.load_in_progress = study_case_manager.load_in_progress
+        self.load_status = study_case_manager.load_status
         self.preference = {}
         self.no_data = no_data
         self.read_only = read_only
@@ -51,7 +57,7 @@ class LoadedStudyCase:
         else:
             self.user_id_execution_authorized = 0
 
-        if not self.load_in_progress:
+        if self.load_status == LoadStatus.LOADED:
 
             study_case_manager.execution_engine.dm.treeview = None
             
@@ -158,6 +164,6 @@ class LoadedStudyCase:
             'no_data': self.no_data,
             'read_only': self.read_only,
             'preference': self.preference,
-            'load_in_progress': self.load_in_progress,
+            'load_status': self.load_status,
             'can_reload': self.can_reload
         }

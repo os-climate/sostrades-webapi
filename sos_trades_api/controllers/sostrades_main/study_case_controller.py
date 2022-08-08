@@ -57,6 +57,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
 from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, \
     InvalidStudyExecution
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.models.loaded_study_case import LoadStatus
 from numpy import array
 
 
@@ -165,18 +166,14 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                 # Get ref generation ID associated to this ref
                 reference_identifier = f'{repository_name}.{process_name}.{reference}'
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status == LoadStatus.NONE:
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
                         args=(study_manager, False, False, reference_folder, reference_identifier)).start()
 
             elif from_type == 'UsecaseData':
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status == LoadStatus.NONE:
                     threading.Thread(
                         target=study_case_manager_loading_from_usecase_data,
                         args=(study_manager, False, False, repository_name, process_name, reference)).start()
@@ -319,9 +316,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
             try:
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status == LoadStatus.NONE:
                     threading.Thread(
                         target=study_case_manager_loading,
                         args=(study_manager, False, False)).start()
@@ -371,9 +366,7 @@ def light_load_study_case(study_id, reload=False):
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
 
-    if not study_manager.load_in_progress and not study_manager.loaded and not study_manager.has_error:
-        study_manager.loaded = False
-        study_manager.load_in_progress = True
+    if study_manager.load_status == LoadStatus.NONE:
 
         study_case_manager_loading(study_manager, False, False)
 
@@ -425,10 +418,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
-    if not study_manager.load_in_progress and not study_manager.loaded and not study_manager.has_error:
-        study_manager.loaded = False
-        study_manager.load_in_progress = True
-
+    if study_manager.load_status == LoadStatus.NONE:
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
 
@@ -437,14 +427,12 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
 
-    if study_manager.load_in_progress and not study_manager.loaded and study_manager.check_study_case_json_file_exists():
+    if study_manager.load_status == LoadStatus.IN_PROGESS and study_manager.check_study_case_json_file_exists():
         # get study case data from file and set them into the loaded study case
         loaded_study_case = study_manager.read_loaded_study_case_in_json_file()
-        loaded_study_case["load_in_progress"] = True
-        loaded_study_case["read_only"] = True
-        loaded_study_case["load_from_file"] = True
 
-    if study_manager.loaded is True and study_manager.load_in_progress is False:
+
+    if study_manager.load_status == LoadStatus.LOADED:
         process_metadata = load_processes_metadata(
             [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
 
@@ -567,10 +555,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_manager = study_case_cache.get_study_case(
                 studycase.id, False)
 
-            if not study_manager.load_in_progress and not study_manager.loaded:
-                study_manager.load_in_progress = True
-                study_manager.loaded = False
-
+            if study_manager.load_status == LoadStatus.NONE:
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
                     args=(study_manager, False, False, study_manager_source)).start()
@@ -767,9 +752,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
                                                 parameter['namespace'])
 
-        if not study_manager.load_in_progress:
-            study_manager.load_in_progress = True
-            study_manager.loaded = False
+        if study_manager.load_status == LoadStatus.NONE or study_manager.load_status == LoadStatus.IN_ERROR:
             study_manager.clear_error()
             threading.Thread(
                 target=study_case_manager_update, args=(study_manager, values, False, False, conectors)).start()

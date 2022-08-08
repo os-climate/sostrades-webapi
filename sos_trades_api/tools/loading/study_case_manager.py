@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
-
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -45,6 +43,8 @@ from sos_trades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
 import json
+from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 
 
 class StudyCaseError(Exception):
@@ -100,7 +100,7 @@ class StudyCaseManager(BaseStudyManager):
 
         self.__study_database_logger = None
 
-        self.load_in_progress = False
+        self.load_status = LoadStatus.NONE
         self.loaded = False
         self.n2_diagram = {}
 
@@ -297,8 +297,24 @@ class StudyCaseManager(BaseStudyManager):
         """
         self._build_execution_engine()
         self.clear_error()
-        self.load_in_progress = False
+        self.load_status = LoadStatus.NONE
         self.loaded = False
+
+    def load_study_case_from_source(self, source_directory):
+        self.load_data(source_directory, display_treeview=False)
+        self.load_disciplines_data(source_directory)
+        self.load_cache(source_directory)
+
+    def save_study_case(self, save_loaded_study=True):
+        # Persist data using the current persistence strategy
+        self.dump_data(self.dump_directory)
+        self.dump_disciplines_data(self.dump_directory)
+        self.dump_cache(self.dump_directory)
+
+        if save_loaded_study:
+            loaded_study_case = LoadedStudyCase(self, False, True, None)
+            self.write_loaded_study_case_in_json_file(loaded_study_case)
+
 
     def __load_study_case_from_identifier(self):
         """

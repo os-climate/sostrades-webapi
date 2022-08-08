@@ -181,6 +181,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
         from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -199,7 +200,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False and study_manager.loaded == True:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
@@ -253,6 +254,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -291,7 +293,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         counter = 0
 
         while not stop:
-            if study_manager.load_in_progress == False and study_manager.loaded == True:
+            if study_manager.load_status == LoadStatus.LOADED:
                 stop = True
             else:
                 if counter > 60:
@@ -320,6 +322,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         import numpy as np
         import pandas as pd
         from sos_trades_api.tests import data
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_csv_test = StudyCase.query.filter(
@@ -377,7 +380,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         counter = 0
 
         while not stop:
-            if study_manager.load_in_progress == False and study_manager.loaded == True:
+            if study_manager.load_status == LoadStatus.LOADED:
                 stop = True
             else:
                 if counter > 60:
@@ -439,6 +442,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
         from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -471,7 +475,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False and study_manager.loaded == True:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
@@ -561,6 +565,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.tests import data
         from werkzeug.datastructures import FileStorage
         from numpy import array
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_clear_error_test = StudyCase.query.filter(
@@ -594,7 +599,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False:
+                if study_manager.load_status == LoadStatus.IN_ERROR:
                     stop = True
                 else:
                     if counter > 60:
@@ -713,7 +718,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
