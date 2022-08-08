@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.base_server import app
+from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import \
+    reset_study_from_cache_and_light_load
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.models.database_models import AccessRights
 from werkzeug.exceptions import BadRequest
-from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
-    reset_study_from_cache_and_light_load
+from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 from flask import abort, jsonify, make_response
-import time
 
 
 @app.route(f'/api/post-processing/study-case/<int:study_id>', methods=['GET'])
