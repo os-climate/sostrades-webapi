@@ -442,6 +442,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         loaded_study_case = study_manager.read_loaded_study_case_in_json_file()
         loaded_study_case["load_in_progress"] = True
         loaded_study_case["read_only"] = True
+        loaded_study_case["load_from_file"] = True
 
     if study_manager.loaded is True and study_manager.load_in_progress is False:
         process_metadata = load_processes_metadata(

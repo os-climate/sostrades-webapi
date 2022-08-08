@@ -45,8 +45,11 @@ class LoadedStudyCase:
         self.plotly = {}
         self.n2_diagram = {}
         self.can_reload = study_case_manager.check_study_can_reload()
-
-        self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
+        self.load_from_file = False
+        if user_id is not None:
+            self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
+        else:
+            self.user_id_execution_authorized = 0
 
         if not self.load_in_progress:
 
