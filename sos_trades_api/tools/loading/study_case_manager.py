@@ -101,7 +101,6 @@ class StudyCaseManager(BaseStudyManager):
         self.__study_database_logger = None
 
         self.load_status = LoadStatus.NONE
-        self.loaded = False
         self.n2_diagram = {}
 
         self.__has_error = False
@@ -312,9 +311,14 @@ class StudyCaseManager(BaseStudyManager):
         self.dump_cache(self.dump_directory)
 
         if save_loaded_study:
-            loaded_study_case = LoadedStudyCase(self, False, True, None)
-            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.write_loaded_study_case_in_json_file(loaded_study_case)
+            # save loaded study case into a json file to be retrived before loading is completed
+            with app.app_context():
+                loaded_study_case = LoadedStudyCase(self, False, True, None)
+                # call this funtion because the studycase_manager load_status is not LOADED yet
+                loaded_study_case.load_treeview_and_post_proc(self, False, True, None)
+                # set the load_status in READ_ONLY_MODE
+                loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+                self.write_loaded_study_case_in_json_file(loaded_study_case)
 
 
     def __load_study_case_from_identifier(self):

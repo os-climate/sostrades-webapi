@@ -39,8 +39,13 @@ class LoadStatus:
 class LoadedStudyCase:
 
     def __init__(self, study_case_manager, no_data, read_only, user_id):
-
+        """
+        :param read_only_mode: this paam is used when getting loaded study case to save it in json file.
+                                It needs treeview and post processings but no user nor group data
+        :type: boolean
+        """
         self.study_case = StudyCaseDto(study_case_manager.study)
+
         self.load_status = study_case_manager.load_status
         self.preference = {}
         self.no_data = no_data
@@ -51,33 +56,35 @@ class LoadedStudyCase:
         self.plotly = {}
         self.n2_diagram = {}
         self.can_reload = study_case_manager.check_study_can_reload()
-        self.load_from_file = False
+
         if user_id is not None:
             self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
         else:
-            self.user_id_execution_authorized = 0
+            self.user_id_execution_authorized = None
 
         if self.load_status == LoadStatus.LOADED:
+            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id)
 
-            study_case_manager.execution_engine.dm.treeview = None
-            
-            treeview = study_case_manager.execution_engine.get_treeview(
-                no_data, read_only)
-            self.n2_diagram = {}
 
-            if treeview is not None:
-                self.study_case.execution_status = treeview.root.status
-                self.treenode = treeview.to_dict()
-            self.post_processings = {}
-            self.plotly = {}
-            self.n2_diagram = study_case_manager.n2_diagram
-            self.__load_user_study_preference(user_id)
+    def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id):
+        study_case_manager.execution_engine.dm.treeview = None
 
-            # Loading charts if study is finished
-            if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
-                # Get discipline filters
-                self.post_processings = load_post_processing(
-                    study_case_manager.execution_engine, False)
+        treeview = study_case_manager.execution_engine.get_treeview(no_data, read_only)
+        self.n2_diagram = {}
+
+        if treeview is not None:
+            self.study_case.execution_status = treeview.root.status
+            self.treenode = treeview.to_dict()
+        self.post_processings = {}
+        self.plotly = {}
+        self.n2_diagram = study_case_manager.n2_diagram
+        self.__load_user_study_preference(user_id)
+
+        # Loading charts if study is finished
+        if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+            # Get discipline filters
+            self.post_processings = load_post_processing(
+                study_case_manager.execution_engine, False)
 
     def __load_user_study_preference(self, user_id):
         """ Load study preferences for the given user
@@ -164,6 +171,6 @@ class LoadedStudyCase:
             'no_data': self.no_data,
             'read_only': self.read_only,
             'preference': self.preference,
-            'load_status': self.load_status,
-            'can_reload': self.can_reload
+            'can_reload': self.can_reload,
+            'load_status': self.load_status
         }

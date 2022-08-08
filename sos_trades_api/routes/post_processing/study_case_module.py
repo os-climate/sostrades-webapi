@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.base_server import app
+from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.models.database_models import AccessRights
@@ -49,7 +50,7 @@ def load_study_case_by_id(study_id):
             if study_manager.has_error:
                 app.logger.info("study manager has error")
             resp = make_response(
-                jsonify(study_manager.loaded or study_manager.has_error), 200)
+                jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)
 
         return resp
 
@@ -82,7 +83,7 @@ def reset_study_from_cache_(study_id):
             if study_manager.has_error:
                 app.logger.info("study manager has error")
             resp = make_response(
-                jsonify(study_manager.loaded or study_manager.has_error), 200)
+                jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)
 
         return resp
 
@@ -114,7 +115,7 @@ def reload_study_case_by_id(study_id):
             if study_manager.has_error:
                 app.logger.info("study manager has error")
             resp = make_response(
-                jsonify(study_manager.loaded or study_manager.has_error), 200)
+                jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)
 
         return resp
 

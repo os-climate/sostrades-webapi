@@ -147,7 +147,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         # Loading data for study created empty
         if reference is None:
 
-            study_manager.loaded = True
+            study_manager.load_status = LoadStatus.LOADED
             study_manager.n2_diagram = {}
             study_manager.execution_engine.dm.treeview = None
             study_manager.execution_engine.get_treeview(False, False)
@@ -167,6 +167,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                 reference_identifier = f'{repository_name}.{process_name}.{reference}'
 
                 if study_manager.load_status == LoadStatus.NONE:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
                         args=(study_manager, False, False, reference_folder, reference_identifier)).start()
@@ -174,6 +175,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
             elif from_type == 'UsecaseData':
 
                 if study_manager.load_status == LoadStatus.NONE:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading_from_usecase_data,
                         args=(study_manager, False, False, repository_name, process_name, reference)).start()
@@ -317,6 +319,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
             try:
 
                 if study_manager.load_status == LoadStatus.NONE:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading,
                         args=(study_manager, False, False)).start()
@@ -367,7 +370,6 @@ def light_load_study_case(study_id, reload=False):
         study_manager.reset()
 
     if study_manager.load_status == LoadStatus.NONE:
-
         study_case_manager_loading(study_manager, False, False)
 
     study_manager.attach_logger()
@@ -419,6 +421,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
     if study_manager.load_status == LoadStatus.NONE:
+        study_manager.load_status = LoadStatus.IN_PROGESS
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
 
@@ -548,6 +551,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
                 studycase.id, False)
 
             if study_manager.load_status == LoadStatus.NONE:
+                study_manager.load_status = LoadStatus.IN_PROGESS
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
                     args=(study_manager, False, False, study_manager_source)).start()
@@ -746,6 +750,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
 
         if study_manager.load_status == LoadStatus.NONE or study_manager.load_status == LoadStatus.IN_ERROR:
             study_manager.clear_error()
+            study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
                 target=study_case_manager_update, args=(study_manager, values, False, False, conectors)).start()
 
@@ -855,7 +860,7 @@ def get_study_in_read_only_mode(study_id):
         :param: study_id, id of the study to export
         :type: integer
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = StudyCaseManager(study_id)
     if study_manager.check_study_case_json_file_exists():
         try:
             loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
