@@ -136,6 +136,7 @@ def launch_generate_reference(reference_identifier):
 
     # Instantiate and attach database logger
     generation_log_handler = ReferenceMySQLHandler(reference_identifier)
+    generation_log_handler.clear_reference_database_logs()
     generation_log.addHandler(generation_log_handler)
 
     # Then share handlers with GEMS logger to retrieve GEMS execution
@@ -221,6 +222,7 @@ def launch_generate_reference(reference_identifier):
                     'creation_date': None,
                 }
             )
+            generation_log.exception("An exception occurs during reference generation.")
             main_server.db.session.commit()
             raise ReferenceStudyError(e)
 
