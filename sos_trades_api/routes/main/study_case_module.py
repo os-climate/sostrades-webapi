@@ -355,6 +355,7 @@ def reload_study_discipline_data_by_study_case_id(study_id):
 
     abort(403)
 
+
 @app.route(f'/api/main/study-case/read-only-mode/<int:study_id>', methods=['GET'])
 @auth_required
 def get_study_data_in_read_only_mode(study_id):

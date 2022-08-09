@@ -30,12 +30,9 @@ class CustomJsonEncoderWithDatas(CustomJsonEncoder):
     def default(self, o):  # pylint: disable=E0202
 
         if isinstance(o, DataFrame):
-            return o.serialize()
-        elif isinstance(o, Index):
-            return o.serialize()
+            return o.to_json()
         elif isinstance(o, np.ndarray):
-            return o.serialize()
-
+            return o.tolist()
 
         # default, if not one of the specified object. Caller's problem if this is not
         # serializable.

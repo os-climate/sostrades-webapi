@@ -72,6 +72,7 @@ class InvalidStudy(StudyCaseError):
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
     STUDY_FILE_NAME = "loaded_study_case.json"
+    POST_PROCESSING_FILE_NAME = "loaded_post_processing.json"
 
     def __init__(self, study_identifier):
         """
@@ -324,6 +325,7 @@ class StudyCaseManager(BaseStudyManager):
                 # set the load_status in READ_ONLY_MODE
                 loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
                 self.write_loaded_study_case_in_json_file(loaded_study_case)
+                self.write_loaded_study_case_post_proc_in_json_file(loaded_study_case)
                 print(f"end time {datetime.datetime.now()}")
 
 
@@ -476,19 +478,37 @@ class StudyCaseManager(BaseStudyManager):
 
         return reload_done
 
-    def write_loaded_study_case_in_json_file(self, loadedStudy):
+    def write_loaded_study_case_in_json_file(self, loaded_study):
         """
         Save study case loaded into json file for read only mode
-        :param loadedStudy: loadedstudycase to save
-        :type loadedStudy: LoadedStudyCase
+        :param loaded_study: loaded_study_case to save
+        :type loaded_study: LoadedStudyCase
         """
         saved = False
         root_folder = Path(self.dump_directory)
-        if loadedStudy is not None:
-            file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
-            with open(file_path, 'w+') as studyfile:
-                json.dump(loadedStudy, studyfile, cls=CustomJsonEncoderWithDatas)
+        if loaded_study is not None:
+
+            study_file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+            del loaded_study["post_processings"]
+            with open(study_file_path, 'w+') as studyfile:
+                json.dump(loaded_study, studyfile, cls=CustomJsonEncoderWithDatas)
                 saved = True
+
+        return saved
+
+    def write_loaded_study_case_post_proc_in_json_file(self, loaded_study):
+        """
+        Save post processing of the study case loaded into json file for read only mode
+        :param loaded_study: loaded_study_case to save
+        :type loaded_study: LoadedStudyCase
+        """
+        saved = False
+        root_folder = Path(self.dump_directory)
+        if loaded_study is not None:
+            post_proc_file_path = root_folder.joinpath(self.POST_PROCESSING_FILE_NAME)
+            with open(post_proc_file_path, 'w+') as post_processing_file:
+                json.dump(loaded_study.post_processings, post_processing_file, cls=CustomJsonEncoder)
+
         return saved
 
     def read_loaded_study_case_in_json_file(self):
@@ -496,13 +516,13 @@ class StudyCaseManager(BaseStudyManager):
         Retrieve study case loaded from json file for read only mode
         """
         root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
-        loadedStudyCase = None
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as studyfile:
-                loadedStudyCase = json.load(studyfile)
+        study_file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+        loaded_study_case = None
+        if os.path.exists(study_file_path):
+            with open(study_file_path, 'r') as study_file:
+                loaded_study_case = json.load(study_file)
 
-        return loadedStudyCase
+        return loaded_study_case
 
     def check_study_case_json_file_exists(self):
         """
