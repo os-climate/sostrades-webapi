@@ -60,7 +60,7 @@ class LoadedStudyCase:
         if user_id is not None:
             self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
         else:
-            self.user_id_execution_authorized = None
+            self.user_id_execution_authorized = 0
 
         if self.load_status == LoadStatus.LOADED:
             self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id)

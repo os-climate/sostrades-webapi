@@ -166,7 +166,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                 # Get ref generation ID associated to this ref
                 reference_identifier = f'{repository_name}.{process_name}.{reference}'
 
-                if study_manager.load_status == LoadStatus.NONE:
+                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
                     study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
@@ -318,7 +318,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
             try:
 
-                if study_manager.load_status == LoadStatus.NONE:
+                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
                     study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading,
@@ -420,7 +420,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
-    if study_manager.load_status == LoadStatus.NONE:
+    if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
         study_manager.load_status = LoadStatus.IN_PROGESS
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
@@ -550,7 +550,7 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_manager = study_case_cache.get_study_case(
                 studycase.id, False)
 
-            if study_manager.load_status == LoadStatus.NONE:
+            if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
                 study_manager.load_status = LoadStatus.IN_PROGESS
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
@@ -748,7 +748,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
                                                 parameter['namespace'])
 
-        if study_manager.load_status == LoadStatus.NONE or study_manager.load_status == LoadStatus.IN_ERROR:
+        if study_manager.load_status != LoadStatus.IN_PROGESS:
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
