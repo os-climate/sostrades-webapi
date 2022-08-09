@@ -16,6 +16,7 @@ limitations under the License.
 import datetime
 
 from sos_trades_api.models.custom_json_encoder_with_datas import CustomJsonEncoderWithDatas
+from sos_trades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -72,7 +73,6 @@ class InvalidStudy(StudyCaseError):
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
     STUDY_FILE_NAME = "loaded_study_case.json"
-    POST_PROCESSING_FILE_NAME = "loaded_post_processing.json"
 
     def __init__(self, study_identifier):
         """
@@ -309,24 +309,29 @@ class StudyCaseManager(BaseStudyManager):
         self.load_disciplines_data(source_directory)
         self.load_cache(source_directory)
 
-    def save_study_case(self, save_loaded_study=True):
+    def save_study_case(self):
         # Persist data using the current persistence strategy
         self.dump_data(self.dump_directory)
         self.dump_disciplines_data(self.dump_directory)
         self.dump_cache(self.dump_directory)
 
-        if save_loaded_study:
-            # save loaded study case into a json file to be retrived before loading is completed
-            with app.app_context():
-                print(f"start time {datetime.datetime.now()}")
-                loaded_study_case = LoadedStudyCase(self, False, True, None)
-                # call this funtion because the studycase_manager load_status is not LOADED yet
-                loaded_study_case.load_treeview_and_post_proc(self, False, True, None, True)
-                # set the load_status in READ_ONLY_MODE
-                loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-                self.write_loaded_study_case_in_json_file(loaded_study_case)
-                self.write_loaded_study_case_post_proc_in_json_file(loaded_study_case)
-                print(f"end time {datetime.datetime.now()}")
+    def write_study_read_only_mode_in_file(self):
+        # save loaded study case into a json file to be retrived before loading is completed
+        with app.app_context():
+            start = datetime.datetime.now()
+            print(f"start time {start}")
+            loaded_study_case = LoadedStudyCase(self, False, True, None)
+            print(f"study loaded creation {(datetime.datetime.now() - start).seconds}")
+            start = datetime.datetime.now()
+            # call this funtion because the studycase_manager load_status is not LOADED yet
+            loaded_study_case.load_treeview_and_post_proc(self, False, True, None, True)
+            print(f"study loaded treeview + post proc {(datetime.datetime.now() - start).seconds}")
+            start = datetime.datetime.now()
+            # set the load_status in READ_ONLY_MODE
+            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+            self.write_loaded_study_case_in_json_file(loaded_study_case)
+            print(f"writing file {(datetime.datetime.now() - start).seconds}")
+            print(f"end time {datetime.datetime.now()}")
 
 
     def __load_study_case_from_identifier(self):
@@ -489,25 +494,9 @@ class StudyCaseManager(BaseStudyManager):
         if loaded_study is not None:
 
             study_file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
-            del loaded_study["post_processings"]
             with open(study_file_path, 'w+') as studyfile:
-                json.dump(loaded_study, studyfile, cls=CustomJsonEncoderWithDatas)
+                json.dump(loaded_study, studyfile, cls=CustomJsonEncoder)
                 saved = True
-
-        return saved
-
-    def write_loaded_study_case_post_proc_in_json_file(self, loaded_study):
-        """
-        Save post processing of the study case loaded into json file for read only mode
-        :param loaded_study: loaded_study_case to save
-        :type loaded_study: LoadedStudyCase
-        """
-        saved = False
-        root_folder = Path(self.dump_directory)
-        if loaded_study is not None:
-            post_proc_file_path = root_folder.joinpath(self.POST_PROCESSING_FILE_NAME)
-            with open(post_proc_file_path, 'w+') as post_processing_file:
-                json.dump(loaded_study.post_processings, post_processing_file, cls=CustomJsonEncoder)
 
         return saved
 
@@ -533,6 +522,17 @@ class StudyCaseManager(BaseStudyManager):
 
         return os.path.exists(file_path)
 
+    def get_parameter_data(self, parameter_key):
+        serializer = DataSerializer(root_dir=self.dump_directory)
+        loaded_dict = serializer.get_dict_from_study(self.dump_directory, self.__rw_strategy)
+        anonimized_key = self.execution_engine.__anonymize_key(parameter_key)
+        if anonimized_key in loaded_dict.keys():
+            param_value = loaded_dict[anonimized_key]["value"]
+            df_data = self.convert_data_to_dataframe(param_value)
+            # export data as a DataFrame using buffered I/O streams
+            return self.convert_to_bytes_io(df_data, parameter_key)
+
+
     @staticmethod
     def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:
         """
@@ -552,3 +552,4 @@ class StudyCaseManager(BaseStudyManager):
                 data_root_dir = join(data_root_dir, str(study_case_id))
 
         return data_root_dir
+

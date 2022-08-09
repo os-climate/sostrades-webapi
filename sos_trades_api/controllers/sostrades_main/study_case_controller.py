@@ -815,22 +815,23 @@ def get_file_stream(study_id, parameter_key):
         :param: parameter_key, key of the parameter to retrieve
         :type: string
     """
-    study_manager = study_case_cache.get_study_case(
-        study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    if study_manager.load_status == LoadStatus.LOADED:
+        uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
+        if uuid_param in study_manager.execution_engine.dm.data_dict:
+            try:
+                file_read_bytes = study_manager.execution_engine.dm.get_parameter_data(
+                    parameter_key)
+            except Exception as error:
+                raise InvalidFile(
+                    f'The following file {parameter_key}.csv raise this error while trying to read it : {error}')
+            return file_read_bytes
 
-    uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
-    if uuid_param in study_manager.execution_engine.dm.data_dict:
-        try:
-            file_read_bytes = study_manager.execution_engine.dm.get_parameter_data(
-                parameter_key)
-        except Exception as error:
-            raise InvalidFile(
-                f'The following file {parameter_key}.csv raise this error while trying to read it : {error}')
-        return file_read_bytes
-
+        else:
+            raise StudyCaseError(
+                f'Parameter {parameter_key} does not exist in this study case')
     else:
-        raise StudyCaseError(
-            f'Parameter {parameter_key} does not exist in this study case')
+        return study_manager.get_parameter_data(parameter_key)
 
 
 def get_study_data_stream(study_id):

@@ -197,7 +197,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
         study_case_manager.n2_diagram = {}
         study_case_manager.load_status = LoadStatus.LOADED
-
+        study_case_manager.write_study_read_only_mode_in_file()
         app.logger.info(
             f'End background updating {study_case_manager.study.name}')
     except Exception as ex:
@@ -258,7 +258,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
         study_case_manager.n2_diagram = {}
         study_case_manager.load_status = LoadStatus.LOADED
-
+        study_case_manager.write_study_read_only_mode_in_file()
         app.logger.info(
             f'End background reference loading {study_case_manager.study.name}')
     except Exception as ex:
@@ -323,7 +323,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
 
         study_case_manager.n2_diagram = {}
         study_case_manager.load_status = LoadStatus.LOADED
-
+        study_case_manager.write_study_read_only_mode_in_file()
         app.logger.info(
             f'End of loading usecase data in background {study_case_manager.study.name}')
     except Exception as ex:
@@ -379,7 +379,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
 
         study_case_manager.n2_diagram = {}
         study_case_manager.load_status = LoadStatus.LOADED
-
+        study_case_manager.write_study_read_only_mode_in_file()
         app.logger.info(
             f'End of loading from study in background {study_case_manager.study.name}')
     except Exception as ex:
