@@ -63,10 +63,10 @@ class LoadedStudyCase:
             self.user_id_execution_authorized = 0
 
         if self.load_status == LoadStatus.LOADED:
-            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id)
+            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id, False)
 
 
-    def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id):
+    def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id, load_post_proc):
         study_case_manager.execution_engine.dm.treeview = None
 
         treeview = study_case_manager.execution_engine.get_treeview(no_data, read_only)
@@ -84,7 +84,7 @@ class LoadedStudyCase:
         if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
             # Get discipline filters
             self.post_processings = load_post_processing(
-                study_case_manager.execution_engine, False)
+                study_case_manager.execution_engine, load_post_proc)
 
     def __load_user_study_preference(self, user_id):
         """ Load study preferences for the given user

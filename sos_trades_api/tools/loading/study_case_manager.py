@@ -13,6 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import datetime
+
+from sos_trades_api.models.custom_json_encoder_with_datas import CustomJsonEncoderWithDatas
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -313,12 +317,14 @@ class StudyCaseManager(BaseStudyManager):
         if save_loaded_study:
             # save loaded study case into a json file to be retrived before loading is completed
             with app.app_context():
+                print(f"start time {datetime.datetime.now()}")
                 loaded_study_case = LoadedStudyCase(self, False, True, None)
                 # call this funtion because the studycase_manager load_status is not LOADED yet
-                loaded_study_case.load_treeview_and_post_proc(self, False, True, None)
+                loaded_study_case.load_treeview_and_post_proc(self, False, True, None, True)
                 # set the load_status in READ_ONLY_MODE
                 loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
                 self.write_loaded_study_case_in_json_file(loaded_study_case)
+                print(f"end time {datetime.datetime.now()}")
 
 
     def __load_study_case_from_identifier(self):
@@ -481,7 +487,7 @@ class StudyCaseManager(BaseStudyManager):
         if loadedStudy is not None:
             file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
             with open(file_path, 'w+') as studyfile:
-                json.dump(loadedStudy, studyfile, cls=CustomJsonEncoder)
+                json.dump(loadedStudy, studyfile, cls=CustomJsonEncoderWithDatas)
                 saved = True
         return saved
 
