@@ -134,10 +134,19 @@ def update_study_parameters_by_study_case_id(study_id: int):
     if request.json:
         request_json = request.json if isinstance(request.json, list) else [request.json]
 
+        messages = []
+        missing_variable = False
         for parameter_json in request_json:
+
             for needed_key in needed_parameters_keys:
                 if not parameter_json.get(needed_key):
-                    abort(400, "At least one of '" + ", ".join(needed_parameters_keys) + "' parameter not found in request.")
+                    messages.append(f'Missing mandatory key: {needed_key}')
+                    missing_variable = True
+                else:
+                    messages.append(f'Mandatory key {needed_key} found with value {parameter_json.get("variableId")}')
+
+        if missing_variable:
+            abort(400, "\n".join(messages))
 
     # Cache study
     light_load_study_case(study_id)
