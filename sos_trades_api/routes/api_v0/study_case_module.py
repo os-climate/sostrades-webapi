@@ -139,7 +139,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
         for parameter_json in request_json:
 
             for needed_key in needed_parameters_keys:
-                if not parameter_json.get(needed_key):
+                if needed_key not in parameter_json:
                     messages.append(f'Missing mandatory key: {needed_key}')
                     missing_variable = True
                 else:
