@@ -831,7 +831,8 @@ def get_file_stream(study_id, parameter_key):
             raise StudyCaseError(
                 f'Parameter {parameter_key} does not exist in this study case')
     else:
-        return study_manager.get_parameter_data(parameter_key)
+        parameters = study_manager.get_parameter_data(parameter_key)
+        return parameters
 
 
 def get_study_data_stream(study_id):

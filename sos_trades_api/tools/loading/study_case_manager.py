@@ -316,14 +316,14 @@ class StudyCaseManager(BaseStudyManager):
         self.dump_cache(self.dump_directory)
 
     def write_study_read_only_mode_in_file(self):
-        # save loaded study case into a json file to be retrived before loading is completed
+        # save loaded study case into a json file to be retrieved before loading is completed
         with app.app_context():
             start = datetime.datetime.now()
             print(f"start time {start}")
             loaded_study_case = LoadedStudyCase(self, False, True, None)
             print(f"study loaded creation {(datetime.datetime.now() - start).seconds}")
             start = datetime.datetime.now()
-            # call this funtion because the studycase_manager load_status is not LOADED yet
+            # call this function because the study_case_manager load_status is not LOADED yet
             loaded_study_case.load_treeview_and_post_proc(self, False, True, None, True)
             print(f"study loaded treeview + post proc {(datetime.datetime.now() - start).seconds}")
             start = datetime.datetime.now()
@@ -332,7 +332,6 @@ class StudyCaseManager(BaseStudyManager):
             self.write_loaded_study_case_in_json_file(loaded_study_case)
             print(f"writing file {(datetime.datetime.now() - start).seconds}")
             print(f"end time {datetime.datetime.now()}")
-
 
     def __load_study_case_from_identifier(self):
         """
@@ -523,14 +522,18 @@ class StudyCaseManager(BaseStudyManager):
         return os.path.exists(file_path)
 
     def get_parameter_data(self, parameter_key):
+        """
+        returns BytesIO of the data
+        """
         serializer = DataSerializer(root_dir=self.dump_directory)
-        loaded_dict = serializer.get_dict_from_study(self.dump_directory, self.__rw_strategy)
-        anonimized_key = self.execution_engine.__anonymize_key(parameter_key)
-        if anonimized_key in loaded_dict.keys():
-            param_value = loaded_dict[anonimized_key]["value"]
-            df_data = self.convert_data_to_dataframe(param_value)
+        loaded_dict = serializer.get_dict_from_study(self.dump_directory, DirectLoadDump())
+        anonymize_key = self.execution_engine.anonymize_key(parameter_key)
+        if anonymize_key in loaded_dict.keys():
+            param_value = loaded_dict[anonymize_key]["value"]
+            df_data = serializer.convert_data_to_dataframe(param_value)
             # export data as a DataFrame using buffered I/O streams
-            return self.convert_to_bytes_io(df_data, parameter_key)
+            data_convert = serializer.convert_to_bytes_io(df_data, parameter_key)
+            return data_convert
 
 
     @staticmethod
