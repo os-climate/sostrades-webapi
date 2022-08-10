@@ -27,16 +27,16 @@ class ReferenceMySQLHandler(Handler):
     Logging handler for StudyCaseExecutionLog
     """
 
-    def __init__(self, reference__id):
+    def __init__(self, reference_identifier):
         """
         Constructor
-        @param reference__id: identifier of the associted reference
-        @return: mySQLHandler
+        :param reference_identifier: identifier of the associated reference
+        :type reference_identifier: str
         """
 
         Handler.__init__(self)
 
-        self.reference__id = reference__id
+        self.__reference_identifier = reference_identifier
         self.__inner_bulk_list = []
 
     def formatDBTime(self, record):
@@ -61,8 +61,7 @@ class ReferenceMySQLHandler(Handler):
         self.formatDBTime(record)
 
         if record.exc_info:
-            record.exc_text = _defaultFormatter.formatException(
-                record.exc_info)
+            record.exc_text = _defaultFormatter.formatException(record.exc_info)
         else:
             record.exc_text = ""
 
@@ -84,7 +83,7 @@ class ReferenceMySQLHandler(Handler):
             rel.log_level_name = record.levelname
             rel.message = record.msg
             rel.exception = str(record.exc_text)
-            rel.reference_id = self.reference__id
+            rel.reference_id = self.__reference_identifier
 
             self.__inner_bulk_list.append(rel)
 
@@ -94,12 +93,25 @@ class ReferenceMySQLHandler(Handler):
             print(e)
 
     def flush(self):
-        """ Flush remaining message
-        """
+        """Flush remaining message"""
         self.__write_into_database(True)
 
+    def clear_reference_database_logs(self):
+        """
+        Clear reference log from database
+        """
+        try:
+            with app.app_context():
+                db.session.query(ReferenceStudyExecutionLog).filter(
+                    ReferenceStudyExecutionLog.reference_id
+                    == self.__reference_identifier
+                ).delete()
+                db.session.commit()
+        except Exception as ex:
+            print(f'Reference mysql handler: {str(ex)}')
+
     def __write_into_database(self, flush=False):
-        """ Write stored object into database
+        """Write stored object into database
 
         :params: flush, boolean to flush the list without taking into account number of elements
         :type: boolean
