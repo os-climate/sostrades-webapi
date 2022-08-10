@@ -143,7 +143,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
                     messages.append(f'Missing mandatory key: {needed_key}')
                     missing_variable = True
                 else:
-                    messages.append(f'Mandatory key {needed_key} found with value {parameter_json.get("variableId")}')
+                    messages.append(f'Mandatory key {needed_key} found with value {parameter_json.get("needed_key")}')
 
         if missing_variable:
             abort(400, "\n".join(messages))
