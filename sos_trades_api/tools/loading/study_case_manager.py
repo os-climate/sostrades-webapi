@@ -24,6 +24,7 @@ Implementation of abstract class AbstractStudyManager to manage study from objec
 """
 
 from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
+from sos_trades_core.tools.tree.serializer import DataSerializer
 from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseAccessGroup,
@@ -525,16 +526,15 @@ class StudyCaseManager(BaseStudyManager):
         """
         returns BytesIO of the data
         """
-        serializer = DataSerializer(root_dir=self.dump_directory)
-        loaded_dict = serializer.get_dict_from_study(self.dump_directory, DirectLoadDump())
         anonymize_key = self.execution_engine.anonymize_key(parameter_key)
-        if anonymize_key in loaded_dict.keys():
-            param_value = loaded_dict[anonymize_key]["value"]
-            df_data = serializer.convert_data_to_dataframe(param_value)
-            # export data as a DataFrame using buffered I/O streams
-            data_convert = serializer.convert_to_bytes_io(df_data, parameter_key)
-            return data_convert
-
+        input_datas = self._get_data_from_file(self.dump_directory)
+        if len(input_datas) > 0:
+            if anonymize_key in input_datas[0].keys():
+                data_value = input_datas[0][anonymize_key]
+                # convert data
+                df_data = DataSerializer.convert_to_dataframe_and_bytes_io(data_value, parameter_key)
+                return df_data
+        return None
 
     @staticmethod
     def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:
