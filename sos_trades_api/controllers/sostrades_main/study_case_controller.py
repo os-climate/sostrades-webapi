@@ -812,6 +812,7 @@ def get_file_stream(study_id, parameter_key):
             raise StudyCaseError(
                 f'Parameter {parameter_key} does not exist in this study case')
     else:
+        # if the study is not loaded yet, read the pickle file directly to get the value
         try:
             parameters = study_manager.get_parameter_data(parameter_key)
             return parameters
@@ -840,8 +841,8 @@ def get_study_data_stream(study_id):
 def get_study_in_read_only_mode(study_id):
     """
        check if a study json file exists,
-            if true, read study case in read only mode, and return the json
-            if false, return none
+            if true, read loaded study case in read only mode, and return the json
+            if false, return None, it will be checked on client side
         :param: study_id, id of the study to export
         :type: integer
     """

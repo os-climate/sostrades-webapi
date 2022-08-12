@@ -38,12 +38,8 @@ class LoadStatus:
 
 class LoadedStudyCase:
 
-    def __init__(self, study_case_manager, no_data, read_only, user_id):
-        """
-        :param read_only_mode: this paam is used when getting loaded study case to save it in json file.
-                                It needs treeview and post processings but no user nor group data
-        :type: boolean
-        """
+    def __init__(self, study_case_manager, no_data, read_only, user_id, load_post_processings=False):
+
         self.study_case = StudyCaseDto(study_case_manager.study)
 
         self.load_status = study_case_manager.load_status
@@ -63,7 +59,7 @@ class LoadedStudyCase:
             self.user_id_execution_authorized = 0
 
         if self.load_status == LoadStatus.LOADED:
-            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id, False)
+            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id, load_post_processings)
 
 
     def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id, load_post_proc):

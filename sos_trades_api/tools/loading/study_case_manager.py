@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import datetime
-
-from sos_trades_api.models.custom_json_encoder_with_datas import CustomJsonEncoderWithDatas
-from sos_trades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -315,22 +311,14 @@ class StudyCaseManager(BaseStudyManager):
         self.dump_cache(self.dump_directory)
 
     def write_study_read_only_mode_in_file(self):
-        # save loaded study case into a json file to be retrieved before loading is completed
+        """
+        save loaded study case into a json file to be retrieved before loading is completed
+        """
         with app.app_context():
-            start = datetime.datetime.now()
-            print(f"start time {start}")
-            loaded_study_case = LoadedStudyCase(self, False, True, None)
-            print(f"study loaded creation {(datetime.datetime.now() - start).seconds}")
-            start = datetime.datetime.now()
-            # call this function because the study_case_manager load_status is not LOADED yet
-            loaded_study_case.load_treeview_and_post_proc(self, False, True, None, True)
-            print(f"study loaded treeview + post proc {(datetime.datetime.now() - start).seconds}")
-            start = datetime.datetime.now()
+            loaded_study_case = LoadedStudyCase(self, False, True, None, True)
             # set the load_status in READ_ONLY_MODE
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
             self.write_loaded_study_case_in_json_file(loaded_study_case)
-            print(f"writing file {(datetime.datetime.now() - start).seconds}")
-            print(f"end time {datetime.datetime.now()}")
 
     def __load_study_case_from_identifier(self):
         """
@@ -522,16 +510,21 @@ class StudyCaseManager(BaseStudyManager):
 
     def get_parameter_data(self, parameter_key):
         """
-        returns BytesIO of the data
+        returns BytesIO of the data, read into the pickle
         """
+        # get the anonimized key to retrieve the data into the pickle
         anonymize_key = self.execution_engine.anonymize_key(parameter_key)
+
+        # read pickle
         input_datas = self._get_data_from_file(self.dump_directory)
         if len(input_datas) > 0:
             if anonymize_key in input_datas[0].keys():
                 data_value = input_datas[0][anonymize_key]
-                # convert data
+                # convert data into dataframe then ioBytes to have the same format as if retrieved from the dm
                 df_data = DataSerializer.convert_to_dataframe_and_bytes_io(data_value, parameter_key)
                 return df_data
+
+        # it should never be there because an exception should be raised if the file could not be red
         return None
 
     @staticmethod
