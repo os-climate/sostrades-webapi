@@ -729,3 +729,47 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.has_error)
+
+    def test_study_case_read_only_mode(self):
+        from sos_trades_api.models.database_models import StudyCase
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
+            delete_study_cases, copy_study_case, get_file_stream
+        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_csv_name).first()
+            self.assertIsNotNone(
+                study_test, 'Unable to retrieve study case created for test')
+            study_copy_name = "test_study_copy_read_only"
+            study_case_copy = copy_study_case(study_test.id, study_copy_name,
+                            self.test_user_group_id, self.test_user_id)
+            study_case_copy_id = study_case_copy.id
+            # wait end of studu case creation
+            study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_update_study_parameters update study parameter too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+            self.assertTrue(study_manager.check_study_case_json_file_exists(), 'Unable to retrieve study case read only file')
+            study_json = get_study_in_read_only_mode(study_case_copy_id)
+            self.assertIsNotNone(study_json, 'Unable to read study case read only file')
+
+            # set loadStatus to read only to check the get data method
+            study_manager.load_status = LoadStatus.READ_ONLY_MODE
+            parameter = get_file_stream(study_case_copy_id, 'test_study_copy_read_only.dataframe_mix_types')
+            self.assertIsNotNone(parameter, 'Unable to read study case read only file')
+
+            studies_id_list_to_delete = [study_case_copy_id]
+            delete_study_cases(studies_id_list_to_delete)
