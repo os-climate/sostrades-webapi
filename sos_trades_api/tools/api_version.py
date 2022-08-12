@@ -24,7 +24,7 @@ from os import environ
 from os.path import join, dirname, exists
 from datetime import datetime
 import sos_trades_api
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 
 
 def application_version():

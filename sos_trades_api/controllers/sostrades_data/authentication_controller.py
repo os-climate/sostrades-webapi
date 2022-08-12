@@ -21,7 +21,7 @@ Authentication Functions
 from flask_jwt_extended import (
     create_access_token, create_refresh_token
 )
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.models.database_models import User
 from sos_trades_api.tools.authentication.authentication import PasswordResetRequested
 from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException

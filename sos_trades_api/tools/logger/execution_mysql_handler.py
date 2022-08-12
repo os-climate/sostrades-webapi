@@ -24,7 +24,7 @@ from re import findall, escape
 from time import strftime, localtime
 from logging import Handler, _defaultFormatter
 from sos_trades_api.models.database_models import StudyCaseExecutionLog
-from sos_trades_api.base_server import app, db
+from sos_trades_api.server.base_server import app, db
 import time
 from contextlib import contextmanager
 

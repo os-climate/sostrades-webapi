@@ -15,10 +15,10 @@ limitations under the License.
 '''
 from flask import request, abort, jsonify, make_response, send_file, session
 
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, MethodNotAllowed
 import json
 from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
@@ -28,7 +28,7 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
-@app.route(f'/api/main/study-case', methods=['GET', 'POST', 'DELETE'])
+@app.route(f'/api/main/study-case', methods=['POST', 'DELETE'])
 @auth_required
 def study_cases():
     if request.method == 'POST':
@@ -64,7 +64,7 @@ def study_cases():
         resp = make_response(jsonify(create_study_case(
             user.id, name, repository, process, group_id, reference, from_type)), 200)
         return resp
-    else:
+    elif request.method == 'DELETE':
         user = session['user']
         studies = request.json.get('studies')
 
@@ -85,6 +85,8 @@ def study_cases():
 
         raise BadRequest(
             'Missing mandatory parameter: study identifier in url')
+    else:
+        raise MethodNotAllowed()
 
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['POST'])
@@ -112,7 +114,7 @@ def update_study_cases(study_id):
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
 @auth_required
-def load_study_case_by_id(study_id):
+def main_load_study_case_by_id(study_id):
 
     if study_id is not None:
 

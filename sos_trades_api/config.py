@@ -31,7 +31,7 @@ BASEDIR = abspath(dirname(__file__))
 # pylint: disable=too-many-instance-attributes
 
 
-class Config():
+class Config:
 
     """ Flask configuration class
 

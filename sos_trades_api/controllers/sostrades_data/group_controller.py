@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.models.database_models import Group, GroupAccessUser, AccessRights, StudyCase, User
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from shutil import rmtree
 

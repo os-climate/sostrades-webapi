@@ -126,7 +126,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
             connection.execute(use_database_sql_request)
 
         # Now initialize database using SQLAlchemy ORM
-        from sos_trades_api.base_server import db, app
+        from sos_trades_api.server.base_server import db, app
 
         DatabaseUnitTestConfiguration.app = app
         DatabaseUnitTestConfiguration.db = db

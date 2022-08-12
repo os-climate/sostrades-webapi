@@ -5,10 +5,8 @@ Revises: 039eba317a4e
 Create Date: 2021-10-05 17:54:14.072536
 
 """
-from alembic import op
-import sqlalchemy as sa
-from sos_trades_api.models.database_models import Group, User, GroupAccessUser, AccessRights
-from sos_trades_api.base_server import app, db
+from sos_trades_api.models.database_models import Group, GroupAccessUser
+from sos_trades_api.server.base_server import app, db
 
 
 # revision identifiers, used by Alembic.

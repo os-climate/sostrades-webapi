@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import \
     reset_study_from_cache_and_light_load
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
@@ -26,7 +26,7 @@ from flask import abort, jsonify, make_response
 
 @app.route(f'/api/post-processing/study-case/<int:study_id>', methods=['GET'])
 @auth_required
-def load_study_case_by_id(study_id):
+def post_processing_load_study_case_by_id(study_id):
     if study_id is not None:
 
         # Checking if user can access study data
@@ -56,7 +56,7 @@ def load_study_case_by_id(study_id):
     abort(403)
 
 
-@app.route(f'/api/post-processing/study-case/reset-cache/<int:study_id>', methods=['GET'])
+@app.route(f'/api/post-processing/study-case/<int:study_id>/reset-cache', methods=['GET'])
 @auth_required
 def reset_study_from_cache_(study_id):
     if study_id is not None:

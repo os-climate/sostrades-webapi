@@ -22,7 +22,7 @@ import psutil
 import time
 
 from sos_trades_api.models.database_models import StudyCaseExecution
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 
 
 class ExecutionMetrics():

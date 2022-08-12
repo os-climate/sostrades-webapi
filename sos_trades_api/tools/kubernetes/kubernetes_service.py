@@ -19,7 +19,7 @@ Execution engine kubernete
 """
 from kubernetes import client, config
 from sos_trades_api.config import Config
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from os.path import join
 from pathlib import Path
 import uuid

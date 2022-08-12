@@ -4,7 +4,7 @@ RESTful API views
 
 
 import os.path
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 
 
 @app.after_request

@@ -16,7 +16,7 @@ limitations under the License.
 from time import strftime, localtime
 from logging import Handler, _defaultFormatter
 from sos_trades_api.models.database_models import ReferenceStudyExecutionLog
-from sos_trades_api.base_server import app, db
+from sos_trades_api.server.base_server import app, db
 from threading import Timer
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'

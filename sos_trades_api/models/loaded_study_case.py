@@ -24,7 +24,7 @@ import json
 from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
 from sqlalchemy import and_
 
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 
 import time
 from sos_trades_api.models.study_case_dto import StudyCaseDto

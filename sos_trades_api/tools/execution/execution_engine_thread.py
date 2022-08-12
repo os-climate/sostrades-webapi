@@ -21,7 +21,7 @@ import threading
 import time
 from datetime import datetime, timezone, timedelta
 from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, StudyCaseExecution
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.execution.execution_engine_observer import ExecutionEngineObserver
 from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline

@@ -17,7 +17,7 @@ from flask import request, jsonify, make_response
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import load_post_processing,\
     load_post_processing_graph_filters
@@ -25,7 +25,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 from sos_trades_core.tools.post_processing.charts.chart_filter import ChartFilter
 
 
-@app.route(f'/api/post-processing/post-processing/<int:study_id>', methods=['GET', 'POST'])
+@app.route(f'/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])
 @auth_required
 def get_post_processing(study_id):
 
@@ -74,17 +74,13 @@ def get_post_processing(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route(f'/api/post-processing/post-processing', methods=['POST'])
+@app.route(f'/api/post-processing/study-case/<int:study_id>/by/discipline', methods=['POST'])
 @auth_required
-def get_post_processing_filter():
+def get_post_processing_filter(study_id):
 
-    study_id = request.json.get('study_id', None)
     discipline_key = request.json.get('discipline_key', None)
 
     missing_parameter = []
-    if study_id is None:
-        missing_parameter.append(
-            'Missing mandatory parameter: study_id')
     if discipline_key is None:
         missing_parameter.append(
             'Missing mandatory parameter: discipline_key')

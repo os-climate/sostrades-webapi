@@ -50,7 +50,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUpClass(cls):
         DatabaseUnitTestConfiguration.setUpClass()
 
-        from sos_trades_api.base_server import database_process_setup
+        from sos_trades_api.server.base_server import database_process_setup
         database_process_setup()
 
     def setUp(self):
@@ -180,7 +180,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_load_study_case(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -218,7 +218,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_study_case_log(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights,StudyCaseLog
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -252,7 +252,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -314,7 +314,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters_csv_data(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from werkzeug.datastructures import FileStorage
         from os.path import join, dirname
         import numpy as np
@@ -438,7 +438,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -482,7 +482,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # After update retrieve notification list, one update has been
             # made, return len should be 1
-            notifications = get_study_case_notifications(study_test.id, True)
+            notifications = get_study_case_notifications(study_test.id)
             change = notifications[0].changes[0]
             self.assertIsNotNone(
                 change, 'Error no change created at study update in database')
@@ -556,7 +556,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def _test_clear_error_in_study_case_controller(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from os.path import join, dirname
         from sos_trades_api.tests import data
         from werkzeug.datastructures import FileStorage

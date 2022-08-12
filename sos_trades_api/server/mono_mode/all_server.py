@@ -13,20 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-# coding: utf-8
+# Set server name
 import os
-from os.path import join, dirname
-from dotenv import load_dotenv
+os.environ['SERVER_NAME'] = 'MAIN_SERVER'
 
+from sos_trades_api.server import base_server
 
-if __name__ == '__main__':
+app = base_server.app
+db = base_server.db
 
-    if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is None:
-        dotenv_path = join(dirname(__file__), '..', '.flaskenv')
-        load_dotenv(dotenv_path)
+from sos_trades_api.server.base_server import check_identity_provider_availability
+check_identity_provider_availability()
 
-    # Import server module after a basic configuration in order to set
-    # correctly server  executing environment
-    from sos_trades_api import main_server
-
-    main_server.app.run(host='127.0.0.1', port='5000')
+# load & register APIs
+from sos_trades_api.routes.data import *
+from sos_trades_api.routes.main import *
+from sos_trades_api.routes.post_processing import *

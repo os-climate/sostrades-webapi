@@ -19,7 +19,7 @@ import time
 from flask import request, make_response, abort, jsonify, send_file, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.base_server import app, study_case_cache
+from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.models.database_models import AccessRights, StudyCaseChange
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
     update_study_parameters, get_file_stream, copy_study_case
@@ -33,7 +33,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 @app.route(f'/api/v0/study-case/<int:study_id>/<int:timeout>', methods=['GET'])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
-def load_study_case_by_id(study_id: int, timeout: int = 30):
+def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
     """
     Return dictionary containing loaded study tree node data
 

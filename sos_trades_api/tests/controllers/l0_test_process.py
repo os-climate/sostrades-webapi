@@ -34,7 +34,7 @@ class TestProcess(DatabaseUnitTestConfiguration):
     def setUpClass(cls):
         DatabaseUnitTestConfiguration.setUpClass()
 
-        from sos_trades_api.base_server import database_process_setup
+        from sos_trades_api.server.base_server import database_process_setup
         database_process_setup()
 
     def setUp(self):

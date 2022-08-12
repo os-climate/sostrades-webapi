@@ -25,7 +25,7 @@ if __name__ == '__main__':
         load_dotenv(dotenv_path)
 
     # Import server module after a basic configuration in order to set
-    # correctly server executing environment
-    from sos_trades_api import data_server
+    # correctly server  executing environment
+    from sos_trades_api.server.api_mode import api_v0_server
 
-    data_server.app.run(host='127.0.0.1', port='5001')
+    api_v0_server.app.run(host='127.0.0.1', port='5004')

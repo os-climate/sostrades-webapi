@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import Process, ProcessAccessUser, \
     ProcessAccessGroup, AccessRights
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from sos_trades_api.models.loaded_process import LoadedProcess
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 
 
 class ProcessAccess(ResourceAccess):

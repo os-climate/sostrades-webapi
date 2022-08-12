@@ -29,7 +29,7 @@ from sos_trades_core.execution_engine.data_connector.ontology_data_connector imp
     GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
     OntologyDataConnector,
 )
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
 from os.path import join
