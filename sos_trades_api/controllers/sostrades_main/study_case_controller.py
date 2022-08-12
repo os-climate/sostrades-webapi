@@ -831,9 +831,11 @@ def get_file_stream(study_id, parameter_key):
             raise StudyCaseError(
                 f'Parameter {parameter_key} does not exist in this study case')
     else:
-        parameters = study_manager.get_parameter_data(parameter_key)
-        return parameters
-
+        try:
+            parameters = study_manager.get_parameter_data(parameter_key)
+            return parameters
+        except Exception as error:
+                raise InvalidFile(f'The study read only data are not accessible : {error}')
 
 def get_study_data_stream(study_id):
     """
