@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import threading
+
+from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
@@ -75,7 +77,7 @@ class StudyCaseCache:
             study_case_manager.update_study_case()
 
             if old_modification_date < study_case_manager.study.modification_date:
-                study_case_manager.loaded = False
+                study_case_manager.loadStatus = LoadStatus.NONE
 
         self.__study_case_dict[study_case_manager.study.id] = StudyCaseReference(
             study_case_manager.study.id,

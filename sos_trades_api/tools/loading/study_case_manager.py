@@ -108,7 +108,6 @@ class StudyCaseManager(BaseStudyManager):
 
         self.load_status = LoadStatus.NONE
         self.n2_diagram = {}
-
         self.__has_error = False
         self.__error_message = ""
 
@@ -303,7 +302,6 @@ class StudyCaseManager(BaseStudyManager):
         self._build_execution_engine()
         self.clear_error()
         self.load_status = LoadStatus.NONE
-        self.loaded = False
 
     def load_study_case_from_source(self, source_directory):
         self.load_data(source_directory, display_treeview=False)
