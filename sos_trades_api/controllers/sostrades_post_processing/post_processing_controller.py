@@ -101,3 +101,22 @@ def load_post_processing_graph_filters(study_id, discipline_key):
         raise PostProcessingError(
             f'Discipline \'{discipline_key}\' does not exist in this study case.')
 
+
+def reset_study_from_cache_and_light_load(study_id):
+    """
+        Reset study from cache before launch only the load study in cache
+        :params: study_id, id of the study to load
+        :type: integer
+    """
+
+    # Check if study is already in cache
+    if study_case_cache.is_study_case_cached(study_id):
+        # Remove outdated study from the cache
+        study_case_cache.delete_study_case_from_cache(study_id)
+
+        # Create the updated one
+        study_case_cache.get_study_case(study_id, False)
+
+    study_manager = light_load_study_case(study_id, False)
+    return study_manager
+

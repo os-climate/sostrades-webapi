@@ -199,7 +199,7 @@ def get_logs(reference_path=None):
         file_name = f'{tmp_folder}/{reference_path}_log'
         with io.open(file_name, "w", encoding="utf-8") as f:
             for log in logs:
-                f.write(f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n')
+                f.write(f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\t{log.exception}\n')
         return file_name
 
 
