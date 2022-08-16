@@ -316,7 +316,10 @@ class StudyCaseManager(BaseStudyManager):
         """
         with app.app_context():
             loaded_study_case = LoadedStudyCase(self, False, True, None, True)
-            # set the load_status in READ_ONLY_MODE
+            # if the loaded status is not yet at LOADED, load treeview post proc anyway
+            if self.load_status != LoadStatus.LOADED:
+                loaded_study_case.load_treeview_and_post_proc(self,False,True,None, True)
+            # set the load_status in READ_ONLY_MODE so that when it is loaded the status is set
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
             self.write_loaded_study_case_in_json_file(loaded_study_case)
 
