@@ -59,7 +59,7 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
 
             study_manager = light_load_study_case(study_id)
 
-            if study_manager.loadStatus == LoadStatus.LOADED:
+            if study_manager.load_status == LoadStatus.LOADED:
                 break
             else:
                 time.sleep(1)

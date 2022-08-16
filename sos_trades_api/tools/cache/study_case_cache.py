@@ -77,7 +77,7 @@ class StudyCaseCache:
             study_case_manager.update_study_case()
 
             if old_modification_date < study_case_manager.study.modification_date:
-                study_case_manager.loadStatus = LoadStatus.NONE
+                study_case_manager.load_status = LoadStatus.NONE
 
         self.__study_case_dict[study_case_manager.study.id] = StudyCaseReference(
             study_case_manager.study.id,
