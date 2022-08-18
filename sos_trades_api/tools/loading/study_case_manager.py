@@ -310,7 +310,7 @@ class StudyCaseManager(BaseStudyManager):
         self.dump_disciplines_data(self.dump_directory)
         self.dump_cache(self.dump_directory)
 
-    def write_study_read_only_mode_in_file(self):
+    def save_study_read_only_mode_in_file(self):
         """
         save loaded study case into a json file to be retrieved before loading is completed
         """
@@ -321,7 +321,7 @@ class StudyCaseManager(BaseStudyManager):
                 loaded_study_case.load_treeview_and_post_proc(self,False,True,None, True)
             # set the load_status in READ_ONLY_MODE so that when it is loaded the status is set
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.write_loaded_study_case_in_json_file(loaded_study_case)
+            self.__write_loaded_study_case_in_json_file(loaded_study_case)
 
     def __load_study_case_from_identifier(self):
         """
@@ -472,7 +472,7 @@ class StudyCaseManager(BaseStudyManager):
 
         return reload_done
 
-    def write_loaded_study_case_in_json_file(self, loaded_study):
+    def __write_loaded_study_case_in_json_file(self, loaded_study):
         """
         Save study case loaded into json file for read only mode
         :param loaded_study: loaded_study_case to save
@@ -501,6 +501,15 @@ class StudyCaseManager(BaseStudyManager):
                 loaded_study_case = json.load(study_file)
 
         return loaded_study_case
+
+    def delete_loaded_study_case_in_json_file(self):
+        """
+        Retrieve study case loaded from json file for read only mode
+        """
+        root_folder = Path(self.dump_directory)
+        study_file_path = root_folder.joinpath(self.STUDY_FILE_NAME)
+        if os.path.exists(study_file_path):
+            os.remove(study_file_path)
 
     def check_study_case_json_file_exists(self):
         """

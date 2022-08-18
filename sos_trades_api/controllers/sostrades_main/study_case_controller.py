@@ -291,6 +291,17 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                 db.session.rollback()
                 raise ex
 
+            #-----------------------------------------------------------------
+            # manage the read only mode file:
+            if update_study_name:
+                # we don't want the study to be reload in read only before the update is done
+                # so we remove the read_only_file if it exists, it will be updated at the end of the reload
+                try:
+                    study_case_manager.delete_loaded_study_case_in_json_file()
+                except BaseException as ex:
+                    app.logger.error(
+                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+
             # If group has change then move file (can only be done after the study 'add')
             if update_group_id:
                 updated_study_case_manager = StudyCaseManager(study_id)
@@ -304,6 +315,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
         app.logger.info(
             f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
 
+
         # ---------------------------------------------------------------
         # Next manage study case cache if the study has already been loaded
 
@@ -312,7 +324,6 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
             # Remove outdated study from the cache
             study_case_cache.delete_study_case_from_cache(study_id)
-
             # Create the updated one
             study_manager = study_case_cache.get_study_case(study_id, False)
 
@@ -856,7 +867,7 @@ def get_study_in_read_only_mode(study_id):
             raise InvalidFile(
                 f'The following study file raise this error while trying to read it : {error}')
     else:
-        return None
+        return 'null'
 
 
 def get_study_data_file_path(study_id) -> str:
