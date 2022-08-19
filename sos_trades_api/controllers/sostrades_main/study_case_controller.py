@@ -864,8 +864,9 @@ def get_study_in_read_only_mode(study_id):
             return loaded_study_json
 
         except Exception as error:
-            raise InvalidFile(
-                f'The following study file raise this error while trying to read it : {error}')
+            app.logger.error(
+                        f'Study {study_id} readonly mode error while getting readonly file: {error}')
+            return 'null'
     else:
         return 'null'
 
