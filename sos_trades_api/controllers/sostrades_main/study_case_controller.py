@@ -57,6 +57,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
 from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, \
     InvalidStudyExecution
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.models.loaded_study_case import LoadStatus
 from numpy import array
 
 
@@ -146,7 +147,7 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
         # Loading data for study created empty
         if reference is None:
 
-            study_manager.loaded = True
+            study_manager.load_status = LoadStatus.LOADED
             study_manager.n2_diagram = {}
             study_manager.execution_engine.dm.treeview = None
             study_manager.execution_engine.get_treeview(False, False)
@@ -165,18 +166,16 @@ def create_study_case(user_id, name, repository_name, process_name, group_id, re
                 # Get ref generation ID associated to this ref
                 reference_identifier = f'{repository_name}.{process_name}.{reference}'
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
                         args=(study_manager, False, False, reference_folder, reference_identifier)).start()
 
             elif from_type == 'UsecaseData':
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status == LoadStatus.NONE:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading_from_usecase_data,
                         args=(study_manager, False, False, repository_name, process_name, reference)).start()
@@ -292,6 +291,17 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                 db.session.rollback()
                 raise ex
 
+            #-----------------------------------------------------------------
+            # manage the read only mode file:
+            if update_study_name:
+                # we don't want the study to be reload in read only before the update is done
+                # so we remove the read_only_file if it exists, it will be updated at the end of the reload
+                try:
+                    study_case_manager.delete_loaded_study_case_in_json_file()
+                except BaseException as ex:
+                    app.logger.error(
+                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+
             # If group has change then move file (can only be done after the study 'add')
             if update_group_id:
                 updated_study_case_manager = StudyCaseManager(study_id)
@@ -305,6 +315,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
         app.logger.info(
             f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
 
+
         # ---------------------------------------------------------------
         # Next manage study case cache if the study has already been loaded
 
@@ -313,15 +324,13 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
             # Remove outdated study from the cache
             study_case_cache.delete_study_case_from_cache(study_id)
-
             # Create the updated one
             study_manager = study_case_cache.get_study_case(study_id, False)
 
             try:
 
-                if not study_manager.load_in_progress and not study_manager.loaded:
-                    study_manager.load_in_progress = True
-                    study_manager.loaded = False
+                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+                    study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading,
                         args=(study_manager, False, False)).start()
@@ -371,10 +380,7 @@ def light_load_study_case(study_id, reload=False):
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
 
-    if not study_manager.load_in_progress and not study_manager.loaded and not study_manager.has_error:
-        study_manager.loaded = False
-        study_manager.load_in_progress = True
-
+    if study_manager.load_status == LoadStatus.NONE:
         study_case_manager_loading(study_manager, False, False)
 
     study_manager.attach_logger()
@@ -406,10 +412,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
-    if not study_manager.load_in_progress and not study_manager.loaded and not study_manager.has_error:
-        study_manager.loaded = False
-        study_manager.load_in_progress = True
-
+    if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+        study_manager.load_status = LoadStatus.IN_PROGESS
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
 
@@ -418,13 +422,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
 
-    # if study_case_execution is not None:
-    #     if loaded_study_case.study_case.execution_status != SoSDiscipline.STATUS_CONFIGURE:
-    #         loaded_study_case.study_case.execution_status = study_case_execution.execution_status
-    # else:
-    #     loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
-
-    if study_manager.loaded is True and study_manager.load_in_progress is False:
+    if study_manager.load_status == LoadStatus.LOADED:
         process_metadata = load_processes_metadata(
             [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
 
@@ -544,10 +542,8 @@ def copy_study_case(study_id, new_name, group_id, user_id):
             study_manager = study_case_cache.get_study_case(
                 studycase.id, False)
 
-            if not study_manager.load_in_progress and not study_manager.loaded:
-                study_manager.load_in_progress = True
-                study_manager.loaded = False
-
+            if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+                study_manager.load_status = LoadStatus.IN_PROGESS
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
                     args=(study_manager, False, False, study_manager_source)).start()
@@ -744,10 +740,9 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
                                                 parameter['namespace'])
 
-        if not study_manager.load_in_progress:
-            study_manager.load_in_progress = True
-            study_manager.loaded = False
+        if study_manager.load_status != LoadStatus.IN_PROGESS:
             study_manager.clear_error()
+            study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
                 target=study_case_manager_update, args=(study_manager, values, False, False, conectors)).start()
 
@@ -812,23 +807,28 @@ def get_file_stream(study_id, parameter_key):
         :param: parameter_key, key of the parameter to retrieve
         :type: string
     """
-    study_manager = study_case_cache.get_study_case(
-        study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    if study_manager.load_status == LoadStatus.LOADED:
+        uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
+        if uuid_param in study_manager.execution_engine.dm.data_dict:
+            try:
+                file_read_bytes = study_manager.execution_engine.dm.get_parameter_data(
+                    parameter_key)
+            except Exception as error:
+                raise InvalidFile(
+                    f'The following file {parameter_key}.csv raise this error while trying to read it : {error}')
+            return file_read_bytes
 
-    uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
-    if uuid_param in study_manager.execution_engine.dm.data_dict:
-        try:
-            file_read_bytes = study_manager.execution_engine.dm.get_parameter_data(
-                parameter_key)
-        except Exception as error:
-            raise InvalidFile(
-                f'The following file {parameter_key}.csv raise this error while trying to read it : {error}')
-        return file_read_bytes
-
+        else:
+            raise StudyCaseError(
+                f'Parameter {parameter_key} does not exist in this study case')
     else:
-        raise StudyCaseError(
-            f'Parameter {parameter_key} does not exist in this study case')
-
+        # if the study is not loaded yet, read the pickle file directly to get the value
+        try:
+            parameters = study_manager.get_parameter_data(parameter_key)
+            return parameters
+        except Exception as error:
+                raise InvalidFile(f'The study read only data are not accessible : {error}')
 
 def get_study_data_stream(study_id):
     """
@@ -848,6 +848,27 @@ def get_study_data_stream(study_id):
         raise InvalidFile(
             f'The following study file raise this error while trying to read it : {error}')
     return zip_path
+
+def get_study_in_read_only_mode(study_id):
+    """
+       check if a study json file exists,
+            if true, read loaded study case in read only mode, and return the json
+            if false, return None, it will be checked on client side
+        :param: study_id, id of the study to export
+        :type: integer
+    """
+    study_manager = StudyCaseManager(study_id)
+    if study_manager.check_study_case_json_file_exists():
+        try:
+            loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
+            return loaded_study_json
+
+        except Exception as error:
+            app.logger.error(
+                        f'Study {study_id} readonly mode error while getting readonly file: {error}')
+            return 'null'
+    else:
+        return 'null'
 
 
 def get_study_data_file_path(study_id) -> str:
