@@ -141,12 +141,8 @@ class ExecutionEngineThread(threading.Thread):
                         start_time = time.time()
                         self.__execution_logger.debug('Dump study case data')
                         # Persist data using the current persistance strategy
-                        self.__study_manager.dump_data(
-                            self.__study_manager.dump_directory)
-                        self.__study_manager.dump_disciplines_data(
-                            self.__study_manager.dump_directory)
-                        self.__study_manager.dump_cache(
-                            self.__study_manager.dump_directory)
+                        self.__study_manager.save_study_case()
+                        self.__study_manager.save_study_read_only_mode_in_file()
                     except Exception as error:
                         self.__execution_logger.exception(
                             f'The following exception occurs during study dumping.\n{str(error)}')

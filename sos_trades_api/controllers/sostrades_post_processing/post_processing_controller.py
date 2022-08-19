@@ -38,7 +38,7 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
     :return: tbd
     """
 
-    study_manager = light_load_study_case(study_id)
+    study_manager = study_case_cache.get_study_case(study_id, False)
 
     all_post_processing_data = []
     discipline_list = []
