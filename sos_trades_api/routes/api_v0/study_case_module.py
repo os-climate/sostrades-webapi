@@ -24,6 +24,7 @@ from sos_trades_api.models.database_models import AccessRights, StudyCaseChange
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
     update_study_parameters, get_file_stream, copy_study_case
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
+from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
 from sos_trades_api.tools.authentication.authentication import has_user_access_right, api_key_required
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
@@ -58,7 +59,7 @@ def load_study_case_by_id(study_id: int, timeout: int = 30):
 
             study_manager = light_load_study_case(study_id)
 
-            if study_manager.loaded:
+            if study_manager.load_status == LoadStatus.LOADED:
                 break
             else:
                 time.sleep(1)
