@@ -194,10 +194,11 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
         clean_obsolete_data_validation_entries(study_case_manager)
 
         study_case_manager.n2_diagram = {}
-        #set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
         # write loadedstudy into a json file to load the study in read only when loading
         study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
 
         app.logger.info(
             f'End background updating {study_case_manager.study.name}')
@@ -258,10 +259,11 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        #set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
         # write loadedstudy into a json file to load the study in read only when loading
         study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
         app.logger.info(
             f'End background reference loading {study_case_manager.study.name}')
     except Exception as ex:
@@ -325,10 +327,11 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        #set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
         # write loadedstudy into a json file to load the study in read only when loading
         study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
         app.logger.info(
             f'End of loading usecase data in background {study_case_manager.study.name}')
     except Exception as ex:
@@ -383,10 +386,11 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        #set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
         # write loadedstudy into a json file to load the study in read only when loading
         study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
         app.logger.info(
             f'End of loading from study in background {study_case_manager.study.name}')
     except Exception as ex:

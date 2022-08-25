@@ -17,6 +17,7 @@ import os
 
 from sqlalchemy import desc
 
+from sos_trades_api.tools.file_tools import read_object_in_json_file
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 
 """
@@ -441,6 +442,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         else:
             loaded_study_case.study_case.is_restricted_viewer = True
 
+        #read dashboard and set it to the loaded studycase
+        loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
+
     # Return logical treeview coming from execution engine
     return loaded_study_case
 
@@ -861,6 +865,10 @@ def get_study_in_read_only_mode(study_id):
     if study_manager.check_study_case_json_file_exists():
         try:
             loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
+            # read dashboard and set it to the loaded study
+            # (it takes less time to read it apart than to have the dashboard in the read only file)
+            dashboard = study_manager.read_dashboard_in_json_file()
+            loaded_study_json['dashboard'] = dashboard
             return loaded_study_json
 
         except Exception as error:
@@ -870,6 +878,26 @@ def get_study_in_read_only_mode(study_id):
     else:
         return 'null'
 
+def get_study_dashboard_in_file(study_id):
+    """
+       check if a dashboard json file exists,
+            if true, read dashboard file, and return the json
+            if false, return None, it will be checked on client side
+        :param: study_id, id of the study to export
+        :type: integer
+    """
+    study_manager = StudyCaseManager(study_id)
+    if study_manager.check_dashboard_json_file_exists():
+        try:
+            dashboard = study_manager.read_dashboard_in_json_file()
+            return dashboard
+
+        except Exception as error:
+            app.logger.error(
+                        f'Study {study_id} dashboard error while reading file: {error}')
+            return 'null'
+    else:
+        return 'null'
 
 def get_study_data_file_path(study_id) -> str:
     """

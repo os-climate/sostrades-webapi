@@ -23,6 +23,7 @@ from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 import json
 from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
 from sqlalchemy import and_
+from sos_trades_core.tools.dashboard.dashboard_factory import generate_dashboard
 
 from sos_trades_api.base_server import db, app
 
@@ -52,6 +53,7 @@ class LoadedStudyCase:
         self.plotly = {}
         self.n2_diagram = {}
         self.can_reload = study_case_manager.check_study_can_reload()
+        self.dashboard = {}
 
         if user_id is not None:
             self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
@@ -168,5 +170,7 @@ class LoadedStudyCase:
             'read_only': self.read_only,
             'preference': self.preference,
             'can_reload': self.can_reload,
-            'load_status': self.load_status
+            'load_status': self.load_status,
+            'dashboard': self.dashboard
+
         }
