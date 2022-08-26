@@ -443,7 +443,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
             loaded_study_case.study_case.is_restricted_viewer = True
 
         #read dashboard and set it to the loaded studycase
-        loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
+        # if the root process is at done
+        if study_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+            loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
@@ -867,8 +869,9 @@ def get_study_in_read_only_mode(study_id):
             loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
             # read dashboard and set it to the loaded study
             # (it takes less time to read it apart than to have the dashboard in the read only file)
-            dashboard = study_manager.read_dashboard_in_json_file()
-            loaded_study_json['dashboard'] = dashboard
+            if len(loaded_study_json["post_processings"]) > 0:
+                dashboard = study_manager.read_dashboard_in_json_file()
+                loaded_study_json['dashboard'] = dashboard
             return loaded_study_json
 
         except Exception as error:
