@@ -79,7 +79,6 @@ def study_need_to_be_updated(study_id, last_modification):
 
     return False
 
-
 def study_case_manager_loading(study_case_manager, no_data, read_only):
     """ Method that load data into a study case manager
         (usefull for threading study data loading)
@@ -93,16 +92,15 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
     :params: read_only, if treeview has to be tagged read only
     :type: boolean
 
-
     """
-    from sos_trades_api.server.base_server import app
+    from sos_trades_api.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
     try:
         start_time = time()
         sleep()
         app.logger.info(
             f'Loading in background {study_case_manager.study.name}')
-        study_case_manager.load_in_progress = True
-        study_case_manager.loaded = False
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         study_case_manager.load_data(display_treeview=False)
         load_data_time = time()
@@ -119,8 +117,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
             no_data, read_only)
         treeview_generation_time = time()
 
-        study_case_manager.loaded = True
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End background loading {study_case_manager.study.name}, total time {treeview_generation_time - start_time} seconds')
@@ -131,8 +128,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
         app.logger.info(f'treeview gen. {treeview_generation_time - load_cache_time} seconds\n')
 
     except Exception as ex:
-        study_case_manager.loaded = False
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
@@ -158,26 +154,22 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
     :params: connectors, connectors to inject in study manager
     :type: dictionary
     """
-    from sos_trades_api.server.base_server import app
+    from sos_trades_api.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
 
     try:
         sleep()
         app.logger.info(
             f'Updating in background {study_case_manager.study.name}')
 
-        study_case_manager.load_in_progress = True
-        study_case_manager.loaded = False
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         # Update parameter into dictionary
         study_case_manager.load_data(
             from_input_dict=values, display_treeview=False, from_connectors_dict=connectors)
 
         # Persist data using the current persistence strategy
-        study_case_manager.dump_data(study_case_manager.dump_directory)
-        study_case_manager.dump_disciplines_data(
-            study_case_manager.dump_directory)
-        study_case_manager.dump_cache(
-            study_case_manager.dump_directory)
+        study_case_manager.save_study_case()
 
         # Get date
         modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
@@ -200,14 +192,16 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
         clean_obsolete_data_validation_entries(study_case_manager)
 
         study_case_manager.n2_diagram = {}
-        study_case_manager.loaded = True
-        study_case_manager.load_in_progress = False
+        # write loadedstudy into a json file to load the study in read only when loading
+        study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
 
         app.logger.info(
             f'End background updating {study_case_manager.study.name}')
     except Exception as ex:
-        study_case_manager.loaded = False
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
@@ -239,13 +233,12 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
     try:
         sleep()
-        from sos_trades_api.server.base_server import app
-
+        from sos_trades_api.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading reference in background {study_name}')
 
-        study_case_manager.load_in_progress = True
-        study_case_manager.loaded = False
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         # Reference are always persisted with a non crypted data, so in order to load them
         # we have to set the target study a non encrypted loader
@@ -253,19 +246,13 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         backup_rw_strategy = study_case_manager.rw_strategy
         study_case_manager.rw_strategy = DirectLoadDump()
 
-        study_case_manager.load_data(reference_folder, display_treeview=False)
-        study_case_manager.load_disciplines_data(reference_folder)
-        study_case_manager.load_cache(reference_folder)
+        study_case_manager.load_study_case_from_source(reference_folder)
 
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
 
         # Persist data using the current persistance strategy
-        study_case_manager.dump_data(study_case_manager.dump_directory)
-        study_case_manager.dump_disciplines_data(
-            study_case_manager.dump_directory)
-        study_case_manager.dump_cache(
-            study_case_manager.dump_directory)
+        study_case_manager.save_study_case()
 
         study_case_manager.execution_engine.dm.treeview = None
 
@@ -273,14 +260,15 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        study_case_manager.loaded = True
-        study_case_manager.load_in_progress = False
+        # write loadedstudy into a json file to load the study in read only when loading
+        study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End background reference loading {study_name}')
     except Exception as ex:
-        study_case_manager.loaded = False
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
@@ -313,12 +301,12 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
     """
     try:
         sleep()
-        from sos_trades_api.server.base_server import app
+        from sos_trades_api.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading usecase data in background {study_case_manager.study.name}')
 
-        study_case_manager.load_in_progress = True
-        study_case_manager.loaded = False
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         imported_module = import_module(
             '.'.join([repository_name, process_name, reference]))
@@ -332,11 +320,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         study_case_manager.load_data(from_input_dict=input_dict)
 
         # Persist data using the current persistance strategy
-        study_case_manager.dump_data(study_case_manager.dump_directory)
-        study_case_manager.dump_disciplines_data(
-            study_case_manager.dump_directory)
-        study_case_manager.dump_cache(
-            study_case_manager.dump_directory)
+        study_case_manager.save_study_case()
 
         study_case_manager.execution_engine.dm.treeview = None
 
@@ -344,14 +328,15 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        study_case_manager.loaded = True
-        study_case_manager.load_in_progress = False
+        # write loadedstudy into a json file to load the study in read only when loading
+        study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End of loading usecase data in background {study_case_manager.study.name}')
     except Exception as ex:
-        study_case_manager.loaded = False
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
@@ -376,31 +361,25 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
     """
     try:
         sleep()
-        from sos_trades_api.server.base_server import app
+        from sos_trades_api.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading from study in background {study_case_manager.study.name}')
 
-        study_case_manager.load_in_progress = True
-        study_case_manager.loaded = False
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         # To initiliaze the target study with the source study we use the
         # read/write strategy of the source study
         backup_rw_strategy = study_case_manager.rw_strategy
 
         study_case_manager.rw_strategy = source_study.rw_strategy
-        study_case_manager.load_data(
-            source_study.dump_directory, display_treeview=False)
-        study_case_manager.load_disciplines_data(source_study.dump_directory)
-        study_case_manager.load_cache(source_study.dump_directory)
+        study_case_manager.load_study_case_from_source(source_study.dump_directory)
 
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
 
         # Persist data using the current persistance strategy
-        study_case_manager.dump_data(study_case_manager.dump_directory)
-        study_case_manager.dump_disciplines_data(
-            study_case_manager.dump_directory)
-        study_case_manager.dump_cache(study_case_manager.dump_directory)
+        study_case_manager.save_study_case()
 
         study_case_manager.execution_engine.dm.treeview = None
 
@@ -408,15 +387,16 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        study_case_manager.loaded = True
-        study_case_manager.load_in_progress = False
+        # write loadedstudy into a json file to load the study in read only when loading
+        study_case_manager.save_study_read_only_mode_in_file()
+        #set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End of loading from study in background {study_case_manager.study.name}')
     except Exception as ex:
 
-        study_case_manager.loaded = False
-        study_case_manager.load_in_progress = False
+        study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(

@@ -13,12 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import time
+
+from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
+from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
 """
 
 from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
+from sos_trades_core.tools.tree.serializer import DataSerializer
+from sos_trades_core.tools.dashboard.dashboard_factory import generate_dashboard
 from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseAccessGroup,
@@ -42,6 +49,9 @@ from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLH
 from sos_trades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
+import json
+from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 
 
 class StudyCaseError(Exception):
@@ -64,6 +74,8 @@ class InvalidStudy(StudyCaseError):
 
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
+    LOADED_STUDY_FILE_NAME = "loaded_study_case.json"
+    DASHBOARD_FILE_NAME = "dashboard.json"
 
     class UnboundStudyCase:
         """
@@ -141,10 +153,8 @@ class StudyCaseManager(BaseStudyManager):
 
         self.__study_database_logger = None
 
-        self.load_in_progress = False
-        self.loaded = False
+        self.load_status = LoadStatus.NONE
         self.n2_diagram = {}
-
         self.__has_error = False
         self.__error_message = ""
 
@@ -338,8 +348,40 @@ class StudyCaseManager(BaseStudyManager):
         """
         self._build_execution_engine()
         self.clear_error()
-        self.load_in_progress = False
-        self.loaded = False
+        self.load_status = LoadStatus.NONE
+
+    def load_study_case_from_source(self, source_directory):
+        self.load_data(source_directory, display_treeview=False)
+        self.load_disciplines_data(source_directory)
+        self.load_cache(source_directory)
+
+    def save_study_case(self):
+        # Persist data using the current persistence strategy
+        self.dump_data(self.dump_directory)
+        self.dump_disciplines_data(self.dump_directory)
+        self.dump_cache(self.dump_directory)
+
+    def save_study_read_only_mode_in_file(self):
+        """
+        save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
+        """
+        with app.app_context():
+            #-------------------
+            # save loaded study in read only mode
+            loaded_study_case = LoadedStudyCase(self, False, True, None, True)
+            # if the loaded status is not yet at LOADED, load treeview post proc anyway
+            if self.load_status != LoadStatus.LOADED:
+                loaded_study_case.load_treeview_and_post_proc(self,False,True,None, True)
+            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+            self.__write_loaded_study_case_in_json_file(loaded_study_case)
+
+            #-------------------
+            # save dashboard if the process is DONE
+            if self.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+                dashboard = generate_dashboard(self.execution_engine, loaded_study_case.post_processings)
+                dashboard_file_path = Path(self.dump_directory).joinpath(self.DASHBOARD_FILE_NAME)
+                write_object_in_json_file(dashboard, dashboard_file_path)
+
 
     def __load_study_case_from_identifier(self):
         """
@@ -492,6 +534,89 @@ class StudyCaseManager(BaseStudyManager):
 
         return reload_done
 
+    def __write_loaded_study_case_in_json_file(self, loaded_study):
+        """
+        Save study case loaded into json file for read only mode
+        :param loaded_study: loaded_study_case to save
+        :type loaded_study: LoadedStudyCase
+        """
+        study_file_path = Path(self.dump_directory).joinpath(self.LOADED_STUDY_FILE_NAME)
+        return write_object_in_json_file(loaded_study, study_file_path)
+
+
+    def read_loaded_study_case_in_json_file(self):
+        """
+        Retrieve study case loaded from json file for read only mode
+        """
+        root_folder = Path(self.dump_directory)
+        study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+        loaded_study = read_object_in_json_file(study_file_path)
+
+        return loaded_study
+
+    def delete_loaded_study_case_in_json_file(self):
+        """
+        Retrieve study case loaded from json file for read only mode
+        """
+        root_folder = Path(self.dump_directory)
+        study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+        if os.path.exists(study_file_path):
+            os.remove(study_file_path)
+
+    def check_study_case_json_file_exists(self):
+        """
+        Check study case loaded into json file for read only mode exists
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+
+        return os.path.exists(file_path)
+
+    def read_dashboard_in_json_file(self):
+        """
+        Retrieve dashboard from json file
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
+        return read_object_in_json_file(file_path)
+
+    def delete_dashboard_json_file(self):
+        """
+        delete dashboard json file
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    def check_dashboard_json_file_exists(self):
+        """
+        Check dashboard json file exists
+        """
+        root_folder = Path(self.dump_directory)
+        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
+
+        return os.path.exists(file_path)
+
+    def get_parameter_data(self, parameter_key):
+        """
+        returns BytesIO of the data, read into the pickle
+        """
+        # get the anonimized key to retrieve the data into the pickle
+        anonymize_key = self.execution_engine.anonymize_key(parameter_key)
+
+        # read pickle
+        input_datas = self._get_data_from_file(self.dump_directory)
+        if len(input_datas) > 0:
+            if anonymize_key in input_datas[0].keys():
+                data_value = input_datas[0][anonymize_key]
+                # convert data into dataframe then ioBytes to have the same format as if retrieved from the dm
+                df_data = DataSerializer.convert_to_dataframe_and_bytes_io(data_value, parameter_key)
+                return df_data
+
+        # it should never be there because an exception should be raised if the file could not be red
+        return None
+
     @staticmethod
     def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:
         """
@@ -511,3 +636,4 @@ class StudyCaseManager(BaseStudyManager):
                 data_root_dir = join(data_root_dir, str(study_case_id))
 
         return data_root_dir
+
