@@ -231,7 +231,7 @@ def get_study_case_url(study_id: int):
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_case_raw_logs(study_id):
 
-    file_path = get_raw_logs(study_id=study_id)
+    file_path = get_raw_logs(study_id)
 
     if file_path:
         resp = send_file(file_path)

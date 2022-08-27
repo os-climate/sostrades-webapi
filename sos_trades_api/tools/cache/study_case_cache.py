@@ -55,6 +55,18 @@ class StudyCaseReference:
         """
         return self.__modification_date
 
+    @modification_date.setter
+    def modification_date(self, value):
+        """
+        Setter on modification date
+
+        :param value: new date to set
+        :type value: datetime
+        """
+
+        if not self.__modification_date == value:
+            self.__modification_date = value
+
 
 class StudyCaseCache:
     """
@@ -200,7 +212,5 @@ class StudyCaseCache:
         :type modification_date: datetime
         """
         if self.is_study_case_cached(study_identifier):
-            self.__study_case_dict[
-                study_identifier
-            ].modification_date = modification_date
+            self.__study_case_dict[study_identifier].modification_date = modification_date
             self.release_study_case(study_identifier)

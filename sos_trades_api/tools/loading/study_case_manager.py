@@ -65,6 +65,51 @@ class InvalidStudy(StudyCaseError):
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
 
+    class UnboundStudyCase:
+        """
+        Class that manage a study case object without being linked to sqlalchemy session
+        """
+
+        def __init__(self):
+            """
+            Constructor
+            """
+            self.id = None
+            self.group_id = None
+            self.name = None
+            self.repository = None
+            self.process = None
+            self.process_id = None
+            self.description = None
+            self.creation_date = None
+            self.modification_date = None
+            self.user_id_execution_authorised = None
+            self.current_execution_id = None
+            self.error = None
+            self.disabled = None
+
+        def init_from_study_case(self, study_case: StudyCase):
+            """
+            Initialize current instance with data coming from a StudyCase instance
+
+            :param study_case: study case instance from which data will be copied
+            :type study_case:  sos_trades_api.models.database_models.StudyCase
+            """
+
+            self.id = study_case.id
+            self.group_id = study_case.group_id
+            self.name = study_case.name
+            self.repository = study_case.repository
+            self.process = study_case.process
+            self.process_id = study_case.process_id
+            self.description = study_case.description
+            self.creation_date = study_case.creation_date
+            self.modification_date = study_case.modification_date
+            self.user_id_execution_authorised = study_case.user_id_execution_authorised
+            self.current_execution_id = study_case.current_execution_id
+            self.error = study_case.error
+            self.disabled = study_case.disabled
+
     def __init__(self, study_identifier):
         """
         Constructor
@@ -307,8 +352,10 @@ class StudyCaseManager(BaseStudyManager):
 
             if study_cases is not None and study_cases.count() > 0:
                 study_case = study_cases.first()
-                db.session.expunge(study_case)
-                self.__study = study_case
+
+                self.__study = StudyCaseManager.UnboundStudyCase()
+                self.__study.init_from_study_case(study_case)
+
             else:
                 raise InvalidStudy(
                     f'Requested study case (identifier {self.__study_identifier}) does not exist in the database'

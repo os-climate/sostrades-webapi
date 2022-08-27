@@ -23,7 +23,7 @@ app = base_server.app
 db = base_server.db
 
 from sos_trades_api.server.base_server import load_specific_study
-load_specific_study(3)
+#load_specific_study(3)
 
 # load & register APIs
 from sos_trades_api.routes.main import *

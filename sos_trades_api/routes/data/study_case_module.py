@@ -25,15 +25,13 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation)
-from sos_trades_api.controllers.sostrades_main.study_case_controller import (load_study_case)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
 
-@app.route(f'/api/data/study-case', methods=['GET', 'POST'])
-@app.route(f'/api/data/study-case/<int:study_id>', methods=['POST'])
+@app.route(f'/api/data/study-case', methods=['GET'])
 @auth_required
-def study_case_allocation(study_id: int = None):
+def study_cases():
     user = session['user']
 
     if request.method == 'GET':
@@ -41,54 +39,110 @@ def study_case_allocation(study_id: int = None):
         result = [sc.serialize() for sc in get_user_shared_study_case(user.id)]
         resp = make_response(jsonify(result), 200)
         return resp
-    elif request.method == 'POST':
 
-        if study_id is None:
-            name = request.json.get('name', None)
-            repository = request.json.get('repository', None)
-            process = request.json.get('process', None)
-            group_id = request.json.get('group', None)
+    raise MethodNotAllowed()
 
-            # Verify user has process authorisation to create study
-            process_access = ProcessAccess(user.id)
-            if not process_access.check_user_right_for_process(AccessRights.CONTRIBUTOR, process, repository):
-                raise BadRequest(
-                    'You do not have the necessary rights to create a study case from this process')
 
-            # Proceed after right verification
-            missing_parameter = []
-            if name is None:
-                missing_parameter.append('Missing mandatory parameter: name')
-            if repository is None:
-                missing_parameter.append('Missing mandatory parameter: repository')
-            if process is None:
-                missing_parameter.append('Missing mandatory parameter: process')
-            if group_id is None:
-                missing_parameter.append('Missing mandatory parameter: group')
+@app.route(f'/api/data/study-case', methods=['POST'])
+@auth_required
+def allocation_for_new_study_case():
+    user = session['user']
 
-            if len(missing_parameter) > 0:
-                raise BadRequest('\n'.join(missing_parameter))
+    if request.method == 'POST':
 
-            study_case_manager = create_empty_study_case(user.id, name, repository, process, group_id)
-            new_study_case_allocation = create_study_case_allocation(study_case_manager.study.id)
+        name = request.json.get('name', None)
+        repository = request.json.get('repository', None)
+        process = request.json.get('process', None)
+        group_id = request.json.get('group', None)
 
-            resp = make_response(jsonify(new_study_case_allocation), 200)
-            return resp
-        else:
-            # Verify user has study case authorisation to load study (Restricted
-            # viewer)
-            study_case_access = StudyCaseAccess(user.id)
-            if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-                raise BadRequest(
-                    'You do not have the necessary rights to load this study case')
-            study_access_right = study_case_access.get_user_right_for_study(
-                study_id)
+        # Verify user has process authorisation to create study
+        process_access = ProcessAccess(user.id)
+        if not process_access.check_user_right_for_process(AccessRights.CONTRIBUTOR, process, repository):
+            raise BadRequest(
+                'You do not have the necessary rights to create a study case from this process')
 
-            loaded_study = load_study_case(study_id, study_access_right, user.id)
+        # Proceed after right verification
+        missing_parameter = []
+        if name is None:
+            missing_parameter.append('Missing mandatory parameter: name')
+        if repository is None:
+            missing_parameter.append('Missing mandatory parameter: repository')
+        if process is None:
+            missing_parameter.append('Missing mandatory parameter: process')
+        if group_id is None:
+            missing_parameter.append('Missing mandatory parameter: group')
 
-            # Proceeding after rights verification
-            resp = make_response(
-                jsonify(loaded_study.loaded), 200)
+        if len(missing_parameter) > 0:
+            raise BadRequest('\n'.join(missing_parameter))
+
+        study_case = create_empty_study_case(user.id, name, repository, process, group_id)
+        new_study_case_allocation = create_study_case_allocation(study_case.id)
+
+        resp = make_response(jsonify(new_study_case_allocation), 200)
+        return resp
+
+    raise MethodNotAllowed()
+
+
+@app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['POST'])
+@auth_required
+def allocation_for_existing_study_case(study_case_identifier: int):
+    user = session['user']
+
+    if request.method == 'POST':
+
+        # Verify user has study case authorisation to load study (Restricted viewer)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
+            raise BadRequest(
+                'You do not have the necessary rights to load this study case')
+
+        study_case_allocation = load_study_case_allocation(study_case_identifier)
+
+        if study_case_allocation is None:
+            study_case_allocation = create_study_case_allocation(study_case_identifier)
+
+        # Proceeding after rights verification
+        return make_response(jsonify(study_case_allocation), 200)
+    else:
+        raise MethodNotAllowed()
+
+
+@app.route(f'/api/data/study-case/<int:study_case_identifier>/by/copy', methods=['POST'])
+@auth_required
+def allocation_for_copying_study_case(study_case_identifier: int):
+    user = session['user']
+
+    if request.method == 'POST':
+
+        new_name = request.json.get('new_name', None)
+        group_id = request.json.get('group_id', None)
+
+        # Verify user has study case authorisation to load study (Restricted viewer)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
+            raise BadRequest(
+                'You do not have the necessary rights to create a study case from this process')
+
+        # Proceed after right verification
+        missing_parameter = []
+        if new_name is None:
+            missing_parameter.append('Missing mandatory parameter: new_name')
+        if group_id is None:
+            missing_parameter.append('Missing mandatory parameter: group_id')
+
+        if len(missing_parameter) > 0:
+            raise BadRequest('\n'.join(missing_parameter))
+
+        source_study_case = None
+        with app.app_context():
+            source_study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+
+        study_case = create_empty_study_case(user.id, new_name, source_study_case.repository, source_study_case.process, group_id)
+        new_study_case_allocation = create_study_case_allocation(study_case.id)
+
+        resp = make_response(jsonify(new_study_case_allocation), 200)
+        return resp
     else:
         raise MethodNotAllowed()
 
@@ -229,7 +283,7 @@ def get_study_case_raw_logs_download():
 
     if study_id is None:
         raise BadRequest('Missing mandatory parameter: study_id')
-    file_path = get_raw_logs(study_id=study_id)
+    file_path = get_raw_logs(study_id)
     if file_path:
         resp = send_file(file_path)
         return resp

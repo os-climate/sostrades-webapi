@@ -29,4 +29,4 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api.server.gateway_mode import study_server
 
-    study_server.app.run(host='127.0.0.1', port='5003')
+    study_server.app.run(host='127.0.0.1', port='5000')

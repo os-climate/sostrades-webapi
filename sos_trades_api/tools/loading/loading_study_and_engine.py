@@ -234,11 +234,15 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
     :params: reference_identifier, reference identifier
     :type: string
     """
+
+    study_name = study_case_manager.study.name
+
     try:
         sleep()
         from sos_trades_api.server.base_server import app
+
         app.logger.info(
-            f'Loading reference in background {study_case_manager.study.name}')
+            f'Loading reference in background {study_name}')
 
         study_case_manager.load_in_progress = True
         study_case_manager.loaded = False
@@ -273,14 +277,14 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.load_in_progress = False
 
         app.logger.info(
-            f'End background reference loading {study_case_manager.study.name}')
+            f'End background reference loading {study_name}')
     except Exception as ex:
         study_case_manager.loaded = False
         study_case_manager.load_in_progress = False
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
-            f'Error when loading reference in background {study_case_manager.study.name}')
+            f'Error when loading reference in background {study_name}')
 
 
 def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, read_only, repository_name, process_name,

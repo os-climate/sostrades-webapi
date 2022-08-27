@@ -74,7 +74,7 @@ def get_post_processing(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route(f'/api/post-processing/study-case/<int:study_id>/by/discipline', methods=['POST'])
+@app.route(f'/api/post-processing/study-case/<int:study_id>/filter/by/discipline', methods=['POST'])
 @auth_required
 def get_post_processing_filter(study_id):
 

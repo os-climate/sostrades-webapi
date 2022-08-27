@@ -124,17 +124,7 @@ def create_empty_study_case(
         db.session.add(new_group_access)
         db.session.commit()
 
-    # Create a study case manager to manage business data
-    study_case_manager = StudyCaseManager(study_case.id)
-
-    # Persist data using the current persistence strategy
-    study_case_manager.dump_data(study_case_manager.dump_directory)
-    study_case_manager.dump_disciplines_data(study_case_manager.dump_directory)
-
-    # Loading data for study created empty
-    study_case_manager.loaded = True
-
-    return study_case_manager
+    return study_case
 
 
 def create_study_case_allocation(study_case_identifier):
@@ -177,7 +167,7 @@ def load_study_case_allocation(study_case_identifier):
     if len(study_case_allocations) == 1:
         return study_case_allocations[0]
     else:
-        raise
+        return None
 
 
 def get_user_shared_study_case(user_identifier: int):

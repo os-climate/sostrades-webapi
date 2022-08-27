@@ -24,7 +24,6 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
     set_study_data_file)
-from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
@@ -34,35 +33,26 @@ def study_cases():
     if request.method == 'POST':
         user = session['user']
 
-        name = request.json.get('name', None)
-        repository = request.json.get('repository', None)
-        process = request.json.get('process', None)
-        group_id = request.json.get('group', None)
+        study_case_identifier = request.json.get('studyCaseIdentifier', None)
         reference = request.json.get('reference', None)
         from_type = request.json.get('type', None)
 
         # Verify user has process authorisation to create study
-        process_access = ProcessAccess(user.id)
-        if not process_access.check_user_right_for_process(AccessRights.CONTRIBUTOR, process, repository):
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_case_identifier):
             raise BadRequest(
                 'You do not have the necessary rights to create a study case from this process')
 
         # Proceed after right verification
         missing_parameter = []
-        if name is None:
-            missing_parameter.append('Missing mandatory parameter: name')
-        if repository is None:
-            missing_parameter.append('Missing mandatory parameter: repository')
-        if process is None:
-            missing_parameter.append('Missing mandatory parameter: process')
-        if group_id is None:
-            missing_parameter.append('Missing mandatory parameter: group')
+        if study_case_identifier is None:
+            missing_parameter.append('Missing mandatory parameter: studyCaseIdentifier')
 
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
 
         resp = make_response(jsonify(create_study_case(
-            user.id, name, repository, process, group_id, reference, from_type)), 200)
+            user.id, study_case_identifier, reference, from_type)), 200)
         return resp
     elif request.method == 'DELETE':
         user = session['user']
@@ -148,14 +138,11 @@ def copy_study_case_by_id(study_id):
     if study_id is not None:
         user = session['user']
 
-        new_name = request.json.get('new_name', None)
-        group_id = request.json.get('group_id', None)
+        source_study_case = request.json.get('source_study_case', None)
 
         missing_parameter = []
-        if new_name is None:
-            missing_parameter.append('Missing mandatory parameter: new_name')
-        if group_id is None:
-            missing_parameter.append('Missing mandatory parameter: group_id')
+        if source_study_case is None:
+            missing_parameter.append('Missing mandatory parameter: source_study_case')
 
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
@@ -168,7 +155,7 @@ def copy_study_case_by_id(study_id):
 
         # Proceeding after rights verification
         resp = make_response(jsonify(copy_study_case(
-            study_id, new_name, group_id, user.id)), 200)
+            study_id, source_study_case, user.id)), 200)
 
         return resp
 

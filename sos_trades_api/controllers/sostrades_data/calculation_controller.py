@@ -327,7 +327,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
             if study_case is None:
                 raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
 
-            file_path = get_raw_logs(study_id=study_case_id)
+            file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
                 result = file_tail(file_path, 200)
 

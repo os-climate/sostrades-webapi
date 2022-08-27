@@ -739,6 +739,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     @app.after_request
     def after_request(response):
 
+        # Set logging info regarding request processing time
         duration = 0
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
@@ -746,4 +747,22 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         app.logger.info(
             f'{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.'
         )
+
+        # Enable CORS requests for local development
+        # The following will allow the local angular-cli development environment to
+        # make requests to this server (otherwise, you will get 403s due to same-
+        # origin poly)
+        response.headers.add('Access-Control-Allow-Origin',
+                             'http://localhost:4200')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization,Set-Cookie,Cookie,Cache-Control,Pragma,Expires')  # noqa
+        response.headers.add('Access-Control-Allow-Methods',
+                             'GET,PUT,POST,DELETE')
+
+        # disable caching all requests
+        response.cache_control.no_cache = True
+        response.cache_control.no_store = True
+        response.cache_control.must_revalidate = True
+
         return response
