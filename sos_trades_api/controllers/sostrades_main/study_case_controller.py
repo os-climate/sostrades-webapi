@@ -112,7 +112,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
         # Loading data for study created empty
         if reference is None:
 
-            study_case_manager.loaded = LoadStatus.LOADED
+            study_case_manager.load_status = LoadStatus.LOADED
             study_case_manager.n2_diagram = {}
             study_case_manager.execution_engine.dm.treeview = None
             study_case_manager.execution_engine.get_treeview(False, False)
