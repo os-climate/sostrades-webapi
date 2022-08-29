@@ -180,7 +180,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_load_study_case(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -253,7 +253,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -441,7 +441,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -735,7 +735,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
             delete_study_cases, copy_study_case, get_file_stream
         from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():

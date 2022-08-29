@@ -112,10 +112,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
         # Loading data for study created empty
         if reference is None:
 
-            study_manager.loaded = LoadStatus.LOADED
-            study_manager.n2_diagram = {}
-            study_manager.execution_engine.dm.treeview = None
-            study_manager.execution_engine.get_treeview(False, False)
+            study_case_manager.loaded = LoadStatus.LOADED
+            study_case_manager.n2_diagram = {}
+            study_case_manager.execution_engine.dm.treeview = None
+            study_case_manager.execution_engine.get_treeview(False, False)
 
         # Adding reference data and loading study data
         else:
@@ -131,8 +131,8 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
                 # Get ref generation ID associated to this ref
                 reference_identifier = f'{study_case.repository}.{study_case.process}.{reference}'
 
-                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
-                    study_manager.load_status = LoadStatus.IN_PROGESS
+                if study_case_manager.load_status != LoadStatus.IN_PROGESS and study_case_manager.load_status != LoadStatus.LOADED:
+                    study_case_manager.load_status = LoadStatus.IN_PROGESS
 
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
@@ -140,8 +140,8 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
             elif from_type == 'UsecaseData':
 
-                if study_manager.load_status == LoadStatus.NONE:
-                    study_manager.load_status = LoadStatus.IN_PROGESS
+                if study_case_manager.load_status == LoadStatus.NONE:
+                    study_case_manager.load_status = LoadStatus.IN_PROGESS
 
                     threading.Thread(
                         target=study_case_manager_loading_from_usecase_data,

@@ -93,7 +93,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
     :type: boolean
 
     """
-    from sos_trades_api.base_server import app
+    from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
     try:
         start_time = time()
@@ -154,7 +154,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
     :params: connectors, connectors to inject in study manager
     :type: dictionary
     """
-    from sos_trades_api.base_server import app
+    from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
 
     try:
@@ -233,7 +233,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading reference in background {study_name}')
@@ -301,7 +301,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
     """
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading usecase data in background {study_case_manager.study.name}')
@@ -361,7 +361,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
     """
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading from study in background {study_case_manager.study.name}')
