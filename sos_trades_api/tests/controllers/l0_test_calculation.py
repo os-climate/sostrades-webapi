@@ -90,11 +90,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                 DatabaseUnitTestConfiguration.db.session.commit()
 
     def test_01_execute_calculation(self):
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
         import os
         import time
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         from sos_trades_api.controllers.sostrades_data.calculation_controller import execute_calculation
-        from sos_trades_api.models.database_models import StudyCaseDisciplineStatus, StudyCase, User, StudyCaseExecution
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseExecution
         from sos_trades_api.config import Config
         with DatabaseUnitTestConfiguration.app.app_context():
             reference_basepath = Config().reference_root_dir
@@ -107,13 +108,21 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             imported_usecase.load_data()
             imported_usecase.run(dump_study=True)
             imported_usecase.dump_data(imported_usecase.dump_directory)
+
+            # Create test studycase
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     self.test_study_name,
+                                                     self.test_repository_name,
+                                                     self.test_process_name,
+                                                     self.test_user_group_id)
+
+            self.test_study_id = new_study_case.id
+
             created_study = create_study_case(self.test_user_id,
-                                              self.test_study_name,
-                                              self.test_repository_name,
-                                              self.test_process_name,
-                                              self.test_user_group_id,
+                                              self.test_study_id,
                                               self.test_uc_name,
                                               from_type='Reference')
+
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
             execute_calculation(created_study.study_case.id,
                                 User.STANDARD_USER_ACCOUNT_NAME)

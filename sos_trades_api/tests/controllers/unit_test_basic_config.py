@@ -46,10 +46,13 @@ with open(configuration_filepath) as server_conf_file:
     configuration_data = json.load(server_conf_file)
 
 # Get the current database name and add a random part
-test_database_name = f"{configuration_data['SQL_ALCHEMY_DATABASE']['DATABASE_NAME']}-{str(uuid.uuid4())[:8]}"
+unique_identifier = str(uuid.uuid4())[:8]
+test_database_name = f"{configuration_data['SQL_ALCHEMY_DATABASE']['DATABASE_NAME']}-{unique_identifier}"
+test_log_database_name = f"{configuration_data['LOGGING_DATABASE']['DATABASE_NAME']}-{unique_identifier}"
 
 # Overwrite test database name
 configuration_data['SQL_ALCHEMY_DATABASE']['DATABASE_NAME'] = test_database_name
+configuration_data['LOGGING_DATABASE']['DATABASE_NAME'] = test_log_database_name
 
 # Save the new configuration (without overwrite the original one) and change the
 # associated environment variable
@@ -68,6 +71,7 @@ os.environ['SOS_TRADES_REFERENCES'] = os.path.join(
 
 print(f'Configuration file used for test: {test_configuration_file}')
 print(f'Database used for test: {test_database_name}')
+print(f'Database used for test log: {test_log_database_name}')
 
 import unittest
 import sqlalchemy

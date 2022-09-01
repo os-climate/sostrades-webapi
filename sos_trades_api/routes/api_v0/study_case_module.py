@@ -20,10 +20,10 @@ from flask import request, make_response, abort, jsonify, send_file, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.server.base_server import app, study_case_cache
-from sos_trades_api.models.database_models import AccessRights, StudyCaseChange
+from sos_trades_api.models.database_models import AccessRights, StudyCaseChange, StudyCase
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
     update_study_parameters, get_file_stream, copy_study_case
-from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs, create_empty_study_case
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
 from sos_trades_api.tools.authentication.authentication import has_user_access_right, api_key_required
@@ -103,8 +103,15 @@ def copy_study_case_by_id(study_id):
             if new_study_name is None:
                 abort(400, "Missing mandatory parameter: new_name")
 
+            source_study_case = None
+            with app.app_context():
+                source_study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+
+            study_case = create_empty_study_case(user.id, new_study_name, source_study_case.repository,
+                                                 source_study_case.process, source_study_case.group_id)
+
             # Retrieve the source study
-            copy_study_identifier = copy_study_case(study_id, new_study_name, None, user.id)
+            copy_study_identifier = copy_study_case(study_case.id, study_id, user.id)
 
             # Proceeding after rights verification
             resp = make_response(jsonify(copy_study_identifier), 200)
