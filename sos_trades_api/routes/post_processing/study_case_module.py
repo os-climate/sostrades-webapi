@@ -47,7 +47,7 @@ def load_study_case_by_id(study_id):
             resp = make_response(
                 jsonify(True), 200)
         else:
-            if study_manager.has_error:
+            if study_manager.load_status == LoadStatus.IN_ERROR:
                 app.logger.info("study manager has error")
             resp = make_response(
                 jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)
@@ -80,7 +80,7 @@ def reset_study_from_cache_(study_id):
             resp = make_response(
                 jsonify(True), 200)
         else:
-            if study_manager.has_error:
+            if study_manager.load_status == LoadStatus.IN_ERROR:
                 app.logger.info("study manager has error")
             resp = make_response(
                 jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)
@@ -112,7 +112,7 @@ def reload_study_case_by_id(study_id):
             resp = make_response(
                 jsonify(True), 200)
         else:
-            if study_manager.has_error:
+            if study_manager.load_status == LoadStatus.IN_ERROR:
                 app.logger.info("study manager has error")
             resp = make_response(
                 jsonify(study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_ERROR), 200)

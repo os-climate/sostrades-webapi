@@ -608,7 +608,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
 
-            self.assertTrue(study_manager.has_error)
+            self.assertTrue(study_manager.load_status == LoadStatus.IN_ERROR)
 
             error_message = 'The current value of variable test_clear_error.SellarOptimScenario.z!15.0 is not between the lower bound 0.0 and the upper bound 10.0'
             self.assertIn(error_message, study_manager.error_message)
@@ -728,7 +728,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
 
             # check if clear_error is performed in study_case_controller
-            self.assertFalse(study_manager.has_error)
+            self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
 
     def test_study_case_read_only_mode(self):
         from sos_trades_api.models.database_models import StudyCase
