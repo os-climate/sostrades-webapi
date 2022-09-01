@@ -147,7 +147,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
                         target=study_case_manager_loading_from_usecase_data,
                         args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
 
-        if study_case_manager.has_error:
+        if study_case_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_case_manager.error_message)
         loaded_study_case = LoadedStudyCase(study_case_manager, False, False, user_id)
 
@@ -296,7 +296,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                         target=study_case_manager_loading,
                         args=(study_manager, False, False)).start()
 
-                if study_manager.has_error:
+                if study_manager.load_status == LoadStatus.IN_ERROR:
                     raise Exception(study_manager.error_message)
 
             except:
@@ -375,7 +375,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
 
-    if study_manager.has_error:
+    if study_manager.load_status == LoadStatus.IN_ERROR:
         raise Exception(study_manager.error_message)
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
@@ -466,7 +466,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
                     target=study_case_manager_loading_from_study,
                     args=(study_manager, False, False, study_manager_source)).start()
 
-            if study_manager.has_error:
+            if study_manager.load_status == LoadStatus.IN_ERROR:
                 raise Exception(study_manager.error_message)
 
             # Update cache modification date and release study
@@ -660,7 +660,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             threading.Thread(
                 target=study_case_manager_update, args=(study_manager, values, False, False, conectors)).start()
 
-        if study_manager.has_error:
+        if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
 
         # Releasing study

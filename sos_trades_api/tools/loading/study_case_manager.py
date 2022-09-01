@@ -155,7 +155,6 @@ class StudyCaseManager(BaseStudyManager):
 
         self.load_status = LoadStatus.NONE
         self.n2_diagram = {}
-        self.__has_error = False
         self.__error_message = ""
 
     @property
@@ -172,14 +171,6 @@ class StudyCaseManager(BaseStudyManager):
         """
 
         return self.__study_database_logger
-
-    @property
-    def has_error(self) -> bool:
-        """
-        Return the current error flag
-        """
-
-        return self.__has_error
 
     @property
     def error_message(self) -> str:
@@ -314,7 +305,7 @@ class StudyCaseManager(BaseStudyManager):
         :type disabled_study: boolean
         """
 
-        self.__has_error = True
+        self.load_status = LoadStatus.IN_ERROR
         self.__error_message = error_message
 
         with app.app_context():
@@ -332,7 +323,7 @@ class StudyCaseManager(BaseStudyManager):
         Clear error on study case manager
         """
 
-        self.__has_error = False
+        self.load_status = LoadStatus.NONE
         self.__error_message = ""
 
     def update_study_case(self):
