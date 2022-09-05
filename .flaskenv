@@ -1,4 +1,4 @@
-FLASK_APP=sos_trades_api/base_server.py
+FLASK_APP=sos_trades_api/server/base_server.py
 FLASK_ENV=development
 SOS_TRADES_SERVER_CONFIGURATION=C:\Users\GDELRVQ4\Documents\GitHub\sostrades-webapi\sos_trades_api\configuration\development_configuration.json
 SOS_TRADES_REFERENCES=C:\Temp\SoSTrades_persistance\reference
