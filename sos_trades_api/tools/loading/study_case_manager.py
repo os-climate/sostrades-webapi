@@ -36,7 +36,7 @@ from sos_trades_core.execution_engine.data_connector.ontology_data_connector imp
     GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
     OntologyDataConnector,
 )
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
 from os.path import join
@@ -77,6 +77,51 @@ class StudyCaseManager(BaseStudyManager):
     LOADED_STUDY_FILE_NAME = "loaded_study_case.json"
     DASHBOARD_FILE_NAME = "dashboard.json"
 
+    class UnboundStudyCase:
+        """
+        Class that manage a study case object without being linked to sqlalchemy session
+        """
+
+        def __init__(self):
+            """
+            Constructor
+            """
+            self.id = None
+            self.group_id = None
+            self.name = None
+            self.repository = None
+            self.process = None
+            self.process_id = None
+            self.description = None
+            self.creation_date = None
+            self.modification_date = None
+            self.user_id_execution_authorised = None
+            self.current_execution_id = None
+            self.error = None
+            self.disabled = None
+
+        def init_from_study_case(self, study_case: StudyCase):
+            """
+            Initialize current instance with data coming from a StudyCase instance
+
+            :param study_case: study case instance from which data will be copied
+            :type study_case:  sos_trades_api.models.database_models.StudyCase
+            """
+
+            self.id = study_case.id
+            self.group_id = study_case.group_id
+            self.name = study_case.name
+            self.repository = study_case.repository
+            self.process = study_case.process
+            self.process_id = study_case.process_id
+            self.description = study_case.description
+            self.creation_date = study_case.creation_date
+            self.modification_date = study_case.modification_date
+            self.user_id_execution_authorised = study_case.user_id_execution_authorised
+            self.current_execution_id = study_case.current_execution_id
+            self.error = study_case.error
+            self.disabled = study_case.disabled
+
     def __init__(self, study_identifier):
         """
         Constructor
@@ -110,7 +155,6 @@ class StudyCaseManager(BaseStudyManager):
 
         self.load_status = LoadStatus.NONE
         self.n2_diagram = {}
-        self.__has_error = False
         self.__error_message = ""
 
     @property
@@ -127,14 +171,6 @@ class StudyCaseManager(BaseStudyManager):
         """
 
         return self.__study_database_logger
-
-    @property
-    def has_error(self) -> bool:
-        """
-        Return the current error flag
-        """
-
-        return self.__has_error
 
     @property
     def error_message(self) -> str:
@@ -269,7 +305,7 @@ class StudyCaseManager(BaseStudyManager):
         :type disabled_study: boolean
         """
 
-        self.__has_error = True
+        self.load_status = LoadStatus.IN_ERROR
         self.__error_message = error_message
 
         with app.app_context():
@@ -287,7 +323,7 @@ class StudyCaseManager(BaseStudyManager):
         Clear error on study case manager
         """
 
-        self.__has_error = False
+        self.load_status = LoadStatus.NONE
         self.__error_message = ""
 
     def update_study_case(self):
@@ -349,8 +385,10 @@ class StudyCaseManager(BaseStudyManager):
 
             if study_cases is not None and study_cases.count() > 0:
                 study_case = study_cases.first()
-                db.session.expunge(study_case)
-                self.__study = study_case
+
+                self.__study = StudyCaseManager.UnboundStudyCase()
+                self.__study.init_from_study_case(study_case)
+
             else:
                 raise InvalidStudy(
                     f'Requested study case (identifier {self.__study_identifier}) does not exist in the database'

@@ -16,7 +16,7 @@ limitations under the License.
 import traceback
 from sos_trades_api.models.database_models import ReferenceStudy, User, Process
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata, load_ontology_processes
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.loaded_process import LoadedProcess

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.models.database_models import Group, GroupAccessGroup, GroupAccessUser, AccessRights
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from sos_trades_api.models.loaded_group import LoadedGroup
 
 

@@ -27,7 +27,7 @@ from sos_trades_api.tools.authentication.password_generator import check_passwor
 from sos_trades_api.tools.authentication.password_generator import generate_password
 from os.path import dirname, join, exists
 from sqlalchemy import or_, and_, func
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.controllers.sostrades_data import group_controller
 import uuid
 from sos_trades_api import __file__ as sos_trades_api_file

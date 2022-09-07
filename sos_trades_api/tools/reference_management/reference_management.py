@@ -17,7 +17,7 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Reference management
 """
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from sos_trades_api.config import Config
 from importlib import import_module
 from os.path import isdir, join, dirname

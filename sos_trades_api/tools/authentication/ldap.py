@@ -20,7 +20,7 @@ LDAP integration to authenticate user on Airbus corp network
 
 import ldap
 from sos_trades_api.models.database_models import User
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 
 
 class LDAPException(Exception):

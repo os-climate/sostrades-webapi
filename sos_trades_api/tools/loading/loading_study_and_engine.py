@@ -24,11 +24,9 @@ import traceback
 import sys
 from time import time
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sos_trades_api.models.database_models import StudyCase, \
-    ReferenceStudy, StudyCaseExecutionLog, ReferenceStudyExecutionLog
-from sos_trades_api.base_server import db
+from sos_trades_api.models.database_models import StudyCase
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
-from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
 from datetime import datetime, timezone
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 from importlib import import_module
@@ -66,7 +64,7 @@ def study_need_to_be_updated(study_id, last_modification):
 
     :return: boolean (true is anterior)
     """
-    from sos_trades_api.base_server import app
+    from sos_trades_api.server.base_server import app
 
     with app.app_context():
 
@@ -95,7 +93,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
     :type: boolean
 
     """
-    from sos_trades_api.base_server import app
+    from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
     try:
         start_time = time()
@@ -156,7 +154,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
     :params: connectors, connectors to inject in study manager
     :type: dictionary
     """
-    from sos_trades_api.base_server import app
+    from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
 
     try:
@@ -230,12 +228,15 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
     :params: reference_identifier, reference identifier
     :type: string
     """
+
+    study_name = study_case_manager.study.name
+
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
-            f'Loading reference in background {study_case_manager.study.name}')
+            f'Loading reference in background {study_name}')
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
@@ -265,13 +266,13 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End background reference loading {study_case_manager.study.name}')
+            f'End background reference loading {study_name}')
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
-            f'Error when loading reference in background {study_case_manager.study.name}')
+            f'Error when loading reference in background {study_name}')
 
 
 def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, read_only, repository_name, process_name,
@@ -300,7 +301,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
     """
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading usecase data in background {study_case_manager.study.name}')
@@ -360,7 +361,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
     """
     try:
         sleep()
-        from sos_trades_api.base_server import app
+        from sos_trades_api.server.base_server import app
         from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading from study in background {study_case_manager.study.name}')

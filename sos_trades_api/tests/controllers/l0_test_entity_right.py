@@ -57,13 +57,14 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     @classmethod
     def setUpClass(cls):
         DatabaseUnitTestConfiguration.setUpClass()
-        from sos_trades_api.base_server import database_process_setup
+        from sos_trades_api.server.base_server import database_process_setup
         database_process_setup()
 
     def setUp(self):
         super().setUp()
         from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -105,12 +106,18 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                 DatabaseUnitTestConfiguration.db.session.add(
                     new_user_test_auth)
                 DatabaseUnitTestConfiguration.db.session.commit()
+
             # Create test studycase
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     self.test_study_name,
+                                                     self.test_repository_name,
+                                                     self.test_process_name,
+                                                     self.default_group_id)
+
+            self.test_study_id = new_study_case.id
+
             created_study = create_study_case(self.test_user_id,
-                                              self.test_study_name,
-                                              self.test_repository_name,
-                                              self.test_process_name,
-                                              self.default_group_id,
+                                              self.test_study_id,
                                               None)
 
             self.test_study_id = created_study.study_case.id

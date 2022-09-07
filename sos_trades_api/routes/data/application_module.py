@@ -21,7 +21,7 @@ Application module
 
 from flask import make_response
 from flask.json import jsonify
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.api_version import application_version
 
 

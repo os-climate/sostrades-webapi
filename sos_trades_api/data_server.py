@@ -17,7 +17,7 @@ limitations under the License.
 import os
 os.environ['SERVER_NAME'] = 'DATA_SERVER'
 
-from sos_trades_api import base_server
+from sos_trades_api.server import base_server
 
 app = base_server.app
 db = base_server.db

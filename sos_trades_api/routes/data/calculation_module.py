@@ -17,7 +17,7 @@ from flask import jsonify, make_response, send_file, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status, \
     calculation_logs, calculation_raw_logs, get_calculation_dashboard, execute_calculation, stop_calculation, delete_calculation_entry

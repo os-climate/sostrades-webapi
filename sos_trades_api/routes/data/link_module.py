@@ -16,7 +16,7 @@ limitations under the License.
 from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest, Unauthorized
 
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.link_controller import get_links, get_link, create_link, update_link, delete_link
 

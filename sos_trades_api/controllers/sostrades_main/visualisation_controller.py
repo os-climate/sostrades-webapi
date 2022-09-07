@@ -17,9 +17,9 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Visualisation Functions
 """
-from sos_trades_api.base_server import study_case_cache
+from sos_trades_api.server.base_server import study_case_cache
 from sos_trades_api.tools.visualisation.execution_workflow_graph import SoSExecutionWorkflow
-from sos_trades_api.controllers.sostrades_main.ontology_controller import generate_n2_matrix
+from sos_trades_api.controllers.sostrades_data.ontology_controller import generate_n2_matrix
 
 
 class VisualisationError(Exception):
