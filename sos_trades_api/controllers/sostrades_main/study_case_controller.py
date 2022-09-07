@@ -592,37 +592,42 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             uuid_param = study_manager.execution_engine.dm.data_id_map[parameter['variableId']]
 
             if uuid_param in study_manager.execution_engine.dm.data_dict:
+                parameter_dm_data_dict = study_manager.execution_engine.dm.data_dict.get(uuid_param,{})
                 value = parameter['newValue']
 
-                # If value is dataframe make check about targetted type
+                # If value is dataframe make check about targeted type
                 if isinstance(value, pd.DataFrame):
-                    parameter_type = study_manager.execution_engine.dm.data_dict[uuid_param]['type']
+                    parameter_type = parameter_dm_data_dict['type']
 
                     if 'array' in parameter_type:
-                        # In case of array (mono dimensionnal) take the dataframe first
+                        # In case of array (mono dimensional) take the dataframe first
                         # column
                         value = value.iloc[:, 0].values
 
-                    elif parameter_type == 'df_dict':
-                        keys = list(set(value['variable']))
-                        columns = list(value.columns)
-                        columns.remove('variable')
-                        df_dict = {}
-                        for key in keys:
-                            df_dict[key] = value[columns][value['variable'] == key]
-                        value = df_dict
-
                     elif 'dict' in parameter_type:
-                        # Converting column to str
-                        value['variable'] = value.variable.astype(str)
-                        # In case of dict convert the dataframe to dict
-                        value = value.set_index('variable')['value'].to_dict()
+                        # Check if it is a "simple" dict or if it has subtype
+                        parameter_subtype = parameter_dm_data_dict.get('subtype_descriptor',{'dict':None})
+                        # Case when it is a dict of dataframe (same treatment as previous df_dict type)
+                        if parameter_subtype == {'dict': 'dataframe'}:
+                            keys = list(set(value['variable']))
+                            columns = list(value.columns)
+                            columns.remove('variable')
+                            df_dict = {}
+                            for key in keys:
+                                df_dict[key] = value[columns][value['variable'] == key]
+                            value = df_dict
+                        else:
+                            # Other subtype descriptors are not yet handled specifically so they are treated as simple dict
+                            # Converting column to str
+                            value['variable'] = value.variable.astype(str)
+                            # In case of dict convert the dataframe to dict
+                            value = value.set_index('variable')['value'].to_dict()
                     else:
                         # dataframe, check array element types
-                        if 'dataframe_descriptor' in study_manager.execution_engine.dm.data_dict[uuid_param].keys() and \
-                                study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor'] is not None:
+                        if 'dataframe_descriptor' in parameter_dm_data_dict.keys() and \
+                                parameter_dm_data_dict['dataframe_descriptor'] is not None:
 
-                            df_descriptor = study_manager.execution_engine.dm.data_dict[uuid_param]['dataframe_descriptor']
+                            df_descriptor = parameter_dm_data_dict['dataframe_descriptor']
                             for colname in df_descriptor.keys():
                                 type = df_descriptor[colname]
                                 if type[0] == "array":
@@ -636,7 +641,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                     try:
                         add_change_db(new_notification_id,
                                       parameter['variableId'],
-                                      study_manager.execution_engine.dm.data_dict[uuid_param]['type'],
+                                      parameter_dm_data_dict['type'],
                                       parameter['changeType'],
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
