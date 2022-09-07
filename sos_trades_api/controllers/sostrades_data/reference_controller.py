@@ -25,8 +25,7 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 
 from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_pods_status, kubernetes_service_generate
 from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
@@ -110,6 +109,21 @@ def get_all_references(user_id, logger):
     process_access = ProcessAccess(user_id)
     authorized_process_list = process_access.get_authorized_process()
 
+    # Apply Ontology
+    processes_metadata = []
+    repositories_metadata = []
+    for authorized_process in authorized_process_list:
+        process_key = f'{authorized_process.repository_id}.{authorized_process.process_id}'
+        if process_key not in processes_metadata:
+            processes_metadata.append(process_key)
+
+        repository_key = authorized_process.repository_id
+        if repository_key not in repositories_metadata:
+            repositories_metadata.append(repository_key)
+
+    process_metadata = load_processes_metadata(processes_metadata)
+    repository_metadata = load_repositories_metadata(repositories_metadata)
+
     for authorized_process in authorized_process_list:
         # Retrieve references for process
         process_references = list(filter(lambda ref_process: ref_process.process_id == authorized_process.id
@@ -118,8 +132,6 @@ def get_all_references(user_id, logger):
 
             new_usecase = StudyCaseDto()
             new_usecase.name = ref.name
-            new_usecase.process_display_name = authorized_process.process_name
-            new_usecase.repository_display_name = authorized_process.repository_name
             new_usecase.process = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
             new_usecase.description = 'Reference'
@@ -127,6 +139,9 @@ def get_all_references(user_id, logger):
             new_usecase.study_type = ref.reference_type
             new_usecase.group_id = None
             new_usecase.group_name = 'All groups'
+
+            # Apply ontology on the usecase
+            new_usecase.apply_ontology(process_metadata, repository_metadata)
 
             # Check if generation is running
             is_running = check_reference_is_regenerating(ref.reference_path)
