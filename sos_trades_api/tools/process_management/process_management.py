@@ -17,7 +17,7 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Process management
 """
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from sqlalchemy import and_
 from sos_trades_core.sos_processes.processes_factory import SoSProcessFactory
 from sos_trades_api.models.database_models import Process, AccessRights, \

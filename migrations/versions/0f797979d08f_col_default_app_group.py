@@ -8,8 +8,7 @@ Create Date: 2022-02-14 16:53:50.917357
 from alembic import op
 import sqlalchemy as sa
 from sos_trades_api.models.database_models import Group
-from sos_trades_api.base_server import db
-from sqlalchemy.dialects import mysql
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '0f797979d08f'

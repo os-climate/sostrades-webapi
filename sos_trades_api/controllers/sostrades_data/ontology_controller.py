@@ -20,7 +20,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Ontology Functions
 """
 
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 import requests
 import json
 from requests.exceptions import ConnectionError

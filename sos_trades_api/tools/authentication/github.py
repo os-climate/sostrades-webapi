@@ -24,7 +24,7 @@ from datetime import datetime
 import json
 
 from sos_trades_api.models.database_models import User, OAuthState
-from sos_trades_api.base_server import app, db
+from sos_trades_api.server.base_server import app, db
 
 # GITHUB API KEYS
 GITHUB_LOGIN_KEY = 'login'

@@ -5,10 +5,8 @@ Revises: e87facea6cda
 Create Date: 2021-10-05 17:55:07.102252
 
 """
-from alembic import op
-import sqlalchemy as sa
 from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 
 
 # revision identifiers, used by Alembic.

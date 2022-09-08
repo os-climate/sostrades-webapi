@@ -7,7 +7,7 @@ Create Date: 2021-12-01 15:35:13.637919
 """
 from alembic import op
 import sqlalchemy as sa
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '35ba4ee9fc53'

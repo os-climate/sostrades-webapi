@@ -18,9 +18,8 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 User Functions
 """
 import traceback
-from datetime import datetime, timezone
 from sos_trades_api.models.database_models import Link
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db
 
 
 class LinkError(Exception):

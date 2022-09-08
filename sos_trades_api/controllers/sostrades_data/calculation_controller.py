@@ -33,10 +33,10 @@ from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudy
 from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
 from sos_trades_api.tools.execution.execution_engine_kubernetes import ExecutionEngineKubernetes
 from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
 from sos_trades_api.config import Config
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_core.api import get_sos_logger
 from sqlalchemy.sql.expression import and_
@@ -327,7 +327,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
             if study_case is None:
                 raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
 
-            file_path = get_raw_logs(study_id=study_case_id)
+            file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
                 result = file_tail(file_path, 200)
 
