@@ -147,7 +147,7 @@ def create_study_case_allocation(study_case_identifier):
         db.session.add(new_study_case_allocation)
         db.session.commit()
     else:
-        raise
+        raise InvalidStudy('Allocation already exist for this study case')
 
     return new_study_case_allocation
 
