@@ -267,7 +267,7 @@ def get_study_case_logs_download():
 
     if study_id is None:
         raise BadRequest('Missing mandatory parameter: study_id')
-    file_path = get_logs(study_id=study_id)
+    file_path = get_logs(study_case_identifier=study_id)
     if file_path:
         resp = send_file(file_path)
         return resp
