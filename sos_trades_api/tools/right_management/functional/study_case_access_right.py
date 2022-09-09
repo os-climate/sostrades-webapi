@@ -21,7 +21,7 @@ from sos_trades_api.models.database_models import \
     AccessRights, StudyCase, StudyCaseAccessUser, StudyCaseAccessGroup
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 
 
 class StudyCaseAccess(ProcessAccess):

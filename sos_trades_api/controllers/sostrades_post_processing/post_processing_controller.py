@@ -8,7 +8,7 @@ Created on March, 2020
 post processing Functions
 """
 
-from sos_trades_api.base_server import study_case_cache
+from sos_trades_api.server.base_server import study_case_cache
 from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 

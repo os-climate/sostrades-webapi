@@ -50,7 +50,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUpClass(cls):
         DatabaseUnitTestConfiguration.setUpClass()
 
-        from sos_trades_api.base_server import database_process_setup
+        from sos_trades_api.server.base_server import database_process_setup
         database_process_setup()
 
     def setUp(self):
@@ -58,6 +58,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
         from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -102,30 +103,45 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 DatabaseUnitTestConfiguration.db.session.add(
                     new_user_test_auth)
                 DatabaseUnitTestConfiguration.db.session.commit()
+
             # Create test studycase
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     self.test_study_name,
+                                                     self.test_repository_name,
+                                                     self.test_process_name,
+                                                     self.test_user_group_id)
+
+            self.test_study_id = new_study_case.id
+
             created_study = create_study_case(self.test_user_id,
-                                              self.test_study_name,
-                                              self.test_repository_name,
-                                              self.test_process_name,
-                                              self.test_user_group_id,
+                                              self.test_study_id,
                                               None)
-            self.test_study_id = created_study.study_case.id
+
             # Create test csv studycase
+            new_study_case_csv = create_empty_study_case(self.test_user_id,
+                                                         self.test_study_csv_name,
+                                                         self.test_repository_name,
+                                                         self.test_csv_process_name,
+                                                         self.test_user_group_id)
+
+            self.test_study_csv_id = new_study_case_csv.id
+
             created_csv_study = create_study_case(self.test_user_id,
-                                                  self.test_study_csv_name,
-                                                  self.test_repository_name,
-                                                  self.test_csv_process_name,
-                                                  self.test_user_group_id,
+                                                  self.test_study_csv_id,
                                                   None)
-            self.test_study_csv_id = created_csv_study.study_case.id
+
             # Create  test clear_error studycase
+            new_study_case_clear_error = create_empty_study_case(self.test_user_id,
+                                                                 self.test_study_clear_error_name,
+                                                                 self.test_repository_name,
+                                                                 self.test_clear_error_process_name,
+                                                                 self.test_user_group_id)
+
+            self.test_study_clear_error_id = new_study_case_clear_error.id
+
             created_clear_error_study = create_study_case(self.test_user_id,
-                                                          self.test_study_clear_error_name,
-                                                          self.test_repository_name,
-                                                          self.test_clear_error_process_name,
-                                                          self.test_user_group_id,
+                                                          self.test_study_clear_error_id,
                                                           None)
-            self.test_study_clear_error_id = created_clear_error_study.study_case.id
 
     def tearDown(self):
         super().tearDown()
@@ -180,7 +196,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_load_study_case(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -219,7 +235,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_study_case_log(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights,StudyCaseLog
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -235,14 +251,22 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_copy_study_case(self):
         from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import copy_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
             study_copy_name = "test_study_copy"
-            copy_study_case(study_test.id, study_copy_name,
-                            self.test_user_group_id, self.test_user_id)
+
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     study_copy_name,
+                                                     study_test.repository,
+                                                     study_test.process,
+                                                     self.test_user_group_id)
+
+            copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
+
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
             self.assertEqual(study_case_copied.process, self.test_process_name,
@@ -253,7 +277,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -316,7 +340,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters_csv_data(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from werkzeug.datastructures import FileStorage
         from os.path import join, dirname
         import numpy as np
@@ -441,7 +465,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -486,7 +510,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # After update retrieve notification list, one update has been
             # made, return len should be 1
-            notifications = get_study_case_notifications(study_test.id, True)
+            notifications = get_study_case_notifications(study_test.id)
             change = notifications[0].changes[0]
             self.assertIsNotNone(
                 change, 'Error no change created at study update in database')
@@ -560,7 +584,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def _test_clear_error_in_study_case_controller(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from os.path import join, dirname
         from sos_trades_api.tests import data
         from werkzeug.datastructures import FileStorage
@@ -608,7 +632,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
 
-            self.assertTrue(study_manager.has_error)
+            self.assertTrue(study_manager.load_status == LoadStatus.IN_ERROR)
 
             error_message = 'The current value of variable test_clear_error.SellarOptimScenario.z!15.0 is not between the lower bound 0.0 and the upper bound 10.0'
             self.assertIn(error_message, study_manager.error_message)
@@ -728,14 +752,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
 
             # check if clear_error is performed in study_case_controller
-            self.assertFalse(study_manager.has_error)
+            self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
 
     def test_study_case_read_only_mode(self):
         from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
             delete_study_cases, copy_study_case, get_file_stream
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -744,10 +769,16 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
             study_copy_name = "test_study_copy_read_only"
-            study_case_copy = copy_study_case(study_test.id, study_copy_name,
-                            self.test_user_group_id, self.test_user_id)
+
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     study_copy_name,
+                                                     study_test.repository,
+                                                     study_test.process,
+                                                     self.test_user_group_id)
+
+            study_case_copy = copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
             study_case_copy_id = study_case_copy.id
-            # wait end of studu case creation
+            # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
             stop = False

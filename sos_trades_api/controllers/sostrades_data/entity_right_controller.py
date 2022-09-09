@@ -19,7 +19,7 @@ from sos_trades_api.models.database_models import \
     ProcessAccessUser, ProcessAccessGroup, AccessRights, GroupAccessUser, GroupAccessGroup, User, StudyCaseAccessUser, \
     StudyCaseAccessGroup
 
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.models.entity_rights import \
     ProcessEntityRights, ResourceType, EntityRightsError, apply_entity_rights_changes, \
     GroupEntityRights, StudyCaseEntityRights

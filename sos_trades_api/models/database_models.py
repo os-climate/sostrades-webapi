@@ -22,7 +22,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateT
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from datetime import datetime
 import pytz
 import uuid
@@ -229,6 +229,37 @@ class StudyCase(db.Model):
             'description': self.description,
             'creation_date': self.creation_date,
             'modification_date': self.modification_date
+        }
+
+
+class StudyCaseAllocation(db.Model):
+    """StudyCaseAllocation class"""
+
+    IN_PROGRESS = 'IN PROGRESS'
+    DONE = 'DONE'
+    ERROR = 'ERROR'
+
+    id = Column(Integer, primary_key=True)
+    study_case_id = Column(Integer,
+                           ForeignKey(f'{StudyCase.__tablename__}.id',
+                                      ondelete="CASCADE",
+                                      name='fk_study_case_allocation_study_case_id'),
+                           nullable=False, unique=True, index=True)
+    status = Column(String(64), unique=False, server_default='')
+    kubernetes_pod_name = Column(String(128), index=False, unique=True, server_default=None)
+    message = Column(Text, index=False, unique=False, nullable=True)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'study_case_id': self.study_case_id,
+            'status': self.status,
+            'kubernetes_pod_name': self.kubernetes_pod_name,
+            'message': self.message,
+            'creation_date': self.creation_date
         }
 
 

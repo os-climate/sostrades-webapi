@@ -22,7 +22,7 @@ SMTP service
 import smtplib
 from smtplib import SMTPException
 from email.message import EmailMessage
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 
 
 def send_new_user_mail(user):

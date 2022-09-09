@@ -204,7 +204,7 @@ def launch_generate_reference(reference_identifier):
             imported_usecase.run(dump_study=True)
 
             ref_updated = ReferenceStudy.query.filter(
-                ReferenceStudy.id == reference_study.id
+                ReferenceStudy.id == reference_identifier
             ).first()
             ref_updated.execution_status = ReferenceStudy.FINISHED
             ref_updated.creation_date = (
@@ -215,7 +215,7 @@ def launch_generate_reference(reference_identifier):
 
             trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:
-            ReferenceStudy.query.filter(ReferenceStudy.id == reference_study.id).update(
+            ReferenceStudy.query.filter(ReferenceStudy.id == reference_identifier).update(
                 {
                     'execution_status': ReferenceStudy.FAILED,
                     'generation_logs': e,
