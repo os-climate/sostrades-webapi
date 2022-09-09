@@ -931,6 +931,29 @@ class OAuthState(db.Model):
         }
 
 
+class News(db.Model):
+    """
+        Class that register news about application
+    """
+    id = Column(Integer, primary_key=True)
+    message = Column(String(300), index=False, unique=False)
+    user_id = Column(Integer, ForeignKey(f'{User.__tablename__}.id', name='fk_news_user_id'), nullable=True)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    last_modification_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'id': self.id,
+            'message': self.message,
+            'user_id': self.user_id,
+            'creation_date': self.creation_date,
+            'last_modification_date': self.last_modification_date
+        }
+
+
 class Device(db.Model):
     """
     Class that allow to manage API access (non user access)
