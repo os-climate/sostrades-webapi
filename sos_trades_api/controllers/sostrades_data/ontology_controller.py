@@ -81,7 +81,7 @@ def set_ontology_grace_period():
 
 
 @ontology_enable({})
-def load_ontology(ontology_request):
+def load_ontology(ontology_request:dict)->dict:
     """Given a dictionary of entities, return ontology metadata
 
     :params: request

@@ -158,7 +158,30 @@ class SoSExecutionWorkflow:
                         parentId=disc.disc_id,
                         GEMS_graph=GEMS_graph,
                     )
+        elif hasattr(disc, 'sos_disciplines'):
+            if len(disc.sos_disciplines)==1:
+                # we are probably in the case of an SoSEval equivalent.
+                # we need to retrieve sub coupling structure
+                sub_disc = disc.sos_disciplines[0]
+                disc_node_info['type'] = 'CouplingNode'
+                sub_GEMS_graph = sub_disc.coupling_structure.graph
 
+                # add missing links between graphs
+                self.add_links_from_sub_nodes_to_current_graph(
+                    GEMS_graph=GEMS_graph,
+                    coupling_disc_id=disc.disc_id,
+                    sub_GEMS_graph=sub_GEMS_graph,
+                )
+
+                # construct workflow for sub graph
+                root_disc_id_list = self.construct_execution_workflow_graph(
+                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id
+                )
+
+                children = root_disc_id_list
+            elif len(disc.sos_disciplines)>1:
+                raise Exception('What do we do?')
+        
         disc_node_info['children'] = children
         self.nodes_dict[disc.disc_id] = disc_node_info
 
