@@ -20,6 +20,7 @@ Visualisation Functions
 from sos_trades_api.server.base_server import study_case_cache
 from sos_trades_api.tools.visualisation.execution_workflow_graph import SoSExecutionWorkflow
 from sos_trades_api.controllers.sostrades_data.ontology_controller import generate_n2_matrix
+from sos_trades_api.tools.visualisation.interface_diagram import InterfaceDiagramGenerator
 
 
 class VisualisationError(Exception):
@@ -65,3 +66,16 @@ def get_n2_diagram_graph_data(study_id):
     study_case_manager = study_case_cache.get_study_case(study_id, False, False)
 
     return generate_n2_matrix(study_case_manager)
+
+def get_interface_diagram_data(study_id):
+    """
+    Retrieve study case, interface diagram data
+    """
+    study = study_case_cache.get_study_case(
+        study_id, False, False)
+
+    # interface diagram generation
+    interface_diagram= InterfaceDiagramGenerator(study)
+    result =interface_diagram.generate_interface_diagram_data()
+
+    return result
