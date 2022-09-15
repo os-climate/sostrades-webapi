@@ -407,7 +407,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             dataframe_file = open(dataframe_path, 'rb')
             dataframe_fs = FileStorage(dataframe_file)
             # Dict as Dict of dataframe ---------------------------------------
-            # type: dict
+            # type dict
             # subtype_descriptor: {'dict': 'dataframe'}
             dict_as_dict_dataframe_path = join(dirname(data.__file__),
                                   'dict_as_dict_dataframe.csv')
