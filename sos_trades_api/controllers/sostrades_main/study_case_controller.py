@@ -605,6 +605,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         value = value.iloc[:, 0].values
 
                     elif 'dict' in parameter_type:
+                        # Changes 12/09/20022
                         # Check if it is a "simple" dict or if it has subtype
                         parameter_subtype = parameter_dm_data_dict.get('subtype_descriptor',{'dict':None})
                         # Case when it is a dict of dataframe (same treatment as previous df_dict type)
@@ -614,7 +615,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                             columns.remove('variable')
                             df_dict = {}
                             for key in keys:
-                                df_dict[key] = value[columns][value['variable'] == key]
+                                df_dict[key] = value[columns][value['variable'] == key].reset_index(drop=True)
                             value = df_dict
                         else:
                             # Other subtype descriptors are not yet handled specifically so they are treated as simple dict
