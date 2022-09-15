@@ -371,6 +371,28 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                 'c': [1, None, 3], 'd': 'test'}
             dataframe_mix_types = pd.DataFrame(
                 {'a': [1, None, 3], 'b': 40.0, 'c': ['abc', '', None]})
+            dict_as_dict_dataframe_types = \
+                {
+                    'dict_key_1': pd.DataFrame(
+                        {
+                            'col1': ['col_1_value_1', 'col_1_value_2', 'col_1_value_3', 'col_1_value_4',
+                                     'col_1_value_5', 'col_1_value_6', 'col_1_value_7', 'col_1_value_8',
+                                     'col_1_value_9'],
+                            'col2': [3001.0, 3002.0, 3003.0, 3004.0, 3005.0, 3006.0, 3008.0, 3007.0, 3009.0]
+                        }
+                    ),
+                    'dict_key_3': pd.DataFrame(
+                        {
+                            'col1': ['col_1_value_10', 'col_1_value_11', 'col_1_value_12', 'col_1_value_13',
+                                     'col_1_value_14', 'col_1_value_15', 'col_1_value_16', 'col_1_value_17',
+                                     'col_1_value_18', 'col_1_value_19', 'col_1_value_20', 'col_1_value_21',
+                                     'col_1_value_22', 'col_1_value_23', 'col_1_value_24', 'col_1_value_25',
+                                     'col_1_value_26', 'col_1_value_27', 'col_1_value_28'],
+                            'col2': [3008.0, 3001.0, 3002.0, 3000.0, 3003.0, 3006.0, 3009.0, 3008.0, 3007.0, 3005.0,
+                                     3004.0, 3002.0, 3001.0, 3005.0, 3003.0, 3006.0, 3004.0, 3008.0, 3009.0]
+                        }
+                    )
+                }
             # Array ---------------------------------------
             array_path = join(dirname(data.__file__), 'array_mix_types.csv')
             array_file = open(array_path, 'rb')
@@ -384,6 +406,14 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                   'dataframe_mix_types.csv')
             dataframe_file = open(dataframe_path, 'rb')
             dataframe_fs = FileStorage(dataframe_file)
+            # Dict as Dict of dataframe ---------------------------------------
+            # type dict
+            # subtype_descriptor: {'dict': 'dataframe'}
+            dict_as_dict_dataframe_path = join(dirname(data.__file__),
+                                  'dict_as_dict_dataframe.csv')
+            dict_as_dict_dataframe_file = open(dict_as_dict_dataframe_path, 'rb')
+            dict_as_dict_dataframe_fs = FileStorage(dict_as_dict_dataframe_file)
+
 
             file_info = {
                 array_path: {'variable_id': f'{self.test_study_csv_name}.array_mix_types',
@@ -391,9 +421,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 dict_path: {'variable_id': f'{self.test_study_csv_name}.dict_mix_types',
                             'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
                 dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dataframe_mix_types',
+                                 'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
+                dict_as_dict_dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dict_as_dict_dataframe',
                                  'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'}
+
             }
-            files_list = [array_fs, dict_fs, dataframe_fs]
+            files_list = [array_fs, dict_fs, dataframe_fs, dict_as_dict_dataframe_fs]
 
             # updating study case
             update_study_parameters(
@@ -419,17 +452,36 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 study_dm[f'{self.test_study_csv_name}.array_mix_types']['value'])
             dm_dict = study_dm[f'{self.test_study_csv_name}.dict_mix_types']['value']
             dm_dataframe = study_dm[f'{self.test_study_csv_name}.dataframe_mix_types']['value']
+            dm_dict_as_dict_dataframe = study_dm[f'{self.test_study_csv_name}.dict_as_dict_dataframe']['value']
 
             self.assertTrue(np.array_equiv(array_mixed_types, dm_array),
                             f'Input array {array_mixed_types} != from dm array {dm_array}')
             self.assertTrue(dm_dict == dict_mixed_types,
-                            f'Input dict {array_mixed_types} != from dm dict {dm_array}')
+                            f'Input dict {dict_mixed_types} != from dm dict {dm_dict}')
             self.assertTrue(dataframe_mix_types.equals(dm_dataframe),
-                            f'Input dataframe {array_mixed_types} != from dm dataframe {dm_array}')
+                            f'Input dataframe {dataframe_mix_types} != from dm dataframe {dm_dataframe}')
+
+            # ----------------------------------
+            # Check equality for dm_dict_as_dict_dataframe
+            type_key_list = np.array(dict_as_dict_dataframe_types.keys())
+            dm_key_list = np.array(dm_dict_as_dict_dataframe.keys())
+            self.assertTrue((type_key_list == dm_key_list).all(),
+                            f'key of dict_as_dict_dataframe {type_key_list} != from keys in dm {dm_key_list} ')
+            # Check dataframes equality for dict_key_1
+            type_dataframe_key_dict_key_1 = dict_as_dict_dataframe_types['dict_key_1']
+            dm_dataframe_key_dict_key_1 = dm_dict_as_dict_dataframe['dict_key_1']
+            self.assertTrue(type_dataframe_key_dict_key_1.equals(dm_dataframe_key_dict_key_1),
+                            f'Dataframe of dict_as_dict_dataframe dict_key_1 {type_dataframe_key_dict_key_1} != from dm dataframe dict_key_1 {dm_dataframe_key_dict_key_1}')
+            # Check dataframes equality for dict_key_3
+            type_dataframe_key_dict_key_3 = dict_as_dict_dataframe_types['dict_key_3']
+            dm_dataframe_key_dict_key_3 = dm_dict_as_dict_dataframe['dict_key_3']
+            self.assertTrue(type_dataframe_key_dict_key_3.equals(dm_dataframe_key_dict_key_3),
+                            f'Dataframe of dict_as_dict_dataframe dict_key_3 {type_dataframe_key_dict_key_3} != from dm dataframe dict_key_3 {dm_dataframe_key_dict_key_3}')
 
             array_file.close()
             dict_file.close()
             dataframe_file.close()
+            dict_as_dict_dataframe_file.close()
 
     def test_delete_study_cases(self):
         from sos_trades_api.models.database_models import StudyCase

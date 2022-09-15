@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import os
+import time
 
 from sqlalchemy import desc
 
@@ -360,9 +361,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     :params: reload, indicates if the study must be reloaded, false by default
     :type: boolean
     """
-
+    start_time = time.time()
     study_manager = study_case_cache.get_study_case(study_id, False)
-
+    cache_duration = time.time() - start_time
     if reload:
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
@@ -379,6 +380,10 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         raise Exception(study_manager.error_message)
 
     loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user_id)
+    loading_duration = time.time() - start_time
+
+    app.logger.info(f'load_study_case {study_id}, get cache: {cache_duration}')
+    app.logger.info(f'load_study_case {study_id}, loading:{loading_duration} ')
 
     if study_manager.load_status == LoadStatus.LOADED:
         process_metadata = load_processes_metadata(
@@ -398,11 +403,16 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
             loaded_study_case.study_case.is_commenter = True
         else:
             loaded_study_case.study_case.is_restricted_viewer = True
-
+        end_loading_duration = time.time() - start_time
         #read dashboard and set it to the loaded studycase
         # if the root process is at done
         if study_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
             loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
+
+        end_dashboard_duration = time.time() - start_time
+        app.logger.info(f'load_study_case {study_id}, end loading:{end_loading_duration} ')
+        app.logger.info(f'load_study_case {study_id}, dashboard:{end_dashboard_duration} ')
+
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
@@ -605,6 +615,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         value = value.iloc[:, 0].values
 
                     elif 'dict' in parameter_type:
+                        # Changes 12/09/20022
                         # Check if it is a "simple" dict or if it has subtype
                         parameter_subtype = parameter_dm_data_dict.get('subtype_descriptor',{'dict':None})
                         # Case when it is a dict of dataframe (same treatment as previous df_dict type)
@@ -614,7 +625,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                             columns.remove('variable')
                             df_dict = {}
                             for key in keys:
-                                df_dict[key] = value[columns][value['variable'] == key]
+                                df_dict[key] = value[columns][value['variable'] == key].reset_index(drop=True)
                             value = df_dict
                         else:
                             # Other subtype descriptors are not yet handled specifically so they are treated as simple dict
