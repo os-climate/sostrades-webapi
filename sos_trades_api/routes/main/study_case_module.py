@@ -26,7 +26,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     set_study_data_file, get_study_in_read_only_mode)
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-import time
+
 
 @app.route(f'/api/main/study-case', methods=['POST', 'DELETE'])
 @auth_required
@@ -106,7 +106,6 @@ def update_study_cases(study_id):
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
 @auth_required
 def main_load_study_case_by_id(study_id):
-    start_request_time = time.time()
     if study_id is not None:
 
         # Checking if user can access study data
@@ -122,17 +121,11 @@ def main_load_study_case_by_id(study_id):
             study_id)
         
         loadedStudy = load_study_case(study_id, study_access_right, user.id)
-        duration = time.time() - start_request_time
-        app.logger.info(
-            f'{request.method}, {request.full_path}, loaded in {duration} sec.'
-        )
+
         # Proceeding after rights verification
         resp = make_response(
             jsonify(loadedStudy), 200)
-        duration = time.time() - start_request_time
-        app.logger.info(
-            f'{request.method}, {request.full_path}, finished in {duration} sec.'
-        )
+
         return resp
 
     abort(403)
@@ -358,7 +351,6 @@ def get_study_data_in_read_only_mode(study_id):
     """
     Retreive the study in read only mode, return none if no read only mode found
     """
-    start_request_time = time.time()
     if study_id is not None:
         user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
@@ -369,11 +361,6 @@ def get_study_data_in_read_only_mode(study_id):
 
         # Proceeding after rights verification
         study_json = get_study_in_read_only_mode(study_id)
-
-        duration = time.time() - start_request_time
-        app.logger.info(
-            f'{request.method}, {request.full_path}, finished in {duration} sec.'
-        )
 
         return make_response(study_json, 200)
     raise BadRequest('Missing mandatory parameter: study identifier in url')
