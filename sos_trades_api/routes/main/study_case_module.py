@@ -106,8 +106,9 @@ def update_study_cases(study_id):
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
 @auth_required
 def main_load_study_case_by_id(study_id):
-    start_request_time = time.time()
+
     if study_id is not None:
+        start_request_time = time.time()
 
         # Checking if user can access study data
         user = session['user']
@@ -115,24 +116,32 @@ def main_load_study_case_by_id(study_id):
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id)
+        study_case_access_duration = time.time()
+        app.logger.info(f'User {user.id:<5} => study_case_access_duration {study_case_access_duration - start_request_time:<5} sec')
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
+        check_user_right_for_study_duration = time.time()
+        app.logger.info(f'User {user.id:<5} => check_user_right_for_study_duration {check_user_right_for_study_duration - study_case_access_duration:<5} sec')
+
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
-        duration = time.time() - start_request_time
+        study_access_right_duration = time.time()
         app.logger.info(
-            f'{request.method}, {request.full_path}, check rights in {duration} sec.'
-        )
+            f'User {user.id:<5} => check_user_right_for_study_duration {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
+
         loadedStudy = load_study_case(study_id, study_access_right, user.id)
+
+        loadedStudy_duration = time.time()
+        app.logger.info(
+            f'User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec')
 
         # Proceeding after rights verification
         resp = make_response(
             jsonify(loadedStudy), 200)
-        duration = time.time() - start_request_time
+        make_response_duration = time.time()
         app.logger.info(
-            f'{request.method}, {request.full_path}, finished in {duration} sec.'
-        )
+            f'User {user.id:<5} => make_response_duration {make_response_duration - loadedStudy_duration:<5} sec')
         return resp
 
     abort(403)
