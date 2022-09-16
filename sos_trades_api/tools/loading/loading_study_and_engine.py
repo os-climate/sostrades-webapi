@@ -119,13 +119,13 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
 
         study_case_manager.load_status = LoadStatus.LOADED
 
-        app.logger.info(
-            f'End background loading {study_case_manager.study.name}, total time {treeview_generation_time - start_time} seconds')
-        app.logger.info(f'Elapsed time synthesis:\n')
-        app.logger.info(f'Data load {load_data_time - start_time} seconds\n')
-        app.logger.info(f'Discipline data load {load_discipline_data_time - load_data_time} seconds\n')
-        app.logger.info(f'Cache load {load_cache_time - load_discipline_data_time} seconds\n')
-        app.logger.info(f'treeview gen. {treeview_generation_time - load_cache_time} seconds\n')
+        app.logger.info(f'End background loading {study_case_manager.study.name}')
+        app.logger.info(f'Elapsed time synthesis:')
+        app.logger.info(f'{"Data load":<25} {load_data_time - start_time:<5} seconds')
+        app.logger.info(f'{"Discipline data load":<25} {load_discipline_data_time - load_data_time:<5} seconds')
+        app.logger.info(f'{"Cache load":<25} {load_cache_time - load_discipline_data_time:<5} seconds')
+        app.logger.info(f'{"Treeview gen.":<25} {treeview_generation_time - load_cache_time:<5} seconds')
+        app.logger.info(f'{"Total time":<25} {treeview_generation_time - start_time:<5} seconds')
 
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
