@@ -106,7 +106,6 @@ def update_study_cases(study_id):
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
 @auth_required
 def main_load_study_case_by_id(study_id):
-
     if study_id is not None:
 
         # Checking if user can access study data
@@ -122,7 +121,7 @@ def main_load_study_case_by_id(study_id):
             study_id)
         
         loadedStudy = load_study_case(study_id, study_access_right, user.id)
-                
+
         # Proceeding after rights verification
         resp = make_response(
             jsonify(loadedStudy), 200)
@@ -362,5 +361,6 @@ def get_study_data_in_read_only_mode(study_id):
 
         # Proceeding after rights verification
         study_json = get_study_in_read_only_mode(study_id)
-        return study_json
+
+        return make_response(study_json, 200)
     raise BadRequest('Missing mandatory parameter: study identifier in url')

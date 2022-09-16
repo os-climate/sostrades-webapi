@@ -70,3 +70,20 @@ def has_access_to(user_profile_id, applicative_module) -> bool:
             result = applicative_module == APP_MODULE_STUDY
 
     return result
+
+
+def check_user_is_manager(user_profile_id):
+    """ Method that check if user is manager regarding his profile id
+
+       :param user_profile_id: profile identifier to check
+       :type user_profile_id: int
+
+       :return boolean
+       """
+
+    result = False
+    profile = UserProfile.query.filter(UserProfile.id == user_profile_id).first()
+    if profile is not None:
+        if profile.name == UserProfile.STUDY_MANAGER:
+            result = True
+    return result

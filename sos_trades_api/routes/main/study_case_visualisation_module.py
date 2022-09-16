@@ -25,6 +25,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 from sos_trades_api.controllers.sostrades_main.visualisation_controller import (
     get_execution_sequence_graph_data,
     get_n2_diagram_graph_data,
+    get_interface_diagram_data
 )
 
 
@@ -47,6 +48,29 @@ def execution_sequence_graph_data(study_id):
 
         # Proceed after rights verification
         resp = make_response(jsonify(get_execution_sequence_graph_data(study_id)), 200)
+        return resp
+
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+@app.route(f'/api/main/study-case/<int:study_id>/interface-diagram', methods=['GET'])
+@auth_required
+def interface_diagram_data(study_id):
+    if study_id is not None:
+
+        user = session['user']
+
+        # Verify user has study case authorisation to retrieve execution status of study (RESTRICTED_VIEWER)
+        study_case_access = StudyCaseAccess(user.id)
+        if not study_case_access.check_user_right_for_study(
+            AccessRights.RESTRICTED_VIEWER, study_id
+        ):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve '
+                'interface diagram of this study case'
+            )
+
+        # Proceed after rights verification
+        resp = make_response(jsonify(get_interface_diagram_data(study_id)), 200)
         return resp
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')
