@@ -20,7 +20,7 @@ Execution engine kubernete
 from kubernetes import client, config
 from sos_trades_api.config import Config
 from sos_trades_api.server.base_server import app
-from os.path import join
+from jinja2 import Template
 from pathlib import Path
 import uuid
 import yaml
@@ -188,6 +188,143 @@ def kubernetes_service_generate(usecase, generation_id, user_id):
         pass  # launch exception
 
 
+def kubernetes_service_allocate(study_case_identifier):
+    """
+    Launch kubernetes service to build the study pod if the server_mode is Kubernetes
+
+    :param study_case_identifier: study case identifier to allocate
+    :type study_case_identifier: int
+    :return: The state of the kubernetes services
+    """
+    pod_name = f'sostrades-study-server-{study_case_identifier}'
+
+    # Create k8 api client object
+    try:
+        config.load_kube_config()
+    except IOError:
+        try:
+            config.load_incluster_config()  # How to set up the client from within a k8s pod
+        except config.config_exception.ConfigException as error:
+            message = f"Could not configure kubernetes python client : {error}"
+            app.logger.error(message)
+            raise ExecutionEngineKuberneteError(message)
+    core_api_instance = client.CoreV1Api(client.ApiClient())
+    apps_api_instance = client.AppsV1Api(client.ApiClient())
+
+    kubernetes_study_server_service_create(pod_name, core_api_instance)
+    pod_name = kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
+
+    return pod_name
+
+
+def kubernetes_study_server_service_create(pod_name, core_api_instance):
+    service_k8_filepath = Config().service_study_server_filepath
+
+    k8_service = None
+    with open(service_k8_filepath) as f:
+        k8_service_tplt = Template(f.read())
+        k8_service_tplt = k8_service_tplt.render( pod_name=pod_name)
+        k8_service = yaml.load(k8_service_tplt)
+    namespace = k8_service['metadata']['namespace']
+
+    # check service existance
+    service_found = False
+    try:
+        resp = core_api_instance.read_namespaced_service(name=pod_name, namespace=namespace)
+        service_found = True
+        print(f'Check: {resp}')
+    except client.rest.ApiException as api_exception:
+        if api_exception.status == 404:
+            print(f'Not found')
+        else:
+            raise api_exception
+
+    # create service
+    if not service_found:
+        resp = core_api_instance.create_namespaced_service(body=k8_service, namespace=namespace)
+        print(resp)
+        # wait while service is created
+        count = 0
+        while count < 10:
+            try:
+                service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
+                print(service)
+                break
+            except client.rest.ApiException as api_exception:
+                if api_exception.status == 404:
+                    print(f'Not found')
+                else:
+                    raise api_exception
+            #if service.status.phase != 'Pending':
+            #        break
+            time.sleep(10)
+            count += 1
+    else:
+        print('service already exist')
+
+
+
+def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance):
+    deployment_k8_filepath = Config().deployment_study_server_filepath
+
+    k8_deploy = None
+    with open(deployment_k8_filepath) as f:
+        k8_deploy_tplt = Template(f.read())
+        k8_deploy_tplt = k8_deploy_tplt.render(pod_name=pod_name)
+        k8_deploy = yaml.load(k8_deploy_tplt)
+    namespace = k8_deploy['metadata']['namespace']
+
+    # check deployment existance
+    deployement_found = False
+    try:
+        dplmt = apps_api_instance.read_namespaced_deployment(name=pod_name, namespace=namespace)
+        deployement_found = True
+    except client.rest.ApiException as api_exception:
+        if api_exception.status == 404:
+            print(f'Not found')
+        else:
+            raise api_exception
+
+    # create deployment
+    if not deployement_found:
+        resp = apps_api_instance.create_namespaced_deployment(body=k8_deploy, namespace=namespace)
+        print(resp)
+        # wait while deployment is created
+        count = 0
+        while count < 10:
+            try:
+                resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
+                print(resp.status)
+                break
+            except client.rest.ApiException as api_exception:
+                if api_exception.status == 404:
+                    print(f'Not found')
+                else:
+                    raise api_exception
+            time.sleep(10)
+            count += 1
+    else:
+        print('deployement already exist')
+
+    #check pod created
+    created_pod_name = ""
+    count = 0
+    while count < 10:
+        pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
+
+        for pod in pod_list.items:
+            if pod.metadata.name.startswith(pod_name):
+                created_pod_name = pod.metadata.name
+                break
+        if created_pod_name != "":
+            break
+
+        time.sleep(10)
+        count += 1
+    return created_pod_name
+
+
+
 def kubernetes_service_delete(pod_name):
 
     # Retrieve the kubernetes configuration file regarding execution
@@ -236,8 +373,7 @@ def kubernetes_service_delete(pod_name):
         app.logger.error(message)
         raise ExecutionEngineKuberneteError(message)
 
-
-def kubernetes_service_pods_status(pod_identifiers):
+def kubernetes_eeb_service_pods_status(pod_identifiers):
 
     result = {}
 
@@ -257,33 +393,72 @@ def kubernetes_service_pods_status(pod_identifiers):
 
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
-
-            # Create k8 api client object
-            try:
-                config.load_kube_config()
-            except IOError:
-                try:
-                    config.load_incluster_config()  # How to set up the client from within a k8s pod
-                except config.config_exception.ConfigException as error:
-                    message = f"Could not configure kubernetes python client : {error}"
-                    app.logger.error(message)
-                    raise ExecutionEngineKuberneteError(message)
-
-            api_instance = client.CoreV1Api(client.ApiClient())
-
-            pod_list = api_instance.list_namespaced_pod(
-                namespace=pod_namespace)
-
-            for pod in pod_list.items:
-
-                if pod.metadata.name in pod_identifiers:
-                    result.update({pod.metadata.name: pod.status.phase})
+            result = kubernetes_service_pods_status(pod_identifiers, pod_namespace)
 
         else:
             pass  # launch exception
 
     else:
         pass  # launch exception
+
+    return result
+
+def kubernetes_study_service_pods_status(pod_identifiers):
+
+    result = None
+
+    # Retrieve the kubernetes configuration file regarding execution
+    # engine block
+    study_k8_filepath = Config().service_study_server_filepath
+
+    if Path(study_k8_filepath).exists() and pod_identifiers is not None:
+
+        app.logger.debug(f'pod configuration file found')
+
+        k8_conf = None
+        with open(study_k8_filepath) as f:
+            yaml_content = Template(f.read())
+            yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
+            k8_conf = yaml.load(yaml_content)
+        if k8_conf is not None:
+
+            # Retrieve pod configuration
+            pod_namespace = k8_conf['metadata']['namespace']
+            result = kubernetes_service_pods_status(pod_identifiers, pod_namespace)
+
+        else:
+            pass  # launch exception
+
+    else:
+        pass  # launch exception
+
+    return result
+
+
+def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
+
+    result = {}
+
+    # Create k8 api client object
+    try:
+        config.load_kube_config()
+    except IOError:
+        try:
+            config.load_incluster_config()  # How to set up the client from within a k8s pod
+        except config.config_exception.ConfigException as error:
+            message = f"Could not configure kubernetes python client : {error}"
+            app.logger.error(message)
+            raise ExecutionEngineKuberneteError(message)
+
+    api_instance = client.CoreV1Api(client.ApiClient())
+
+    pod_list = api_instance.list_namespaced_pod(
+        namespace=pod_namespace)
+
+    for pod in pod_list.items:
+
+        if pod.metadata.name in pod_identifiers:
+            result.update({pod.metadata.name: pod.status.phase})
 
     return result
 

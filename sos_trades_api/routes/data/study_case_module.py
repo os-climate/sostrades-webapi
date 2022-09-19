@@ -24,7 +24,8 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
-    add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation)
+    add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
+    get_study_case_allocation)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -167,7 +168,7 @@ def study_case_allocation_status(study_id):
 
         # Proceeding after rights verification
         resp = make_response(
-            jsonify(load_study_case_allocation(study_id)), 200)
+            jsonify(get_study_case_allocation(study_id)), 200)
 
         return resp
 
