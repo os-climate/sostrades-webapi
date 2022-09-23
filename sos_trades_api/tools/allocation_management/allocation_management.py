@@ -93,6 +93,9 @@ def get_allocation_status(study_case_identifier):
         allocation = study_case_allocations[0]
         if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
             _retrieve_allocation_pod_status(allocation)
+        else:
+            allocation.status = StudyCaseAllocation.DONE
+            allocation.message = None
 
 
     return allocation
