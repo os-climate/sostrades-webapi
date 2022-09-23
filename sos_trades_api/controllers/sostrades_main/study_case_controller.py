@@ -291,7 +291,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
             try:
 
-                if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+                if study_manager.load_status == LoadStatus.NONE:
                     study_manager.load_status = LoadStatus.IN_PROGESS
                     threading.Thread(
                         target=study_case_manager_loading,
@@ -371,7 +371,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
-    if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+    if study_manager.load_status == LoadStatus.NONE:
         study_manager.load_status = LoadStatus.IN_PROGESS
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
@@ -385,6 +385,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     app.logger.info(f'load_study_case {study_id}, get cache: {cache_duration}')
     app.logger.info(f'load_study_case {study_id}, loading:{loading_duration} ')
 
+    # 22-09-2022: Update: add Read_only_mode as it is loaded so that after a study creation, if the study is DONE, the study is opened in read only
     if study_manager.load_status == LoadStatus.LOADED:
         process_metadata = load_processes_metadata(
             [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
@@ -470,7 +471,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
             study_manager = study_case_cache.get_study_case(
                 study_case.id, False)
 
-            if study_manager.load_status != LoadStatus.IN_PROGESS and study_manager.load_status != LoadStatus.LOADED:
+            if study_manager.load_status == LoadStatus.NONE:
                 study_manager.load_status = LoadStatus.IN_PROGESS
                 threading.Thread(
                     target=study_case_manager_loading_from_study,
@@ -779,18 +780,20 @@ def get_study_data_stream(study_id):
             f'The following study file raise this error while trying to read it : {error}')
     return zip_path
 
-def get_study_in_read_only_mode(study_id):
+def get_study_in_read_only_mode(study_id, no_data):
     """
        check if a study json file exists,
             if true, read loaded study case in read only mode, and return the json
             if false, return None, it will be checked on client side
         :param: study_id, id of the study to export
         :type: integer
+        :param: no_data, if study is loaded with no data or not
+        :type: boolean
     """
     study_manager = StudyCaseManager(study_id)
     if study_manager.check_study_case_json_file_exists():
         try:
-            loaded_study_json = study_manager.read_loaded_study_case_in_json_file()
+            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(no_data)
             # read dashboard and set it to the loaded study
             # (it takes less time to read it apart than to have the dashboard in the read only file)
             if len(loaded_study_json["post_processings"]) > 0:

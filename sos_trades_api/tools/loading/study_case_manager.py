@@ -75,6 +75,7 @@ class InvalidStudy(StudyCaseError):
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
     LOADED_STUDY_FILE_NAME = "loaded_study_case.json"
+    RESTRICTED_STUDY_FILE_NAME = "loaded_study_case_no_data.json"
     DASHBOARD_FILE_NAME = "dashboard.json"
 
     class UnboundStudyCase:
@@ -357,6 +358,8 @@ class StudyCaseManager(BaseStudyManager):
         save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
         """
         with app.app_context():
+            #check study status is DONE
+
             #-------------------
             # save loaded study in read only mode
             loaded_study_case = LoadedStudyCase(self, False, True, None, True)
@@ -364,11 +367,15 @@ class StudyCaseManager(BaseStudyManager):
             if self.load_status != LoadStatus.LOADED:
                 loaded_study_case.load_treeview_and_post_proc(self,False,True,None, True)
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.__write_loaded_study_case_in_json_file(loaded_study_case)
+            self.__write_loaded_study_case_in_json_file(loaded_study_case, False)
 
-            #-------------------
-            # save dashboard if the process is DONE
+            #save the study with no data for restricted read only access:
+            loaded_study_case.load_treeview_and_post_proc(self,True,True,None, True)
+            self.__write_loaded_study_case_in_json_file(loaded_study_case, True)
+
             if self.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+                #-------------------
+                # save dashboard
                 dashboard = generate_dashboard(self.execution_engine, loaded_study_case.post_processings)
                 dashboard_file_path = Path(self.dump_directory).joinpath(self.DASHBOARD_FILE_NAME)
                 write_object_in_json_file(dashboard, dashboard_file_path)
@@ -525,22 +532,29 @@ class StudyCaseManager(BaseStudyManager):
 
         return reload_done
 
-    def __write_loaded_study_case_in_json_file(self, loaded_study):
+    def __write_loaded_study_case_in_json_file(self, loaded_study, no_data=False):
         """
         Save study case loaded into json file for read only mode
         :param loaded_study: loaded_study_case to save
         :type loaded_study: LoadedStudyCase
         """
-        study_file_path = Path(self.dump_directory).joinpath(self.LOADED_STUDY_FILE_NAME)
+        loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
+        if no_data:
+            loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
+        study_file_path = Path(self.dump_directory).joinpath(loaded_study_case_file_name)
         return write_object_in_json_file(loaded_study, study_file_path)
 
 
-    def read_loaded_study_case_in_json_file(self):
+    def read_loaded_study_case_in_json_file(self, no_data=False):
         """
         Retrieve study case loaded from json file for read only mode
         """
+        loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
+        if no_data:
+            loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
+
         root_folder = Path(self.dump_directory)
-        study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+        study_file_path = root_folder.joinpath(loaded_study_case_file_name)
         loaded_study = read_object_in_json_file(study_file_path)
 
         return loaded_study
@@ -551,6 +565,11 @@ class StudyCaseManager(BaseStudyManager):
         """
         root_folder = Path(self.dump_directory)
         study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+        if os.path.exists(study_file_path):
+            os.remove(study_file_path)
+
+        # delete read only file for restricted viewer
+        study_file_path = root_folder.joinpath(self.RESTRICTED_STUDY_FILE_NAME)
         if os.path.exists(study_file_path):
             os.remove(study_file_path)
 
