@@ -16,6 +16,7 @@ limitations under the License.
 import os
 import time
 
+from flask import jsonify
 from sqlalchemy import desc
 
 from sos_trades_api.tools.file_tools import read_object_in_json_file
@@ -371,10 +372,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
-    if study_manager.load_status == LoadStatus.NONE:
-        study_manager.load_status = LoadStatus.IN_PROGESS
-        threading.Thread(
-            target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
+    launch_load_study_in_background(study_manager,  no_data, read_only)
+
 
     if study_manager.load_status == LoadStatus.IN_ERROR:
         raise Exception(study_manager.error_message)
@@ -418,6 +417,47 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     # Return logical treeview coming from execution engine
     return loaded_study_case
 
+def launch_load_study_in_background(study_manager,  no_data, read_only):
+    """
+    Launch only the background thread
+    """
+    if study_manager.load_status == LoadStatus.NONE:
+        study_manager.load_status = LoadStatus.IN_PROGESS
+        threading.Thread(
+            target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
+
+def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
+     # Proceeding after rights verification
+    # Get readonly file, in case of a restricted viewer get with no_data
+    study_json = get_study_in_read_only_mode(study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
+
+    # check in read only file that the study status is DONE
+    if study_json is not None and study_json != 'null':
+        study_case_value = study_json.get('study_case')
+        if study_case_value is not None :
+            execution_status = study_case_value.get("execution_status")
+            #if the study status is DONE, the study must be opened in readonly mode
+            if execution_status == SoSDiscipline.STATUS_DONE:
+                # launch the loading in background
+                study_manager = study_case_cache.get_study_case(study_id, False)
+                read_only = study_access_right == AccessRights.COMMENTER
+                no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+                launch_load_study_in_background(study_manager,  no_data, read_only)
+                #set study access rights
+                if study_access_right == AccessRights.MANAGER:
+                    study_json['study_case']['is_manager'] = True
+                elif study_access_right == AccessRights.CONTRIBUTOR:
+                    study_json['study_case']['is_contributor'] = True
+                elif study_access_right == AccessRights.COMMENTER:
+                    study_json['study_case']['is_commenter'] = True
+                else:
+                    study_json['study_case']['is_restricted_viewer'] = True
+
+                return study_json
+
+    #if the study is not in read only mode, it is normally loaded
+    loadedStudy = load_study_case(study_id, study_access_right, user_id)
+    return jsonify(loadedStudy)
 
 def copy_study_case(study_id, source_study_case_identifier, user_id):
     """ copy an existing study case with a new name

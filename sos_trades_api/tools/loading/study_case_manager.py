@@ -369,11 +369,11 @@ class StudyCaseManager(BaseStudyManager):
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
             self.__write_loaded_study_case_in_json_file(loaded_study_case, False)
 
-            #save the study with no data for restricted read only access:
-            loaded_study_case.load_treeview_and_post_proc(self,True,True,None, True)
-            self.__write_loaded_study_case_in_json_file(loaded_study_case, True)
-
             if self.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+                #save the study with no data for restricted read only access:
+                loaded_study_case.load_treeview_and_post_proc(self,True,True,None, True)
+                self.__write_loaded_study_case_in_json_file(loaded_study_case, True)
+
                 #-------------------
                 # save dashboard
                 dashboard = generate_dashboard(self.execution_engine, loaded_study_case.post_processings)

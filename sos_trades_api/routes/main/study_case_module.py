@@ -23,7 +23,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
-    set_study_data_file, get_study_in_read_only_mode)
+    set_study_data_file, get_study_in_read_only_mode, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
@@ -378,33 +378,7 @@ def load_study_data_in_read_only_mode_or_not(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        # Proceeding after rights verification
-        # Get readonly file with no_data in case of a restricted viewer
-        study_json = get_study_in_read_only_mode(study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
-
-        # check in read only file that the study status is DONE
-        if study_json is not None and study_json != 'null':
-            study_case_value = study_json.get('study_case')
-            if study_case_value is not None :
-
-                #set study access rights
-                if study_access_right == AccessRights.MANAGER:
-                    study_json['study_case']['is_manager'] = True
-                elif study_access_right == AccessRights.CONTRIBUTOR:
-                    study_json['study_case']['is_contributor'] = True
-                elif study_access_right == AccessRights.COMMENTER:
-                    study_json['study_case']['is_commenter'] = True
-                else:
-                    study_json['study_case']['is_restricted_viewer'] = True
-
-                execution_status = study_case_value.get("execution_status")
-                #if the study status is DONE, the study must be opened in readonly mode
-                if execution_status == SoSDiscipline.STATUS_DONE:
-                    return make_response(study_json, 200)
-
-        #if the study is not in read only mode, it is normally loaded
-        loadedStudy = load_study_case(study_id, study_access_right, user.id)
-
-        resp = make_response(jsonify(loadedStudy), 200)
+        loadedStudyJson = load_study_case_with_read_only_mode(study_id,study_access_right, user.id)
+        resp = make_response(loadedStudyJson, 200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
