@@ -85,7 +85,7 @@ def get_allocation_status(study_case_identifier):
 def _retrieve_allocation_pod_status(study_case_allocation):
     try:
         pod_status = kubernetes_service.kubernetes_study_service_pods_status(study_case_allocation.kubernetes_pod_name)
-        if pod_status.get(study_case_allocation.kubernetes_pod_name) == "Running":
+        if pod_status == "Running":
             study_case_allocation.status = StudyCaseAllocation.DONE
         else:
             study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS

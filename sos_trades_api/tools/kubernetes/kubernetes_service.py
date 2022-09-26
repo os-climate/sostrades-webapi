@@ -212,7 +212,7 @@ def kubernetes_service_allocate(study_case_identifier):
     apps_api_instance = client.AppsV1Api(client.ApiClient())
 
     kubernetes_study_server_service_create(pod_name, core_api_instance)
-    pod_name = kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
+    kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
 
     return pod_name
 
@@ -321,7 +321,6 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
 
         time.sleep(10)
         count += 1
-    return created_pod_name
 
 
 
@@ -437,7 +436,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
 
 def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
 
-    result = {}
+    result = ""
 
     # Create k8 api client object
     try:
@@ -457,8 +456,9 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
 
     for pod in pod_list.items:
 
-        if pod.metadata.name in pod_identifiers:
-            result.update({pod.metadata.name: pod.status.phase})
+        if pod.metadata.name.startswith(pod_identifiers):
+            result = pod.status.phase
+            break
 
     return result
 
