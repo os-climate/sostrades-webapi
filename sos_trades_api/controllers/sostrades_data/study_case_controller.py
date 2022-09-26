@@ -144,6 +144,8 @@ def create_study_case_allocation(study_case_identifier):
 
     if len(study_case_allocations) == 0:
         new_study_case_allocation = create_allocation(study_case_identifier)
+        db.session.add(new_study_case_allocation)
+        db.session.commit()
     else:
         raise InvalidStudy('Allocation already exist for this study case')
 
@@ -162,6 +164,10 @@ def load_study_case_allocation(study_case_identifier):
     # First get allocation status
     study_case_allocation = get_allocation_status(study_case_identifier)
     if study_case_allocation is not None:
+
+        #if the pod is not launch or accessible, reload pod
+        if study_case_allocation.status == StudyCaseAllocation.ERROR:
+            load_study_allocation(study_case_allocation)
         db.session.add(study_case_allocation)
         db.session.commit()
     else:
@@ -178,16 +184,7 @@ def get_study_case_allocation(study_case_identifier):
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
 
-    # First get allocation status
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
-
-    allocation = None
-    if len(study_case_allocations) > 0:
-        allocation = study_case_allocations[0]
-    else:
-        raise
-
-    return allocation
+    return get_allocation_status(study_case_identifier)
 
 def get_user_shared_study_case(user_identifier: int):
     """

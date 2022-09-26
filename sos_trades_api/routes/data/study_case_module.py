@@ -100,9 +100,6 @@ def allocation_for_existing_study_case(study_case_identifier: int):
 
         study_case_allocation = load_study_case_allocation(study_case_identifier)
 
-        if study_case_allocation is None:
-            study_case_allocation = create_study_case_allocation(study_case_identifier)
-
         # Proceeding after rights verification
         return make_response(jsonify(study_case_allocation), 200)
     else:

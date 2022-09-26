@@ -31,8 +31,7 @@ def create_allocation(study_case_identifier):
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
-
-    # First check that allocated resources does not already exist
+    # create allocation in DB
     new_study_case_allocation = StudyCaseAllocation()
     new_study_case_allocation.study_case_id = study_case_identifier
     if Config().server_mode == Config.CONFIG_SERVER_MODE_MONO:
@@ -40,30 +39,17 @@ def create_allocation(study_case_identifier):
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
 
-    db.session.add(new_study_case_allocation)
-    db.session.commit()
-
-    load_study_allocation(new_study_case_allocation.id)
+    # create deployment, services and load pod
+    load_study_allocation(new_study_case_allocation)
 
     return new_study_case_allocation
 
 
-def load_study_allocation(allocation_id):
+def load_study_allocation(study_case_allocation):
     """
     Load service and deployment if they do not exists and wait for pod running in a thread
     """
     if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
-        # launch kubernetes after allocation creation
-        _launch_kubernetes_allocation(allocation_id)
-
-
-def _launch_kubernetes_allocation(allocation_id):
-    #get allocation
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.id == allocation_id).all()
-
-    if len(study_case_allocations) > 0:
-        study_case_allocation = study_case_allocations[0]
-
         #launch creation
         try:
             study_case_allocation.kubernetes_pod_name = kubernetes_service.kubernetes_service_allocate(study_case_allocation.study_case_id)
@@ -71,11 +57,6 @@ def _launch_kubernetes_allocation(allocation_id):
         except Exception as exception:
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = exception
-
-        db.session.add(study_case_allocation)
-        db.session.commit()
-
-
 
 def get_allocation_status(study_case_identifier):
     """
@@ -104,7 +85,7 @@ def get_allocation_status(study_case_identifier):
 def _retrieve_allocation_pod_status(study_case_allocation):
     try:
         pod_status = kubernetes_service.kubernetes_study_service_pods_status(study_case_allocation.kubernetes_pod_name)
-        if pod_status.get(study_case_allocation.kubernetes_pod_name) == "running":
+        if pod_status.get(study_case_allocation.kubernetes_pod_name) == "Running":
             study_case_allocation.status = StudyCaseAllocation.DONE
         else:
             study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
