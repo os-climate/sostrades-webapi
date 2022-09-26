@@ -162,15 +162,10 @@ def load_study_case_allocation(study_case_identifier):
     # First get allocation status
     study_case_allocation = get_allocation_status(study_case_identifier)
     if study_case_allocation is not None:
-        if study_case_allocation.status != StudyCaseAllocation.DONE:
-            # if status not DONE: launch reload of pod
-            study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
-            load_study_allocation(study_case_allocation.id)
-
         db.session.add(study_case_allocation)
         db.session.commit()
     else:
-        raise
+        raise "Study case Allocation doesn't exists"
 
     return study_case_allocation
 

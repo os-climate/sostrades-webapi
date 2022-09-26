@@ -245,7 +245,7 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
         print(resp)
         # wait while service is created
         count = 0
-        while count < 10:
+        while count < 60:
             try:
                 service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
                 print(service)
@@ -291,7 +291,7 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         print(resp)
         # wait while deployment is created
         count = 0
-        while count < 10:
+        while count < 60:
             try:
                 resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
                 print(resp.status)
@@ -309,7 +309,7 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
     #check pod created
     created_pod_name = ""
     count = 0
-    while count < 10:
+    while count < 60:
         pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
 
         for pod in pod_list.items:
