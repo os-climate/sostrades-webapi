@@ -171,7 +171,7 @@ def load_study_case_allocation(study_case_identifier):
         db.session.add(study_case_allocation)
         db.session.commit()
     else:
-        raise "Study case Allocation doesn't exists"
+        study_case_allocation = create_study_case_allocation(study_case_identifier)
 
     return study_case_allocation
 
