@@ -445,7 +445,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                     app.logger.exception('An exception occurs when trying to reach study server')
 
                 if study_response_data != "pong":
-                    result = None
+                    result = "Initializing"
 
         else:
             pass  # launch exception
