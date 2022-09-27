@@ -832,7 +832,7 @@ class ReferenceStudy(db.Model):
                             ondelete="CASCADE",
                             name='fk_reference_study_process_id'))
     name = Column(String(128), index=True, unique=False)
-    reference_path = Column(String(128), index=True, unique=False)
+    reference_path = Column(String(256), index=True, unique=False)
     reference_type = Column(String(128), index=True, unique=False)
     creation_date = Column(DateTime(timezone=True), nullable=True)
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
