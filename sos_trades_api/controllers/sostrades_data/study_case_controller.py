@@ -160,19 +160,27 @@ def load_study_case_allocation(study_case_identifier):
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
-
-    # First get allocation status
-    study_case_allocation = get_allocation_status(study_case_identifier)
-    if study_case_allocation is not None:
-
+    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocation = None
+    if len(study_case_allocations) > 0:
+        study_case_allocation = study_case_allocations[0]
+        # First get allocation status
+        if study_case_allocation.kubernetes_pod_name is None:
+            study_case_allocation.status = StudyCaseAllocation.ERROR
+        else:
+            try:
+                study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+            except:
+                study_case_allocation.status = StudyCaseAllocation.ERROR
         #if the pod is not launch or accessible, reload pod
         if study_case_allocation.status == StudyCaseAllocation.ERROR:
-            load_study_allocation(study_case_allocation)
-        db.session.add(study_case_allocation)
-        db.session.commit()
-    else:
-        study_case_allocation = create_study_case_allocation(study_case_identifier)
+           load_study_allocation(study_case_allocation)
 
+    else:
+        study_case_allocation = create_allocation(study_case_identifier)
+
+    db.session.add(study_case_allocation)
+    db.session.commit()
     return study_case_allocation
 
 def get_study_case_allocation(study_case_identifier):
@@ -183,8 +191,20 @@ def get_study_case_allocation(study_case_identifier):
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
-
-    return get_allocation_status(study_case_identifier)
+    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocation = None
+    if len(study_case_allocations) > 0:
+        study_case_allocation = study_case_allocations[0]
+        if study_case_allocation.kubernetes_pod_name is None:
+            study_case_allocation.status = StudyCaseAllocation.ERROR
+            study_case_allocation.message = "No associated pod"
+        else:
+            try:
+                study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+            except Exception as exc:
+                study_case_allocation.status = StudyCaseAllocation.ERROR
+                study_case_allocation.message = exc
+    return study_case_allocation
 
 def get_user_shared_study_case(user_identifier: int):
     """

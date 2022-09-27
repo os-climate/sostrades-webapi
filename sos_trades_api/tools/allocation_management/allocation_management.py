@@ -53,12 +53,13 @@ def load_study_allocation(study_case_allocation):
         #launch creation
         try:
             study_case_allocation.kubernetes_pod_name = kubernetes_service.kubernetes_service_allocate(study_case_allocation.study_case_id)
-            _retrieve_allocation_pod_status(study_case_allocation)
+            study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+            study_case_allocation.message = None
         except Exception as exception:
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = exception
 
-def get_allocation_status(study_case_identifier):
+def get_allocation_status(pod_name):
     """
     If server mode is kubernetes, check pod status and set the allocation status accordingly
 
@@ -66,33 +67,17 @@ def get_allocation_status(study_case_identifier):
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseAllocation status
     """
-     # First check that allocated resources does not already exist
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
-
-    allocation = None
-    if len(study_case_allocations) > 0:
-        allocation = study_case_allocations[0]
-        if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
-            _retrieve_allocation_pod_status(allocation)
-        else:
-            allocation.status = StudyCaseAllocation.DONE
-            allocation.message = None
-
-
-    return allocation
-
-
-def _retrieve_allocation_pod_status(study_case_allocation):
-    try:
-        pod_status = kubernetes_service.kubernetes_study_service_pods_status(study_case_allocation.kubernetes_pod_name)
+    status = ""
+    if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
+        pod_status = kubernetes_service.kubernetes_study_service_pods_status(pod_name)
         if pod_status == "Running":
-            study_case_allocation.status = StudyCaseAllocation.DONE
-        elif pod_status is not None:
-            study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
-            study_case_allocation.message = "Pod not loaded"
+            status = StudyCaseAllocation.DONE
+        elif pod_status is not None and pod_status != "":
+            status = StudyCaseAllocation.IN_PROGRESS
         else:
             raise "pod not found"
-    except Exception as exception:
-        study_case_allocation.status = StudyCaseAllocation.ERROR
-        study_case_allocation.message = exception
+    else:
+        status = StudyCaseAllocation.DONE
+
+    return status
 

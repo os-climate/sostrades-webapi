@@ -18,7 +18,7 @@ import traceback as tb
 import click
 
 from werkzeug.exceptions import HTTPException
-from flask import json, jsonify, session
+from flask import json, jsonify, session, make_response
 from flask import Flask, render_template, request
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -766,3 +766,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         response.cache_control.must_revalidate = True
 
         return response
+
+@app.route('/api/ping', methods=['GET'])
+def ping():
+    return make_response(jsonify('pong'), 200)
