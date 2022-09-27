@@ -235,9 +235,9 @@ class StudyCase(db.Model):
 class StudyCaseAllocation(db.Model):
     """StudyCaseAllocation class"""
 
-    IN_PROGRESS = 'IN PROGRESS'
+    IN_PROGRESS = 'IN_PROGRESS'
     DONE = 'DONE'
-    ERROR = 'ERROR'
+    ERROR = 'IN_ERROR'
 
     id = Column(Integer, primary_key=True)
     study_case_id = Column(Integer,

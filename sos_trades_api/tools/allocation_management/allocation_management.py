@@ -60,7 +60,7 @@ def load_study_allocation(study_case_allocation):
             study_case_allocation.message = None
         except Exception as exception:
             study_case_allocation.status = StudyCaseAllocation.ERROR
-            study_case_allocation.message = exception
+            study_case_allocation.message = str(exception)
 
 
 def get_allocation_status(pod_name):
@@ -79,7 +79,7 @@ def get_allocation_status(pod_name):
         elif pod_status == "Running":
             status = StudyCaseAllocation.IN_PROGRESS
         else:
-            raise "pod not found"
+            raise Exception("pod not found")
     else:
         status = StudyCaseAllocation.DONE
 

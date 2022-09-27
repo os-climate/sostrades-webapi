@@ -203,7 +203,7 @@ def get_study_case_allocation(study_case_identifier):
             study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
         except Exception as exc:
             study_case_allocation.status = StudyCaseAllocation.ERROR
-            study_case_allocation.message = exc
+            study_case_allocation.message = str(exc)
     return study_case_allocation
 
 def get_user_shared_study_case(user_identifier: int):
