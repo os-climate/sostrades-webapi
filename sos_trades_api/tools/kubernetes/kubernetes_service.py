@@ -189,7 +189,7 @@ def kubernetes_service_generate(usecase, generation_id, user_id):
         pass  # launch exception
 
 
-def kubernetes_service_allocate(study_case_identifier):
+def kubernetes_service_allocate(pod_name):
     """
     Launch kubernetes service to build the study pod if the server_mode is Kubernetes
 
@@ -197,8 +197,6 @@ def kubernetes_service_allocate(study_case_identifier):
     :type study_case_identifier: int
     :return: The state of the kubernetes services
     """
-    pod_name = f'sostrades-study-server-{study_case_identifier}'
-
     # Create k8 api client object
     try:
         config.load_kube_config()
@@ -215,7 +213,6 @@ def kubernetes_service_allocate(study_case_identifier):
     kubernetes_study_server_service_create(pod_name, core_api_instance)
     kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
 
-    return pod_name
 
 
 def kubernetes_study_server_service_create(pod_name, core_api_instance):
@@ -308,20 +305,22 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         print('deployement already exist')
 
     #check pod created
-    created_pod_name = ""
+    pod_status = ""
     count = 0
     while count < 60:
         pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
 
         for pod in pod_list.items:
             if pod.metadata.name.startswith(pod_name):
-                created_pod_name = pod.metadata.name
+                pod_status = pod.status.phase
                 break
-        if created_pod_name != "":
+        if pod_status == "Running":
             break
 
         time.sleep(10)
         count += 1
+    if pod_status != "Running":
+        raise "Pod not starting"
 
 
 
@@ -444,8 +443,8 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                 except:
                     app.logger.exception('An exception occurs when trying to reach study server')
 
-                if study_response_data != "pong":
-                    result = "Initializing"
+                if study_response_data == "pong":
+                    result = "DONE"
 
         else:
             pass  # launch exception

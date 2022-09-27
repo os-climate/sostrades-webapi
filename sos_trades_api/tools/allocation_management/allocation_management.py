@@ -38,8 +38,11 @@ def create_allocation(study_case_identifier):
         new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
+        new_study_case_allocation.kubernetes_pod_name = f'sostrades-study-server-{study_case_identifier}'
 
-    # create deployment, services and load pod
+    db.session.add(new_study_case_allocation)
+    db.session.commit()
+
     load_study_allocation(new_study_case_allocation)
 
     return new_study_case_allocation
@@ -52,12 +55,13 @@ def load_study_allocation(study_case_allocation):
     if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         #launch creation
         try:
-            study_case_allocation.kubernetes_pod_name = kubernetes_service.kubernetes_service_allocate(study_case_allocation.study_case_id)
+            kubernetes_service.kubernetes_service_allocate(study_case_allocation.kubernetes_pod_name)
             study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
             study_case_allocation.message = None
         except Exception as exception:
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = exception
+
 
 def get_allocation_status(pod_name):
     """
@@ -70,9 +74,9 @@ def get_allocation_status(pod_name):
     status = ""
     if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         pod_status = kubernetes_service.kubernetes_study_service_pods_status(pod_name)
-        if pod_status == "Running":
+        if pod_status == "DONE":
             status = StudyCaseAllocation.DONE
-        elif pod_status is not None and pod_status != "":
+        elif pod_status == "Running":
             status = StudyCaseAllocation.IN_PROGRESS
         else:
             raise "pod not found"
