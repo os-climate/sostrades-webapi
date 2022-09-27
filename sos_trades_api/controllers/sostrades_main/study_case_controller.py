@@ -13,19 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import os
-import time
 
-from flask import jsonify
-from sqlalchemy import desc
-
-from sos_trades_api.tools.file_tools import read_object_in_json_file
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
+
+import os
+import time
+
+from sqlalchemy import desc
+from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 import traceback
 import sys
 import pandas as pd
@@ -41,15 +40,16 @@ from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sos_trades_core.execution_engine.data_manager import DataManager
 from sos_trades_core.tools.tree.serializer import DataSerializer
+from sos_trades_core.tools.proc_builder.process_builder_parameter_type import ProcessBuilderParameterType
 from sos_trades_api.config import Config
 from sos_trades_api.server.base_server import db, app, study_case_cache
 
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseAccessUser, StudyCaseExecution, User, ReferenceStudy
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseExecution, User, ReferenceStudy
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
-from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -638,16 +638,53 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               datetime.now())
 
         values = {}
-        conectors = {}
+        connectors = {}
         for parameter in parameters_to_save:
             uuid_param = study_manager.execution_engine.dm.data_id_map[parameter['variableId']]
 
             if uuid_param in study_manager.execution_engine.dm.data_dict:
                 parameter_dm_data_dict = study_manager.execution_engine.dm.data_dict.get(uuid_param,{})
                 value = parameter['newValue']
+                parameter_type = parameter_dm_data_dict['type']
+
+                if parameter_type == SoSDiscipline.PROC_BUILDER_MODAL:
+
+                    proc_builder_value = ProcessBuilderParameterType.create(value)
+
+                    if proc_builder_value.has_usecase:
+                        if proc_builder_value.has_valid_study_identifier:
+                            local_scm = StudyCaseManager(proc_builder_value.usecase_identifier)
+                            loaded_values = local_scm.setup_usecase()
+
+                            if len(loaded_values) > 0:
+                                proc_builder_value.usecase_data = loaded_values[0]
+
+                        elif proc_builder_value.usecase_type == 'Reference':
+                            reference_basepath = Config().reference_root_dir
+
+                            # Build reference folder base on study process name and
+                            # repository
+                            reference_folder = join(
+                                reference_basepath, proc_builder_value.process_repository,
+                                proc_builder_value.process_name, proc_builder_value.usecase_name)
+
+                            loaded_values = StudyCaseManager.static_load_raw_data(reference_folder, DirectLoadDump())
+
+                            proc_builder_value.usecase_data = loaded_values
+
+                        elif proc_builder_value.usecase_type == 'UsecaseData':
+
+                            loaded_values = StudyCaseManager.static_load_raw_usecase_data(
+                                proc_builder_value.process_repository,
+                                proc_builder_value.process_name,
+                                proc_builder_value.usecase_name)
+
+                            proc_builder_value.usecase_data = loaded_values
+
+                    value = proc_builder_value.to_data_manager_dict()
 
                 # If value is dataframe make check about targeted type
-                if isinstance(value, pd.DataFrame):
+                elif isinstance(value, pd.DataFrame):
                     parameter_type = parameter_dm_data_dict['type']
 
                     if 'array' in parameter_type:
@@ -669,7 +706,8 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                 df_dict[key] = value[columns][value['variable'] == key].reset_index(drop=True)
                             value = df_dict
                         else:
-                            # Other subtype descriptors are not yet handled specifically so they are treated as simple dict
+                            # Other subtype descriptors are not yet handled specifically so they are treated
+                            # as simple dict
                             # Converting column to str
                             value['variable'] = value.variable.astype(str)
                             # In case of dict convert the dataframe to dict
@@ -703,7 +741,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         app.logger.exception(
                             'Study change database insertion error')
                 if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
-                    conectors[parameter['variableId']] = value
+                    connectors[parameter['variableId']] = value
                 else:
                     values[parameter['variableId']] = value
 
@@ -715,7 +753,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-                target=study_case_manager_update, args=(study_manager, values, False, False, conectors)).start()
+                target=study_case_manager_update, args=(study_manager, values, False, False, connectors)).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
