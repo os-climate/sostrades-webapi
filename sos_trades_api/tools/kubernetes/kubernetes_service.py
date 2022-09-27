@@ -441,8 +441,8 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                     if resp.status_code == 200:
                         study_response_data = resp.json()
 
-                except Exception as error:
-                    app.logger.exception('An exception occurs when trying to reach Ontology server'+error)
+                except:
+                    app.logger.exception('An exception occurs when trying to reach study server')
 
                 if study_response_data != "pong":
                     result = None
