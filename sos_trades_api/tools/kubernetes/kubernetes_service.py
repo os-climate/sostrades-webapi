@@ -25,6 +25,7 @@ from pathlib import Path
 import uuid
 import yaml
 import time
+import requests
 
 
 class ExecutionEngineKuberneteError(Exception):
@@ -425,6 +426,27 @@ def kubernetes_study_service_pods_status(pod_identifiers):
             pod_namespace = k8_conf['metadata']['namespace']
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace)
 
+            if result == "Running":
+                # the pod is running, we have to send a ping to the api to check that it is running too
+                port = k8_conf['spec']['ports'][0]["port"]
+                study_server_url = f"https://{pod_identifiers}.{pod_namespace}:{port}/api/ping"
+                ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+                study_response_data = ""
+
+                try:
+                    resp = requests.request(
+                        method='GET', url=study_server_url, verify=ssl_path
+                    )
+
+                    if resp.status_code == 200:
+                        study_response_data = resp.json()
+
+                except Exception as error:
+                    app.logger.exception('An exception occurs when trying to reach Ontology server'+error)
+
+                if study_response_data != "pong":
+                    result = None
+
         else:
             pass  # launch exception
 
@@ -459,6 +481,7 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
         if pod.metadata.name.startswith(pod_identifiers):
             result = pod.status.phase
             break
+
 
     return result
 
