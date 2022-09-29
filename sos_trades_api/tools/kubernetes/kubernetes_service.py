@@ -596,7 +596,12 @@ def kubernetes_service_delete_study_server(pod_identifiers):
                     print(f'Not found')
             # delete service
             if service_found:
-                resp = core_api_instance.delete_namespaced_service(name=pod_identifiers, namespace=pod_namespace)
+                try:
+                    resp = core_api_instance.delete_namespaced_service(name=pod_identifiers, namespace=pod_namespace)
+                    if resp.status != "Success":
+                        app.logger.error(f'The deletion of the service named {pod_identifiers} has not succeeded' )
+                except Exception as api_exception:
+                    app.logger.error(api_exception)
 
             # check deployment existance
             deployement_found = False
@@ -608,8 +613,12 @@ def kubernetes_service_delete_study_server(pod_identifiers):
                     print(f'Not found')
             # delete deployment
             if deployement_found:
-                resp = apps_api_instance.delete_namespaced_deployment(name=pod_identifiers, namespace=pod_namespace)
-
+                try:
+                    resp = apps_api_instance.delete_namespaced_deployment(name=pod_identifiers, namespace=pod_namespace)
+                    if resp.status != "Success":
+                        app.logger.error(f'The deletion of the deployment named {pod_identifiers} has not succeeded' )
+                except Exception as api_exception:
+                    app.logger.error(api_exception)
         else:
             message = f"Pod configuration not loaded or empty pod configuration"
             app.logger.error(message)
