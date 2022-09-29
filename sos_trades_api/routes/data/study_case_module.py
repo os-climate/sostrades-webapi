@@ -17,6 +17,8 @@ from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
+from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, \
+    delete_study_cases_and_allocation
 from sos_trades_api.models.database_models import AccessRights, StudyCase, UserStudyFavorite
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
@@ -170,6 +172,33 @@ def study_case_allocation_status(study_id):
         return resp
 
     abort(403)
+
+
+@app.route(f'/api/data/study-case/delete', methods=['DELETE'])
+@auth_required
+def delete_study_cases():
+    user = session['user']
+    studies = request.json.get('studies')
+
+    if studies is not None:
+        # Checking if user can access study data
+        for study_id in studies:
+            # Verify user has study case authorisation to delete study
+            # (Manager)
+            study_case_access = StudyCaseAccess(user.id)
+            if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+                raise BadRequest(
+                    'You do not have the necessary rights to delete this study case')
+
+        # Proceeding after rights verification
+        resp = make_response(
+            jsonify(delete_study_cases_and_allocation(studies)), 200)
+        return resp
+
+    raise BadRequest(
+        'Missing mandatory parameter: study identifier in url')
+
+
 
 
 @app.route(f'/api/data/study-case/<int:study_id>/parameter/change', methods=['POST'])

@@ -552,3 +552,65 @@ def kubernetes_get_pod_info(pod_name):
         raise ExecutionEngineKuberneteError(message)
 
     return result
+
+def kubernetes_service_delete_study_server(pod_identifiers):
+
+    # Retrieve the kubernetes configuration file regarding execution
+    # engine block
+    study_k8_filepath = Config().service_study_server_filepath
+
+    if Path(study_k8_filepath).exists() and pod_identifiers is not None:
+
+        app.logger.debug(f'pod configuration file found')
+
+        k8_conf = None
+        with open(study_k8_filepath) as f:
+            yaml_content = Template(f.read())
+            yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
+            k8_conf = yaml.load(yaml_content)
+        if k8_conf is not None:
+            # Retrieve pod configuration
+            pod_namespace = k8_conf['metadata']['namespace']
+
+            # Create k8 api client object
+            try:
+                config.load_kube_config()
+            except IOError:
+                try:
+                    config.load_incluster_config()  # How to set up the client from within a k8s pod
+                except config.config_exception.ConfigException as error:
+                    message = f"Could not configure kubernetes python client : {error}"
+                    app.logger.error(message)
+                    raise ExecutionEngineKuberneteError(message)
+
+            core_api_instance = client.CoreV1Api(client.ApiClient())
+            apps_api_instance = client.AppsV1Api(client.ApiClient())
+
+            # check service existance
+            service_found = False
+            try:
+                resp = core_api_instance.read_namespaced_service(name=pod_identifiers, namespace=pod_namespace)
+                service_found = True
+            except client.rest.ApiException as api_exception:
+                if api_exception.status == 404:
+                    print(f'Not found')
+            # delete service
+            if service_found:
+                resp = core_api_instance.delete_namespaced_service(name=pod_identifiers, namespace=pod_namespace)
+
+            # check deployment existance
+            deployement_found = False
+            try:
+                dplmt = apps_api_instance.read_namespaced_deployment(name=pod_identifiers, namespace=pod_namespace)
+                deployement_found = True
+            except client.rest.ApiException as api_exception:
+                if api_exception.status == 404:
+                    print(f'Not found')
+            # delete deployment
+            if deployement_found:
+                resp = apps_api_instance.delete_namespaced_deployment(name=pod_identifiers, namespace=pod_namespace)
+
+        else:
+            message = f"Pod configuration not loaded or empty pod configuration"
+            app.logger.error(message)
+            raise ExecutionEngineKuberneteError(message)

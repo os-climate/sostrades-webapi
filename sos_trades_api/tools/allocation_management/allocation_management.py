@@ -48,6 +48,7 @@ def create_allocation(study_case_identifier):
     return new_study_case_allocation
 
 
+
 def load_study_allocation(study_case_allocation):
     """
     Load service and deployment if they do not exists and wait for pod running in a thread
@@ -85,3 +86,7 @@ def get_allocation_status(pod_name):
 
     return status
 
+def delete_allocations_services_and_deployments(pod_names):
+  if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
+      for pod_name in pod_names:
+        kubernetes_service.kubernetes_service_delete_study_server(pod_name)
