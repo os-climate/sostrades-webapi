@@ -29,9 +29,9 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 import time
 
-@app.route(f'/api/main/study-case', methods=['POST', 'DELETE'])
+@app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
 @auth_required
-def study_cases():
+def study_cases(study_id):
     if request.method == 'POST':
         user = session['user']
 
@@ -81,7 +81,7 @@ def study_cases():
         raise MethodNotAllowed()
 
 
-@app.route(f'/api/main/study-case/<int:study_id>', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/edit', methods=['POST'])
 @auth_required
 def update_study_cases(study_id):
 
