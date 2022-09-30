@@ -86,7 +86,23 @@ def get_allocation_status(pod_name):
 
     return status
 
-def delete_allocations_services_and_deployments(pod_names):
+def delete_study_server_services_and_deployments(pod_names):
   if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
       for pod_name in pod_names:
         kubernetes_service.kubernetes_service_delete_study_server(pod_name)
+
+
+def clean_all_allocations_services_and_deployments():
+    # delete all allocations
+    study_case_allocations = StudyCaseAllocation.query.all()
+    pod_names = [allocation.kubernetes_pod_name for allocation in study_case_allocations]
+    try:
+        for sc in study_case_allocations:
+            db.session.delete(sc)
+        db.session.commit()
+        app.logger.info(f"all {len(study_case_allocations)} StudyCaseAllocation have been successfully deleted")
+    except Exception as ex:
+        db.session.rollback()
+        raise ex
+    # delete all associated service and deployment
+    delete_study_server_services_and_deployments(pod_names)

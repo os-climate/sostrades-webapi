@@ -17,8 +17,6 @@ from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
-from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, \
-    delete_study_cases_and_allocation
 from sos_trades_api.models.database_models import AccessRights, StudyCase, UserStudyFavorite
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
@@ -27,7 +25,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
-    get_study_case_allocation)
+    get_study_case_allocation, delete_study_cases_and_allocation)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 

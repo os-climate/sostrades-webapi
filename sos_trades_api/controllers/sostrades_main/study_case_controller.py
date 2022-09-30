@@ -15,7 +15,7 @@ limitations under the License.
 '''
 from flask import jsonify
 
-from sos_trades_api.tools.allocation_management.allocation_management import delete_allocations_services_and_deployments
+
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -773,75 +773,6 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         study_case_cache.release_study_case(study_id)
 
         raise StudyCaseError(error)
-
-def delete_study_cases_and_allocation(studies):
-    """
-    Delete one or multiple study cases from database and disk
-    :param: studies, list of studycase ids to be deleted
-    :type: list of integers
-    """
-    # Verify that we find same number of studies by querying database
-    with app.app_context():
-        query = StudyCase.query.filter(StudyCase.id.in_(
-            studies)).all()
-        query_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id.in_(
-            studies)).all()
-        pod_names = [allocation.kubernetes_pod_name for allocation in query_allocations]
-        if len(query) == len(studies):
-            try:
-                for sc in query:
-                    db.session.delete(sc)
-                db.session.commit()
-            except Exception as ex:
-                db.session.rollback()
-                raise ex
-
-            # Once removed from db, remove it from file system
-            for study in query:
-                folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
-                rmtree(folder, ignore_errors=True)
-
-            delete_allocations_services_and_deployments(pod_names)
-
-
-            return f'All the studies (identifier(s) {studies}) have been deleted in the database'
-        else:
-            raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
-                               f'please refresh your study cases list')
-
-def delete_study_cases(studies):
-    """
-    Delete one or multiple study cases from database and disk
-    :param: studies, list of studycase ids to be deleted
-    :type: list of integers
-    """
-    # Verify that we find same number of studies by querying database
-    with app.app_context():
-        query = StudyCase.query.filter(StudyCase.id.in_(
-            studies)).all()
-
-        if len(query) == len(studies):
-            try:
-                for sc in query:
-                    db.session.delete(sc)
-
-                    # Delete study from cache if it exist
-                    study_case_cache.delete_study_case_from_cache(sc.id)
-
-                db.session.commit()
-            except Exception as ex:
-                db.session.rollback()
-                raise ex
-
-            # Once removed from db, remove it from file system
-            for study in query:
-                folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
-                rmtree(folder, ignore_errors=True)
-
-            return f'All the studies (identifier(s) {studies}) have been deleted in the database'
-        else:
-            raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
-                               f'please refresh your study cases list')
 
 
 def get_file_stream(study_id, parameter_key):
