@@ -235,9 +235,9 @@ class StudyCase(db.Model):
 class StudyCaseAllocation(db.Model):
     """StudyCaseAllocation class"""
 
-    IN_PROGRESS = 'IN PROGRESS'
+    IN_PROGRESS = 'IN_PROGRESS'
     DONE = 'DONE'
-    ERROR = 'ERROR'
+    ERROR = 'IN_ERROR'
 
     id = Column(Integer, primary_key=True)
     study_case_id = Column(Integer,
@@ -832,7 +832,7 @@ class ReferenceStudy(db.Model):
                             ondelete="CASCADE",
                             name='fk_reference_study_process_id'))
     name = Column(String(128), index=True, unique=False)
-    reference_path = Column(String(128), index=True, unique=False)
+    reference_path = Column(String(256), index=True, unique=False)
     reference_type = Column(String(128), index=True, unique=False)
     creation_date = Column(DateTime(timezone=True), nullable=True)
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)

@@ -12,3 +12,4 @@ dist/
 sos_trades_api.egg-info/
 sos_trades_api/secret/adminPassword
 sos_trades_api/secret/standardUserPassword
+*.bat

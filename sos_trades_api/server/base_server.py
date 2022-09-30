@@ -18,7 +18,7 @@ import traceback as tb
 import click
 
 from werkzeug.exceptions import HTTPException
-from flask import json, jsonify, session
+from flask import json, jsonify, session, make_response
 from flask import Flask, render_template, request
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -531,6 +531,10 @@ def database_list_api_key():
             for device in devices:
                 app.logger.info(device)
 
+def clean_all_allocations_method():
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+    clean_all_allocations_services_and_deployments
+    clean_all_allocations_services_and_deployments()
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -670,6 +674,14 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         database_list_api_key()
 
+    # Add custom command on flask cli to clean allocations, services and deployments
+    @click.command('clean_all_allocations')
+    @with_appcontext
+    def clean_all_allocations():
+        """  delete all allocations from db and delete services and deployments with kubernetes api
+        """
+        clean_all_allocations_method()
+
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
     app.cli.add_command(create_standard_user)
@@ -680,6 +692,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(renew_api_key)
     app.cli.add_command(revoke_api_key)
     app.cli.add_command(list_api_key)
+    app.cli.add_command(clean_all_allocations)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
@@ -766,3 +779,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         response.cache_control.must_revalidate = True
 
         return response
+
+@app.route('/api/ping', methods=['GET'])
+def ping():
+    return make_response(jsonify('pong'), 200)

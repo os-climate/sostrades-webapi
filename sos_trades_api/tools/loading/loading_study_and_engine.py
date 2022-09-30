@@ -117,6 +117,12 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
             no_data, read_only)
         treeview_generation_time = time()
 
+        # if the study has been edited (change of study name), the readonly file has been deleted
+        # at the end of the loading, if the readonly file has not been created and the status is DONE, create the file again
+        if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE \
+            and not study_case_manager.check_study_case_json_file_exists():
+            study_case_manager.save_study_read_only_mode_in_file()
+
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(f'End background loading {study_case_manager.study.name}')

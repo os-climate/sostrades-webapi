@@ -846,7 +846,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
             self.assertTrue(study_manager.check_study_case_json_file_exists(), 'Unable to retrieve study case read only file')
-            study_json = get_study_in_read_only_mode(study_case_copy_id)
+            study_json = get_study_in_read_only_mode(study_case_copy_id, False)
             self.assertIsNotNone(study_json, 'Unable to read study case read only file')
 
             # set loadStatus to read only to check the get data method
