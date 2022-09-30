@@ -16,7 +16,6 @@ limitations under the License.
 from flask import jsonify
 
 
-
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
@@ -49,7 +48,7 @@ from sos_trades_api.server.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseExecution, User, ReferenceStudy, StudyCaseAllocation
+    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseExecution, User, ReferenceStudy
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.study_case_dto import StudyCaseDto
@@ -773,6 +772,40 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         study_case_cache.release_study_case(study_id)
 
         raise StudyCaseError(error)
+
+def delete_study_cases(studies):
+    """
+    Delete one or multiple study cases from database and disk
+    :param: studies, list of studycase ids to be deleted
+    :type: list of integers
+    """
+    # Verify that we find same number of studies by querying database
+    with app.app_context():
+        query = StudyCase.query.filter(StudyCase.id.in_(
+            studies)).all()
+
+        if len(query) == len(studies):
+            try:
+                for sc in query:
+                    db.session.delete(sc)
+
+                    # Delete study from cache if it exist
+                    study_case_cache.delete_study_case_from_cache(sc.id)
+
+                db.session.commit()
+            except Exception as ex:
+                db.session.rollback()
+                raise ex
+
+            # Once removed from db, remove it from file system
+            for study in query:
+                folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
+                rmtree(folder, ignore_errors=True)
+
+            return f'All the studies (identifier(s) {studies}) have been deleted in the database'
+        else:
+            raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
+                               f'please refresh your study cases list')
 
 
 def get_file_stream(study_id, parameter_key):
