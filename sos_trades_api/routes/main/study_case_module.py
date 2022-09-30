@@ -23,14 +23,15 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
-    set_study_data_file, get_study_in_read_only_mode)
+    set_study_data_file, get_study_in_read_only_mode, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 import time
 
-@app.route(f'/api/main/study-case', methods=['POST', 'DELETE'])
+@app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
 @auth_required
-def study_cases():
+def study_cases(study_id):
     if request.method == 'POST':
         user = session['user']
 
@@ -80,7 +81,7 @@ def study_cases():
         raise MethodNotAllowed()
 
 
-@app.route(f'/api/main/study-case/<int:study_id>', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/edit', methods=['POST'])
 @auth_required
 def update_study_cases(study_id):
 
@@ -361,9 +362,9 @@ def reload_study_discipline_data_by_study_case_id(study_id):
     abort(403)
 
 
-@app.route(f'/api/main/study-case/read-only-mode/<int:study_id>', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/read-only-mode', methods=['GET'])
 @auth_required
-def get_study_data_in_read_only_mode(study_id):
+def load_study_data_in_read_only_mode_or_not(study_id):
     """
     Retreive the study in read only mode, return none if no read only mode found
     """
@@ -374,9 +375,10 @@ def get_study_data_in_read_only_mode(study_id):
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve this information about this study case')
+        study_access_right = study_case_access.get_user_right_for_study(
+        study_id)
 
-        # Proceeding after rights verification
-        study_json = get_study_in_read_only_mode(study_id)
-
-        return make_response(study_json, 200)
+        loadedStudyJson = load_study_case_with_read_only_mode(study_id,study_access_right, user.id)
+        resp = make_response(loadedStudyJson, 200)
+        return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')

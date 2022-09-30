@@ -19,10 +19,9 @@ from werkzeug.exceptions import BadRequest
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    load_models_status, load_parameters, load_parameter_label_list,
+from sos_trades_api.controllers.sostrades_data.ontology_controller import ( load_parameters, load_parameter_label_list,
     load_markdown_documentation_metadata, load_ontology_processes, load_ontology_usages,
-    load_ontology_general_information)
+    load_ontology_general_information, load_models, load_models_status_filtered)
 
 
 @app.route(f'/api/data/ontology/ontology-usages', methods=['POST'])
@@ -119,7 +118,47 @@ def load_ontology_models_status():
     user = get_authenticated_user()
     process_access = ProcessAccess(user.id)
 
-    resp = make_response(jsonify(load_models_status(process_access.user_process_list)))
+    resp = make_response(jsonify(load_models_status_filtered(process_access.user_process_list)))
+
+    return resp
+
+
+@app.route(f'/api/data/ontology/full_models_list', methods=['GET'])
+@auth_required
+def load_ontology_full_model_list():
+    """Method that return a list of all ontology disciplines and their related information
+        Returned response is with the following data structure
+           [
+               discipline_id:{
+                   'id': string,
+                   'uri': string,
+                   'label': string,
+                   'definition': string,
+                   'category': string,
+                   'version': string,
+                   'last_modification_date': string,
+                   'source': string,
+                   'validated_by': string,
+                   'python_class': string,
+                   'validated': string,
+                   'icon': string,
+                   'output_parameters_quantity': int,
+                   'input_parameters_quantity': int,
+                   'class_inheritance': string list,
+                   'code_repository': string,
+                   'type': string,
+                   'python_module_path': string,
+                   'output_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
+                   'input_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
+                   'process_using_discipline': [{process_id: string, process_label: string, repository_id: string, repository_label: string}],
+               }
+           ]
+           """
+    user = get_authenticated_user()
+    app.logger.info(user)
+
+    models = load_models()
+    resp = make_response(jsonify(models))
 
     return resp
 
@@ -195,8 +234,6 @@ def load_markdown_documentation(identifier):
 def load_full_process_list():
     """
     Methods that retrieve all processes and related information
-
-    Request object has no parameters
 
     Returned response is with the following data structure
             process_id:{

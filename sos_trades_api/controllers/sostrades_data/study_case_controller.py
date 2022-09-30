@@ -13,6 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import threading
+
+from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
+    load_study_allocation
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
@@ -140,12 +145,8 @@ def create_study_case_allocation(study_case_identifier):
     study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
 
     if len(study_case_allocations) == 0:
-        new_study_case_allocation = StudyCaseAllocation()
-        new_study_case_allocation.study_case_id = study_case_identifier
-        new_study_case_allocation.status = StudyCaseAllocation.DONE
+        new_study_case_allocation = create_allocation(study_case_identifier)
 
-        db.session.add(new_study_case_allocation)
-        db.session.commit()
     else:
         raise InvalidStudy('Allocation already exist for this study case')
 
@@ -154,21 +155,56 @@ def create_study_case_allocation(study_case_identifier):
 
 def load_study_case_allocation(study_case_identifier):
     """
-    Load a study case allocation
+    Load a study case allocation and if server mode is kubernetes, check pod status
 
     ::param study_case_identifier: study case identifier to the allocation to load
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
-
-    # First check that allocated resources does not already exist
+    need_reload = False
     study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocation = None
+    if len(study_case_allocations) > 0:
+        study_case_allocation = study_case_allocations[0]
+        # First get allocation status
+        if study_case_allocation.kubernetes_pod_name is None:
+            need_reload = True
+        else:
+            try:
+                study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+                need_reload = study_case_allocation.status == StudyCaseAllocation.ERROR
+            except:
+                study_case_allocation.status = StudyCaseAllocation.ERROR
+                need_reload = True
+        #if the pod is not launch or accessible, reload pod
+        if need_reload:
+            study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
+            load_study_allocation(study_case_allocation)
 
-    if len(study_case_allocations) == 1:
-        return study_case_allocations[0]
     else:
-        return None
+        study_case_allocation = create_allocation(study_case_identifier)
 
+
+    return study_case_allocation
+
+def get_study_case_allocation(study_case_identifier):
+    """
+    Load a study case allocation and if server mode is kubernetes, check pod status
+
+    ::param study_case_identifier: study case identifier to the allocation to load
+    :type study_case_identifier: int
+    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    """
+    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocation = None
+    if len(study_case_allocations) > 0:
+        study_case_allocation = study_case_allocations[0]
+        try:
+            study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+        except Exception as exc:
+            study_case_allocation.status = StudyCaseAllocation.ERROR
+            study_case_allocation.message = str(exc)
+    return study_case_allocation
 
 def get_user_shared_study_case(user_identifier: int):
     """

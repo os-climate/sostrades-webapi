@@ -17,6 +17,8 @@ from flask import request, abort, jsonify, make_response, send_file, session
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
+from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, \
+    delete_study_cases_and_allocation
 from sos_trades_api.models.database_models import AccessRights, StudyCase, UserStudyFavorite
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
@@ -24,7 +26,8 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_change_file_stream, get_user_shared_study_case, get_logs, get_raw_logs, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
-    add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation)
+    add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
+    get_study_case_allocation)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -99,9 +102,6 @@ def allocation_for_existing_study_case(study_case_identifier: int):
 
         study_case_allocation = load_study_case_allocation(study_case_identifier)
 
-        if study_case_allocation is None:
-            study_case_allocation = create_study_case_allocation(study_case_identifier)
-
         # Proceeding after rights verification
         return make_response(jsonify(study_case_allocation), 200)
     else:
@@ -167,11 +167,38 @@ def study_case_allocation_status(study_id):
 
         # Proceeding after rights verification
         resp = make_response(
-            jsonify(load_study_case_allocation(study_id)), 200)
+            jsonify(get_study_case_allocation(study_id)), 200)
 
         return resp
 
     abort(403)
+
+
+@app.route(f'/api/data/study-case/delete', methods=['DELETE'])
+@auth_required
+def delete_study_cases():
+    user = session['user']
+    studies = request.json.get('studies')
+
+    if studies is not None:
+        # Checking if user can access study data
+        for study_id in studies:
+            # Verify user has study case authorisation to delete study
+            # (Manager)
+            study_case_access = StudyCaseAccess(user.id)
+            if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+                raise BadRequest(
+                    'You do not have the necessary rights to delete this study case')
+
+        # Proceeding after rights verification
+        resp = make_response(
+            jsonify(delete_study_cases_and_allocation(studies)), 200)
+        return resp
+
+    raise BadRequest(
+        'Missing mandatory parameter: study identifier in url')
+
+
 
 
 @app.route(f'/api/data/study-case/<int:study_id>/parameter/change', methods=['POST'])
