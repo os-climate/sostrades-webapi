@@ -26,7 +26,7 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_pods_status, kubernetes_service_generate
+from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_eeb_service_pods_status, kubernetes_service_generate
 from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
 
@@ -179,7 +179,7 @@ def get_reference_generation_status(ref_gen_id):
         result = ref_generation
         # Get pod status
         if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = kubernetes_service_pods_status(
+            pod_status = kubernetes_eeb_service_pods_status(
                 ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
         else:
             pod_status = 'Running'

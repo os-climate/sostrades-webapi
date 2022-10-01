@@ -52,6 +52,14 @@ class Config:
     CONFIG_EXECUTION_STRATEGY_SUBPROCESS = 'subprocess'
     CONFIG_EXECUTION_STRATEGY_K8S = 'kubernetes'
 
+    CONFIG_SERVER_MODE_ENV_VAR = "SOS_TRADES_SERVER_MODE"
+
+    CONFIG_SERVER_MODE_K8S = 'kubernetes'
+    CONFIG_SERVER_MODE_MONO = 'mono'
+    CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME = "deployment_study_case_server.yml.jinja"
+    CONFIG_SERVICE_STUDY_SERVER_FILE_NAME = "service_study_case_server.yml.jinja"
+
+    CONFIG_MANIFESTS_FOLDER_PATH_ENV_VAR = "MANIFESTS_FOLDER_PATH"
     CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR = "EEB_PATH"
     CONFIG_RSA_ROOT_DIR_ENV_VAR = "SOS_TRADES_RSA"
 
@@ -71,6 +79,13 @@ class Config:
 
         self.__eeb_configuration_filepath = ''
 
+        self.__manifests_folder_path = ''
+
+        self.__available_server_modes = [Config.CONFIG_SERVER_MODE_K8S,
+                                       Config.CONFIG_SERVER_MODE_MONO]
+
+        self.__server_mode = ''
+
         self.__rsa_root_dir = ''
 
         self.__rsa_public_key = ''
@@ -87,6 +102,8 @@ class Config:
 
         self.reference_root_dir_env_var = self.CONFIG_REFERENCE_ROOT_DIR_ENV_VAR
         self.execution_strategy_env_var = self.CONFIG_EXECUTION_STRATEGY_ENV_VAR
+        self.server_mode_env_var = self.CONFIG_SERVER_MODE_ENV_VAR
+        self.manifests_folder_path_env_var = self.CONFIG_MANIFESTS_FOLDER_PATH_ENV_VAR
         self.eeb_path = self.CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR
         self.rsa_root_dir_env_var = self.CONFIG_RSA_ROOT_DIR_ENV_VAR
         self.data_root_dir_env_var = self.CONFIG_DATA_ROOT_DIR_ENV_VAR
@@ -116,6 +133,13 @@ class Config:
         # if calculation manifest is available
         if self.execution_strategy is Config.CONFIG_EXECUTION_STRATEGY_K8S:
             eeb_filepath = self.eeb_filepath
+            manifest_folder_path = self.manifests_folder_path
+
+        # server mode is mandatory. If kubernetes is chosen then check
+        # if manifest is available
+        if self.server_mode is Config.CONFIG_SERVER_MODE_K8S:
+            manifest_folder_path = self.manifests_folder_path
+
 
         # pylint: enable=unused-variable
 
@@ -195,6 +219,58 @@ class Config:
         return self.__execution_strategy
 
     @property
+    def manifests_folder_path(self):
+        """manifests folder kubernetes configuration property get
+
+        :return string (filepath)
+        :raise ValueError exception
+        """
+
+        if len(self.__manifests_folder_path) == 0:
+            if os.environ.get(self.manifests_folder_path_env_var) is None:
+                raise ValueError(
+                    f"Environment variable '{self.manifests_folder_path_env_var}' not provided")
+
+            if not Path(os.environ[self.manifests_folder_path_env_var]).exists():
+                raise ValueError(
+                    f"Environment variable '{self.manifests_folder_path_env_var}' values for study server deployment is not a valid filepath : {os.environ[self.manifests_folder_path_env_var]}")
+
+            self.__manifests_folder_path = os.environ[self.manifests_folder_path_env_var]
+
+        return self.__manifests_folder_path
+
+    @property
+    def service_study_server_filepath(self):
+        """service_study_server manifest file path property get
+
+        :return string (filepath)
+        :raise ValueError exception
+        """
+
+        file_path = join(self.manifests_folder_path, Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME)
+        if not Path(file_path).exists():
+            raise ValueError(
+                f"Manifest of the study case server service '{Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
+
+        return file_path
+
+    @property
+    def deployment_study_server_filepath(self):
+        """deployment_study_server manifest file path property get
+
+        :return string (filepath)
+        :raise ValueError exception
+        """
+
+        file_path = join(self.manifests_folder_path, Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME)
+        if not Path(file_path).exists():
+            raise ValueError(
+                f"Manifest of the study case server deployment '{Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
+
+        return file_path
+
+
+    @property
     def eeb_filepath(self):
         """execution engine block kubernets configuration property get
 
@@ -214,6 +290,31 @@ class Config:
             self.__eeb_configuration_filepath = os.environ[self.eeb_path]
 
         return self.__eeb_configuration_filepath
+
+    @property
+    def server_mode(self):
+        """server_mode property get
+
+        :return string ('split', 'mono')
+        :raise ValueError exception
+        """
+
+        if len(self.__server_mode) == 0:
+            if os.environ.get(self.server_mode_env_var) is None:
+                raise ValueError(
+                    f"Environment variable '{self.server_mode_env_var}' not provided")
+
+            if not len(os.environ[self.server_mode_env_var]) > 0:
+                raise ValueError(
+                    f"Environment variable '{self.server_mode_env_var}' has no value, any of the following is intended : {self.__available_server_modes}")
+
+            if os.environ[self.server_mode_env_var] not in self.__available_server_modes:
+                raise ValueError(
+                    f"Environment variable '{self.server_mode_env_var}' value is unknown, any of the following is intended : {self.__available_server_modes}")
+
+            self.__server_mode = os.environ[self.server_mode_env_var]
+
+        return self.__server_mode
 
     @property
     def rsa_public_key_file(self):
