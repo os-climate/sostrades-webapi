@@ -425,7 +425,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
             pod_namespace = k8_conf['metadata']['namespace']
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
             if len(result) > 0:
-                status = result.values()[0]
+                status = list(result.values())[0]
                 if status == "Running":
                     # the pod is running, we have to send a ping to the api to check that it is running too
                     port = k8_conf['spec']['ports'][0]["port"]
