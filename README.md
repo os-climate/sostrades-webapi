@@ -141,6 +141,10 @@ In addition to the configuration file, some other entry are setup using environm
 - SECRET_KEY=Depending on the value set in the configuration file, store server secret key
 - SAML_V2_METADATA_FOLDER=the folder path where the settings.json file is located
 - GITHUB_OAUTH_SETTINGS=the full path (including file) to the settings.json file that contains Github OAuth settings
+- SOS_TRADES_SERVER_MODE=Indicates "mono" if there is split servers: data, main and post processing or "kubernetes" 
+if only the server data is launch and the study server is launched by kubernetes when needed.
+- MANIFESTS_FOLDER_PATH=Path to the folder where manifests are. This folder has to contain the manifest deployment_study_case_server.yml 
+and service_study_case_server.yml 
 
 ### SSO configuration
 - set the SAML v2 'settings.json' file for the SSO authentication (the file must have this name 'settings.json')
@@ -182,10 +186,15 @@ For local development, .flaskenv_unit_test can be filled to make test works.
 
 ### APIs
 
-API is split in 4 part
+API is split in 4 part in mono server mode
 - main_server: for all process related to manipulate study with SoSTrades execution engine
 - data_server: for all data management (database CRUD operation)
 - post_processing_server: for all process related to manipulate study post-processing
+- message_server: websockets implemented for cooperative edition purpose
+
+API is split in 3 parts in kubernetes server mode
+- study_server: for all process related to manipulate study with SoSTrades execution engine
+- data_server: for all data management (database CRUD operation)
 - message_server: websockets implemented for cooperative edition purpose
 
 ## License
