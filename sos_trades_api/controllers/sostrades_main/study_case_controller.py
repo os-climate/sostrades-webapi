@@ -375,7 +375,6 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     launch_load_study_in_background(study_manager,  no_data, read_only)
 
-
     if study_manager.load_status == LoadStatus.IN_ERROR:
         raise Exception(study_manager.error_message)
 
@@ -385,7 +384,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     app.logger.info(f'load_study_case {study_id}, get cache: {cache_duration}')
     app.logger.info(f'load_study_case {study_id}, loading:{loading_duration} ')
 
-    # 22-09-2022: Update: add Read_only_mode as it is loaded so that after a study creation, if the study is DONE, the study is opened in read only
+    # 22-09-2022: Update: add Read_only_mode as it is loaded so that after a study creation,
+    # if the study is DONE, the study is opened in read only
     if study_manager.load_status == LoadStatus.LOADED:
         process_metadata = load_processes_metadata(
             [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
@@ -405,15 +405,15 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         else:
             loaded_study_case.study_case.is_restricted_viewer = True
         end_loading_duration = time.time() - start_time
-        #read dashboard and set it to the loaded studycase
-        # if the root process is at done
+
+        # Read dashboard and set it to the loaded studycase
+        # If the root process is at done
         if study_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
             loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
 
         end_dashboard_duration = time.time() - start_time
         app.logger.info(f'load_study_case {study_id}, end loading:{end_loading_duration} ')
         app.logger.info(f'load_study_case {study_id}, dashboard:{end_dashboard_duration} ')
-
 
     # Return logical treeview coming from execution engine
     return loaded_study_case

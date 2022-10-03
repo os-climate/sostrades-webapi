@@ -42,6 +42,7 @@ if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
 
 app = Flask(server_name)
+
 app.logger.propagate = False
 
 for handler in app.logger.handlers:
