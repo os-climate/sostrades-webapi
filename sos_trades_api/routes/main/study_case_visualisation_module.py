@@ -37,7 +37,7 @@ def execution_sequence_graph_data(study_id):
         user = session['user']
 
         # Verify user has study case authorisation to retrieve execution status of study (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
             AccessRights.RESTRICTED_VIEWER, study_id
         ):
@@ -60,7 +60,7 @@ def interface_diagram_data(study_id):
         user = session['user']
 
         # Verify user has study case authorisation to retrieve execution status of study (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
             AccessRights.RESTRICTED_VIEWER, study_id
         ):
@@ -86,7 +86,7 @@ def n2_diagram_graph_data(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
             AccessRights.RESTRICTED_VIEWER, study_id
         ):
