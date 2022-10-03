@@ -54,7 +54,7 @@ def get_group_list(user_id):
     """
     res_access = ResourceAccess(user_id)
 
-    return res_access.user_loaded_groups_list
+    return sorted(res_access.user_loaded_groups_list, key=lambda gr: gr.group.name.lower())
 
 
 def create_group(user_id, name, description, confidential):

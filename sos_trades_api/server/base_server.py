@@ -17,6 +17,7 @@ import sys
 import traceback as tb
 import click
 
+from apiflask import APIFlask
 from werkzeug.exceptions import HTTPException
 from flask import json, jsonify, session, make_response
 from flask import Flask, render_template, request
@@ -41,7 +42,16 @@ server_name = __name__
 if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
 
-app = Flask(server_name)
+app = APIFlask(server_name)
+app.security_schemes = {
+    'ApiKeyAuth': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'Authorization',
+        'description': "Type in the *'Value'* input box below: **'Bearer &lt;JWT&gt;'**, where JWT is the token",
+        'value': 'Bearer '
+    }
+}
 app.logger.propagate = False
 
 for handler in app.logger.handlers:
@@ -714,7 +724,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # For migration to detect new tables
     # After running migration script, remove them from here to prevent import error
     if not app == None and not db == None:
-        migrate = Migrate(app, db, compare_type=False)
+        migrate = Migrate(app, db, compare_type=True)
 
     # Attention compare type find a difference in ReferenceGenerationStatus
     # if not app == None and not db == None:
