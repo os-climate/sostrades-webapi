@@ -320,7 +320,7 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         time.sleep(10)
         count += 1
     if pod_status != "Running":
-        raise "Pod not starting"
+        raise ExecutionEngineKuberneteError("Pod not starting")
 
 
 
