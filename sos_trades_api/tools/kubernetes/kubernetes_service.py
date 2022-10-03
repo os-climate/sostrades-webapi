@@ -423,27 +423,28 @@ def kubernetes_study_service_pods_status(pod_identifiers):
 
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
-            result = kubernetes_service_pods_status(pod_identifiers, pod_namespace)
+            result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
+            if len(result) > 0:
+                status = result.values()[0]
+                if status == "Running":
+                    # the pod is running, we have to send a ping to the api to check that it is running too
+                    port = k8_conf['spec']['ports'][0]["port"]
+                    study_server_url = f"https://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
+                    ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
+                    study_response_data = ""
+                    try:
+                        resp = requests.request(
+                            method='GET', url=study_server_url, verify=ssl_path
+                        )
 
-            if result == "Running":
-                # the pod is running, we have to send a ping to the api to check that it is running too
-                port = k8_conf['spec']['ports'][0]["port"]
-                study_server_url = f"https://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
-                ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
-                study_response_data = ""
-                try:
-                    resp = requests.request(
-                        method='GET', url=study_server_url, verify=ssl_path
-                    )
+                        if resp.status_code == 200:
+                            study_response_data = resp.json()
 
-                    if resp.status_code == 200:
-                        study_response_data = resp.json()
+                    except:
+                        app.logger.exception('An exception occurs when trying to reach study server')
 
-                except:
-                    app.logger.exception('An exception occurs when trying to reach study server')
-
-                if study_response_data == "pong":
-                    result = "DONE"
+                    if study_response_data == "pong":
+                        result = "DONE"
 
         else:
             pass  # launch exception
@@ -454,9 +455,16 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     return result
 
 
-def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
 
-    result = ""
+def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_complete=True):
+    '''
+    check pod status
+    :param pod_identifiers: list of pod names or the pod_name
+    :param pod_namespace: namespace k8 where to find the pod
+    :param is_pod_name_complete: boolean to test if the pod name is exactly the pod name or just the begining of the name
+    in this case pod_identifiers is a pod_name
+    '''
+    result = {}
 
     # Create k8 api client object
     try:
@@ -476,11 +484,13 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace):
 
     for pod in pod_list.items:
 
-        if pod.metadata.name.startswith(pod_identifiers):
-            result = pod.status.phase
+        if pod.metadata.name in pod_identifiers:
+            result.update({pod.metadata.name: pod.status.phase})
             break
-
-
+        elif not is_pod_name_complete and isinstance(pod_identifiers, str):
+            if pod.metadata.name.startswith(pod_identifiers):
+                result.update({pod.metadata.name: pod.status.phase})
+                break
     return result
 
 
