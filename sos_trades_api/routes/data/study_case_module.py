@@ -93,7 +93,7 @@ def allocation_for_existing_study_case(study_case_identifier: int):
     if request.method == 'POST':
 
         # Verify user has study case authorisation to load study (Restricted viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -117,7 +117,7 @@ def allocation_for_copying_study_case(study_case_identifier: int):
         group_id = request.json.get('group_id', None)
 
         # Verify user has study case authorisation to load study (Restricted viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
             raise BadRequest(
                 'You do not have the necessary rights to create a study case from this process')
@@ -156,7 +156,7 @@ def study_case_allocation_status(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -179,11 +179,11 @@ def delete_study_cases():
     studies = request.json.get('studies')
 
     if studies is not None:
+        study_case_access = StudyCaseAccess(user.id)
         # Checking if user can access study data
         for study_id in studies:
             # Verify user has study case authorisation to delete study
             # (Manager)
-            study_case_access = StudyCaseAccess(user.id)
             if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
                 raise BadRequest(
                     'You do not have the necessary rights to delete this study case')
@@ -197,8 +197,6 @@ def delete_study_cases():
         'Missing mandatory parameter: study identifier in url')
 
 
-
-
 @app.route(f'/api/data/study-case/<int:study_id>/parameter/change', methods=['POST'])
 @auth_required
 def get_study_parameter_change_file_by_study_case_id(study_id):
@@ -207,7 +205,7 @@ def get_study_parameter_change_file_by_study_case_id(study_id):
         # Checking if user can access study data
         user = session['user']
         # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve this information about study case')
@@ -236,7 +234,7 @@ def study_case_notifications(study_id):
         user = session['user']
         # Verify user has study case authorisation to get study notifications
         # (Commenter at least)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         results = []
         if study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
             results = get_study_case_notifications(study_id)
@@ -273,7 +271,7 @@ def get_study_case_logs(study_case_id):
 
         # Verify user has study case authorisation to retrieve execution logs
         # of study (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_case_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve execution logs of this study case')
@@ -327,7 +325,7 @@ def load_study_case_preference_by_id(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -367,7 +365,7 @@ def update_user_authorized_for_execution(study_id):
         # Checking if user can access study data
         user = session['user']
         # Verify user has study case authorisation to load study (Contributor)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to claim study case execution right')

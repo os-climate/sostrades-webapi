@@ -35,7 +35,7 @@ def post_processing_load_study_case_by_id(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -67,7 +67,7 @@ def reset_study_from_cache_(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -100,7 +100,7 @@ def reload_study_case_by_id(study_id):
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')

@@ -32,7 +32,7 @@ def study_case_execution(study_id):
         user = session['user']
         # Verify user has study case authorisation to execute study
         # (Contributor)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
             app.logger.warn(
                 f'Start execution request, user not allowed to execute study case {study_id} ')
@@ -58,7 +58,7 @@ def study_case_stop(study_id):
         user = session['user']
         # Verify user has study case authorisation to stop execution of study
         # (Contributor)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
             app.logger.warn(
                 f'Stop execution request, user {user.id} is not allowed to execute study case {study_id} ')
@@ -106,7 +106,7 @@ def study_case_execution_status(study_id):
         user = session['user']
         # Verify user has study case authorisation to retrieve execution status
         # of study (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve execution status of this study case')
@@ -127,7 +127,7 @@ def study_case_logs(study_case_id):
 
         # Verify user has study case authorisation to retrieve execution logs
         # of study (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_case_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve execution logs of this study case')
