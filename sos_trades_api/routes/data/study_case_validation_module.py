@@ -42,7 +42,7 @@ def study_case_validation(study_id):
         comment = request.json.get('comment', None)
 
         # Verify user has study case authorisation to load study (Contributor)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to copy this study case')
