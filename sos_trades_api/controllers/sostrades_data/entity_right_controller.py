@@ -56,7 +56,7 @@ def get_study_case_entities_rights(user_id, study_id):
     study_entity = StudyCaseEntityRights(study_id=study_id)
 
     # Only process manager can request this
-    if study.check_user_right_for_study(AccessRights.MANAGER, study_id=study_id):
+    if study.check_user_right_for_study(AccessRights.MANAGER, study_case_identifier=study_id):
         with app.app_context():
 
             # Retrieve process access on user
@@ -160,7 +160,7 @@ def verify_user_authorised_for_resource(user_id, user_profile_id, entity_rights)
     elif entity_rights['resourceType'] == ResourceType.STUDYCASE:
         study = StudyCaseAccess(user_id)
         # only process manager can request this
-        return study.check_user_right_for_study(AccessRights.MANAGER, study_id=entity_rights['resourceId'])
+        return study.check_user_right_for_study(AccessRights.MANAGER, study_case_identifier=entity_rights['resourceId'])
 
     # SOSDISCIPLINE RESOURCE
     elif entity_rights['resourceType'] == ResourceType.SOSDISCIPLINE:

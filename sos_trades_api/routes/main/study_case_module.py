@@ -23,11 +23,11 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
-    set_study_data_file, get_study_in_read_only_mode, load_study_case_with_read_only_mode)
-from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
+    set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+
 import time
+
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
 @auth_required
@@ -119,6 +119,7 @@ def main_load_study_case_by_id(study_id):
         study_case_access = StudyCaseAccess(user.id)
         study_case_access_duration = time.time()
         app.logger.info(f'User {user.id:<5} => study_case_access_duration {study_case_access_duration - start_request_time:<5} sec')
+
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
@@ -129,7 +130,7 @@ def main_load_study_case_by_id(study_id):
             study_id)
         study_access_right_duration = time.time()
         app.logger.info(
-            f'User {user.id:<5} => check_user_right_for_study_duration {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
+            f'User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
 
         loadedStudy = load_study_case(study_id, study_access_right, user.id)
 

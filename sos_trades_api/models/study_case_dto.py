@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import Group, StudyCaseAccessGroup, A
 
 class StudyCaseDto:
 
-    def __init__(self, study_case_instance=None):
+    def __init__(self, study_case_instance=None, owner_group=None):
         """ Initialize DTO using a study case instance
 
         :params: study_case_instance, instance of database study case
@@ -67,18 +67,28 @@ class StudyCaseDto:
             self.current_execution_id = study_case_instance.current_execution_id
 
             # Retrieve group owner
-            owner_right = AccessRights.query.filter(
-                AccessRights.access_right == AccessRights.OWNER).first()
-            if owner_right is not None:
-                group = Group.query.join(StudyCaseAccessGroup)\
-                    .filter(StudyCaseAccessGroup.study_case_id == study_case_instance.id)\
-                    .filter(StudyCaseAccessGroup.right_id == owner_right.id)\
-                    .first()
+            if owner_group is None:
+                owner_right = AccessRights.query.filter(
+                    AccessRights.access_right == AccessRights.OWNER).first()
+                if owner_right is not None:
+                    owner_group = Group.query.join(StudyCaseAccessGroup)\
+                        .filter(StudyCaseAccessGroup.study_case_id == study_case_instance.id)\
+                        .filter(StudyCaseAccessGroup.right_id == owner_right.id)\
+                        .first()
 
-                if group is not None:
-                    self.group_name = group.name
-                    self.group_id = group.id
-                    self.group_confidential = group.confidential
+            if owner_group is not None:
+                self.group_name = owner_group.name
+                self.group_id = owner_group.id
+                self.group_confidential = owner_group.confidential
+
+    def __eq__(self, other):
+
+        for attribute_name in self.__dict__.keys():
+            if not self.__dict__[attribute_name] == other.__dict__[attribute_name]:
+                print(f'Check object equality {self.id}/{other.id}')
+                print(f'Attribute {attribute_name} is different {self.__dict__[attribute_name]}/{other.__dict__[attribute_name]}')
+                return False
+        return True
 
     def apply_ontology(self, process_metadata, repository_metadata):
 
@@ -119,3 +129,4 @@ class StudyCaseDto:
         result.update({'is_favorite': self.is_favorite})
 
         return result
+

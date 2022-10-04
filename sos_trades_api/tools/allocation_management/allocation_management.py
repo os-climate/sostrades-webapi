@@ -38,7 +38,7 @@ def create_allocation(study_case_identifier):
         new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
-        new_study_case_allocation.kubernetes_pod_name = f'sostrades-study-server-{study_case_identifier}'
+    new_study_case_allocation.kubernetes_pod_name = f'sostrades-study-server-{study_case_identifier}'
 
     db.session.add(new_study_case_allocation)
     db.session.commit()
