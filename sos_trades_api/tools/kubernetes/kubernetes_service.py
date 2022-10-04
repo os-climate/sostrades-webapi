@@ -311,7 +311,7 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
 
         for pod in pod_list.items:
-            if pod.metadata.name.startswith(pod_name):
+            if pod.metadata.name.startswith(f"{pod_name}-"):
                 pod_status = pod.status.phase
                 break
         if pod_status == "Running":
@@ -426,7 +426,9 @@ def kubernetes_study_service_pods_status(pod_identifiers):
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
             if len(result) > 0:
                 status = list(result.values())[0]
+
                 if status == "Running":
+                    result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
                     port = k8_conf['spec']['ports'][0]["port"]
                     study_server_url = f"https://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
