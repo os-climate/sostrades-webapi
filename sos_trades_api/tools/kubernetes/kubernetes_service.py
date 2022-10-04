@@ -487,8 +487,9 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
         if pod.metadata.name in pod_identifiers:
             result.update({pod.metadata.name: pod.status.phase})
             break
-        elif not is_pod_name_complete and isinstance(pod_identifiers, str):
-            if pod.metadata.name.startswith(pod_identifiers):
+        elif not is_pod_name_complete:
+            # check pod name start with study-server-id- (the "-" is to prevent amalgame with study-server ids
+            if pod.metadata.name.startswith(f"{pod_identifiers}-"):
                 result.update({pod.metadata.name: pod.status.phase})
                 break
     return result
