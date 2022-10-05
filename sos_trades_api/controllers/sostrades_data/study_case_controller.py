@@ -243,9 +243,6 @@ def delete_study_cases_and_allocation(studies):
                                f'please refresh your study cases list')
 
 
-
-
-
 def get_user_shared_study_case(user_identifier: int):
     """
     Retrieve all the study cases shared with the user

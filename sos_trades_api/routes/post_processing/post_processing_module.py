@@ -34,7 +34,7 @@ def get_post_processing(study_id):
         user = get_authenticated_user()
         # Verify user has study case authorisation to retrieve study post
         # processing (RESTRICTED_VIEWER)
-        study_case_access = StudyCaseAccess(user.id)
+        study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to retrieve this study case post processing')
@@ -92,7 +92,7 @@ def get_post_processing_filter(study_id):
     user = get_authenticated_user()
     # Verify user has study case authorisation to retrieve study post
     # processing filters (RESTRICTED_VIEWER)
-    study_case_access = StudyCaseAccess(user.id)
+    study_case_access = StudyCaseAccess(user.id, study_id)
     if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
         raise BadRequest(
             'You do not have the necessary rights to retrieve this study case post processing filters')

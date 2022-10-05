@@ -359,7 +359,7 @@ def has_user_access_right(access_right):
                     raise KeyError('You must have "study_id" parameter to check access right')
 
                 # Verify user has study case authorisation on study
-                study_case_access = StudyCaseAccess(user.id)
+                study_case_access = StudyCaseAccess(user.id, study_id)
 
                 if not study_case_access.check_user_right_for_study(access_right, study_id):
                     raise AccessDenied('You do not have the necessary rights to access this study case')
