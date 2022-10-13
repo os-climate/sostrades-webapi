@@ -16,6 +16,7 @@ limitations under the License.
 # Set server name
 import os
 os.environ['SERVER_NAME'] = 'API_V0_SERVER'
+os.environ['SOS_TRADES_SERVER_MODE'] = 'mono'
 
 from sos_trades_api.server import base_server, __file__
 
