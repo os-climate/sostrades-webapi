@@ -18,7 +18,8 @@ import os
 os.environ['SERVER_NAME'] = 'API_V0_SERVER'
 os.environ['SOS_TRADES_SERVER_MODE'] = 'mono'
 
-from sos_trades_api.server import base_server, __file__
+from sos_trades_api import __file__
+from sos_trades_api.server import base_server
 
 app = base_server.app
 db = base_server.db
