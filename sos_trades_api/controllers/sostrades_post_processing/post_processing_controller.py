@@ -9,7 +9,7 @@ post processing Functions
 """
 
 from sos_trades_api.server.base_server import study_case_cache
-from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 
 
@@ -88,7 +88,8 @@ def load_post_processing_graph_filters(study_id, discipline_key):
     study_manager = light_load_study_case(study_id)
 
     if discipline_key in study_manager.execution_engine.dm.disciplines_dict:
-        discipline = study_manager.execution_engine.dm.get_discipline(discipline_key)
+        discipline = study_manager.execution_engine.dm.get_discipline(
+            discipline_key)
 
         post_processing_factory = PostProcessingFactory()
 
@@ -119,4 +120,3 @@ def reset_study_from_cache_and_light_load(study_id):
 
     study_manager = light_load_study_case(study_id, False)
     return study_manager
-

@@ -20,7 +20,7 @@ various function  regarding chart api
 
 # pylint: disable=line-too-long
 
-from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 import time
 
 

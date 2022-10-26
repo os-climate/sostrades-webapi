@@ -22,7 +22,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
 from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import load_post_processing,\
     load_post_processing_graph_filters
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sos_trades_core.tools.post_processing.charts.chart_filter import ChartFilter
+from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 
 
 @app.route(f'/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])

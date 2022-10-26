@@ -175,7 +175,8 @@ def launch_generate_reference(reference_identifier):
 
         elapsed_time = time.time() - start_time
 
-        generation_log.debug(f'Reference/Usecase loading time : {elapsed_time} seconds')
+        generation_log.debug(
+            f'Reference/Usecase loading time : {elapsed_time} seconds')
 
         start_time = time.time()
         generation_log.debug('Start Reference/Usecase generation...')
@@ -238,7 +239,7 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api import main_server
     from sos_trades_api.config import Config
-    from sos_trades_core.api import get_sos_logger
+    from sostrades_core.api import get_sos_logger
     from sos_trades_api.tools.logger.reference_mysql_handler import (
         ReferenceMySQLHandler,
     )

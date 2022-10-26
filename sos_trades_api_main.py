@@ -192,7 +192,8 @@ def launch_generate_reference(reference_identifier):
 
         elapsed_time = time.time() - start_time
 
-        generation_log.debug(f'Reference/Usecase loading time : {elapsed_time} seconds')
+        generation_log.debug(
+            f'Reference/Usecase loading time : {elapsed_time} seconds')
 
         start_time = time.time()
         generation_log.debug('Start Reference/Usecase generation...')
@@ -222,7 +223,8 @@ def launch_generate_reference(reference_identifier):
                     'creation_date': None,
                 }
             )
-            generation_log.exception("An exception occurs during reference generation.")
+            generation_log.exception(
+                "An exception occurs during reference generation.")
             main_server.db.session.commit()
             raise ReferenceStudyError(e)
 
@@ -262,7 +264,8 @@ def trace_source_code(
         for library_path in libraries:
             if isdir(library_path):
                 try:
-                    repo = git.Repo(path=library_path, search_parent_directories=True)
+                    repo = git.Repo(path=library_path,
+                                    search_parent_directories=True)
 
                     # Retrieve url and remove connection info from it
                     raw_url = repo.remotes.origin.url
@@ -270,7 +273,8 @@ def trace_source_code(
                     try:
                         repo_name = url.split('.git')[0].split('/')[-1]
                     except:
-                        print(f'Impossible to retrieve repo name from url {url}')
+                        print(
+                            f'Impossible to retrieve repo name from url {url}')
                         repo_name = url
 
                     branch = repo.active_branch
@@ -326,7 +330,7 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api import main_server
     from sos_trades_api.config import Config
-    from sos_trades_core.api import get_sos_logger
+    from sostrades_core.api import get_sos_logger
     from sos_trades_api.tools.logger.reference_mysql_handler import (
         ReferenceMySQLHandler,
     )

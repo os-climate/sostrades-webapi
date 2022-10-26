@@ -18,10 +18,10 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
 
-from sos_trades_core.api import get_sos_logger
+from sostrades_core.api import get_sos_logger
 import time
 from graphviz import Digraph
-from sos_trades_core.execution_engine.scatter_data import SoSScatterData
+#from sostrades_core.execution_engine.scatter_data import SoSScatterData
 
 
 class SoSExecutionWorkflow:
@@ -50,7 +50,7 @@ class SoSExecutionWorkflow:
         self.construct_execution_workflow_graph(
             GEMS_graph=self.GEMS_graph, level=0, parentId=None
         )
-        
+
         # test to simplify workflow by removing scatter data
         # not yet operational
         # self.generate_scatter_data_mapping()
@@ -122,7 +122,8 @@ class SoSExecutionWorkflow:
         disc_node_info['parent'] = parentId
         disc_node_info['path'] = disc.__module__
 
-        # add discipline class to unique list. useful to retrieve ontology information only once
+        # add discipline class to unique list. useful to retrieve ontology
+        # information only once
         if disc_node_info['path'] not in self.unique_disc:
             self.unique_disc.add(disc_node_info['path'])
 
@@ -159,7 +160,7 @@ class SoSExecutionWorkflow:
                         GEMS_graph=GEMS_graph,
                     )
         elif hasattr(disc, 'sos_disciplines'):
-            if len(disc.sos_disciplines)==1:
+            if len(disc.sos_disciplines) == 1:
                 # we are probably in the case of an SoSEval equivalent.
                 # we need to retrieve sub coupling structure
                 sub_disc = disc.sos_disciplines[0]
@@ -179,9 +180,9 @@ class SoSExecutionWorkflow:
                 )
 
                 children = root_disc_id_list
-            elif len(disc.sos_disciplines)>1:
+            elif len(disc.sos_disciplines) > 1:
                 raise Exception('What do we do?')
-        
+
         disc_node_info['children'] = children
         self.nodes_dict[disc.disc_id] = disc_node_info
 
@@ -196,7 +197,8 @@ class SoSExecutionWorkflow:
         for (disc_from, disc_to, edge_parameters_list) in couplings:
             disc_from_id = disc_from.disc_id
             disc_to_id = disc_to.disc_id
-            # the discipline has been found and all out links need to be re-created
+            # the discipline has been found and all out links need to be
+            # re-created
             if disc_from_id == coupling_disc_id:
                 link = {
                     'from': disc_from_id,
@@ -211,7 +213,8 @@ class SoSExecutionWorkflow:
             disc_from_id = disc_from.disc_id
             disc_to_id = disc_to.disc_id
             if disc_to_id == coupling_disc_id:
-                # the discipline has been found and all in links need to be re-created
+                # the discipline has been found and all in links need to be
+                # re-created
                 link = {
                     'from': disc_from_id,
                     'to': disc_to_id,
@@ -228,7 +231,8 @@ class SoSExecutionWorkflow:
 
         # starting to re-create out-links from sub nodes
         for out_link in coupling_out_links:
-            # for each parameter exchanged, we need to find which sub_nodes is creating it as output
+            # for each parameter exchanged, we need to find which sub_nodes is
+            # creating it as output
             new_link = {}
             for out_param in out_link['parameters']:
                 emitter_disc = parameter_emitter_disc[out_param]
@@ -262,7 +266,8 @@ class SoSExecutionWorkflow:
 
         # finaly create in-links to sub nodes
         for in_link in coupling_in_links:
-            # for each parameter exchanged, we need to find which sub_nodes is receiving it as input
+            # for each parameter exchanged, we need to find which sub_nodes is
+            # receiving it as input
             new_link = {}
             for in_param in in_link['parameters']:
                 receiver_discs = parameter_input_disc[in_param]
@@ -368,7 +373,8 @@ class SoSExecutionWorkflow:
                     # param_name = output_param.split('.')[-1]
                     output_param_data = disc_from.ee.dm.get_data(output_param)
                     param_usage_name = f'{disc_from.__module__}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
-                    self.links_dict[link_id]['parameters'].add(param_usage_name)
+                    self.links_dict[link_id]['parameters'].add(
+                        param_usage_name)
                     self.unique_parameters.add(param_usage_name)
 
     def create_study_output_links(self):
@@ -432,7 +438,8 @@ class SoSExecutionWorkflow:
             )
         }
         for groupNodeId, groupNode in groupNodeList.items():
-            groupNode_with_links = self.create_from_to_links_with_parents(groupNode)
+            groupNode_with_links = self.create_from_to_links_with_parents(
+                groupNode)
             self.nodes_dict[groupNodeId] = groupNode_with_links
 
     def create_from_to_links_with_parents(self, node):
@@ -554,67 +561,68 @@ class SoSExecutionWorkflow:
         }
         return self.result
 
-    def generate_scatter_data_mapping(self):
-        sc_map_parameter_mapping = []
-        scatter_data_ids = set()
-        for sc_disc in self.GEMS_graph.disciplines:
-            if isinstance(sc_disc, SoSScatterData):
-                scatter_data_ids.add(sc_disc.disc_id)
-                sc_map = sc_disc.sc_map.map
-                input_names = sc_disc.sc_map.map['input_name']
-                output_names = sc_disc.sc_map.map['output_name']
-                for out_fullname in sc_disc.get_output_data_names():
-                    short_name = out_fullname.split('.')[-1]
-                    index = output_names.index(short_name)
-                    input_fullname = sc_disc.get_var_full_name(
-                        input_names[index], sc_disc._data_in
-                    )
-                    sc_disc_mapping_dict = {
-                        'discipline': sc_disc.disc_id,
-                        'type': type(sc_disc).__name__,
-                        'scatter_var': sc_map['scatter_var_name'],
-                        'input': input_names[index],
-                        'input_full': input_fullname,
-                        'output': short_name,
-                        'output_full': out_fullname,
-                        'scatter_value': out_fullname.split('.')[-2],
-                    }
-                    sc_map_parameter_mapping.append(sc_disc_mapping_dict)
-
-        # remove scatterdata from nodes
-        count = 0
-        for n_id_to_delete in scatter_data_ids:
-            del self.nodes_dict[n_id_to_delete]
-            count += 1
-        print(f'Successfully removed {count} Scatter Data nodes')
-
-        count = 0
-        recurse = True
-        while recurse:
-            # check if some links are from or to scatter data
-            scatter_data_links = [
-                l
-                for l in self.links_dict.values()
-                if l['from'] in scatter_data_ids or l['to'] in scatter_data_ids
-            ]
-            if scatter_data_links is not None and len(scatter_data_links) > 0:
-
-                # deal with one link at a time
-                links_to_delete = self.replace_scatter_data_by_links(
-                    sc_map_parameter_mapping,
-                    scatter_data_ids,
-                    l_scatter_dict=scatter_data_links[0],
-                )
-
-                # remove links from links dict
-                for l_id_to_delete in links_to_delete:
-                    del self.links_dict[l_id_to_delete]
-                    count += 1
-
-            else:
-                recurse = False
-
-        print(f'Successfully removed {count} Scatter Data links')
+# NOt yet operational
+#     def generate_scatter_data_mapping(self):
+#         sc_map_parameter_mapping = []
+#         scatter_data_ids = set()
+#         for sc_disc in self.GEMS_graph.disciplines:
+#             if isinstance(sc_disc, SoSScatterData):
+#                 scatter_data_ids.add(sc_disc.disc_id)
+#                 sc_map = sc_disc.sc_map.map
+#                 input_names = sc_disc.sc_map.map['input_name']
+#                 output_names = sc_disc.sc_map.map['output_name']
+#                 for out_fullname in sc_disc.get_output_data_names():
+#                     short_name = out_fullname.split('.')[-1]
+#                     index = output_names.index(short_name)
+#                     input_fullname = sc_disc.get_var_full_name(
+#                         input_names[index], sc_disc._data_in
+#                     )
+#                     sc_disc_mapping_dict = {
+#                         'discipline': sc_disc.disc_id,
+#                         'type': type(sc_disc).__name__,
+#                         'scatter_var': sc_map['scatter_var_name'],
+#                         'input': input_names[index],
+#                         'input_full': input_fullname,
+#                         'output': short_name,
+#                         'output_full': out_fullname,
+#                         'scatter_value': out_fullname.split('.')[-2],
+#                     }
+#                     sc_map_parameter_mapping.append(sc_disc_mapping_dict)
+#
+#         # remove scatterdata from nodes
+#         count = 0
+#         for n_id_to_delete in scatter_data_ids:
+#             del self.nodes_dict[n_id_to_delete]
+#             count += 1
+#         print(f'Successfully removed {count} Scatter Data nodes')
+#
+#         count = 0
+#         recurse = True
+#         while recurse:
+#             # check if some links are from or to scatter data
+#             scatter_data_links = [
+#                 l
+#                 for l in self.links_dict.values()
+#                 if l['from'] in scatter_data_ids or l['to'] in scatter_data_ids
+#             ]
+#             if scatter_data_links is not None and len(scatter_data_links) > 0:
+#
+#                 # deal with one link at a time
+#                 links_to_delete = self.replace_scatter_data_by_links(
+#                     sc_map_parameter_mapping,
+#                     scatter_data_ids,
+#                     l_scatter_dict=scatter_data_links[0],
+#                 )
+#
+#                 # remove links from links dict
+#                 for l_id_to_delete in links_to_delete:
+#                     del self.links_dict[l_id_to_delete]
+#                     count += 1
+#
+#             else:
+#                 recurse = False
+#
+#         print(f'Successfully removed {count} Scatter Data links')
 
     def replace_scatter_data_by_links(
         self, sc_map_parameter_mapping, scatter_data_ids, l_scatter_dict
@@ -622,7 +630,8 @@ class SoSExecutionWorkflow:
         links_to_delete = set()
         if l_scatter_dict['from'] in scatter_data_ids:
             # out link of a scatter data
-            # recreate all links using parameter exchanged and the mapping of parameters
+            # recreate all links using parameter exchanged and the mapping of
+            # parameters
             for param_out in l_scatter_dict['parameters']:
                 # retrieve param_in from scatter_data mapping
                 param_mapping = [
@@ -665,13 +674,15 @@ class SoSExecutionWorkflow:
                         links_to_delete.add(l_in_id)
                     print(scatter_param_name)
             # remove parameter from links
-            self.links_dict[l_scatter_dict['id']]['parameters'].remove(param_out)
+            self.links_dict[l_scatter_dict['id']
+                            ]['parameters'].remove(param_out)
             if len(self.links_dict[l_scatter_dict['id']]['parameters']) == 0:
                 links_to_delete.add(l_scatter_dict['id'])
 
         elif l_scatter_dict['to'] in scatter_data_ids:
             # in link of a scatter data
-            # recreate all links using parameter exchanged and the mapping of parameters
+            # recreate all links using parameter exchanged and the mapping of
+            # parameters
             for param_in in l_scatter_dict['parameters']:
                 # retrieve param_out from scatter_data mapping
                 param_mapping = [
@@ -682,7 +693,8 @@ class SoSExecutionWorkflow:
                 ][0]
                 param_out = param_mapping['output']
 
-                # look for all out links of the scatter data with this parameter
+                # look for all out links of the scatter data with this
+                # parameter
                 out_links = {
                     l_id: l
                     for l_id, l in self.links_dict.items()
@@ -714,7 +726,8 @@ class SoSExecutionWorkflow:
                         links_to_delete.add(l_out_id)
                     print(scatter_param_name)
             # remove parameter from links
-            self.links_dict[l_scatter_dict['id']]['parameters'].remove(param_in)
+            self.links_dict[l_scatter_dict['id']
+                            ]['parameters'].remove(param_in)
             if len(self.links_dict[l_scatter_dict['id']]['parameters']) == 0:
                 links_to_delete.add(l_scatter_dict['id'])
 

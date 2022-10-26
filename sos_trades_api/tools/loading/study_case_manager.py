@@ -16,28 +16,28 @@ limitations under the License.
 import time
 
 from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
 """
 
-from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
-from sos_trades_core.tools.tree.serializer import DataSerializer
-from sos_trades_core.tools.dashboard.dashboard_factory import generate_dashboard
+from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
 from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseAccessGroup,
     Group,
     AccessRights,
 )
-from sos_trades_core.execution_engine.data_connector.ontology_data_connector import (
+from sostrades_core.execution_engine.data_connector.ontology_data_connector import (
     GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
     OntologyDataConnector,
 )
 from sos_trades_api.server.base_server import db, app
-from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
+from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
 from os.path import join
 
@@ -46,7 +46,7 @@ import os
 
 from eventlet import sleep
 from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
-from sos_trades_core.api import get_sos_logger
+from sostrades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
 import json
@@ -358,28 +358,34 @@ class StudyCaseManager(BaseStudyManager):
         save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
         """
         with app.app_context():
-            #check study status is DONE
+            # check study status is DONE
 
             #-------------------
             # save loaded study in read only mode
             loaded_study_case = LoadedStudyCase(self, False, True, None, True)
-            # if the loaded status is not yet at LOADED, load treeview post proc anyway
+            # if the loaded status is not yet at LOADED, load treeview post
+            # proc anyway
             if self.load_status != LoadStatus.LOADED:
-                loaded_study_case.load_treeview_and_post_proc(self,False,True,None, True)
+                loaded_study_case.load_treeview_and_post_proc(
+                    self, False, True, None, True)
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.__write_loaded_study_case_in_json_file(loaded_study_case, False)
+            self.__write_loaded_study_case_in_json_file(
+                loaded_study_case, False)
 
-            if self.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
-                #save the study with no data for restricted read only access:
-                loaded_study_case.load_treeview_and_post_proc(self,True,True,None, True)
-                self.__write_loaded_study_case_in_json_file(loaded_study_case, True)
+            if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
+                # save the study with no data for restricted read only access:
+                loaded_study_case.load_treeview_and_post_proc(
+                    self, True, True, None, True)
+                self.__write_loaded_study_case_in_json_file(
+                    loaded_study_case, True)
 
                 #-------------------
                 # save dashboard
-                dashboard = generate_dashboard(self.execution_engine, loaded_study_case.post_processings)
-                dashboard_file_path = Path(self.dump_directory).joinpath(self.DASHBOARD_FILE_NAME)
+                dashboard = generate_dashboard(
+                    self.execution_engine, loaded_study_case.post_processings)
+                dashboard_file_path = Path(self.dump_directory).joinpath(
+                    self.DASHBOARD_FILE_NAME)
                 write_object_in_json_file(dashboard, dashboard_file_path)
-
 
     def __load_study_case_from_identifier(self):
         """
@@ -506,7 +512,8 @@ class StudyCaseManager(BaseStudyManager):
                 )
 
                 # copy file into backup file:
-                copy(root_folder.joinpath(file), root_folder.joinpath(backup_file_name))
+                copy(root_folder.joinpath(file),
+                     root_folder.joinpath(backup_file_name))
             backup_done = True
         return backup_done
 
@@ -527,7 +534,8 @@ class StudyCaseManager(BaseStudyManager):
                 file_name = backup_file.name.replace(self.BACKUP_FILE_NAME, '')
 
                 # copy backup file in place of pickle:
-                copy(root_folder.joinpath(backup_file), root_folder.joinpath(file_name))
+                copy(root_folder.joinpath(backup_file),
+                     root_folder.joinpath(file_name))
             reload_done = True
 
         return reload_done
@@ -541,15 +549,16 @@ class StudyCaseManager(BaseStudyManager):
         loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
         if no_data:
             loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
-        study_file_path = Path(self.dump_directory).joinpath(loaded_study_case_file_name)
+        study_file_path = Path(self.dump_directory).joinpath(
+            loaded_study_case_file_name)
 
         # check nan and infinity in post processings
         if len(loaded_study.post_processings) > 0:
-            text_post_proc_data = json.dumps(loaded_study.post_processings, cls=CustomJsonEncoder).replace("NaN","null").replace("Infinity","null")
+            text_post_proc_data = json.dumps(loaded_study.post_processings, cls=CustomJsonEncoder).replace(
+                "NaN", "null").replace("Infinity", "null")
             json_post_proc_data = json.loads(text_post_proc_data)
             loaded_study.post_processings = json_post_proc_data
         return write_object_in_json_file(loaded_study, study_file_path)
-
 
     def read_loaded_study_case_in_json_file(self, no_data=False):
         """
@@ -626,11 +635,14 @@ class StudyCaseManager(BaseStudyManager):
         if len(input_datas) > 0:
             if anonymize_key in input_datas[0].keys():
                 data_value = input_datas[0][anonymize_key]
-                # convert data into dataframe then ioBytes to have the same format as if retrieved from the dm
-                df_data = DataSerializer.convert_to_dataframe_and_bytes_io(data_value, parameter_key)
+                # convert data into dataframe then ioBytes to have the same
+                # format as if retrieved from the dm
+                df_data = DataSerializer.convert_to_dataframe_and_bytes_io(
+                    data_value, parameter_key)
                 return df_data
 
-        # it should never be there because an exception should be raised if the file could not be red
+        # it should never be there because an exception should be raised if the
+        # file could not be red
         return None
 
     @staticmethod
@@ -652,4 +664,3 @@ class StudyCaseManager(BaseStudyManager):
                 data_root_dir = join(data_root_dir, str(study_case_id))
 
         return data_root_dir
-

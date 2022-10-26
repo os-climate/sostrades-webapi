@@ -29,7 +29,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
     """ Test class for methods related to calculation controller
     Default accounts are used to check those controller
     """
-    test_repository_name = 'sos_trades_core.sos_processes.test'
+    test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
     test_uc_name = 'usecase_coupling_2_disc_test'
     test_study_name = 'test_creation'

@@ -19,16 +19,17 @@ Class that represent a study case with its logical treeview loaded
 """
 import os
 from sos_trades_api.tools.chart_tools import load_post_processing
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 import json
 from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
 from sqlalchemy import and_
-from sos_trades_core.tools.dashboard.dashboard_factory import generate_dashboard
+from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
 
 from sos_trades_api.server.base_server import db, app
 
 import time
 from sos_trades_api.models.study_case_dto import StudyCaseDto
+
 
 class LoadStatus:
     NONE = 'none'
@@ -36,6 +37,7 @@ class LoadStatus:
     READ_ONLY_MODE = 'read_only_mode'
     LOADED = 'loaded'
     IN_ERROR = 'in_error'
+
 
 class LoadedStudyCase:
 
@@ -56,18 +58,20 @@ class LoadedStudyCase:
         self.dashboard = {}
 
         if user_id is not None:
-            self.user_id_execution_authorized = self.__load_user_execution_authorised(user_id)
+            self.user_id_execution_authorized = self.__load_user_execution_authorised(
+                user_id)
         else:
             self.user_id_execution_authorized = 0
 
         if self.load_status == LoadStatus.LOADED:
-            self.load_treeview_and_post_proc(study_case_manager, no_data, read_only, user_id, load_post_processings)
-
+            self.load_treeview_and_post_proc(
+                study_case_manager, no_data, read_only, user_id, load_post_processings)
 
     def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id, load_post_proc):
         study_case_manager.execution_engine.dm.treeview = None
 
-        treeview = study_case_manager.execution_engine.get_treeview(no_data, read_only)
+        treeview = study_case_manager.execution_engine.get_treeview(
+            no_data, read_only)
         self.n2_diagram = {}
 
         if treeview is not None:
@@ -79,7 +83,7 @@ class LoadedStudyCase:
         self.__load_user_study_preference(user_id)
 
         # Loading charts if study is finished
-        if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_DONE:
+        if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
             # Get discipline filters
             self.post_processings = load_post_processing(
                 study_case_manager.execution_engine, load_post_proc)
@@ -113,7 +117,8 @@ class LoadedStudyCase:
         :type: integer
         """
         # Retrieve study case with user authorised for execution
-        study_case_loaded = StudyCase.query.filter(StudyCase.id == self.study_case.id).first()
+        study_case_loaded = StudyCase.query.filter(
+            StudyCase.id == self.study_case.id).first()
 
         # Check a user is declared in study case with authorization
         if study_case_loaded.user_id_execution_authorised is None:
@@ -131,7 +136,8 @@ class LoadedStudyCase:
 
             user_id_exec_auth = user_id
         else:
-            # A user is declared as authorised, check if he is connected in coedition room
+            # A user is declared as authorised, check if he is connected in
+            # coedition room
             user_coedition = StudyCoeditionUser.query.filter(
                 StudyCoeditionUser.user_id == study_case_loaded.user_id_execution_authorised).filter(
                 StudyCoeditionUser.study_case_id == self.study_case.id).first()

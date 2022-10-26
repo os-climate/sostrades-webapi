@@ -1,7 +1,7 @@
-from sos_trades_core.study_manager.study_manager import StudyManager
-from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
-from sos_trades_core.tools.tree.treenode import TreeNode
-from sos_trades_core.tools.tree.treeview import TreeView
+from sostrades_core.study_manager.study_manager import StudyManager
+from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.tree.treenode import TreeNode
+from sostrades_core.tools.tree.treeview import TreeView
 from graphviz import Digraph
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_ontology
 
@@ -75,7 +75,8 @@ class InterfaceDiagramGenerator:
                 if hasattr(disc, '_ontology_data'):
                     label = disc._ontology_data.get('label', '')
                 # check if discipline has coupling structure and retrieve it
-                # this is particularly usefull for subprocess like DOE / GridSearch
+                # this is particularly usefull for subprocess like DOE /
+                # GridSearch
                 if hasattr(disc, 'coupling_structure'):
                     discipline_coupling_list = (
                         disc.coupling_structure.graph.get_disciplines_couplings()
@@ -148,7 +149,8 @@ class InterfaceDiagramGenerator:
                     unique_parameters_ids.add(param_id)
                     parameters_node_info = {
                         'id': param_id,
-                        # by default, we retrieve the namespace of the discipline outputting this parameter
+                        # by default, we retrieve the namespace of the
+                        # discipline outputting this parameter
                         'namespace': disc_from_namespace,
                         'type': 'ParameterNode',
                         'parameter_name': parameter_name,
@@ -158,7 +160,8 @@ class InterfaceDiagramGenerator:
                     }
                 parameters_list.append(parameters_node_info)
 
-                # add link from out disc to parameter and from parameter to in disc
+                # add link from out disc to parameter and from parameter to in
+                # disc
                 out_link_id = f'{disc_from_id}->{param_id}'
                 in_link_id = f'{param_id}->{disc_to_id}'
                 weight = 0
@@ -207,10 +210,12 @@ class InterfaceDiagramGenerator:
             # edge_attr={'minlen':'0'},
         )
         if self.draw_subgraphs:
-            main_nodes = [n for n in discipline_node_list if n['namespace'] == '']
+            main_nodes = [
+                n for n in discipline_node_list if n['namespace'] == '']
             # draw discipline nodes
             for node_dict in main_nodes:
-                self.draw_discipline_node(digraph=dot, node_info_dict=node_dict)
+                self.draw_discipline_node(
+                    digraph=dot, node_info_dict=node_dict)
             main_parameters_nodes = [
                 n for n in parameter_nodes_list if n['namespace'] == ''
             ]
@@ -227,7 +232,8 @@ class InterfaceDiagramGenerator:
         else:
             # draw discipline nodes
             for node_dict in discipline_node_list:
-                self.draw_discipline_node(digraph=dot, node_info_dict=node_dict)
+                self.draw_discipline_node(
+                    digraph=dot, node_info_dict=node_dict)
 
             # draw parameter nodes
             for node_dict in parameter_nodes_list:
@@ -278,10 +284,12 @@ class InterfaceDiagramGenerator:
         if node_info_dict['descriptor'] is not None:
             if node_info_dict['datatype'] == 'dataframe':
                 descriptor = (
-                    "|{Columns:|{" + '|'.join(node_info_dict['descriptor']) + "}}"
+                    "|{Columns:|{" +
+                    '|'.join(node_info_dict['descriptor']) + "}}"
                 )
             elif node_info_dict['datatype'] == 'dict':
-                descriptor = "|{Keys:|{" + '|'.join(node_info_dict['descriptor']) + "}}"
+                descriptor = "|{Keys:|{" + \
+                    '|'.join(node_info_dict['descriptor']) + "}}"
         parameter_label = node_info_dict["parameter_name"]
         if node_info_dict.get('label', '') != '':
             if len(parameter_label.split('.')) > 1:
@@ -362,7 +370,8 @@ class InterfaceDiagramGenerator:
         children_list = []
         if len(treenode.children) > 0:
             for child_treenode in treenode.children:
-                children_list.append(self.get_children_namespaces(child_treenode))
+                children_list.append(
+                    self.get_children_namespaces(child_treenode))
         namespace_tree = {
             ns_label: sorted(children_list, key=lambda e: list(e.keys())[0])
         }
@@ -407,7 +416,8 @@ class InterfaceDiagramGenerator:
                 ]
                 # draw parameter nodes
                 for node_dict in subgraph_parameters_nodes:
-                    self.draw_parameter_node(digraph=subgraph, node_info_dict=node_dict)
+                    self.draw_parameter_node(
+                        digraph=subgraph, node_info_dict=node_dict)
                 if len(subgraph_children_list) > 0:
                     self.generate_subgraph(
                         subgraph_list=subgraph_children_list,
@@ -428,16 +438,19 @@ class InterfaceDiagramGenerator:
         ontology_request = {
             'parameters': parameter_list,
         }
-        ontology_response_data = load_ontology(ontology_request=ontology_request)
+        ontology_response_data = load_ontology(
+            ontology_request=ontology_request)
 
         complemented_parameter_nodes_list = parameter_nodes_list
         if ontology_response_data is not None:
-            ontology_parameters_data = ontology_response_data.get('parameters', None)
+            ontology_parameters_data = ontology_response_data.get(
+                'parameters', None)
             if ontology_parameters_data is not None:
                 complemented_parameter_nodes_list = []
                 for parameter_dict in parameter_nodes_list:
                     parameter_dict['label'] = ontology_parameters_data.get(
-                        parameter_dict['parameter_name'].split('.')[-1], {'label': ''}
+                        parameter_dict['parameter_name'].split(
+                            '.')[-1], {'label': ''}
                     )['label']
                     complemented_parameter_nodes_list.append(parameter_dict)
         return complemented_parameter_nodes_list

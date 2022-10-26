@@ -24,12 +24,12 @@ from pandas import DataFrame, Index, Series
 import numpy as np
 
 from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
-from sos_trades_core.execution_engine.namespace import Namespace
-from sos_trades_core.tools.post_processing.tables.table_style import TableStyles
-from sos_trades_core.tools.post_processing.charts.chart_filter import ChartFilter
-from sos_trades_core.tools.post_processing.tables.instanciated_table import InstanciatedTable
-from sos_trades_core.tools.post_processing.charts.two_axes_instanciated_chart import TwoAxesInstanciatedChart
-from sos_trades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import InstantiatedPlotlyNativeChart
+from sostrades_core.execution_engine.namespace import Namespace
+from sostrades_core.tools.post_processing.tables.table_style import TableStyles
+from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
+from sostrades_core.tools.post_processing.tables.instanciated_table import InstanciatedTable
+from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import TwoAxesInstanciatedChart
+from sostrades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import InstantiatedPlotlyNativeChart
 
 
 from sos_trades_api.models.loaded_group import LoadedGroup
@@ -43,10 +43,10 @@ from sos_trades_api.models.user_application_right import UserApplicationRight
 from sos_trades_api.models.model_status import ModelStatus
 from sos_trades_api.models.database_models import StudyCase, Group, User, GroupAccessUser, \
     StudyCaseExecutionLog, ReferenceStudy, StudyCaseValidation, Link, StudyCaseAllocation, News
-from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights,StudyCaseLog
+from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights, StudyCaseLog
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_core.tools.post_processing.post_processing_bundle import PostProcessingBundle
+from sostrades_core.tools.post_processing.post_processing_bundle import PostProcessingBundle
 
 
 class CustomJsonEncoder(JSONEncoder):
