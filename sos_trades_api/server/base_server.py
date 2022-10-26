@@ -18,7 +18,7 @@ import traceback as tb
 import click
 
 from werkzeug.exceptions import HTTPException
-from flask import json, jsonify
+from flask import json, jsonify, session, make_response
 from flask import Flask, render_template, request
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -32,7 +32,9 @@ from sos_trades_api.config import Config
 import logging
 import os
 from os.path import dirname, join
+import time
 
+START_TIME = 'start_time'
 
 # Create  flask server and set local configuration
 server_name = __name__
@@ -40,6 +42,7 @@ if os.environ.get('SERVER_NAME') is not None:
     server_name = os.environ['SERVER_NAME']
 
 app = Flask(server_name)
+
 app.logger.propagate = False
 
 for handler in app.logger.handlers:
@@ -91,37 +94,6 @@ try:
     app.logger.info(
         f'{os.environ["FLASK_ENV"]} environment configuration loaded')
 
-    # Identity provider checks
-
-    # -------- SAML V2 provider
-    # Test if SAML settings file path is filled
-    if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
-        app.logger.info('SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
-    else:
-        app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
-
-        # Check that the settings.json file is present:
-        sso_path = os.environ['SAML_V2_METADATA_FOLDER']
-        if not os.path.exists(sso_path):
-            app.logger.info('SSO folder not found, SSO will be disabled')
-        else:
-            app.logger.info('SSO folder file found')
-
-    # -------- Github oauth provider
-    if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
-        app.logger.info('GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
-    else:
-        app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
-
-        # Check that the settings.json file is present:
-        settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
-        if not os.path.exists(settings_json_file):
-            app.logger.info('GitHub IdP/oauth settings.json file not found, SSO will be disabled')
-        else:
-            app.logger.info('GitHub IdP/oauth settings.json file found')
-
-
-
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
 except Exception as error:
@@ -136,9 +108,22 @@ study_case_cache = StudyCaseCache()
 # Create authentication token (JWT) manager
 jwt = JWTManager(app)
 
-# Using the expired_token_loader decorator, we will now call
-# this function whenever an expired but otherwise valid access
-# token attempts to access an endpoint
+
+def load_specific_study(study_identifier):
+    """
+    Load a specific study.
+    Generally used when a specific study is launched to manage an unique study at startup
+    :param study_identifier: database identifier of the study to load
+    :type study_identifier: integer
+
+    """
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
+
+    with app.app_context():
+        study_manager = study_case_cache.get_study_case(study_identifier, False)
+        study_case_manager_loading(study_manager, False, False)
+        study_manager.loaded = True
+        study_manager.load_in_progress = False
 
 
 def database_process_setup():
@@ -186,8 +171,44 @@ def database_process_setup():
     return database_initialized
 
 
-def database_check_study_case_state(with_deletion = False):
-    """ Check study case state in database
+def check_identity_provider_availability():
+    """
+    Check is environment variable needed to activate SAML_V2 compatible identity provider or
+    GitHub OAuth provider are available.
+    """
+
+    # -------- SAML V2 provider
+    # Test if SAML settings file path is filled
+    if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
+        app.logger.info('SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
+    else:
+        app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
+
+        # Check that the settings.json file is present:
+        sso_path = os.environ['SAML_V2_METADATA_FOLDER']
+        if not os.path.exists(sso_path):
+            app.logger.info('SSO folder not found, SSO will be disabled')
+        else:
+            app.logger.info('SSO folder file found')
+
+    # -------- Github oauth provider
+    if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
+        app.logger.info('GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
+    else:
+        app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
+        if not os.path.exists(settings_json_file):
+            app.logger.info('GitHub IdP/oauth settings.json file not found, SSO will be disabled')
+        else:
+            app.logger.info('GitHub IdP/oauth settings.json file found')
+
+
+def database_check_study_case_state(with_deletion=False):
+    """
+    Check study case state in database
+
     Try to load each of them and store loading status and last modification date
     Give as outputs all study case that cannot be loaded and have more than one month
     with no changes.
@@ -259,7 +280,7 @@ def database_check_study_case_state(with_deletion = False):
 
                 current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
                 date_delta = current_date - study_case.modification_date
-
+                print(f'DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}')
                 is_date_ok = date_delta.days > 30
 
             except:
@@ -310,30 +331,31 @@ def database_check_study_case_state(with_deletion = False):
 
 
 def database_create_standard_user(username, email, firstname, lastname):
-    '''
-        Set initial data into db:
-        create Administrator account and set password
-        create test_user account and set password
-        create default group ALL_users
-    '''
+    """
+    Set initial data into db:
+    create Administrator account and set password
+    create test_user account and set password
+    create default group ALL_users
+    """
     from sos_trades_api.controllers.sostrades_data.user_controller import create_standard_user_account
     create_standard_user_account(username, email, firstname, lastname)
 
 
 def database_reset_user_password(username):
-    '''
-        Reset user password if account already exist
-        :param:username, username of the user
-    '''
+    """
+    Reset user password if account already exist
+
+    :param:username, username of the user
+    """
     from sos_trades_api.controllers.sostrades_data.user_controller import reset_local_user_password_by_name
 
     reset_local_user_password_by_name(username)
 
 
 def database_rename_applicative_group(new_group_name):
-    '''
-        rename a group from old_group_name to new_group_name
-    '''
+    """
+    Rename a group from old_group_name to new_group_name
+    """
     from sos_trades_api.controllers.sostrades_data.group_controller import rename_applicative_group
 
     rename_applicative_group(new_group_name)
@@ -342,6 +364,7 @@ def database_rename_applicative_group(new_group_name):
 def database_change_user_profile(username, new_profile=None):
     """
     Update a user profile
+
     :param username: user identifier
     :param new_profile: profile name to set (if not set then remove user profile)
     """
@@ -387,8 +410,10 @@ def database_change_user_profile(username, new_profile=None):
 def database_create_api_key(group_name, api_key_name):
     """
     Create a new api key for the given group in database
+
     :param group_name: Group identifier to assign api key
     :type group_name: str
+
     :param api_key_name: Name to set to the api key
     :type api_key_name: str
     """
@@ -430,6 +455,7 @@ def database_create_api_key(group_name, api_key_name):
 def database_renew_api_key(group_name):
     """
     Renew api key for the given group in database
+
     :param group_name: Group identifier with assigned api key
     :type group_name: str
     """
@@ -462,6 +488,7 @@ def database_renew_api_key(group_name):
 def database_revoke_api_key(group_name):
     """
     Revoke api key for the given group in database
+
     :param group_name: Group identifier with assigned api key
     :type group_name: str
     """
@@ -505,6 +532,10 @@ def database_list_api_key():
             for device in devices:
                 app.logger.info(device)
 
+def clean_all_allocations_method():
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+    clean_all_allocations_services_and_deployments
+    clean_all_allocations_services_and_deployments()
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -644,6 +675,14 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         database_list_api_key()
 
+    # Add custom command on flask cli to clean allocations, services and deployments
+    @click.command('clean_all_allocations')
+    @with_appcontext
+    def clean_all_allocations():
+        """  delete all allocations from db and delete services and deployments with kubernetes api
+        """
+        clean_all_allocations_method()
+
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
     app.cli.add_command(create_standard_user)
@@ -654,6 +693,11 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(renew_api_key)
     app.cli.add_command(revoke_api_key)
     app.cli.add_command(list_api_key)
+    app.cli.add_command(clean_all_allocations)
+
+    # Using the expired_token_loader decorator, we will now call
+    # this function whenever an expired but otherwise valid access
+    # token attempts to access an endpoint
 
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):
@@ -680,7 +724,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # load & register APIs
     # from sos_trades_api.routes import *
 
-
     # Register exception handler
     @app.errorhandler(Exception)
     def error_handler(error):
@@ -702,6 +745,42 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
                 'description': str(error)
             }), 500
 
+    @app.before_request
+    def before_request():
+        session[START_TIME] = time.time()
 
-if __name__ == "main":
-    database_process_setup()
+
+    @app.after_request
+    def after_request(response):
+
+        # Set logging info regarding request processing time
+        duration = 0
+        if START_TIME in session:
+            duration = time.time() - session[START_TIME]
+
+        app.logger.info(
+            f'{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.'
+        )
+
+        # Enable CORS requests for local development
+        # The following will allow the local angular-cli development environment to
+        # make requests to this server (otherwise, you will get 403s due to same-
+        # origin poly)
+        response.headers.add('Access-Control-Allow-Origin',
+                             'http://localhost:4200')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization,Set-Cookie,Cookie,Cache-Control,Pragma,Expires')  # noqa
+        response.headers.add('Access-Control-Allow-Methods',
+                             'GET,PUT,POST,DELETE')
+
+        # disable caching all requests
+        response.cache_control.no_cache = True
+        response.cache_control.no_store = True
+        response.cache_control.must_revalidate = True
+
+        return response
+
+@app.route('/api/ping', methods=['GET'])
+def ping():
+    return make_response(jsonify('pong'), 200)

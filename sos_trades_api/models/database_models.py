@@ -22,7 +22,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateT
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from datetime import datetime
 import pytz
 import uuid
@@ -229,6 +229,37 @@ class StudyCase(db.Model):
             'description': self.description,
             'creation_date': self.creation_date,
             'modification_date': self.modification_date
+        }
+
+
+class StudyCaseAllocation(db.Model):
+    """StudyCaseAllocation class"""
+
+    IN_PROGRESS = 'IN_PROGRESS'
+    DONE = 'DONE'
+    ERROR = 'IN_ERROR'
+
+    id = Column(Integer, primary_key=True)
+    study_case_id = Column(Integer,
+                           ForeignKey(f'{StudyCase.__tablename__}.id',
+                                      ondelete="CASCADE",
+                                      name='fk_study_case_allocation_study_case_id'),
+                           nullable=False, unique=True, index=True)
+    status = Column(String(64), unique=False, server_default='')
+    kubernetes_pod_name = Column(String(128), index=False, unique=True, server_default=None)
+    message = Column(Text, index=False, unique=False, nullable=True)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'study_case_id': self.study_case_id,
+            'status': self.status,
+            'kubernetes_pod_name': self.kubernetes_pod_name,
+            'message': self.message,
+            'creation_date': self.creation_date
         }
 
 
@@ -692,6 +723,32 @@ class StudyCaseDisciplineStatus(db.Model):
         }
 
 
+class StudyCaseLog(db.Model):
+    id = Column(Integer, primary_key=True)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f'{StudyCase.__tablename__}.id',
+                               ondelete="CASCADE",
+                               name='fk_study_case_log_study_case_id'))
+    name = Column(Text, index=False, unique=False)
+    log_level_name = Column(String(64), index=False, unique=False)
+    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    message = Column(Text, index=False, unique=False)
+    exception = Column(Text, index=False, unique=False)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'name': self.name,
+            'level': self.log_level_name,
+            'created': self.created,
+            'message': self.message,
+            'exception': self.exception
+        }
+
+
 class StudyCaseExecutionLog(db.Model):
     id = Column(Integer, primary_key=True)
     study_case_id = Column(Integer,
@@ -713,7 +770,6 @@ class StudyCaseExecutionLog(db.Model):
 
     def serialize(self):
         """ json serializer for dto purpose
-            datamanager attribute is not serialize because is is intended to be only server side data
         """
 
         return {
@@ -776,7 +832,7 @@ class ReferenceStudy(db.Model):
                             ondelete="CASCADE",
                             name='fk_reference_study_process_id'))
     name = Column(String(128), index=True, unique=False)
-    reference_path = Column(String(128), index=True, unique=False)
+    reference_path = Column(String(256), index=True, unique=False)
     reference_type = Column(String(128), index=True, unique=False)
     creation_date = Column(DateTime(timezone=True), nullable=True)
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
@@ -872,6 +928,29 @@ class OAuthState(db.Model):
             'state': self.state,
             'creation_date': self.creation_date,
             'check_date': self.check_date
+        }
+
+
+class News(db.Model):
+    """
+        Class that register news about application
+    """
+    id = Column(Integer, primary_key=True)
+    message = Column(String(300), index=False, unique=False)
+    user_id = Column(Integer, ForeignKey(f'{User.__tablename__}.id', name='fk_news_user_id'), nullable=True)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    last_modification_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+
+        return {
+            'id': self.id,
+            'message': self.message,
+            'user_id': self.user_id,
+            'creation_date': self.creation_date,
+            'last_modification_date': self.last_modification_date
         }
 
 

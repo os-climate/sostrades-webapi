@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for study procedures
@@ -49,7 +50,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUpClass(cls):
         DatabaseUnitTestConfiguration.setUpClass()
 
-        from sos_trades_api.base_server import database_process_setup
+        from sos_trades_api.server.base_server import database_process_setup
         database_process_setup()
 
     def setUp(self):
@@ -57,6 +58,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
         from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -101,30 +103,45 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 DatabaseUnitTestConfiguration.db.session.add(
                     new_user_test_auth)
                 DatabaseUnitTestConfiguration.db.session.commit()
+
             # Create test studycase
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     self.test_study_name,
+                                                     self.test_repository_name,
+                                                     self.test_process_name,
+                                                     self.test_user_group_id)
+
+            self.test_study_id = new_study_case.id
+
             created_study = create_study_case(self.test_user_id,
-                                              self.test_study_name,
-                                              self.test_repository_name,
-                                              self.test_process_name,
-                                              self.test_user_group_id,
+                                              self.test_study_id,
                                               None)
-            self.test_study_id = created_study.study_case.id
+
             # Create test csv studycase
+            new_study_case_csv = create_empty_study_case(self.test_user_id,
+                                                         self.test_study_csv_name,
+                                                         self.test_repository_name,
+                                                         self.test_csv_process_name,
+                                                         self.test_user_group_id)
+
+            self.test_study_csv_id = new_study_case_csv.id
+
             created_csv_study = create_study_case(self.test_user_id,
-                                                  self.test_study_csv_name,
-                                                  self.test_repository_name,
-                                                  self.test_csv_process_name,
-                                                  self.test_user_group_id,
+                                                  self.test_study_csv_id,
                                                   None)
-            self.test_study_csv_id = created_csv_study.study_case.id
+
             # Create  test clear_error studycase
+            new_study_case_clear_error = create_empty_study_case(self.test_user_id,
+                                                                 self.test_study_clear_error_name,
+                                                                 self.test_repository_name,
+                                                                 self.test_clear_error_process_name,
+                                                                 self.test_user_group_id)
+
+            self.test_study_clear_error_id = new_study_case_clear_error.id
+
             created_clear_error_study = create_study_case(self.test_user_id,
-                                                          self.test_study_clear_error_name,
-                                                          self.test_repository_name,
-                                                          self.test_clear_error_process_name,
-                                                          self.test_user_group_id,
+                                                          self.test_study_clear_error_id,
                                                           None)
-            self.test_study_clear_error_id = created_clear_error_study.study_case.id
 
     def tearDown(self):
         super().tearDown()
@@ -179,7 +196,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_load_study_case(self):
         from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -198,7 +216,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False and study_manager.loaded == True:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
@@ -214,17 +232,41 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertEqual(loaded_study.study_case.repository, self.test_repository_name,
                              'Created study case repository does not match, test set up repository name used')
 
+    def test_study_case_log(self):
+        from sos_trades_api.models.database_models import StudyCase, AccessRights,StudyCaseLog
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
+        from sos_trades_api.server.base_server import study_case_cache
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_name).first()
+            self.assertIsNotNone(
+                study_test, 'Unable to retrieve study case created for test')
+
+            #check that logs are created
+            self.assertNotEqual(len(StudyCaseLog.query\
+            .filter(StudyCaseLog.study_case_id == study_test.id)\
+            .all()), 0)
+
     def test_copy_study_case(self):
         from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import copy_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
             study_copy_name = "test_study_copy"
-            copy_study_case(study_test.id, study_copy_name,
-                            self.test_user_group_id, self.test_user_id)
+
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     study_copy_name,
+                                                     study_test.repository,
+                                                     study_test.process,
+                                                     self.test_user_group_id)
+
+            copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
+
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
             self.assertEqual(study_case_copied.process, self.test_process_name,
@@ -235,7 +277,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -274,7 +317,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         counter = 0
 
         while not stop:
-            if study_manager.load_in_progress == False and study_manager.loaded == True:
+            if study_manager.load_status == LoadStatus.LOADED:
                 stop = True
             else:
                 if counter > 60:
@@ -297,12 +340,13 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_update_study_parameters_csv_data(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from werkzeug.datastructures import FileStorage
         from os.path import join, dirname
         import numpy as np
         import pandas as pd
         from sos_trades_api.tests import data
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_csv_test = StudyCase.query.filter(
@@ -327,6 +371,28 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                 'c': [1, None, 3], 'd': 'test'}
             dataframe_mix_types = pd.DataFrame(
                 {'a': [1, None, 3], 'b': 40.0, 'c': ['abc', '', None]})
+            dict_as_dict_dataframe_types = \
+                {
+                    'dict_key_1': pd.DataFrame(
+                        {
+                            'col1': ['col_1_value_1', 'col_1_value_2', 'col_1_value_3', 'col_1_value_4',
+                                     'col_1_value_5', 'col_1_value_6', 'col_1_value_7', 'col_1_value_8',
+                                     'col_1_value_9'],
+                            'col2': [3001.0, 3002.0, 3003.0, 3004.0, 3005.0, 3006.0, 3008.0, 3007.0, 3009.0]
+                        }
+                    ),
+                    'dict_key_3': pd.DataFrame(
+                        {
+                            'col1': ['col_1_value_10', 'col_1_value_11', 'col_1_value_12', 'col_1_value_13',
+                                     'col_1_value_14', 'col_1_value_15', 'col_1_value_16', 'col_1_value_17',
+                                     'col_1_value_18', 'col_1_value_19', 'col_1_value_20', 'col_1_value_21',
+                                     'col_1_value_22', 'col_1_value_23', 'col_1_value_24', 'col_1_value_25',
+                                     'col_1_value_26', 'col_1_value_27', 'col_1_value_28'],
+                            'col2': [3008.0, 3001.0, 3002.0, 3000.0, 3003.0, 3006.0, 3009.0, 3008.0, 3007.0, 3005.0,
+                                     3004.0, 3002.0, 3001.0, 3005.0, 3003.0, 3006.0, 3004.0, 3008.0, 3009.0]
+                        }
+                    )
+                }
             # Array ---------------------------------------
             array_path = join(dirname(data.__file__), 'array_mix_types.csv')
             array_file = open(array_path, 'rb')
@@ -340,6 +406,14 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                   'dataframe_mix_types.csv')
             dataframe_file = open(dataframe_path, 'rb')
             dataframe_fs = FileStorage(dataframe_file)
+            # Dict as Dict of dataframe ---------------------------------------
+            # type dict
+            # subtype_descriptor: {'dict': 'dataframe'}
+            dict_as_dict_dataframe_path = join(dirname(data.__file__),
+                                  'dict_as_dict_dataframe.csv')
+            dict_as_dict_dataframe_file = open(dict_as_dict_dataframe_path, 'rb')
+            dict_as_dict_dataframe_fs = FileStorage(dict_as_dict_dataframe_file)
+
 
             file_info = {
                 array_path: {'variable_id': f'{self.test_study_csv_name}.array_mix_types',
@@ -347,9 +421,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 dict_path: {'variable_id': f'{self.test_study_csv_name}.dict_mix_types',
                             'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
                 dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dataframe_mix_types',
+                                 'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
+                dict_as_dict_dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dict_as_dict_dataframe',
                                  'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'}
+
             }
-            files_list = [array_fs, dict_fs, dataframe_fs]
+            files_list = [array_fs, dict_fs, dataframe_fs, dict_as_dict_dataframe_fs]
 
             # updating study case
             update_study_parameters(
@@ -360,7 +437,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         counter = 0
 
         while not stop:
-            if study_manager.load_in_progress == False and study_manager.loaded == True:
+            if study_manager.load_status == LoadStatus.LOADED:
                 stop = True
             else:
                 if counter > 60:
@@ -375,17 +452,36 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 study_dm[f'{self.test_study_csv_name}.array_mix_types']['value'])
             dm_dict = study_dm[f'{self.test_study_csv_name}.dict_mix_types']['value']
             dm_dataframe = study_dm[f'{self.test_study_csv_name}.dataframe_mix_types']['value']
+            dm_dict_as_dict_dataframe = study_dm[f'{self.test_study_csv_name}.dict_as_dict_dataframe']['value']
 
             self.assertTrue(np.array_equiv(array_mixed_types, dm_array),
                             f'Input array {array_mixed_types} != from dm array {dm_array}')
             self.assertTrue(dm_dict == dict_mixed_types,
-                            f'Input dict {array_mixed_types} != from dm dict {dm_array}')
+                            f'Input dict {dict_mixed_types} != from dm dict {dm_dict}')
             self.assertTrue(dataframe_mix_types.equals(dm_dataframe),
-                            f'Input dataframe {array_mixed_types} != from dm dataframe {dm_array}')
+                            f'Input dataframe {dataframe_mix_types} != from dm dataframe {dm_dataframe}')
+
+            # ----------------------------------
+            # Check equality for dm_dict_as_dict_dataframe
+            type_key_list = np.array(dict_as_dict_dataframe_types.keys())
+            dm_key_list = np.array(dm_dict_as_dict_dataframe.keys())
+            self.assertTrue((type_key_list == dm_key_list).all(),
+                            f'key of dict_as_dict_dataframe {type_key_list} != from keys in dm {dm_key_list} ')
+            # Check dataframes equality for dict_key_1
+            type_dataframe_key_dict_key_1 = dict_as_dict_dataframe_types['dict_key_1']
+            dm_dataframe_key_dict_key_1 = dm_dict_as_dict_dataframe['dict_key_1']
+            self.assertTrue(type_dataframe_key_dict_key_1.equals(dm_dataframe_key_dict_key_1),
+                            f'Dataframe of dict_as_dict_dataframe dict_key_1 {type_dataframe_key_dict_key_1} != from dm dataframe dict_key_1 {dm_dataframe_key_dict_key_1}')
+            # Check dataframes equality for dict_key_3
+            type_dataframe_key_dict_key_3 = dict_as_dict_dataframe_types['dict_key_3']
+            dm_dataframe_key_dict_key_3 = dm_dict_as_dict_dataframe['dict_key_3']
+            self.assertTrue(type_dataframe_key_dict_key_3.equals(dm_dataframe_key_dict_key_3),
+                            f'Dataframe of dict_as_dict_dataframe dict_key_3 {type_dataframe_key_dict_key_3} != from dm dataframe dict_key_3 {dm_dataframe_key_dict_key_3}')
 
             array_file.close()
             dict_file.close()
             dataframe_file.close()
+            dict_as_dict_dataframe_file.close()
 
     def test_delete_study_cases(self):
         from sos_trades_api.models.database_models import StudyCase
@@ -421,7 +517,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
         from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -454,7 +551,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False and study_manager.loaded == True:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
@@ -465,7 +562,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # After update retrieve notification list, one update has been
             # made, return len should be 1
-            notifications = get_study_case_notifications(study_test.id, True)
+            notifications = get_study_case_notifications(study_test.id)
             change = notifications[0].changes[0]
             self.assertIsNotNone(
                 change, 'Error no change created at study update in database')
@@ -539,11 +636,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def _test_clear_error_in_study_case_controller(self):
         from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.base_server import study_case_cache
+        from sos_trades_api.server.base_server import study_case_cache
         from os.path import join, dirname
         from sos_trades_api.tests import data
         from werkzeug.datastructures import FileStorage
         from numpy import array
+        from sos_trades_api.models.loaded_study_case import LoadStatus
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_clear_error_test = StudyCase.query.filter(
@@ -577,7 +675,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False:
+                if study_manager.load_status == LoadStatus.IN_ERROR:
                     stop = True
                 else:
                     if counter > 60:
@@ -586,7 +684,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
 
-            self.assertTrue(study_manager.has_error)
+            self.assertTrue(study_manager.load_status == LoadStatus.IN_ERROR)
 
             error_message = 'The current value of variable test_clear_error.SellarOptimScenario.z!15.0 is not between the lower bound 0.0 and the upper bound 10.0'
             self.assertIn(error_message, study_manager.error_message)
@@ -696,7 +794,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             counter = 0
 
             while not stop:
-                if study_manager.load_in_progress == False:
+                if study_manager.load_status == LoadStatus.LOADED:
                     stop = True
                 else:
                     if counter > 60:
@@ -706,4 +804,55 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
 
             # check if clear_error is performed in study_case_controller
-            self.assertFalse(study_manager.has_error)
+            self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
+
+    def test_study_case_read_only_mode(self):
+        from sos_trades_api.models.database_models import StudyCase
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
+            delete_study_cases, copy_study_case, get_file_stream
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_csv_name).first()
+            self.assertIsNotNone(
+                study_test, 'Unable to retrieve study case created for test')
+            study_copy_name = "test_study_copy_read_only"
+
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     study_copy_name,
+                                                     study_test.repository,
+                                                     study_test.process,
+                                                     self.test_user_group_id)
+
+            study_case_copy = copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
+            study_case_copy_id = study_case_copy.id
+            # wait end of study case creation
+            study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_update_study_parameters update study parameter too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+            self.assertTrue(study_manager.check_study_case_json_file_exists(), 'Unable to retrieve study case read only file')
+            study_json = get_study_in_read_only_mode(study_case_copy_id, False)
+            self.assertIsNotNone(study_json, 'Unable to read study case read only file')
+
+            # set loadStatus to read only to check the get data method
+            study_manager.load_status = LoadStatus.READ_ONLY_MODE
+            parameter = get_file_stream(study_case_copy_id, 'test_study_copy_read_only.dataframe_mix_types')
+            self.assertIsNotNone(parameter, 'Unable to read study case read only file')
+
+            studies_id_list_to_delete = [study_case_copy_id]
+            delete_study_cases(studies_id_list_to_delete)

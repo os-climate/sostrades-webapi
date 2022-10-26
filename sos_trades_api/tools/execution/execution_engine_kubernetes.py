@@ -19,7 +19,7 @@ Execution engine kubernetes
 """
 import threading
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_run, kubernetes_service_delete, \
-    kubernetes_service_pods_status
+    kubernetes_eeb_service_pods_status
 
 
 class ExecutionEngineKubernetes:
@@ -54,4 +54,4 @@ class ExecutionEngineKubernetes:
         :param pod_identifiers: list of pod identifier (name) to check status
         :return: dictionary with identifier as key and status as value
         """
-        return kubernetes_service_pods_status(pod_identifiers)
+        return kubernetes_eeb_service_pods_status(pod_identifiers)

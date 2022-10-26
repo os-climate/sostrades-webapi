@@ -27,16 +27,16 @@ import signal
 import threading
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
 from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, \
-    StudyCaseExecutionLog, StudyCaseExecution, Process
+    StudyCaseExecutionLog, StudyCaseExecution, Process, StudyCaseLog
 from sos_trades_api.controllers.error_classes import InvalidStudy
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
 from sos_trades_api.tools.execution.execution_engine_kubernetes import ExecutionEngineKubernetes
 from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
 from sos_trades_api.config import Config
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_core.api import get_sos_logger
 from sqlalchemy.sql.expression import and_
@@ -102,6 +102,11 @@ def execute_calculation(study_id, username):
         db.session.add(study_case)
 
         # Clearing all log regarding the given study case
+        StudyCaseLog.query\
+            .filter(StudyCaseLog.study_case_id == study_id)\
+            .delete()
+        db.session.commit()
+        # Clearing all execution log regarding the given study case
         # But only log that does not rely to calculation (null study_case_execution_id key)
         StudyCaseExecutionLog.query\
             .filter(StudyCaseExecutionLog.study_case_id == study_id)\
@@ -117,9 +122,6 @@ def execute_calculation(study_id, username):
         study.study_case_manager_save_backup_files()
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
-
-            # Enable logging on execution
-            study.add_execution_identifier = True
 
             # Initialize execution logger
             execution_logger = get_sos_logger('SoS')
@@ -325,7 +327,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
             if study_case is None:
                 raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
 
-            file_path = get_raw_logs(study_id=study_case_id)
+            file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
                 result = file_tail(file_path, 200)
 

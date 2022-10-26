@@ -23,7 +23,7 @@ import time
 
 from sqlalchemy import and_
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
 from copy import deepcopy
 

@@ -22,7 +22,7 @@ from flask.json import jsonify
 import os
 import requests
 from furl import furl
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 
 from sos_trades_api.controllers.sostrades_data.authentication_controller import \
     (authenticate_user_standard, deauthenticate_user, refresh_authentication, AuthenticationError,

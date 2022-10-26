@@ -27,7 +27,7 @@ from flask import abort, session, request
 from flask_jwt_extended import verify_jwt_in_request,verify_jwt_refresh_token_in_request
 from jwt.exceptions import InvalidSignatureError
 import base64
-from sos_trades_api.base_server import db, app
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.models.database_models import User, Group, AccessRights, GroupAccessUser, UserProfile, Device
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
@@ -359,7 +359,7 @@ def has_user_access_right(access_right):
                     raise KeyError('You must have "study_id" parameter to check access right')
 
                 # Verify user has study case authorisation on study
-                study_case_access = StudyCaseAccess(user.id)
+                study_case_access = StudyCaseAccess(user.id, study_id)
 
                 if not study_case_access.check_user_right_for_study(access_right, study_id):
                     raise AccessDenied('You do not have the necessary rights to access this study case')

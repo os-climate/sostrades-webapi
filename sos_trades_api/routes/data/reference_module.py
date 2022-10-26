@@ -16,19 +16,35 @@ limitations under the License.
 from flask import request, jsonify, make_response, send_file
 
 from werkzeug.exceptions import BadRequest
-from sos_trades_api.base_server import app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.reference_controller import (
-    get_all_references, get_logs, get_reference_generation_status,  get_references_generation_status)
+    get_all_references, get_logs, get_reference_generation_status, get_references_generation_status, generate_reference)
 
 
-@app.route(f'/api/data/reference', methods=['GET'])
+@app.route(f'/api/data/reference', methods=['GET', 'POST'])
 @auth_required
 def study_case_references():
     if request.method == 'GET':
         user = get_authenticated_user()
         resp = make_response(
             jsonify(get_all_references(user.id, app.logger)), 200)
+        return resp
+    if request.method == 'POST':
+        user = get_authenticated_user()
+
+        repository_name = request.json.get('repository_name', None)
+        process_name = request.json.get('process_name', None)
+        usecase_name = request.json.get('usecase_name', None)
+
+        if repository_name is None:
+            raise BadRequest('Missing mandatory parameter: repository_name')
+        if process_name is None:
+            raise BadRequest('Missing mandatory parameter: process_name')
+        if usecase_name is None:
+            raise BadRequest('Missing mandatory parameter: usecase_name')
+        resp = make_response(
+            jsonify(generate_reference(repository_name, process_name, usecase_name, user.id)), 200)
         return resp
 
 

@@ -19,16 +19,78 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
 from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.controllers.sostrades_main.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_service_pods_status
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
+from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_eeb_service_pods_status, kubernetes_service_generate
 from sos_trades_api.config import Config
+from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
+
+
+def generate_reference(repository_name, process_name, usecase_name, user_id):
+    '''
+        Generate a reference
+        :params: repository_name
+        :type: String
+        :params: process_name
+        :type: String
+        :params: usecase_name
+        :type: String
+        :params: user_id
+        :type: Int
+        :return: gen_ref_status.id, id of the generation just launched
+        :type: Int
+    '''
+    # Build full name
+    reference_path = '.'.join([repository_name, process_name, usecase_name])
+    # Check if already runing
+    is_generating = check_reference_is_regenerating(
+        reference_path=reference_path)
+    if is_generating is True:
+        # Already running -> return the id
+        generation_running = ReferenceStudy.query\
+            .filter(ReferenceStudy.reference_path == reference_path,
+                    ReferenceStudy.execution_status.in_([
+                        ReferenceStudy.RUNNING,
+                        ReferenceStudy.PENDING])).first()
+        return generation_running.id
+    else:
+        gen_ref_status = ReferenceStudy.query \
+            .filter(ReferenceStudy.reference_path == reference_path).first()
+        gen_ref_status.execution_status = gen_ref_status.PENDING
+        gen_ref_status.user_id = user_id
+
+        db.session.add(gen_ref_status)
+        db.session.commit()
+        try:
+            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+                # Launch pod whom generate the ref
+                pod_name = kubernetes_service_generate(
+                    reference_path, gen_ref_status.id, user_id)
+                # Update db by adding the pod whom generate the ref
+                gen_ref_status.kubernete_pod_name = pod_name
+                db.session.add(gen_ref_status)
+                db.session.commit()
+            else:
+                subprocess_generation = ReferenceGenerationSubprocess(
+                    gen_ref_status.id)
+                subprocess_generation.run()
+        except Exception as ex:
+            ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
+                {
+                    'execution_status': ReferenceStudy.FAILED,
+                    'generation_logs': ex,
+                    'creation_date': None,
+                }
+            )
+            db.session.commit()
+            raise ex
+
+        return gen_ref_status.id
 
 
 def get_all_references(user_id, logger):
@@ -62,10 +124,6 @@ def get_all_references(user_id, logger):
     process_metadata = load_processes_metadata(processes_metadata)
     repository_metadata = load_repositories_metadata(repositories_metadata)
 
-    #for authorized_process in authorized_process_list:
-    #    authorized_process.apply_ontology(
-    #        process_metadata, repository_metadata)
-
     for authorized_process in authorized_process_list:
         # Retrieve references for process
         process_references = list(filter(lambda ref_process: ref_process.process_id == authorized_process.id
@@ -74,8 +132,6 @@ def get_all_references(user_id, logger):
 
             new_usecase = StudyCaseDto()
             new_usecase.name = ref.name
-            new_usecase.process_display_name = authorized_process.process_name
-            new_usecase.repository_display_name = authorized_process.repository_name
             new_usecase.process = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
             new_usecase.description = 'Reference'
@@ -83,6 +139,9 @@ def get_all_references(user_id, logger):
             new_usecase.study_type = ref.reference_type
             new_usecase.group_id = None
             new_usecase.group_name = 'All groups'
+
+            # Apply ontology on the usecase
+            new_usecase.apply_ontology(process_metadata, repository_metadata)
 
             # Check if generation is running
             is_running = check_reference_is_regenerating(ref.reference_path)
@@ -120,7 +179,7 @@ def get_reference_generation_status(ref_gen_id):
         result = ref_generation
         # Get pod status
         if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = kubernetes_service_pods_status(
+            pod_status = kubernetes_eeb_service_pods_status(
                 ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
         else:
             pod_status = 'Running'
@@ -199,7 +258,7 @@ def get_logs(reference_path=None):
         file_name = f'{tmp_folder}/{reference_path}_log'
         with io.open(file_name, "w", encoding="utf-8") as f:
             for log in logs:
-                f.write(f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n')
+                f.write(f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\t{log.exception}\n')
         return file_name
 
 

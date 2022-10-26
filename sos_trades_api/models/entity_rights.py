@@ -25,7 +25,7 @@ from sos_trades_api.models.database_models import StudyCaseAccessGroup, \
     StudyCaseAccessUser, Group, User, ProcessAccessGroup, ProcessAccessUser, \
     AccessRights, GroupAccessGroup, GroupAccessUser
 from sqlalchemy import or_
-from sos_trades_api.base_server import db
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 
 
