@@ -39,6 +39,6 @@ class ReferenceGenerationSubprocess():
         """ Launch the process using subprocess.Popen
         """
         path = join(dirname(sos_trades_api.__file__),
-                    '..', 'sos_trades_api_main.py')
+                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
         subprocess.Popen(
             f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)
