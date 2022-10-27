@@ -104,9 +104,6 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         Create a database for the tests
         '''
 
-        print('/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\')
-        print(f'Start test of class {cls}')
-
         # Clean Database in case of previously bad issues
         DatabaseUnitTestConfiguration.tearDownClass()
 
@@ -169,13 +166,8 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
             # Create log database schema if not exist
             connection.execute(drop_log_database_sql_request)
 
-        print(f'End test of class {cls}')
-        print('/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\')
-
     def setUp(self):
-        print('-----------------------------------------------------------')
-        print(f'Start test method {self._testMethodName}')
+        pass
 
     def tearDown(self):
-        print(f'End test method {self._testMethodName}')
-        print('-----------------------------------------------------------')
+        pass
