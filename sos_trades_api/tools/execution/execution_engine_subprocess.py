@@ -36,7 +36,7 @@ class ExecutionEngineSubprocess:
 
     def run(self):
         path = join(dirname(sos_trades_api.__file__),
-                    '..', 'sos_trades_api_main.py')
+                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
 
         with open(self.__log_file_path, 'wb') as log_file:
 
