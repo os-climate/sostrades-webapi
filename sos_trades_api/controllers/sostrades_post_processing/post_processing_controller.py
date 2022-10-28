@@ -50,7 +50,7 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
         # Check if discipline of the node has to be filtered
         if not discipline_module == '':
             match_discipline = list(filter(
-                lambda d: d.__module__ == discipline_module, discipline_list))
+                lambda d: d.get_module() == discipline_module, discipline_list))
 
             if len(match_discipline) > 0:
                 discipline_list = match_discipline

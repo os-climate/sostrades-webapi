@@ -637,9 +637,12 @@ class StudyCaseManager(BaseStudyManager):
                 data_value = input_datas[0][anonymize_key]
                 # convert data into dataframe then ioBytes to have the same
                 # format as if retrieved from the dm
-                df_data = DataSerializer.convert_to_dataframe_and_bytes_io(
-                    data_value, parameter_key)
-                return df_data
+                if data_value is None:
+                    return None
+                else:
+                    df_data = DataSerializer.convert_to_dataframe_and_bytes_io(
+                        data_value, parameter_key)
+                    return df_data
 
         # it should never be there because an exception should be raised if the
         # file could not be red
