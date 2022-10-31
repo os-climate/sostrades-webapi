@@ -75,8 +75,7 @@ class ExecutionEngineObserver():
         if isinstance(discipline, SoSMDODiscipline):
 
             # Send update to the queue
-            self.__queue.put([discipline.get_disc_full_name(
-            ), discipline.status])
+            self.__queue.put([discipline.name, discipline.status])
 
     def __update_database(self):
         """ Threaded methods to update the database without blocking execution process
