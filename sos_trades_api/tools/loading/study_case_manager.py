@@ -353,9 +353,7 @@ class StudyCaseManager(BaseStudyManager):
 
     def save_study_case(self):
         # Persist data using the current persistence strategy
-        self.dump_data(self.dump_directory)
-        self.dump_disciplines_data(self.dump_directory)
-        self.dump_cache(self.dump_directory)
+        self.dump_study(self.dump_directory)
 
     def save_study_read_only_mode_in_file(self):
         """
