@@ -138,9 +138,7 @@ def execute_calculation(study_id, username):
                     LOGGER.addHandler(handler)
 
             # Load study data if not loaded
-            study.load_data(display_treeview=False)
-            study.load_disciplines_data()
-            study.load_cache()
+            study.load_study_case_from_source()
 
             exec_thread = ExecutionEngineThread(study, execution_logger)
             exec_thread.start()

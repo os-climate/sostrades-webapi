@@ -104,14 +104,8 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
             f'Loading in background {study_case_manager.study.name}')
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-        study_case_manager.load_data(display_treeview=False)
-        load_data_time = time()
-
-        study_case_manager.load_disciplines_data()
-        load_discipline_data_time = time()
-
-        study_case_manager.load_cache()
-        load_cache_time = time()
+        study_case_manager.load_study_case_from_source()
+        load_study_case_time = time()
 
         study_case_manager.execution_engine.dm.treeview = None
 
@@ -132,13 +126,9 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
             f'End background loading {study_case_manager.study.name}')
         app.logger.info(f'Elapsed time synthesis:')
         app.logger.info(
-            f'{"Data load":<25} {load_data_time - start_time:<5} seconds')
+            f'{"Data load":<25} {load_study_case_time - start_time:<5} seconds')
         app.logger.info(
-            f'{"Discipline data load":<25} {load_discipline_data_time - load_data_time:<5} seconds')
-        app.logger.info(
-            f'{"Cache load":<25} {load_cache_time - load_discipline_data_time:<5} seconds')
-        app.logger.info(
-            f'{"Treeview gen.":<25} {treeview_generation_time - load_cache_time:<5} seconds')
+            f'{"Treeview gen.":<25} {treeview_generation_time - load_study_case_time:<5} seconds')
         app.logger.info(
             f'{"Total time":<25} {treeview_generation_time - start_time:<5} seconds')
 

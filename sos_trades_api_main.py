@@ -73,9 +73,7 @@ def launch_calculation_study(study_identifier):
 
             study = StudyCaseManager(study_case_execution.study_case_id)
 
-            study.load_data(display_treeview=False)
-            study.load_disciplines_data()
-            study.load_cache()
+            study.load_study_case_from_source()
             loading_done = True
         except:
             execution_logger.exception(

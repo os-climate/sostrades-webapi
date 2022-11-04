@@ -342,10 +342,14 @@ class StudyCaseManager(BaseStudyManager):
         self.clear_error()
         self.load_status = LoadStatus.NONE
 
-    def load_study_case_from_source(self, source_directory):
+    def load_study_case_from_source(self, source_directory=None):
+
+        if source_directory is None:
+            source_directory = self.dump_directory
+
         self.load_data(source_directory, display_treeview=False)
         self.load_disciplines_data(source_directory)
-        self.load_cache(source_directory)
+        self.read_cache_pickle(source_directory)
 
     def save_study_case(self):
         # Persist data using the current persistence strategy
