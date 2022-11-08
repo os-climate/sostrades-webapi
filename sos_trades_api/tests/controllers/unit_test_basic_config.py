@@ -64,10 +64,6 @@ with open(test_configuration_file, 'w') as outfile:
 os.environ['SOS_TRADES_SERVER_CONFIGURATION'] = test_configuration_file
 #os.environ['SAML_V2_METADATA_FOLDER'] = join(dirname(root_file), os.environ['SAML_V2_METADATA_FOLDER'])
 
-os.environ['SOS_TRADES_DATA'] = os.path.join(
-    gettempdir(), 'unit_test_persistance')
-os.environ['SOS_TRADES_REFERENCES'] = os.path.join(
-    gettempdir(), 'unit_test_persistance', 'references')
 
 print(f'Configuration file used for test: {test_configuration_file}')
 print(f'Database used for test: {test_database_name}')
