@@ -64,10 +64,6 @@ with open(test_configuration_file, 'w') as outfile:
 os.environ['SOS_TRADES_SERVER_CONFIGURATION'] = test_configuration_file
 #os.environ['SAML_V2_METADATA_FOLDER'] = join(dirname(root_file), os.environ['SAML_V2_METADATA_FOLDER'])
 
-os.environ['SOS_TRADES_DATA'] = os.path.join(
-    gettempdir(), 'unit_test_persistance')
-os.environ['SOS_TRADES_REFERENCES'] = os.path.join(
-    gettempdir(), 'unit_test_persistance', 'references')
 
 print(f'Configuration file used for test: {test_configuration_file}')
 print(f'Database used for test: {test_database_name}')
@@ -103,9 +99,6 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         '''
         Create a database for the tests
         '''
-
-        print('/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\')
-        print(f'Start test of class {cls}')
 
         # Clean Database in case of previously bad issues
         DatabaseUnitTestConfiguration.tearDownClass()
@@ -169,13 +162,8 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
             # Create log database schema if not exist
             connection.execute(drop_log_database_sql_request)
 
-        print(f'End test of class {cls}')
-        print('/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\')
-
     def setUp(self):
-        print('-----------------------------------------------------------')
-        print(f'Start test method {self._testMethodName}')
+        pass
 
     def tearDown(self):
-        print(f'End test method {self._testMethodName}')
-        print('-----------------------------------------------------------')
+        pass
