@@ -81,6 +81,13 @@
   "SOS_TRADES_PROCESS_REPOSITORY": ["sos_trades_core.sos_processes.test"],
 
   // Absolute path to the SSL certificate to communicate with the ontology server
-  "INTERNAL_SSL_CERTIFICATE": ""
+  "INTERNAL_SSL_CERTIFICATE": "",
+  "SOS_TRADES_EXECUTION_STRATEGY": "subprocess",
+  "SOS_TRADES_SERVER_MODE": "mono",
+  "SOS_TRADES_DATA": "/sostdata",
+  "SOS_TRADES_REFERENCES": "/sostdata/references",
+  "EEB_PATH": "/config/conf/eeb.yaml",
+  "SOS_TRADES_RSA": "/config/rsa-key-pair/",
+  "SAML_V2_METADATA_FOLDER": "/config/saml-v2/"
 
 }
