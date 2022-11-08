@@ -123,28 +123,31 @@ Configuration file is dedicated to a specific environment.
 Configuration file is in JSON format. A template of this file is available here:
 sostrades_webapi\configuration_template\development_configuration_template.json.
 The path to the configuration json file must be set in the SOS_TRADES_SERVER_CONFIGURATION environment variable.
+Some of the variabes in the configuration file are:
 
-### environment configuration
-In addition to the configuration file, some other entry are setup using environment variables:
-- FLASK_APP: name of the server into the API (path to the base_server.py)
-- FLASK_ENV: name of the environment
-- SOS_TRADES_SERVER_CONFIGURATION=Contains the path to the API server json configuration file (the one you want to use)
 - SOS_TRADES_DATA=NFS directory where the business data are stored
 - SOS_TRADES_REFERENCES=NFS directory where the reference data are stored (predefined business data that are not associated to a user
 - SOS_TRADES_EXECUTION_STRATEGY=Execution strategy can be one of those values ‘thread’, ‘subprocess’ and ‘kubernetes’
 - EEB_PATH=Execution Engine Block (kubernetes pods yaml configuration file) used to submit container on kubernetes
 - SOS_TRADES_RSA=Location of RSA folder with public and private key to encrypt business data on file system
+- SOS_TRADES_SERVER_MODE=Indicates "mono" if there is split servers: data, main and post processing or "kubernetes" 
+if only the server data is launch and the study server is launched by kubernetes when needed.
+- MANIFESTS_FOLDER_PATH=Path to the folder where manifests are. This folder has to contain the manifest deployment_study_case_server.yml 
+and service_study_case_server.yml
+
+### environment configuration
+In addition to the configuration file, some other entry are setup using environment variables:
+
+- FLASK_APP: name of the server into the API (path to the base_server.py)
+- FLASK_ENV: name of the environment
+- SOS_TRADES_SERVER_CONFIGURATION=Contains the path to the API server json configuration file (the one you want to use)
 - SQL_ACCOUNT=Depending on the value set in the configuration file, store sql user account
 - SQL_PASSWORD=Depending on the value set in the configuration file, store sql user password
 - LOG_USER=Depending on the value set in the configuration file, store sql user account
 - LOG_PASSWORD=Depending on the value set in the configuration file, store sql user password
 - SECRET_KEY=Depending on the value set in the configuration file, store server secret key
-- SAML_V2_METADATA_FOLDER=the folder path where the settings.json file is located
 - GITHUB_OAUTH_SETTINGS=the full path (including file) to the settings.json file that contains Github OAuth settings
-- SOS_TRADES_SERVER_MODE=Indicates "mono" if there is split servers: data, main and post processing or "kubernetes" 
-if only the server data is launch and the study server is launched by kubernetes when needed.
-- MANIFESTS_FOLDER_PATH=Path to the folder where manifests are. This folder has to contain the manifest deployment_study_case_server.yml 
-and service_study_case_server.yml 
+- SAML_V2_METADATA_FOLDER=the folder path where the settings.json file is located
 
 ### SSO configuration
 - set the SAML v2 'settings.json' file for the SSO authentication (the file must have this name 'settings.json')
