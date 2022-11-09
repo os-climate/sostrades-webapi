@@ -42,26 +42,23 @@ class Config:
 
     #
     # FLASK CONFIGURATION SECTION END
-
     # Environment configuration variable names
-    CONFIG_DATA_ROOT_DIR_ENV_VAR = "SOS_TRADES_DATA"
-    CONFIG_REFERENCE_ROOT_DIR_ENV_VAR = "SOS_TRADES_REFERENCES"
-    CONFIG_EXECUTION_STRATEGY_ENV_VAR = "SOS_TRADES_EXECUTION_STRATEGY"  # for values : 'subprocess', 'kubernetes'
-
+    CONFIG_EXECUTION_STRATEGY = "SOS_TRADES_EXECUTION_STRATEGY"  # for values : 'subprocess', 'kubernetes'
     CONFIG_EXECUTION_STRATEGY_THREAD = 'thread'
     CONFIG_EXECUTION_STRATEGY_SUBPROCESS = 'subprocess'
     CONFIG_EXECUTION_STRATEGY_K8S = 'kubernetes'
 
-    CONFIG_SERVER_MODE_ENV_VAR = "SOS_TRADES_SERVER_MODE"
-
+    CONFIG_SERVER_MODE = "SOS_TRADES_SERVER_MODE"
     CONFIG_SERVER_MODE_K8S = 'kubernetes'
     CONFIG_SERVER_MODE_MONO = 'mono'
+    CONFIG_MANIFESTS_FOLDER_PATH = "MANIFESTS_FOLDER_PATH"
     CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME = "deployment_study_case_server.yml.jinja"
     CONFIG_SERVICE_STUDY_SERVER_FILE_NAME = "service_study_case_server.yml.jinja"
 
-    CONFIG_MANIFESTS_FOLDER_PATH_ENV_VAR = "MANIFESTS_FOLDER_PATH"
-    CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR = "EEB_PATH"
-    CONFIG_RSA_ROOT_DIR_ENV_VAR = "SOS_TRADES_RSA"
+    CONFIG_DATA_ROOT_DIR = "SOS_TRADES_DATA"
+    CONFIG_REFERENCE_ROOT_DIR = "SOS_TRADES_REFERENCES"
+    CONFIG_EEB_CONFIGURATION_FILE = "EEB_PATH"
+    CONFIG_RSA_ROOT_DIR = "SOS_TRADES_RSA"
 
     def __init__(self):
         """Constructor
@@ -100,14 +97,6 @@ class Config:
         self.__sql_alchemy_full_uri = ''
         self.__secret_key = ''
 
-        self.reference_root_dir_env_var = self.CONFIG_REFERENCE_ROOT_DIR_ENV_VAR
-        self.execution_strategy_env_var = self.CONFIG_EXECUTION_STRATEGY_ENV_VAR
-        self.server_mode_env_var = self.CONFIG_SERVER_MODE_ENV_VAR
-        self.manifests_folder_path_env_var = self.CONFIG_MANIFESTS_FOLDER_PATH_ENV_VAR
-        self.eeb_path = self.CONFIG_EEB_CONFIGURATION_FILE_ENV_VAR
-        self.rsa_root_dir_env_var = self.CONFIG_RSA_ROOT_DIR_ENV_VAR
-        self.data_root_dir_env_var = self.CONFIG_DATA_ROOT_DIR_ENV_VAR
-
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
                 self.__server_config_file = json.load(server_conf_file)
@@ -124,47 +113,44 @@ class Config:
 
         # -------------------------------------------------------------------
         # This first section check all mandatory data needs to run the server
+        execution_strategy = self.execution_strategy
+        server_mode = self.server_mode
+
+
         data_root_dir = self.data_root_dir
         reference_root_dir = self.reference_root_dir
         rsa_public_key_file = self.rsa_public_key_file
         rsa_private_key_file = self.rsa_private_key_file
 
-        # Execution strategy is mandatory. If kubernetes is chosen then check
-        # if calculation manifest is available
-        if self.execution_strategy is Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            eeb_filepath = self.eeb_filepath
-            manifest_folder_path = self.manifests_folder_path
+        eeb_filepath = self.eeb_filepath
 
-        # server mode is mandatory. If kubernetes is chosen then check
-        # if manifest is available
-        if self.server_mode is Config.CONFIG_SERVER_MODE_K8S:
-            manifest_folder_path = self.manifests_folder_path
-
+        manifest_folder_path = self.manifests_folder_path
+        deployment_study_server_filepath = self.deployment_study_server_filepath
+        service_study_server_filepath = self.service_study_server_filepath
 
         # pylint: enable=unused-variable
 
     @property
     def data_root_dir(self):
         """data root directory property get
+        not mandatory
 
         :return string (folder path)
         :raise ValueError exception
         """
-
         if len(self.__data_root_dir) == 0:
-            if os.environ.get(self.data_root_dir_env_var) is None:
+            if self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR) is None:
                 raise ValueError(
-                    f"Environment variable '{self.data_root_dir_env_var}' not provided")
+                    f"Configuration variable '{self.CONFIG_DATA_ROOT_DIR}' not provided")
 
-            if not Path(os.environ[self.data_root_dir_env_var]).exists():
+            if not Path(self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)).exists():
                 try:
-                    os.makedirs(
-                        os.environ[self.data_root_dir_env_var], exist_ok=True)
+                    os.makedirs(self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR), exist_ok=True)
                 except Exception as error:
                     raise ValueError(
-                        f"Environment variable '{self.data_root_dir_env_var}' values is not a valid folder path : {os.environ[self.data_root_dir_env_var]}\n{error}")
+                        f"Configuration variable '{self.CONFIG_DATA_ROOT_DIR}' values is not a valid folder path : {self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)}\n{error}")
             else:
-                self.__data_root_dir = os.environ[self.data_root_dir_env_var]
+                self.__data_root_dir = self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)
 
         return self.__data_root_dir
 
@@ -177,19 +163,18 @@ class Config:
         """
 
         if len(self.__reference_root_dir) == 0:
-            if os.environ.get(self.reference_root_dir_env_var) is None:
+            if self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR) is None:
                 raise ValueError(
-                    f"Environment variable '{self.reference_root_dir_env_var}' not provided")
+                    f"Configuration variable '{self.CONFIG_REFERENCE_ROOT_DIR}' not provided")
 
-            if not Path(os.environ[self.reference_root_dir_env_var]).exists():
+            if not Path(self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)).exists():
                 try:
-                    os.makedirs(
-                        os.environ[self.reference_root_dir_env_var], exist_ok=True)
+                    os.makedirs(self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR), exist_ok=True)
                 except Exception as error:
                     raise ValueError(
-                        f"Environment variable '{self.reference_root_dir_env_var}' values is not a valid folder path : {os.environ[self.reference_root_dir_env_var]}\n{error}")
+                        f"Configuration variable '{self.CONFIG_REFERENCE_ROOT_DIR}' values is not a valid folder path : {self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)}\n{error}")
             else:
-                self.__reference_root_dir = os.environ[self.reference_root_dir_env_var]
+                self.__reference_root_dir = self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)
 
         return self.__reference_root_dir
 
@@ -200,21 +185,20 @@ class Config:
         :return string ('thread', 'subprocess', 'kubernetes')
         :raise ValueError exception
         """
-
         if len(self.__execution_strategy) == 0:
-            if os.environ.get(self.execution_strategy_env_var) is None:
+            if self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY) is None:
                 raise ValueError(
-                    f"Environment variable '{self.execution_strategy_env_var}' not provided")
+                    f"Configuration variable '{self.CONFIG_EXECUTION_STRATEGY}' not provided")
 
-            if not len(os.environ[self.execution_strategy_env_var]) > 0:
+            if not len(self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY)) > 0:
                 raise ValueError(
-                    f"Environment variable '{self.execution_strategy_env_var}' has no value, any of the following is intended : {self.__available_strategies}")
+                    f"Configuration variable '{self.CONFIG_EXECUTION_STRATEGY}' has no value, any of the following is intended : {self.__available_strategies}")
 
-            if os.environ[self.execution_strategy_env_var] not in self.__available_strategies:
+            if self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY) not in self.__available_strategies:
                 raise ValueError(
-                    f"Environment variable '{self.execution_strategy_env_var}' value is unknown, any of the following is intended : {self.__available_strategies}")
+                    f"Configuration variable '{self.CONFIG_EXECUTION_STRATEGY}' value is unknown, any of the following is intended : {self.__available_strategies}")
 
-            self.__execution_strategy = os.environ[self.execution_strategy_env_var]
+            self.__execution_strategy = self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY)
 
         return self.__execution_strategy
 
@@ -226,16 +210,16 @@ class Config:
         :raise ValueError exception
         """
 
-        if len(self.__manifests_folder_path) == 0:
-            if os.environ.get(self.manifests_folder_path_env_var) is None:
+        if len(self.__manifests_folder_path) == 0 and self.server_mode == self.CONFIG_SERVER_MODE_K8S:
+            if self.__server_config_file.get(self.CONFIG_MANIFESTS_FOLDER_PATH) is None:
                 raise ValueError(
-                    f"Environment variable '{self.manifests_folder_path_env_var}' not provided")
+                    f"Configuration variable '{self.CONFIG_MANIFESTS_FOLDER_PATH}' not provided")
 
-            if not Path(os.environ[self.manifests_folder_path_env_var]).exists():
+            if not Path(self.__server_config_file.get(self.CONFIG_MANIFESTS_FOLDER_PATH)).exists():
                 raise ValueError(
-                    f"Environment variable '{self.manifests_folder_path_env_var}' values for study server deployment is not a valid filepath : {os.environ[self.manifests_folder_path_env_var]}")
+                    f"Configuration variable '{self.CONFIG_MANIFESTS_FOLDER_PATH}' values for study server deployment is not a valid filepath : {self.__server_config_file.get(self.CONFIG_MANIFESTS_FOLDER_PATH)}")
 
-            self.__manifests_folder_path = os.environ[self.manifests_folder_path_env_var]
+            self.__manifests_folder_path = self.__server_config_file.get(self.CONFIG_MANIFESTS_FOLDER_PATH)
 
         return self.__manifests_folder_path
 
@@ -246,11 +230,12 @@ class Config:
         :return string (filepath)
         :raise ValueError exception
         """
-
-        file_path = join(self.manifests_folder_path, Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME)
-        if not Path(file_path).exists():
-            raise ValueError(
-                f"Manifest of the study case server service '{Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
+        file_path =  ""
+        if self.server_mode == self.CONFIG_SERVER_MODE_K8S:
+            file_path = join(self.manifests_folder_path, Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME)
+            if not Path(file_path).exists():
+                raise ValueError(
+                    f"Manifest of the study case server service '{Config.CONFIG_SERVICE_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
 
         return file_path
 
@@ -261,11 +246,12 @@ class Config:
         :return string (filepath)
         :raise ValueError exception
         """
-
-        file_path = join(self.manifests_folder_path, Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME)
-        if not Path(file_path).exists():
-            raise ValueError(
-                f"Manifest of the study case server deployment '{Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
+        file_path =  ""
+        if self.server_mode == self.CONFIG_SERVER_MODE_K8S:
+            file_path = join(self.manifests_folder_path, Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME)
+            if not Path(file_path).exists():
+                raise ValueError(
+                    f"Manifest of the study case server deployment '{Config.CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME}' is not at the location : {file_path}")
 
         return file_path
 
@@ -278,16 +264,16 @@ class Config:
         :raise ValueError exception
         """
 
-        if len(self.__eeb_configuration_filepath) == 0:
-            if os.environ.get(self.eeb_path) is None:
+        if len(self.__eeb_configuration_filepath) == 0 and self.execution_strategy == self.CONFIG_EXECUTION_STRATEGY_K8S:
+            if self.__server_config_file.get(self.CONFIG_EEB_CONFIGURATION_FILE) is None:
                 raise ValueError(
-                    f"Environment variable '{self.eeb_path}' not provided")
+                    f"Configuration variable '{self.CONFIG_EEB_CONFIGURATION_FILE}' not provided")
 
-            if not Path(os.environ[self.eeb_path]).exists():
+            if not Path(self.__server_config_file.get(self.CONFIG_EEB_CONFIGURATION_FILE)).exists():
                 raise ValueError(
-                    f"Environment variable '{self.eeb_path}' values is not a valid filepath : {os.environ[self.eeb_path]}")
+                    f"Configuration variable '{self.CONFIG_EEB_CONFIGURATION_FILE}' values is not a valid filepath : {self.__server_config_file.get(self.CONFIG_EEB_CONFIGURATION_FILE)}")
 
-            self.__eeb_configuration_filepath = os.environ[self.eeb_path]
+            self.__eeb_configuration_filepath = self.__server_config_file.get(self.CONFIG_EEB_CONFIGURATION_FILE)
 
         return self.__eeb_configuration_filepath
 
@@ -300,19 +286,19 @@ class Config:
         """
 
         if len(self.__server_mode) == 0:
-            if os.environ.get(self.server_mode_env_var) is None:
+            if self.__server_config_file.get(self.CONFIG_SERVER_MODE) is None:
                 raise ValueError(
-                    f"Environment variable '{self.server_mode_env_var}' not provided")
+                    f"Configuration variable '{self.CONFIG_SERVER_MODE}' not provided")
 
-            if not len(os.environ[self.server_mode_env_var]) > 0:
+            if not len(self.__server_config_file.get(self.CONFIG_SERVER_MODE)) > 0:
                 raise ValueError(
-                    f"Environment variable '{self.server_mode_env_var}' has no value, any of the following is intended : {self.__available_server_modes}")
+                    f"Configuration variable '{self.CONFIG_SERVER_MODE}' has no value, any of the following is intended : {self.__available_server_modes}")
 
-            if os.environ[self.server_mode_env_var] not in self.__available_server_modes:
+            if self.__server_config_file.get(self.CONFIG_SERVER_MODE) not in self.__available_server_modes:
                 raise ValueError(
-                    f"Environment variable '{self.server_mode_env_var}' value is unknown, any of the following is intended : {self.__available_server_modes}")
+                    f"Configuration variable '{self.CONFIG_SERVER_MODE}' value is unknown, any of the following is intended : {self.__available_server_modes}")
 
-            self.__server_mode = os.environ[self.server_mode_env_var]
+            self.__server_mode = self.__server_config_file.get(self.CONFIG_SERVER_MODE)
 
         return self.__server_mode
 
@@ -325,20 +311,16 @@ class Config:
         """
 
         if len(self.__rsa_public_key) == 0:
-            if os.environ.get(self.rsa_root_dir_env_var) is None:
-                raise ValueError(
-                    f"Environment variable '{self.rsa_root_dir_env_var}' not provided")
+            if self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR) is not None:
+                if not Path(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR)).exists():
+                    raise ValueError(
+                        f"Configuration variable '{self.CONFIG_RSA_ROOT_DIR}' values is not a valid folder : {self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR)}")
 
-            if not Path(os.environ[self.rsa_root_dir_env_var]).exists():
-                raise ValueError(
-                    f"Environment variable '{self.rsa_root_dir_env_var}' values is not a valid folder : {os.environ[self.rsa_root_dir_env_var]}")
+                if not Path(join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'public_key.pem')).exists():
+                    raise ValueError(
+                        f"Public rsa key not found at the specified filepath: {join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'public_key.pem')}")
 
-            if not Path(join(os.environ[self.rsa_root_dir_env_var], 'public_key.pem')).exists():
-                raise ValueError(
-                    f"Public rsa key not found at the specified filepath: {join(os.environ[self.rsa_root_dir_env_var], 'public_key.pem')}")
-
-            self.__rsa_public_key = join(
-                os.environ[self.rsa_root_dir_env_var], 'public_key.pem')
+                self.__rsa_public_key = join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'public_key.pem')
 
         return self.__rsa_public_key
 
@@ -351,20 +333,17 @@ class Config:
         """
 
         if len(self.__rsa_private_key) == 0:
-            if os.environ.get(self.rsa_root_dir_env_var) is None:
-                raise ValueError(
-                    f"Environment variable '{self.rsa_root_dir_env_var}' not provided")
+            if self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR) is not None:
 
-            if not Path(os.environ[self.rsa_root_dir_env_var]).exists():
-                raise ValueError(
-                    f"Environment variable '{self.rsa_root_dir_env_var}' values is not a valid folder : {os.environ[self.rsa_root_dir_env_var]}")
+                if not Path(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR)).exists():
+                    raise ValueError(
+                        f"Configuration variable '{self.CONFIG_RSA_ROOT_DIR}' values is not a valid folder : {self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR)}")
 
-            if not Path(join(os.environ[self.rsa_root_dir_env_var], 'private_key.pem')).exists():
-                raise ValueError(
-                    f"Private rsa key not found at the specified filepath: {join(os.environ[self.rsa_root_dir_env_var], 'private_key.pem')}")
+                if not Path(join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'private_key.pem')).exists():
+                    raise ValueError(
+                        f"Private rsa key not found at the specified filepath: {join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'private_key.pem')}")
 
-            self.__rsa_private_key = join(
-                os.environ[self.rsa_root_dir_env_var], 'private_key.pem')
+                self.__rsa_private_key = join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'private_key.pem')
 
         return self.__rsa_private_key
 
