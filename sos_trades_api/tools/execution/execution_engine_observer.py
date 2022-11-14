@@ -70,8 +70,6 @@ class ExecutionEngineObserver():
         execution
         """
         # Send a status to update into the queue
-        print(
-            f'update status on discipline : {discipline} : {discipline.status}')
         if isinstance(discipline, SoSMDODiscipline):
 
             # Send update to the queue
