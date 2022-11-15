@@ -22,7 +22,7 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
-    update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path, edit_study,
+    update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
@@ -79,29 +79,6 @@ def study_cases(study_id):
             'Missing mandatory parameter: study identifier in url')
     else:
         raise MethodNotAllowed()
-
-
-@app.route(f'/api/main/study-case/<int:study_id>/edit', methods=['POST'])
-@auth_required
-def update_study_cases(study_id):
-
-    if study_id is not None:
-        # Checking if user can access study data
-        user = session['user']
-
-        group_id = request.json.get('group_id', None)
-        study_name = request.json.get('new_study_name', None)
-
-        # Verify user has study case authorisation to update study (Manager)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
-            raise BadRequest(
-                'You do not have the necessary rights to update this study case')
-
-        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id)), 200)
-        return response
-    else:
-        raise BadRequest('Missing mandatory parameter: study_id in url')
 
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])

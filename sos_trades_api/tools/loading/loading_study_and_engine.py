@@ -74,10 +74,8 @@ def study_need_to_be_updated(study_id, last_modification):
         is_anterior = study_case.modification_date > last_modification
         app.logger.info(f'Check study identifier {study_id} database date/cached date ({study_case.modification_date}/{last_modification}) need to be updated {is_anterior}')
 
-        if is_anterior:
-            return True
+        return is_anterior
 
-    return False
 
 def study_case_manager_loading(study_case_manager, no_data, read_only):
     """ Method that load data into a study case manager

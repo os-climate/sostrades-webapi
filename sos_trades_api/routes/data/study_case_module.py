@@ -25,7 +25,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
-    get_study_case_allocation, delete_study_cases_and_allocation)
+    get_study_case_allocation, delete_study_cases_and_allocation, edit_study)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -170,6 +170,29 @@ def study_case_allocation_status(study_id):
         return resp
 
     abort(403)
+
+
+@app.route(f'/api/data/study-case/<int:study_id>/edit', methods=['POST'])
+@auth_required
+def update_study_cases(study_id):
+
+    if study_id is not None:
+        # Checking if user can access study data
+        user = session['user']
+
+        group_id = request.json.get('group_id', None)
+        study_name = request.json.get('new_study_name', None)
+
+        # Verify user has study case authorisation to update study (Manager)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to update this study case')
+
+        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id)), 200)
+        return response
+    else:
+        raise BadRequest('Missing mandatory parameter: study_id in url')
 
 
 @app.route(f'/api/data/study-case/delete', methods=['DELETE'])
