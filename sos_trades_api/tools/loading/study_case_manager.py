@@ -333,11 +333,6 @@ class StudyCaseManager(BaseStudyManager):
         """
 
         self.__load_study_case_from_identifier()
-        # Update 14-10-2022
-        # Check if the study name has been edited and build an new execution instance
-        if self.study.name != self.study_name:
-            self.study_name = self.study.name
-            self._build_execution_engine()
 
     def reset(self):
         """
