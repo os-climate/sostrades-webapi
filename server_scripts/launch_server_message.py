@@ -27,6 +27,6 @@ if __name__ == '__main__':
 
     # Import server module after a basic configuration in order to set
     # correctly server  executing environment
-    from sos_trades_api import message_server
+    from sos_trades_api.server import message_server
 
     message_server.socketio.run(message_server.app, host='127.0.0.1', port=5002)

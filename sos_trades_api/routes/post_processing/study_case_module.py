@@ -15,8 +15,7 @@ limitations under the License.
 '''
 from sos_trades_api.server.base_server import app
 from sos_trades_api.models.loaded_study_case import LoadStatus
-from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import \
-    reset_study_from_cache_and_light_load
+from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import reset_study_from_cache
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.models.database_models import AccessRights
@@ -71,11 +70,9 @@ def reset_study_from_cache_(study_id):
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
                 'You do not have the necessary rights to load this study case')
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
         # set the study case in the cache
 
-        study_manager = reset_study_from_cache_and_light_load(study_id)
+        study_manager = reset_study_from_cache(study_id)
         if study_manager is None:
             resp = make_response(
                 jsonify(True), 200)
