@@ -150,6 +150,11 @@ class StudyCaseCache:
             study_case_manager = StudyCaseManager(study_case_identifier)
             study_case_manager.attach_logger()
 
+            from sos_trades_api.server.base_server import app
+            with app.app_context():
+                app.logger.info(
+                    f'Study identifier {study_case_identifier} database date = {study_case_manager.study.modification_date} - old_modification_date = {old_modification_date})')
+
             if old_modification_date < study_case_manager.study.modification_date:
                 study_case_manager.load_status = LoadStatus.NONE
 
