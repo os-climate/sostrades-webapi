@@ -147,16 +147,8 @@ class StudyCaseCache:
             old_modification_date = study_case_manager.study.modification_date
             study_case_manager.update_study_case()
 
-            # Update 15-11-2022
-            # Split the dump_directory in list
-            dump_directory_split = study_case_manager.dump_directory.split('\\')
-            # Get the group_id (the before last one of this list)
-            group_id = dump_directory_split[-2]
-            if study_case_manager.study.name != study_case_manager.study_name or \
-                    study_case_manager.study.group_id != group_id:
-                self.delete_study_case_from_cache(study_case_identifier)
-                study_case_manager = StudyCaseManager(study_case_identifier)
-                study_case_manager.attach_logger()
+            study_case_manager = StudyCaseManager(study_case_identifier)
+            study_case_manager.attach_logger()
 
             if old_modification_date < study_case_manager.study.modification_date:
                 study_case_manager.load_status = LoadStatus.NONE
