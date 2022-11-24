@@ -17,7 +17,8 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class overlad defaut json encoder to manage our class
 """
-from flask.json import JSONEncoder
+
+from simplejson import JSONEncoder
 from _datetime import datetime
 
 from pandas import DataFrame, Index, Series
@@ -50,6 +51,10 @@ from sos_trades_core.tools.post_processing.post_processing_bundle import PostPro
 
 
 class CustomJsonEncoder(JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        kwargs["ignore_nan"] = True
+        super().__init__(*args, **kwargs)
+
     def default(self, o):  # pylint: disable=E0202
 
         if isinstance(o, LoadedStudyCase):
