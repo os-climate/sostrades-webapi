@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
-from sos_trades_api.tools.code_tools import file_tail, list_without_empty_lines
+from sos_trades_api.tools.code_tools import file_tail
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -330,8 +330,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
             file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
 
-                line_list = file_tail(file_path, 200)
-                result = list_without_empty_lines(line_list)
+                result = file_tail(file_path, 200)
 
         except Exception as ex:
             print(ex)

@@ -90,6 +90,12 @@ def file_tail(file_name, line_count):
                     # If last read character is not eol then add it in buffer
                     binary_buffer.extend(read_byte)
 
+                if (len(result)) >= 1:
+                    last_item = result[-1]
+                    # Check if line contain any characters
+                    if len(last_item.strip()) == 0:
+                        result.remove(last_item)
+
                 # Shift the pointer to the previous location
                 # (for the next loop)
                 pointer_location -= 1
@@ -101,13 +107,3 @@ def file_tail(file_name, line_count):
 
     # Reverse the list before returning
     return list(reversed(result))
-
-
-def list_without_empty_lines(line_list):
-
-    result = []
-    for line in line_list:
-        if not len(line.strip()) == 0:
-            result.append(line)
-
-    return result
