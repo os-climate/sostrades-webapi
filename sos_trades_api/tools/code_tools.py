@@ -21,6 +21,7 @@ various function useful to python coding
 from os import SEEK_END
 import ast
 
+
 def isevaluatable(s):
     """
     Check if string only contains a literal of type - strings, numbers, tuples, lists, dicts, booleans, and None
@@ -80,8 +81,10 @@ def file_tail(file_name, line_count):
                 # Check if read character is a carriage return
                 if read_byte == b'\n':
 
-                    # We achieve to find the beginning of the line, so we can store it in the result
-                    result.append(binary_buffer.decode()[::-1])
+                    # Check if line contain any characters
+                    if len(binary_buffer.decode().strip()) != 0:
+                        # We achieve to find the beginning of the line, so we can store it in the result
+                        result.append(binary_buffer.decode()[::-1])
 
                     # Reset binary buffer
                     binary_buffer = bytearray()
