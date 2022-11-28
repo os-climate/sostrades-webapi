@@ -36,7 +36,6 @@ from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
     StudyCaseChange,
-    StudyCaseExecutionLog,
     UserStudyPreference,
     StudyCase,
     UserStudyFavorite,
@@ -598,36 +597,6 @@ def study_case_logs(study_case_identifier):
         raise InvalidStudy(
             f'Requested study case (identifier {study_case_identifier} does not exist in the database'
         )
-
-
-def get_logs(study_case_identifier):
-    """
-    Retrieve a study case execution logs, write them in a file, return the filename
-
-    :param study_case_identifier: study case identifier for which we will retrieve execution log
-    :type study_case_identifier: int
-    :return: str (filename)
-    """
-    logs = []
-    if study_case_identifier is not None:
-        logs = (
-            StudyCaseExecutionLog.query.filter(
-                StudyCaseExecutionLog.study_case_id == study_case_identifier
-            )
-            .order_by(StudyCaseExecutionLog.id.desc())
-            .all()
-        )
-        logs.reverse()
-
-    if logs:
-        tmp_folder = gettempdir()
-        file_name = f'{tmp_folder}/_log'
-        with io.open(file_name, "w", encoding="utf-8") as f:
-            for log in logs:
-                f.write(
-                    f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n'
-                )
-        return file_name
 
 
 def get_raw_logs(study_case_identifier):
