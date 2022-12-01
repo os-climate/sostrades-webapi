@@ -83,12 +83,11 @@ class InterfaceDiagramGenerator:
                     )
                     # complement coupling list with discipline couplings
                     self.couplings_list = self.couplings_list + discipline_coupling_list
-                if disc_dict.get('classname', None) != 'SoSCoupling':
-                    disc_id = (
-                        '.'.join(ns_node.split('.')[1:])
-                        + '.'
-                        + disc_dict.get('classname', None)
-                    )
+                classname = disc_dict.get('classname', None)
+                if classname == 'ProxyDiscipline':
+                    classname = type(disc.mdo_discipline_wrapp.wrapper).__name__
+                if classname not in ['SoSCoupling', 'ProxyCoupling']:
+                    disc_id = '.'.join(ns_node.split('.')[1:]) + '.' + classname
                     if disc_id not in unique_disc_ids:
                         unique_disc_ids.add(disc_id)
                         namespace = '.'.join(ns_node.split('.')[1:])
@@ -100,7 +99,7 @@ class InterfaceDiagramGenerator:
                             'type': 'DisciplineNode',
                             'namespace': '.'.join(ns_node.split('.')[1:]),
                             'cluster': base_namespace,
-                            'classname': disc_dict.get('classname', None),
+                            'classname': classname,
                             # 'model_name':disc_dict.get('model_name',None),
                             'model_name_full_path': disc_dict.get(
                                 'model_name_full_path', None
@@ -116,15 +115,23 @@ class InterfaceDiagramGenerator:
         unique_links_ids = set()
         unique_parameters_ids = set()
         for (disc_from, disc_to, edge_parameters_list) in self.couplings_list:
+            disc_from_classname = type(disc_from).__name__
+            if disc_from_classname == 'ProxyDiscipline':
+                disc_from_classname = type(
+                    disc_from.mdo_discipline_wrapp.wrapper
+                ).__name__
             disc_from_id = (
                 '.'.join(disc_from.get_disc_full_name().split('.')[1:])
                 + '.'
-                + type(disc_from).__name__
+                + disc_from_classname
             )
+            disc_to_classname = type(disc_to).__name__
+            if disc_to_classname == 'ProxyDiscipline':
+                disc_to_classname = type(disc_to.mdo_discipline_wrapp.wrapper).__name__
             disc_to_id = (
                 '.'.join(disc_to.get_disc_full_name().split('.')[1:])
                 + '.'
-                + type(disc_to).__name__
+                + disc_to_classname
             )
             disc_from_namespace = [
                 d['namespace'] for d in discipline_node_list if d['id'] == disc_from_id
@@ -210,12 +217,10 @@ class InterfaceDiagramGenerator:
             # edge_attr={'minlen':'0'},
         )
         if self.draw_subgraphs:
-            main_nodes = [
-                n for n in discipline_node_list if n['namespace'] == '']
+            main_nodes = [n for n in discipline_node_list if n['namespace'] == '']
             # draw discipline nodes
             for node_dict in main_nodes:
-                self.draw_discipline_node(
-                    digraph=dot, node_info_dict=node_dict)
+                self.draw_discipline_node(digraph=dot, node_info_dict=node_dict)
             main_parameters_nodes = [
                 n for n in parameter_nodes_list if n['namespace'] == ''
             ]
@@ -232,8 +237,7 @@ class InterfaceDiagramGenerator:
         else:
             # draw discipline nodes
             for node_dict in discipline_node_list:
-                self.draw_discipline_node(
-                    digraph=dot, node_info_dict=node_dict)
+                self.draw_discipline_node(digraph=dot, node_info_dict=node_dict)
 
             # draw parameter nodes
             for node_dict in parameter_nodes_list:
@@ -284,12 +288,10 @@ class InterfaceDiagramGenerator:
         if node_info_dict['descriptor'] is not None:
             if node_info_dict['datatype'] == 'dataframe':
                 descriptor = (
-                    "|{Columns:|{" +
-                    '|'.join(node_info_dict['descriptor']) + "}}"
+                    "|{Columns:|{" + '|'.join(node_info_dict['descriptor']) + "}}"
                 )
             elif node_info_dict['datatype'] == 'dict':
-                descriptor = "|{Keys:|{" + \
-                    '|'.join(node_info_dict['descriptor']) + "}}"
+                descriptor = "|{Keys:|{" + '|'.join(node_info_dict['descriptor']) + "}}"
         parameter_label = node_info_dict["parameter_name"]
         if node_info_dict.get('label', '') != '':
             if len(parameter_label.split('.')) > 1:
@@ -370,8 +372,7 @@ class InterfaceDiagramGenerator:
         children_list = []
         if len(treenode.children) > 0:
             for child_treenode in treenode.children:
-                children_list.append(
-                    self.get_children_namespaces(child_treenode))
+                children_list.append(self.get_children_namespaces(child_treenode))
         namespace_tree = {
             ns_label: sorted(children_list, key=lambda e: list(e.keys())[0])
         }
@@ -416,8 +417,7 @@ class InterfaceDiagramGenerator:
                 ]
                 # draw parameter nodes
                 for node_dict in subgraph_parameters_nodes:
-                    self.draw_parameter_node(
-                        digraph=subgraph, node_info_dict=node_dict)
+                    self.draw_parameter_node(digraph=subgraph, node_info_dict=node_dict)
                 if len(subgraph_children_list) > 0:
                     self.generate_subgraph(
                         subgraph_list=subgraph_children_list,
@@ -438,19 +438,16 @@ class InterfaceDiagramGenerator:
         ontology_request = {
             'parameters': parameter_list,
         }
-        ontology_response_data = load_ontology(
-            ontology_request=ontology_request)
+        ontology_response_data = load_ontology(ontology_request=ontology_request)
 
         complemented_parameter_nodes_list = parameter_nodes_list
         if ontology_response_data is not None:
-            ontology_parameters_data = ontology_response_data.get(
-                'parameters', None)
+            ontology_parameters_data = ontology_response_data.get('parameters', None)
             if ontology_parameters_data is not None:
                 complemented_parameter_nodes_list = []
                 for parameter_dict in parameter_nodes_list:
                     parameter_dict['label'] = ontology_parameters_data.get(
-                        parameter_dict['parameter_name'].split(
-                            '.')[-1], {'label': ''}
+                        parameter_dict['parameter_name'].split('.')[-1], {'label': ''}
                     )['label']
                     complemented_parameter_nodes_list.append(parameter_dict)
         return complemented_parameter_nodes_list
