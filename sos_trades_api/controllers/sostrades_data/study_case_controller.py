@@ -409,6 +409,16 @@ def get_user_shared_study_case(user_identifier: int):
             favorite_study.study_case_id for favorite_study in all_favorite_studies
         ]
 
+        # Retrieve all last studies opened
+        all_last_studies_opened = (
+            UserLastOpenedStudy.query.filter(UserLastOpenedStudy.study_case_id.in_(all_study_identifier))
+            .filter(UserLastOpenedStudy.user_id == user_identifier)
+            .all()
+        )
+        all_last_studies_opened_identifier = [
+            last_study.study_case_id for last_study in all_last_studies_opened
+        ]
+
         # Get all related study case execution id
         all_study_case_execution_identifiers = [
             user_study.current_execution_id
@@ -429,6 +439,10 @@ def get_user_shared_study_case(user_identifier: int):
             # Manage favorite study list
             if user_study.id in all_favorite_studies_identifier:
                 user_study.is_favorite = True
+
+            # Manage last study opened list
+            if user_study.id in all_favorite_studies_identifier:
+                user_study.is_last_study_opened = True
 
             # Manage execution status
             study_case_execution = list(
@@ -720,7 +734,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
 
     :param study_case_identifier: id of the study_case
     :type study_case_identifier: int
-    :param user_identifier: user that did add a favorite study
+    :param user_identifier: user who added a favorite study
     :type user_identifier: int
 
     """
@@ -748,7 +762,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
             .filter(UserStudyFavorite.study_case_id == study_case_identifier)
             .first()
         )
-        raise Exception(
+        raise InvalidStudy(
             f'The study - {study_case.name} - is already in your favorite studies'
         )
 
@@ -759,7 +773,7 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
 
     :param study_case_identifier: identifier of the study_case
     :type study_case_identifier: int
-    :param user_identifier: user that did add a favorite study
+    :param user_identifier: user who removed the favorite study
     :type user_identifier: int
     """
 
@@ -788,3 +802,44 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
         raise Exception(f'You cannot remove a study that is not in your favorite study')
 
     return f'The study, {study_case.name}, has been removed from favorite study.'
+
+
+def add_last_opened_study_case(study_case_identifier, user_identifier):
+    """
+    Create and save a new opened study case for a user
+
+    :param study_case_identifier: id of the study_case
+    :type study_case_identifier: int
+    :param user_identifier: user who opened the study
+    :type user_identifier: int
+
+    """
+
+    user_last_opened_study = (
+        UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
+        .filter(UserLastOpenedStudy.study_case_id == study_case_identifier)
+        .first()
+    )
+
+    if user_last_opened_study is not None:
+        user_last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+
+    else:
+        # Check if user already have more than five study
+        user = (UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
+                .all())
+        if user is not None and len(user) >= 5:
+            db.session.remove(new_last_opened_study)
+            db.session.commit()
+
+        # Creation of a new opened study
+        new_last_opened_study = UserLastOpenedStudy()
+        new_last_opened_study.study_case_id = study_case_identifier
+        new_last_opened_study.user_id = user_identifier
+
+        db.session.add(new_last_opened_study)
+        db.session.commit()
+        return new_last_opened_study
+
+
+

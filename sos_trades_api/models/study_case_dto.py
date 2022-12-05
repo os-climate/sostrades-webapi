@@ -52,6 +52,7 @@ class StudyCaseDto:
         self.disabled = False
         self.is_favorite = False
         self.current_execution_id = None
+        self.is_last_study_opened = False
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -127,6 +128,7 @@ class StudyCaseDto:
         result.update({'is_commenter': self.is_commenter})
         result.update({'is_restricted_viewer': self.is_restricted_viewer})
         result.update({'is_favorite': self.is_favorite})
+        result.update({'is_last_study_opened': self.is_last_study_opened})
 
         return result
 
