@@ -372,7 +372,7 @@ class SoSExecutionWorkflow:
                 for output_param in edge_parameters_list:
                     # param_name = output_param.split('.')[-1]
                     output_param_data = disc_from.ee.dm.get_data(output_param)
-                    param_usage_name = f'{disc_from.get_module()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
+                    param_usage_name = f'{disc_from.get_disc_full_path()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
                     self.links_dict[link_id]['parameters'].add(
                         param_usage_name)
                     self.unique_parameters.add(param_usage_name)
@@ -408,7 +408,7 @@ class SoSExecutionWorkflow:
                 for output_param in last_outputs:
                     # param_name = p.split('.')[-1]
                     output_param_data = last_disc.ee.dm.get_data(output_param)
-                    param_usage_name = f'{last_disc.get_module()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
+                    param_usage_name = f'{last_disc.get_disc_full_path()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
                     parameters.add(param_usage_name)
                     self.unique_parameters.add(param_usage_name)
                 if link_id not in self.links_dict:
