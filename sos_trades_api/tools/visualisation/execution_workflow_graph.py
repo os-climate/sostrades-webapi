@@ -120,7 +120,7 @@ class SoSExecutionWorkflow:
         disc_node_info['status'] = disc.status
         disc_node_info['level'] = level
         disc_node_info['parent'] = parentId
-        disc_node_info['path'] = disc.get_module()
+        disc_node_info['path'] = disc.get_disc_full_path()
 
         # add discipline class to unique list. useful to retrieve ontology
         # information only once
