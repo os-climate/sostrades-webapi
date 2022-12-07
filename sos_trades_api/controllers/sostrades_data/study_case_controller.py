@@ -271,6 +271,8 @@ def copy_study_shortcut(source_study_case_identifier, new_study_identifier, user
             # Restore original strategy for dumping
             study_case_manager.rw_strategy = backup_rw_strategy
 
+            study_case_manager.load_study_case_from_source(study_manager_source.dump_directory)
+
             # Persist data using the current persistence strategy
             study_case_manager.save_study_case()
 
