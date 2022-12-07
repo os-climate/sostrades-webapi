@@ -326,13 +326,13 @@ class UserStudyFavorite(db.Model):
                          ForeignKey(
                              f'{User.__tablename__}.id',
                              ondelete="CASCADE",
-                             name='fk_user_study_favorite_user_id'),
+                             name='fk_user_study_last_opened_user_id'),
                          nullable=False)
         study_case_id = Column(Integer,
                                ForeignKey(
                                    f'{StudyCase.__tablename__}.id',
                                    ondelete="CASCADE",
-                                   name='fk_user_study_favorite_study_case_id'),
+                                   name='fk_user_study_last_opened_study_case_id'),
                                nullable=False)
         opening_date = Column(DateTime(timezone=True), server_default=func.now())
 

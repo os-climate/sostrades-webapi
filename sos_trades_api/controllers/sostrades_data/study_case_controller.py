@@ -441,7 +441,7 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.is_favorite = True
 
             # Manage last study opened list
-            if user_study.id in all_favorite_studies_identifier:
+            if user_study.id in all_last_studies_opened_identifier:
                 user_study.is_last_study_opened = True
 
             # Manage execution status
@@ -814,32 +814,40 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
     :type user_identifier: int
 
     """
+    with app.app_context():
+        try:
+            user_last_opened_studies = (
+                UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
+                .all()
+            )
+            user_last_opened_study = user_last_opened_studies.filter(UserLastOpenedStudy.study_case_id == study_case_identifier).first()
+            if user_last_opened_study is not None:
+                user_last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                db.session.add(user_last_opened_study)
+                db.session.flush()
 
-    user_last_opened_study = (
-        UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
-        .filter(UserLastOpenedStudy.study_case_id == study_case_identifier)
-        .first()
-    )
+            else:
+                if user_last_opened_studies is not None and len(user_last_opened_studies) >= 5:
+                    sorted_list = sorted(user_last_opened_studies, key=lambda res: res.opening_date)
+                    db.session.remove(sorted_list[0])
+                    db.session.flush()
 
-    if user_last_opened_study is not None:
-        user_last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                # Creation of a new opened study
+                new_last_opened_study = UserLastOpenedStudy()
+                new_last_opened_study.study_case_id = study_case_identifier
+                new_last_opened_study.user_id = user_identifier
+                db.session.add(new_last_opened_study)
+                db.session.flus()
 
-    else:
-        # Check if user already have more than five study
-        user = (UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
-                .all())
-        if user is not None and len(user) >= 5:
-            db.session.remove(new_last_opened_study)
+                db.session.commit()
+                return new_last_opened_study
             db.session.commit()
-
-        # Creation of a new opened study
-        new_last_opened_study = UserLastOpenedStudy()
-        new_last_opened_study.study_case_id = study_case_identifier
-        new_last_opened_study.user_id = user_identifier
-
-        db.session.add(new_last_opened_study)
-        db.session.commit()
-        return new_last_opened_study
+            return user_last_opened_study
+        except Exception as ex:
+            db.session.rollback()
+            app.logger.error(
+                f'Study {study_case_identifier} could not be saved in the last open studies : {ex}')
+        raise ex
 
 
 

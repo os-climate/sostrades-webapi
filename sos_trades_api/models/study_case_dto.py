@@ -53,6 +53,7 @@ class StudyCaseDto:
         self.is_favorite = False
         self.current_execution_id = None
         self.is_last_study_opened = False
+        self.opening_date = ''
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -129,6 +130,7 @@ class StudyCaseDto:
         result.update({'is_restricted_viewer': self.is_restricted_viewer})
         result.update({'is_favorite': self.is_favorite})
         result.update({'is_last_study_opened': self.is_last_study_opened})
+        result.update({'opening_date': self.is_last_study_opened})
 
         return result
 

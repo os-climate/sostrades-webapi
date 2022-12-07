@@ -25,7 +25,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
-    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, add_last_opened_study_case)
+    get_study_case_allocation, delete_study_cases_and_allocation, edit_study)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
