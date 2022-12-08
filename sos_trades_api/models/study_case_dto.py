@@ -130,7 +130,7 @@ class StudyCaseDto:
         result.update({'is_restricted_viewer': self.is_restricted_viewer})
         result.update({'is_favorite': self.is_favorite})
         result.update({'is_last_study_opened': self.is_last_study_opened})
-        result.update({'opening_date': self.is_last_study_opened})
+        result.update({'opening_date': self.opening_date})
 
         return result
 
