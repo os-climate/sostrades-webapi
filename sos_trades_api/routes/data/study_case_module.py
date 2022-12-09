@@ -25,7 +25,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
-    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study_shortcut)
+    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -174,7 +174,7 @@ def study_case_allocation_status(study_id):
 
 @app.route(f'/api/data/study-case/<int:study_id>/copy', methods=['POST'])
 @auth_required
-def copy_study_case_shortcut(study_id):
+def copy_study_case(study_id):
 
     if study_id is not None:
         # Checking if user can access study data
@@ -195,7 +195,7 @@ def copy_study_case_shortcut(study_id):
         new_study_case = create_empty_study_case(user.id, study_name, source_study_case.repository,
                                                  source_study_case.process, group_id)
 
-        copy_study_case = copy_study_shortcut(source_study_case.id, new_study_case.id, user.id)
+        copy_study_case = copy_study(source_study_case.id, new_study_case.id, user.id)
 
         response = make_response(jsonify(copy_study_case), 200)
         return response

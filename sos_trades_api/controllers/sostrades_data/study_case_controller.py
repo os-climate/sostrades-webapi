@@ -20,6 +20,7 @@ from datetime import datetime, timezone, timedelta
 
 from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
     load_study_allocation, delete_study_server_services_and_deployments
+from sos_trades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -208,7 +209,7 @@ def get_study_case_allocation(study_case_identifier):
     return study_case_allocation
 
 
-def copy_study_shortcut(source_study_case_identifier, new_study_identifier, user_identifier):
+def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
     """ copy an existing study case with a new name but without loading this study
 
         :param source_study_case_identifier: identifier of the study case to copy
@@ -224,36 +225,36 @@ def copy_study_shortcut(source_study_case_identifier, new_study_identifier, user
             study_manager_source = StudyCaseManager(source_study_case_identifier)
             new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
 
-            # Copy the last study case execution and then update study_id, creation date and request_by.
-            study_execution = StudyCaseExecution.query.filter(
-                StudyCaseExecution.study_case_id == source_study_case_identifier) \
-                .order_by(desc(StudyCaseExecution.id)).first()
+            if new_study_case is not None:
+                # Copy the last study case execution and then update study_id, creation date and request_by.
+                study_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.study_case_id == source_study_case_identifier) \
+                    .order_by(desc(StudyCaseExecution.id)).first()
 
-            user = User.query.filter(User.id == user_identifier).first()
+                user = User.query.filter(User.id == user_identifier).first()
 
-            if study_execution is not None:
+                if study_execution is not None:
 
-                if study_execution.execution_status == StudyCaseExecution.RUNNING \
-                        or study_execution.execution_status == StudyCaseExecution.STOPPED \
-                        or study_execution.execution_status == StudyCaseExecution.PENDING:
-                    status = StudyCaseExecution.NOT_EXECUTED
-                else:
-                    status = study_execution.execution_status
+                    if study_execution.execution_status == StudyCaseExecution.RUNNING \
+                            or study_execution.execution_status == StudyCaseExecution.STOPPED \
+                            or study_execution.execution_status == StudyCaseExecution.PENDING:
+                        status = StudyCaseExecution.NOT_EXECUTED
+                    else:
+                        status = study_execution.execution_status
 
-                new_study_execution = StudyCaseExecution()
-                new_study_execution.study_case_id = new_study_identifier
-                new_study_execution.execution_status = status
-                new_study_execution.execution_type = study_execution.execution_type
-                new_study_execution.requested_by = user.username
+                    new_study_execution = StudyCaseExecution()
+                    new_study_execution.study_case_id = new_study_identifier
+                    new_study_execution.execution_status = status
+                    new_study_execution.execution_type = study_execution.execution_type
+                    new_study_execution.requested_by = user.username
 
-                db.session.add(new_study_execution)
-                db.session.flush()
+                    db.session.add(new_study_execution)
+                    db.session.flush()
 
-                new_study_case.current_execution_id = new_study_execution.id
-                db.session.add(new_study_case)
-                db.session.flush()
+                    new_study_case.current_execution_id = new_study_execution.id
+                    db.session.add(new_study_case)
+                    db.session.commit()
 
-                db.session.commit()
         except Exception as ex:
             db.session.rollback()
             raise ex
@@ -262,42 +263,29 @@ def copy_study_shortcut(source_study_case_identifier, new_study_identifier, user
         try:
             study_case_manager = StudyCaseManager(str(new_study_identifier))
 
-            # To initialize the target study with the source study we use the
-            # read/write strategy of the source study
-            backup_rw_strategy = study_case_manager.rw_strategy
+            # Copy dm.pkl in the new
+            study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
 
-            study_case_manager.rw_strategy = study_manager_source.rw_strategy
+            # Copy disciplines_status.pkl in the new directory
+            study_case_manager.copy_pkl_file(DataSerializer.disc_status_filename, study_case_manager, study_manager_source)
 
-            # Restore original strategy for dumping
-            study_case_manager.rw_strategy = backup_rw_strategy
-
-            study_case_manager.load_study_case_from_source(study_manager_source.dump_directory)
-
-            # Persist data using the current persistence strategy
-            study_case_manager.save_study_case()
-
-            # write loaded_study into a json file to load the study in read only when loading
-            study_case_manager.save_study_read_only_mode_in_file()
-
+            # Copy log file from studyExecutionLog
             if study_execution is not None:
-                # Copy execution log file
                 file_path_initial = study_manager_source.raw_log_file_path_absolute()
-
                 # Check if file_path_initial exist
                 if os.path.exists(file_path_initial):
-
                     file_path_final = study_case_manager.raw_log_file_path_absolute()
-                    path_folder_final = os.path.dirname(file_path_final)
 
+                    path_folder_final = os.path.dirname(file_path_final)
                     if not os.path.exists(path_folder_final):
-                        os.mkdir(path_folder_final)
+                        os.makedirs(path_folder_final)
                     shutil.copyfile(file_path_initial, file_path_final)
 
             return new_study_case
 
         except Exception as ex:
             app.logger.error(
-                f'Failed to copy shortened study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
+                f'Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
             raise ex
 
 
