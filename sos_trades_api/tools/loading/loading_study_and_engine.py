@@ -372,7 +372,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-        # To initiliaze the target study with the source study we use the
+        # To initialize the target study with the source study we use the
         # read/write strategy of the source study
         backup_rw_strategy = study_case_manager.rw_strategy
 
@@ -382,7 +382,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         # Restore original strategy for dumping
         study_case_manager.rw_strategy = backup_rw_strategy
 
-        # Persist data using the current persistance strategy
+        # Persist data using the current persistence strategy
         study_case_manager.save_study_case()
 
         study_case_manager.execution_engine.dm.treeview = None
