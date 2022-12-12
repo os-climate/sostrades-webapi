@@ -13,19 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
 import shutil
 from shutil import rmtree
 from datetime import datetime, timezone, timedelta
 
 from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
     load_study_allocation, delete_study_server_services_and_deployments
+from sos_trades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
-from tempfile import gettempdir
-import io
+
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
@@ -46,7 +47,7 @@ from sos_trades_api.models.database_models import (
     Group,
     GroupAccessUser,
     AccessRights,
-    StudyCaseAllocation
+    StudyCaseAllocation, User
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
@@ -206,6 +207,86 @@ def get_study_case_allocation(study_case_identifier):
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = str(exc)
     return study_case_allocation
+
+
+def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
+    """ copy an existing study case with a new name but without loading this study
+
+        :param source_study_case_identifier: identifier of the study case to copy
+        :type source_study_case_identifier: str
+        :param new_study_identifier: id of the new study case
+        :type new_study_identifier: integer
+        :param user_identifier:  id user owner of the new study case
+        :type user_identifier: integer
+        """
+    with app.app_context():
+
+        try:
+            study_manager_source = StudyCaseManager(source_study_case_identifier)
+            new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
+
+            if new_study_case is not None:
+                # Copy the last study case execution and then update study_id, creation date and request_by.
+                study_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.study_case_id == source_study_case_identifier) \
+                    .order_by(desc(StudyCaseExecution.id)).first()
+
+                user = User.query.filter(User.id == user_identifier).first()
+
+                if study_execution is not None:
+
+                    if study_execution.execution_status == StudyCaseExecution.RUNNING \
+                            or study_execution.execution_status == StudyCaseExecution.STOPPED \
+                            or study_execution.execution_status == StudyCaseExecution.PENDING:
+                        status = StudyCaseExecution.NOT_EXECUTED
+                    else:
+                        status = study_execution.execution_status
+
+                    new_study_execution = StudyCaseExecution()
+                    new_study_execution.study_case_id = new_study_identifier
+                    new_study_execution.execution_status = status
+                    new_study_execution.execution_type = study_execution.execution_type
+                    new_study_execution.requested_by = user.username
+
+                    db.session.add(new_study_execution)
+                    db.session.flush()
+
+                    new_study_case.current_execution_id = new_study_execution.id
+                    db.session.add(new_study_case)
+                    db.session.commit()
+
+        except Exception as ex:
+            db.session.rollback()
+            raise ex
+
+        # Copy of study data sources from the study source_study_case_identifier to study new study
+        try:
+            study_case_manager = StudyCaseManager(str(new_study_identifier))
+
+            # Copy dm.pkl in the new
+            study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
+
+            # Copy disciplines_status.pkl in the new directory
+            study_case_manager.copy_pkl_file(DataSerializer.disc_status_filename, study_case_manager, study_manager_source)
+
+            # Copy log file from studyExecutionLog
+            if study_execution is not None:
+                file_path_initial = study_manager_source.raw_log_file_path_absolute()
+                # Check if file_path_initial exist
+                if os.path.exists(file_path_initial):
+                    file_path_final = study_case_manager.raw_log_file_path_absolute()
+
+                    path_folder_final = os.path.dirname(file_path_final)
+                    if not os.path.exists(path_folder_final):
+                        os.makedirs(path_folder_final)
+                    shutil.copyfile(file_path_initial, file_path_final)
+
+            return new_study_case
+
+        except Exception as ex:
+            app.logger.error(
+                f'Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
+            raise ex
 
 
 def edit_study(study_id, new_group_id, new_study_name, user_id):
@@ -748,7 +829,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
             .filter(UserStudyFavorite.study_case_id == study_case_identifier)
             .first()
         )
-        raise Exception(
+        raise InvalidStudy(
             f'The study - {study_case.name} - is already in your favorite studies'
         )
 
@@ -785,6 +866,6 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
             db.session.rollback()
             raise ex
     else:
-        raise Exception(f'You cannot remove a study that is not in your favorite study')
+        raise InvalidStudy(f'You cannot remove a study that is not in your favorite study')
 
     return f'The study, {study_case.name}, has been removed from favorite study.'
