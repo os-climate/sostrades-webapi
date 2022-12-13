@@ -319,6 +319,35 @@ class UserStudyFavorite(db.Model):
         }
 
 
+class UserLastOpenedStudy(db.Model):
+    """User (five) last studies opened class"""
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer,
+                     ForeignKey(
+                         f'{User.__tablename__}.id',
+                         ondelete="CASCADE",
+                         name='fk_user_study_last_opened_user_id'),
+                     nullable=False)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f'{StudyCase.__tablename__}.id',
+                               ondelete="CASCADE",
+                               name='fk_user_study_last_opened_study_case_id'),
+                           nullable=False)
+    opening_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def serialize(self):
+        """ json serializer for dto purpose
+        """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'study_case_id': self.study_case_id,
+            'opening_date': self.opening_date
+        }
+
+
 class AccessRights(db.Model):
     MANAGER = 'Manager'
     CONTRIBUTOR = 'Contributor'
