@@ -194,7 +194,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'User study case list does not match, study case list created and shared in test')
 
     def test_load_study_case(self):
-        from sos_trades_api.models.database_models import StudyCase, AccessRights, UserLastOpenedStudy
+        from sos_trades_api.models.database_models import StudyCase, AccessRights
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
         from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
@@ -224,12 +224,6 @@ class TestStudy(DatabaseUnitTestConfiguration):
                             False, "test_update_study_parameters update study parameter too long, check thread")
                     counter = counter + 1
                     sleep(1)
-
-            last_opened_study = (UserLastOpenedStudy.query
-                                 .filter(UserLastOpenedStudy.user_id == self.test_user_id)
-                                 .filter(UserLastOpenedStudy.study_case_id == self.test_study_id))
-
-            self.assertIsNotNone(last_opened_study, 'Unable to retrieve study case in last studies open')
 
             self.assertEqual(loaded_study.study_case.name, self.test_study_name,
                              'Created study case name does not match, test set up name used')
