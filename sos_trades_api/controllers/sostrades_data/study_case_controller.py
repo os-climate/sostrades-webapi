@@ -833,26 +833,24 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
                 new_last_opened_study.user_id = user_identifier
 
                 db.session.add(new_last_opened_study)
-                db.session.flush()
+                db.session.commit()
 
             else:
+                last_studies_opened = {}
+                for last_opened_study in user_last_opened_studies:
+                    last_studies_opened[last_opened_study.study_case_id] = last_opened_study
 
-                all_last_studies_opened_identifier = [
-                    last_study.study_case_id for last_study in user_last_opened_studies
-                ]
                 # Check if study is already in list of last opened studies
-                if study_case_identifier in all_last_studies_opened_identifier:
-                    for last_opened_study in user_last_opened_studies:
-                        if last_opened_study.study_case_id == study_case_identifier:
-                            last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(
-                                tzinfo=None)
-                            db.session.add(last_opened_study)
-                            db.session.flush()
+                if study_case_identifier in last_studies_opened:
+                    last_opened_study = last_studies_opened.get(study_case_identifier)
+                    last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                    db.session.add(last_opened_study)
+                    db.session.flush()
 
                 else:
                     if len(user_last_opened_studies) >= 5:
                         sorted_list = sorted(user_last_opened_studies, key=lambda res: res.opening_date)
-                        db.session.remove(sorted_list[0])
+                        db.session.delete(sorted_list[0])
                         db.session.flush()
 
                         # Creation of a new opened study
@@ -862,8 +860,7 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
                     db.session.add(new_last_opened_study)
                     db.session.flush()
 
-            db.session.commit()
-            return True
+                db.session.commit()
 
         except Exception as ex:
             db.session.rollback()
