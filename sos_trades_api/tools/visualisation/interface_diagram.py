@@ -1,7 +1,5 @@
-from sostrades_core.study_manager.study_manager import StudyManager
-from sostrades_core.study_manager.base_study_manager import BaseStudyManager
-from sostrades_core.tools.tree.treenode import TreeNode
-from sostrades_core.tools.tree.treeview import TreeView
+from sos_trades_core.study_manager.study_manager import StudyManager
+from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
 from graphviz import Digraph
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_ontology
 
@@ -36,8 +34,10 @@ class InterfaceDiagramGenerator:
             self.base_namespace_dict = self.generate_base_namespace_dict(
                 base_disciplines_dict
             )
-            self.base_namespace_tree = self.generate_namespace_tree(
-                base_study.execution_engine.get_treeview()
+            self.base_namespace_tree = self.get_children_ns_from_dict(
+                ns='',
+                base_namespace_dict=self.base_namespace_dict,
+                ns_already_used=set(),
             )
 
     def generate_interface_diagram_data(self):
@@ -133,12 +133,22 @@ class InterfaceDiagramGenerator:
                 + '.'
                 + disc_to_classname
             )
-            disc_from_namespace = [
+            disc_from_namespace_list = [
                 d['namespace'] for d in discipline_node_list if d['id'] == disc_from_id
-            ][0]
-            disc_to_namespace = [
+            ]
+            disc_from_namespace = (
+                disc_from_namespace_list[0]
+                if disc_from_namespace_list
+                else disc_from_id
+            )
+
+            disc_to_namespace_list = [
                 d['namespace'] for d in discipline_node_list if d['id'] == disc_to_id
-            ][0]
+            ]
+            disc_to_namespace = (
+                disc_to_namespace_list[0] if disc_to_namespace_list else disc_to_id
+            )
+
             for output_param in edge_parameters_list:
                 param_id = '.'.join(output_param.split('.')[1:])
                 output_param_data = disc_from.ee.dm.get_data(output_param)
@@ -151,14 +161,42 @@ class InterfaceDiagramGenerator:
                         descriptor = list(value.columns)
                     elif parameter_type == 'dict':
                         descriptor = list(value.keys())
+
+                # by default, we retrieve the namespace of the discipline outputting this parameter
+                parameter_namespace = disc_from_namespace
+
+                # check if disc_from is a coupling
+                if type(disc_from).__name__ == 'SoSCoupling':
+                    # in that case, we will try to found the real discipline from which the parameter is outputting
+                    disc_origin_uuid = self.study.ee.dm.get_data(output_param)[
+                        'model_origin'
+                    ]
+                    disc_origin = self.study.ee.dm.get_discipline(disc_origin_uuid)
+                    disc_from_id = (
+                        '.'.join(disc_origin.get_disc_full_name().split('.')[1:])
+                        + '.'
+                        + type(disc_origin).__name__
+                    )
+                    disc_origin_namespace_list = [
+                        d['namespace']
+                        for d in discipline_node_list
+                        if d['id'] == disc_from_id
+                    ]
+                    parameter_namespace = (
+                        disc_origin_namespace_list[0]
+                        if disc_origin_namespace_list
+                        else disc_from_id
+                    )
+                if type(disc_to).__name__ == 'SoSCoupling':
+                    # case that is not yet taken into account
+                    print("parameter going to a SoSCouling, not taken care of")
+
                 # add parameter node if does not exists
                 if param_id not in unique_parameters_ids:
                     unique_parameters_ids.add(param_id)
                     parameters_node_info = {
                         'id': param_id,
-                        # by default, we retrieve the namespace of the
-                        # discipline outputting this parameter
-                        'namespace': disc_from_namespace,
+                        'namespace': parameter_namespace,
                         'type': 'ParameterNode',
                         'parameter_name': parameter_name,
                         'datatype': parameter_type,
@@ -344,9 +382,30 @@ class InterfaceDiagramGenerator:
     def generate_base_namespace_dict(self, base_discipline_dict: dict) -> dict:
         # namespace list
         base_namespace_list = self.get_namespace_list(base_discipline_dict)
+
+        # add SoSCouplings namespace because when it is a multiscenario, it is useful to create a base namespace for each scenario
+        for ns_node, disc_list in self.disciplines_dict.items():
+            for disc_dict in disc_list:
+                if disc_dict.get('classname', None) == 'SoSCoupling':
+                    new_base_namespace = '.'.join(ns_node.split('.')[1:])
+                    if (
+                        new_base_namespace != ''
+                        and new_base_namespace not in base_namespace_list
+                    ):
+                        base_namespace_list.append(new_base_namespace)
+
+        # add possible missing parent namespaces
+        parent_ns_to_add = set()
+        for ns in base_namespace_list:
+            ns_split = ns.split('.')
+            for i in range(len(ns_split)):
+                sub_ns = '.'.join(ns_split[:-i])
+                if sub_ns not in base_namespace_list:
+                    parent_ns_to_add.add(sub_ns)
+        base_namespace_list = sorted(base_namespace_list + list(parent_ns_to_add))
+
         full_namespace_list = self.get_namespace_list(self.disciplines_dict)
-        # base_namespace_dict = dict.fromkeys(base_namespace_list)
-        base_namespace_dict = {}
+        base_namespace_dict = {base_ns: [] for base_ns in base_namespace_list}
 
         # fill base namespace with node namespace
         for namespace in full_namespace_list:
@@ -354,28 +413,28 @@ class InterfaceDiagramGenerator:
                 namespace, base_namespace_list
             )
             # add namespace to base ns dict
-            if node_base_namespace in base_namespace_dict:
-                base_namespace_dict[node_base_namespace].append(namespace)
-            else:
-                base_namespace_dict[node_base_namespace] = [namespace]
-
-        # add base namespace to discipline dict
+            base_namespace_dict[node_base_namespace].append(namespace)
 
         return base_namespace_dict
 
-    def generate_namespace_tree(self, treeview: TreeView) -> dict:
-        namespace_tree = self.get_children_namespaces(treeview.root)
-        return namespace_tree
+    def get_children_ns_from_dict(self, ns, base_namespace_dict, ns_already_used):
+        ns_tree = {'disciplines': base_namespace_dict.get(ns, []), 'sub_groups': []}
+        ns_already_used.add(ns)
+        for sub_ns in base_namespace_dict.keys():
+            if (ns == '' and len(sub_ns.split('.')) == 1 and sub_ns != '') or (
+                len(ns.split('.')) + 1 == len(sub_ns.split('.')) and ns in sub_ns
+            ):
+                if sub_ns not in ns_already_used:
+                    sub_namespace_tree = self.get_children_ns_from_dict(
+                        sub_ns, base_namespace_dict, ns_already_used
+                    )
+                    if (
+                        len(list(sub_namespace_tree.values())[0]['disciplines']) > 0
+                        or len(list(sub_namespace_tree.values())[0]['sub_groups']) > 0
+                    ):
+                        ns_tree['sub_groups'].append(sub_namespace_tree)
 
-    def get_children_namespaces(self, treenode: TreeNode) -> dict:
-        ns_label = '.'.join(treenode.full_namespace.split('.')[1:])
-        children_list = []
-        if len(treenode.children) > 0:
-            for child_treenode in treenode.children:
-                children_list.append(self.get_children_namespaces(child_treenode))
-        namespace_tree = {
-            ns_label: sorted(children_list, key=lambda e: list(e.keys())[0])
-        }
+        namespace_tree = {ns: ns_tree}
         return namespace_tree
 
     def generate_subgraph(
@@ -385,7 +444,7 @@ class InterfaceDiagramGenerator:
         discipline_node_list: list,
         parameter_nodes_list: list,
     ) -> Digraph:
-        for subgraph_dict in subgraph_list:
+        for subgraph_dict in subgraph_list.get('sub_groups', []):
             for subgraph_name, subgraph_children_list in subgraph_dict.items():
                 subgraph = Digraph(
                     name='cluster_' + subgraph_name,
@@ -397,14 +456,15 @@ class InterfaceDiagramGenerator:
                         'rank': 'source',
                     },
                 )
-                subgraph_nodes_namespace_list = self.base_namespace_dict.get(
-                    subgraph_name, []
+                subgraph_nodes_namespace_list = subgraph_children_list.get(
+                    'disciplines', []
                 )
                 subgraph_nodes = [
                     n
                     for n in discipline_node_list
                     if n['namespace'] in subgraph_nodes_namespace_list
                 ]
+
                 # draw discipline nodes
                 for node_dict in subgraph_nodes:
                     self.draw_discipline_node(

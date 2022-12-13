@@ -47,8 +47,8 @@ from sos_trades_api.server.base_server import db, app, study_case_cache
 
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
-from sos_trades_api.models.database_models import StudyCase, StudyCaseAccessGroup, Group, \
-    GroupAccessUser, StudyCaseChange, AccessRights, StudyCaseExecution, User, ReferenceStudy
+from sos_trades_api.models.database_models import StudyCase, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
+    ReferenceStudy
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.study_case_dto import StudyCaseDto
@@ -59,8 +59,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import study_case_man
     study_case_manager_update, study_case_manager_loading_from_reference, \
     study_case_manager_loading_from_usecase_data, \
     study_case_manager_loading_from_study
-from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile, \
-    InvalidStudyExecution
+from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from numpy import array
@@ -188,157 +187,6 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
     return loaded_study_case
 
-
-def edit_study(study_id, new_group_id, new_study_name, user_id):
-    """
-    Update the group and the study_name for a study case
-    :param study_id: id of the study to load
-    :type study_id: integer
-    :param new_group_id: id of the new group of the study
-    :type new_group_id:  integer
-    :param new_study_name: new name of the study
-    :type new_study_name: string
-    :param user_id: id of the current user.
-    :type user_id: integer
-
-    """
-
-    # Check if the study is not in calculation execution
-    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id)\
-        .order_by(desc(StudyCaseExecution.id)).first()
-
-    if study_case_execution is None or (study_case_execution.execution_status != StudyCaseExecution.RUNNING and
-                                        study_case_execution.execution_status != StudyCaseExecution.PENDING):
-
-        # Retrieve study, StudyCaseManager throw an exception if study does not
-        # exist
-        study_case_manager = StudyCaseManager(study_id)
-
-        update_study_name = study_case_manager.study.name != new_study_name
-        update_group_id = study_case_manager.study.group_id != new_group_id
-
-        # ---------------------------------------------------------------
-        # First make update operation on data's (database and filesystem)
-
-        # Perform database update
-        if update_study_name or update_group_id:
-
-            study_to_update = StudyCase.query.filter(
-                StudyCase.id == study_id).first()
-            # Verify if the name already exist in the target group
-            study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
-                Group).join(GroupAccessUser) \
-                .filter(GroupAccessUser.user_id == user_id) \
-                .filter(Group.id == new_group_id) \
-                .filter(StudyCase.disabled == False).all()
-
-            for study in study_name_list:
-                if study.name == new_study_name:
-                    raise InvalidStudy(
-                        f'The following study case name "{new_study_name}" already exist in the database for the target group')
-
-            # Retrieve the study group access
-            update_group_access = StudyCaseAccessGroup.query \
-                .filter(StudyCaseAccessGroup.study_case_id == study_id) \
-                .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
-            try:
-                if update_study_name:
-                    study_to_update.name = new_study_name
-
-                if update_group_id:
-
-                    study_to_update.group_id = new_group_id
-
-                    if update_group_access is not None:
-
-                        update_group_access.group_id = new_group_id
-                        db.session.add(update_group_access)
-                        db.session.commit()
-
-                db.session.add(study_to_update)
-                db.session.commit()
-
-            except Exception as ex:
-                db.session.rollback()
-                raise ex
-
-            #-----------------------------------------------------------------
-            # manage the read only mode file:
-            if update_study_name:
-                # we don't want the study to be reload in read only before the update is done
-                # so we remove the read_only_file if it exists, it will be
-                # updated at the end of the reload
-                try:
-                    study_case_manager.delete_loaded_study_case_in_json_file()
-                except BaseException as ex:
-                    app.logger.error(
-                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
-
-            # If group has change then move file (can only be done after the
-            # study 'add')
-            if update_group_id:
-                updated_study_case_manager = StudyCaseManager(study_id)
-                try:
-                    # study_case_manager.move_study_case_folder(new_group_id, study_id)
-                    shutil.move(study_case_manager.dump_directory,
-                                updated_study_case_manager.dump_directory)
-                except BaseException as ex:
-                    db.session.rollback()
-                    raise ex
-
-        app.logger.info(
-            f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
-
-        # ---------------------------------------------------------------
-        # Next manage study case cache if the study has already been loaded
-
-        # Check if study is already in cache
-        if study_case_cache.is_study_case_cached(study_id):
-
-            # Remove outdated study from the cache
-            study_case_cache.delete_study_case_from_cache(study_id)
-            # Create the updated one
-            study_manager = study_case_cache.get_study_case(study_id, False)
-
-            try:
-
-                if study_manager.load_status == LoadStatus.NONE:
-                    study_manager.load_status = LoadStatus.IN_PROGESS
-                    threading.Thread(
-                        target=study_case_manager_loading,
-                        args=(study_manager, False, False)).start()
-
-                if study_manager.load_status == LoadStatus.IN_ERROR:
-                    raise Exception(study_manager.error_message)
-
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                study_manager.set_error(
-                    ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-                # Then propagate exception
-                raise Exception(study_manager.error_message)
-        else:
-            study_manager = StudyCaseManager(study_id)
-
-        result = LoadedStudyCase(study_manager, False, False, user_id)
-        # Modifying study case to add access right of creator (Manager)
-        result.study_case.is_manager = True
-
-        process_metadata = load_processes_metadata(
-            [f'{result.study_case.repository}.{result.study_case.process}'])
-        repository_metadata = load_repositories_metadata(
-            [result.study_case.repository])
-
-        result.study_case.apply_ontology(process_metadata, repository_metadata)
-
-        return result
-
-    else:
-
-        raise InvalidStudyExecution(
-            "This study is running, you cannot edit it during its run.")
-
-
 def light_load_study_case(study_id, reload=False):
     """
     Launch only the load study in cache
@@ -373,8 +221,10 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     :params: reload, indicates if the study must be reloaded, false by default
     :type: boolean
     """
+
     start_time = time.time()
     study_manager = study_case_cache.get_study_case(study_id, False)
+
     cache_duration = time.time() - start_time
     if reload:
         study_manager.study_case_manager_reload_backup_files()

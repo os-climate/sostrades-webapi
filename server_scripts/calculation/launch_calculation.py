@@ -18,10 +18,24 @@ import os
 import time
 import argparse
 import logging
-from os.path import join, dirname
+import yaml
+import git
+import re
+from os import environ, pathsep
+from os.path import join, dirname, isdir
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from logging import DEBUG
+
+BRANCH = 'branch'
+COMMIT = 'commit'
+URL = 'url'
+COMMITTED_DATE = 'committed_date'
+REPO_PATH = 'path'
+
+# Regular expression to remove connection info from url when token is used
+INFO_REGEXP = ':\/\/.*@'
+INFO_REPLACE = '://'
 
 
 class ReferenceStudyError(Exception):
@@ -104,6 +118,8 @@ def launch_calculation_study(study_identifier):
         elapsed_time = time.time() - start_time
         execution_logger.debug(f'Execution time : {elapsed_time} seconds')
 
+        trace_source_code(study.dump_directory, execution_logger)
+
 
 def launch_generate_reference(reference_identifier):
     """
@@ -118,6 +134,7 @@ def launch_generate_reference(reference_identifier):
 
     # Instantiate and attach database logger
     generation_log_handler = ReferenceMySQLHandler(reference_identifier)
+    generation_log_handler.clear_reference_database_logs()
     generation_log.addHandler(generation_log_handler)
 
     # Then share handlers with GEMS logger to retrieve GEMS execution
@@ -159,7 +176,7 @@ def launch_generate_reference(reference_identifier):
             imported_usecase = getattr(imported_module, 'Study')()
         except Exception as e:
             generation_log.exception(
-                'The follozing error occurs during reference loading'
+                'The following error occurs during reference loading'
             )
             ReferenceStudy.query.filter(ReferenceStudy.id == reference_study.id).update(
                 {
@@ -186,7 +203,7 @@ def launch_generate_reference(reference_identifier):
             imported_usecase.run(dump_study=True)
 
             ref_updated = ReferenceStudy.query.filter(
-                ReferenceStudy.id == reference_study.id
+                ReferenceStudy.id == reference_identifier
             ).first()
             ref_updated.execution_status = ReferenceStudy.FINISHED
             ref_updated.creation_date = (
@@ -194,14 +211,17 @@ def launch_generate_reference(reference_identifier):
             )
             main_server.db.session.add(ref_updated)
             main_server.db.session.commit()
+
+            trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:
-            ReferenceStudy.query.filter(ReferenceStudy.id == reference_study.id).update(
+            ReferenceStudy.query.filter(ReferenceStudy.id == reference_identifier).update(
                 {
                     'execution_status': ReferenceStudy.FAILED,
                     'generation_logs': e,
                     'creation_date': None,
                 }
             )
+            generation_log.exception("An exception occurs during reference generation.")
             main_server.db.session.commit()
             raise ReferenceStudyError(e)
 
@@ -210,6 +230,74 @@ def launch_generate_reference(reference_identifier):
             f'Reference/Usecase generation duration : {elapsed_time} seconds'
         )
         generation_log_handler.flush()
+
+
+def trace_source_code(
+    traceability_folder=None, logger=None, write_file=True, add_library_path=False
+):
+    """
+    Regarding python path module information, extract and save all commit sha of
+    repositories used to compute the study
+    :param traceability_folder: folder to save the traceability file
+    :type traceability_folder: str
+    :param logger: logger for messages
+    :type logger: Logger
+
+    """
+
+    if logger is None:
+        logger = get_sos_logger('SoS')
+
+    traceability_dict = {}
+
+    # check for PYTHONPATH environment variable
+    python_path_libraries = environ.get('PYTHONPATH')
+
+    if python_path_libraries is not None and len(python_path_libraries) > 0:
+
+        # Set to list each library of the PYTHONPATH
+        libraries = python_path_libraries.split(pathsep)
+
+        for library_path in libraries:
+            if isdir(library_path):
+                try:
+                    repo = git.Repo(path=library_path, search_parent_directories=True)
+
+                    # Retrieve url and remove connection info from it
+                    raw_url = repo.remotes.origin.url
+                    url = re.sub(INFO_REGEXP, INFO_REPLACE, raw_url)
+                    try:
+                        repo_name = url.split('.git')[0].split('/')[-1]
+                    except:
+                        print(f'Impossible to retrieve repo name from url {url}')
+                        repo_name = url
+
+                    branch = repo.active_branch
+                    commit = branch.commit
+                    commited_date = datetime.fromtimestamp(
+                        commit.committed_date, timezone.utc
+                    )
+
+                    traceability_dict[repo_name] = {
+                        URL: url,
+                        BRANCH: branch.name,
+                        COMMIT: commit.hexsha,
+                        COMMITTED_DATE: commited_date.strftime("%d/%m/%Y %H:%M:%S"),
+                    }
+                    if add_library_path:
+                        traceability_dict[repo_name][REPO_PATH] = library_path
+
+                except git.exc.InvalidGitRepositoryError:
+                    logger.debug(f'{library_path} folder is not a git folder')
+                except Exception as error:
+                    logger.debug(
+                        f'{library_path} folder generates the following error while accessing with git:\n {str(error)}'
+                    )
+    if write_file and isdir(traceability_folder):
+        with open(join(traceability_folder, 'traceability.yaml'), 'w') as file:
+            yaml.dump(traceability_dict, file)
+
+    return traceability_dict
 
 
 if __name__ == '__main__':
@@ -235,7 +323,7 @@ if __name__ == '__main__':
 
     # Import server module after a basic configuration in order to set
     # correctly server  executing environment
-    from sos_trades_api import main_server
+    from sos_trades_api.server.split_mode import main_server
     from sos_trades_api.config import Config
     from sostrades_core.api import get_sos_logger
     from sos_trades_api.tools.logger.reference_mysql_handler import (

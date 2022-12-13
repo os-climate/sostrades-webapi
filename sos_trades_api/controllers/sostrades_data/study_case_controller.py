@@ -13,18 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import threading
+import os
+import shutil
 from shutil import rmtree
+from datetime import datetime, timezone, timedelta
 
 from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
     load_study_allocation, delete_study_server_services_and_deployments
+from sos_trades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
-from tempfile import gettempdir
-import io
+
 from sos_trades_api.tools.code_tools import isevaluatable
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
@@ -35,7 +37,6 @@ from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
     StudyCaseChange,
-    StudyCaseExecutionLog,
     UserStudyPreference,
     StudyCase,
     UserStudyFavorite,
@@ -46,16 +47,16 @@ from sos_trades_api.models.database_models import (
     Group,
     GroupAccessUser,
     AccessRights,
-    StudyCaseAllocation
+    StudyCaseAllocation, User
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
     load_processes_metadata,
     load_repositories_metadata,
 )
-from sqlalchemy.sql.expression import and_
+from sqlalchemy.sql.expression import and_, desc
 import json
-from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy
+from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy, InvalidStudyExecution
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from io import BytesIO
 
@@ -206,6 +207,196 @@ def get_study_case_allocation(study_case_identifier):
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = str(exc)
     return study_case_allocation
+
+
+def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
+    """ copy an existing study case with a new name but without loading this study
+
+        :param source_study_case_identifier: identifier of the study case to copy
+        :type source_study_case_identifier: str
+        :param new_study_identifier: id of the new study case
+        :type new_study_identifier: integer
+        :param user_identifier:  id user owner of the new study case
+        :type user_identifier: integer
+        """
+    with app.app_context():
+
+        try:
+            study_manager_source = StudyCaseManager(source_study_case_identifier)
+            new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
+
+            if new_study_case is not None:
+                # Copy the last study case execution and then update study_id, creation date and request_by.
+                study_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.study_case_id == source_study_case_identifier) \
+                    .order_by(desc(StudyCaseExecution.id)).first()
+
+                user = User.query.filter(User.id == user_identifier).first()
+
+                if study_execution is not None:
+
+                    if study_execution.execution_status == StudyCaseExecution.RUNNING \
+                            or study_execution.execution_status == StudyCaseExecution.STOPPED \
+                            or study_execution.execution_status == StudyCaseExecution.PENDING:
+                        status = StudyCaseExecution.NOT_EXECUTED
+                    else:
+                        status = study_execution.execution_status
+
+                    new_study_execution = StudyCaseExecution()
+                    new_study_execution.study_case_id = new_study_identifier
+                    new_study_execution.execution_status = status
+                    new_study_execution.execution_type = study_execution.execution_type
+                    new_study_execution.requested_by = user.username
+
+                    db.session.add(new_study_execution)
+                    db.session.flush()
+
+                    new_study_case.current_execution_id = new_study_execution.id
+                    db.session.add(new_study_case)
+                    db.session.commit()
+
+        except Exception as ex:
+            db.session.rollback()
+            raise ex
+
+        # Copy of study data sources from the study source_study_case_identifier to study new study
+        try:
+            study_case_manager = StudyCaseManager(str(new_study_identifier))
+
+            # Copy dm.pkl in the new
+            study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
+
+            # Copy disciplines_status.pkl in the new directory
+            study_case_manager.copy_pkl_file(DataSerializer.disc_status_filename, study_case_manager, study_manager_source)
+
+            # Copy log file from studyExecutionLog
+            if study_execution is not None:
+                file_path_initial = study_manager_source.raw_log_file_path_absolute()
+                # Check if file_path_initial exist
+                if os.path.exists(file_path_initial):
+                    file_path_final = study_case_manager.raw_log_file_path_absolute()
+
+                    path_folder_final = os.path.dirname(file_path_final)
+                    if not os.path.exists(path_folder_final):
+                        os.makedirs(path_folder_final)
+                    shutil.copyfile(file_path_initial, file_path_final)
+
+            return new_study_case
+
+        except Exception as ex:
+            app.logger.error(
+                f'Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
+            raise ex
+
+
+def edit_study(study_id, new_group_id, new_study_name, user_id):
+    """
+    Update the group and the study_name for a study case
+    :param study_id: id of the study to load
+    :type study_id: integer
+    :param new_group_id: id of the new group of the study
+    :type new_group_id:  integer
+    :param new_study_name: new name of the study
+    :type new_study_name: string
+    :param user_id: id of the current user.
+    :type user_id: integer
+
+    """
+    study_is_updated = False
+
+    # Check if the study is not in calculation execution
+    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.study_case_id == study_id)\
+        .order_by(desc(StudyCaseExecution.id)).first()
+
+    if study_case_execution is None or (study_case_execution.execution_status != StudyCaseExecution.RUNNING and
+                                        study_case_execution.execution_status != StudyCaseExecution.PENDING):
+
+        # Retrieve study, StudyCaseManager throw an exception if study does not exist
+        study_case_manager = StudyCaseManager(study_id)
+
+        update_study_name = study_case_manager.study.name != new_study_name
+        update_group_id = study_case_manager.study.group_id != new_group_id
+        # ---------------------------------------------------------------
+        # First make update operation on data's (database and filesystem)
+
+        # Perform database update
+        if update_study_name or update_group_id:
+            study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
+            if study_to_update is not None:
+                # Verify if the name already exist in the target group
+                study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
+                    Group).join(GroupAccessUser) \
+                    .filter(GroupAccessUser.user_id == user_id) \
+                    .filter(Group.id == new_group_id) \
+                    .filter(StudyCase.disabled == False).all()
+
+                for study in study_name_list:
+                    if study.name == new_study_name:
+                        raise InvalidStudy(
+                            f'The following study case name "{new_study_name}" already exist in the database for the target group')
+
+                # Retrieve the study group access
+                update_group_access = StudyCaseAccessGroup.query \
+                    .filter(StudyCaseAccessGroup.study_case_id == study_id) \
+                    .filter(StudyCaseAccessGroup.group_id == study_to_update.group_id).first()
+                try:
+                    if update_study_name:
+                        study_to_update.name = new_study_name
+
+                    if update_group_id:
+
+                        study_to_update.group_id = new_group_id
+
+                        if update_group_access is not None:
+
+                            update_group_access.group_id = new_group_id
+                            db.session.add(update_group_access)
+                            db.session.commit()
+
+                    # Update study last modification
+                    new_modification_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                    if study_to_update.modification_date >= new_modification_date:
+                        study_to_update.modification_date = study_to_update.modification_date + timedelta(seconds=5)
+                    else:
+                        study_to_update.modification_date = new_modification_date
+
+                    db.session.add(study_to_update)
+                    db.session.commit()
+
+                except Exception as ex:
+                    db.session.rollback()
+                    raise ex
+
+                # -----------------------------------------------------------------
+                # manage the read only mode file:
+
+                # we don't want the study to be reload in read only before the update is done
+                # so we remove the read_only_file if it exists, it will be updated at the end of the reload
+                try:
+                    study_case_manager.delete_loaded_study_case_in_json_file()
+                except BaseException as ex:
+                    app.logger.error(
+                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+
+                # If group has change then move file (can only be done after the study 'add')
+                if update_group_id:
+                    updated_study_case_manager = StudyCaseManager(study_id)
+                    try:
+                        shutil.move(study_case_manager.dump_directory, updated_study_case_manager.dump_directory)
+                    except BaseException as ex:
+                        db.session.rollback()
+                        raise ex
+
+                study_is_updated = study_to_update.name == new_study_name
+                app.logger.info(
+                    f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
+
+                return study_is_updated
+            else:
+                raise InvalidStudy(f'Requested study case (identifier {study_id} does not exist in the database')
+    else:
+        raise InvalidStudyExecution("This study is running, you cannot edit it during its run.")
+
 
 def delete_study_cases_and_allocation(studies):
     """
@@ -489,36 +680,6 @@ def study_case_logs(study_case_identifier):
         )
 
 
-def get_logs(study_case_identifier):
-    """
-    Retrieve a study case execution logs, write them in a file, return the filename
-
-    :param study_case_identifier: study case identifier for which we will retrieve execution log
-    :type study_case_identifier: int
-    :return: str (filename)
-    """
-    logs = []
-    if study_case_identifier is not None:
-        logs = (
-            StudyCaseExecutionLog.query.filter(
-                StudyCaseExecutionLog.study_case_id == study_case_identifier
-            )
-            .order_by(StudyCaseExecutionLog.id.desc())
-            .all()
-        )
-        logs.reverse()
-
-    if logs:
-        tmp_folder = gettempdir()
-        file_name = f'{tmp_folder}/_log'
-        with io.open(file_name, "w", encoding="utf-8") as f:
-            for log in logs:
-                f.write(
-                    f'{log.created}\t{log.name}\t{log.log_level_name}\t{log.message}\n'
-                )
-        return file_name
-
-
 def get_raw_logs(study_case_identifier):
     """
     Return the location of the raw logs file path
@@ -668,7 +829,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
             .filter(UserStudyFavorite.study_case_id == study_case_identifier)
             .first()
         )
-        raise Exception(
+        raise InvalidStudy(
             f'The study - {study_case.name} - is already in your favorite studies'
         )
 
@@ -705,6 +866,6 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
             db.session.rollback()
             raise ex
     else:
-        raise Exception(f'You cannot remove a study that is not in your favorite study')
+        raise InvalidStudy(f'You cannot remove a study that is not in your favorite study')
 
     return f'The study, {study_case.name}, has been removed from favorite study.'

@@ -651,6 +651,22 @@ class StudyCaseManager(BaseStudyManager):
         return None
 
     @staticmethod
+    def copy_pkl_file(file_name, study_case_manager, study_manager_source):
+        """
+            Load data from a file then dump them into a new file
+        """
+        # Create the new study's directory
+        if not os.path.exists(study_case_manager.dump_directory):
+            os.makedirs(study_case_manager.dump_directory)
+
+        initial_file_path = os.path.join(study_manager_source.dump_directory, file_name)
+        file_path_final = os.path.join(study_case_manager.dump_directory, file_name)
+
+        if file_path_final and initial_file_path is not None:
+            data_dict = study_manager_source.rw_strategy.load(initial_file_path)
+            study_case_manager.rw_strategy.dump(data_dict, file_path_final)
+
+    @staticmethod
     def get_root_study_data_folder(group_id=None, study_case_id=None) -> str:
         """
         Return path of the study case or group data

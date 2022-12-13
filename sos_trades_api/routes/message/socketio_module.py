@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask_socketio import emit, join_room, leave_room
-from sos_trades_api.message_server import socketio
+from sos_trades_api.server.message_server import socketio
 from sos_trades_api.tools.authentication.authentication import auth_refresh_required, get_authenticated_user
 from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, CoeditionMessage, \
     add_user_to_room, get_user_list_in_room, remove_user_from_room, remove_user_from_all_rooms, \

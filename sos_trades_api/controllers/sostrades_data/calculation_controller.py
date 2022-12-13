@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.study_case_controller import get_logs, get_raw_logs
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
 """
@@ -318,12 +318,12 @@ def calculation_status(study_id):
 
 def calculation_logs(study_case_id, study_case_execution_id=None):
     """
-        Retrieve execution logs from database for a given study case
+        Retrieve execution logs from file for a given study case
 
     :param study_case_id: study case identifier
     :param study_case_execution_id: execution identifier (optional)
 
-    :return: StudyCaseExecutionLog[]
+    :return: list of string
     """
     if study_case_id is not None:
         result = []
@@ -338,6 +338,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
 
             file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
+
                 result = file_tail(file_path, 200)
 
         except Exception as ex:

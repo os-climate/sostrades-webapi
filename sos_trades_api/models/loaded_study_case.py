@@ -23,7 +23,6 @@ from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 import json
 from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
 from sqlalchemy import and_
-from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
 
 from sos_trades_api.server.base_server import db, app
 
