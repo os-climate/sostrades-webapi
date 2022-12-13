@@ -1,5 +1,5 @@
-from sos_trades_core.study_manager.study_manager import StudyManager
-from sos_trades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.study_manager.study_manager import StudyManager
+from sostrades_core.study_manager.base_study_manager import BaseStudyManager
 from graphviz import Digraph
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_ontology
 

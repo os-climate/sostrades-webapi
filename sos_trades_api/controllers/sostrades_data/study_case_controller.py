@@ -20,7 +20,7 @@ from datetime import datetime, timezone, timedelta
 
 from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
     load_study_allocation, delete_study_server_services_and_deployments
-from sos_trades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
