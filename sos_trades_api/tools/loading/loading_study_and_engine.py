@@ -24,7 +24,7 @@ import traceback
 import sys
 from time import time
 from sos_trades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sos_trades_api.models.database_models import StudyCase
+from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
 from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
 from datetime import datetime, timezone
@@ -183,7 +183,13 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
             studycase = StudyCase.query.filter(
                 StudyCase.id.like(study_case_manager.study.id)).first()
             studycase.modification_date = modify_date
-            studycase.execution_status = ''
+            # Update execution_status
+            if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_CONFIGURE:
+                study_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
+                if study_execution is not None:
+                    study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
+                    db.session.add(study_execution)
 
             db.session.add(studycase)
             db.session.commit()
