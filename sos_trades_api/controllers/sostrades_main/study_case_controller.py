@@ -15,6 +15,7 @@ limitations under the License.
 '''
 from flask import jsonify
 
+from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -278,6 +279,9 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         app.logger.info(
             f'load_study_case {study_id}, dashboard:{end_dashboard_duration} ')
 
+        # Add this study in last study opened in database
+        add_last_opened_study_case(study_id, user_id)
+
     # Return logical treeview coming from execution engine
     return loaded_study_case
 
@@ -323,11 +327,16 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
                 else:
                     study_json['study_case']['is_restricted_viewer'] = True
 
+                # Add this study in last study opened in database
+                add_last_opened_study_case(study_id, user_id)
+
                 return study_json
 
-    # if the study is not in read only mode, it is normally loaded
-    loadedStudy = load_study_case(study_id, study_access_right, user_id)
-    return jsonify(loadedStudy)
+    # If the study is not in read only mode, it is normally loaded
+    loaded_study = load_study_case(study_id, study_access_right, user_id)
+
+    return jsonify(loaded_study)
+
 
 
 def copy_study_case(study_id, source_study_case_identifier, user_id):

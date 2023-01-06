@@ -47,7 +47,9 @@ from sos_trades_api.models.database_models import (
     Group,
     GroupAccessUser,
     AccessRights,
-    StudyCaseAllocation, User
+    StudyCaseAllocation, 
+    User,
+    UserLastOpenedStudy
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
@@ -490,6 +492,16 @@ def get_user_shared_study_case(user_identifier: int):
             favorite_study.study_case_id for favorite_study in all_favorite_studies
         ]
 
+        # Retrieve all last studies opened
+        all_last_studies_opened = (
+            UserLastOpenedStudy.query.filter(UserLastOpenedStudy.study_case_id.in_(all_study_identifier))
+            .filter(UserLastOpenedStudy.user_id == user_identifier)
+            .all()
+        )
+        all_last_studies_opened_identifier = [
+            last_study.study_case_id for last_study in all_last_studies_opened
+        ]
+
         # Get all related study case execution id
         all_study_case_execution_identifiers = [
             user_study.current_execution_id
@@ -510,6 +522,14 @@ def get_user_shared_study_case(user_identifier: int):
             # Manage favorite study list
             if user_study.id in all_favorite_studies_identifier:
                 user_study.is_favorite = True
+
+            # Manage last study opened list
+            if user_study.id in all_last_studies_opened_identifier:
+                for last_study_opened in all_last_studies_opened:
+                    if last_study_opened.study_case_id == user_study.id:
+                        user_study.opening_date = last_study_opened.opening_date
+
+                user_study.is_last_study_opened = True
 
             # Manage execution status
             study_case_execution = list(
@@ -801,7 +821,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
 
     :param study_case_identifier: id of the study_case
     :type study_case_identifier: int
-    :param user_identifier: user that did add a favorite study
+    :param user_identifier: user who added a favorite study
     :type user_identifier: int
 
     """
@@ -840,7 +860,7 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
 
     :param study_case_identifier: identifier of the study_case
     :type study_case_identifier: int
-    :param user_identifier: user that did add a favorite study
+    :param user_identifier: user who removed the favorite study
     :type user_identifier: int
     """
 
@@ -869,3 +889,66 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
         raise InvalidStudy(f'You cannot remove a study that is not in your favorite study')
 
     return f'The study, {study_case.name}, has been removed from favorite study.'
+
+
+def add_last_opened_study_case(study_case_identifier, user_identifier):
+    """
+    Create and save a new opened study case for a user
+
+    :param study_case_identifier: id of the study_case
+    :type study_case_identifier: int
+    :param user_identifier: user who opened the study
+    :type user_identifier: int
+
+    """
+    with app.app_context():
+
+        try:
+            user_last_opened_studies = (
+                UserLastOpenedStudy.query.filter(UserLastOpenedStudy.user_id == user_identifier)
+                .all()
+            )
+            if len(user_last_opened_studies) == 0:
+                # Creation of a new opened study
+                new_last_opened_study = UserLastOpenedStudy()
+                new_last_opened_study.study_case_id = study_case_identifier
+                new_last_opened_study.user_id = user_identifier
+
+                db.session.add(new_last_opened_study)
+                db.session.commit()
+
+            else:
+                last_studies_opened = {}
+                for last_opened_study in user_last_opened_studies:
+                    last_studies_opened[last_opened_study.study_case_id] = last_opened_study
+
+                # Check if study is already in list of last opened studies
+                if study_case_identifier in last_studies_opened:
+                    last_opened_study = last_studies_opened.get(study_case_identifier)
+                    last_opened_study.opening_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                    db.session.add(last_opened_study)
+                    db.session.flush()
+
+                else:
+                    if len(user_last_opened_studies) >= 5:
+                        sorted_list = sorted(user_last_opened_studies, key=lambda res: res.opening_date)
+                        db.session.delete(sorted_list[0])
+                        db.session.flush()
+
+                        # Creation of a new opened study
+                    new_last_opened_study = UserLastOpenedStudy()
+                    new_last_opened_study.study_case_id = study_case_identifier
+                    new_last_opened_study.user_id = user_identifier
+                    db.session.add(new_last_opened_study)
+                    db.session.flush()
+
+                db.session.commit()
+
+        except Exception as ex:
+            db.session.rollback()
+            app.logger.error(
+                f'Study {study_case_identifier} could not be saved in the last open studies : {ex}')
+            raise ex
+
+
+
