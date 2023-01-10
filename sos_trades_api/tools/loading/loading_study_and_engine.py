@@ -25,7 +25,6 @@ tools methods to manage behaviour around StudyCase
 import traceback
 import sys
 from time import time
-from sos_ontology.core.sos_entities.sos_discipline import SoSDiscipline
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
 from sos_trades_api.server.base_server import db
@@ -187,7 +186,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
                 StudyCase.id.like(study_case_manager.study.id)).first()
             studycase.modification_date = modify_date
             # Update execution_status
-            if study_case_manager.execution_engine.root_process.status == SoSDiscipline.STATUS_CONFIGURE:
+            if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
                 study_execution = StudyCaseExecution.query.filter(
                     StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
                 if study_execution is not None:
