@@ -25,6 +25,7 @@ from sqlalchemy import and_
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
 from sos_trades_api.server.base_server import db, app
 from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from copy import deepcopy
 
 
@@ -70,7 +71,7 @@ class ExecutionEngineObserver():
         execution
         """
         # Send a status to update into the queue
-        if isinstance(discipline, SoSMDODiscipline):
+        if isinstance(discipline, SoSMDODiscipline) or isinstance(discipline, ProxyDiscipline):
 
             # Send update to the queue
             self.__queue.put([discipline.name, discipline.status])
