@@ -642,7 +642,8 @@ class StudyCaseManager(BaseStudyManager):
                 if data_value is None:
                     return None
                 else:
-                    df_data = DataSerializer.convert_to_dataframe_and_bytes_io(
+                    serializer = DataSerializer()
+                    df_data = serializer.convert_to_dataframe_and_bytes_io(
                         data_value, parameter_key)
                     return df_data
 
