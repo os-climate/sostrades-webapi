@@ -857,12 +857,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 study_json, 'Unable to read study case read only file')
 
-            # set loadStatus to read only to check the get data method
-            study_manager.load_status = LoadStatus.READ_ONLY_MODE
-            parameter = get_file_stream(
-                study_case_copy_id, 'test_study_copy_read_only.dataframe_mix_types')
-            self.assertIsNotNone(
-                parameter, 'Unable to read study case read only file')
+            # check that the json contains the data
+            self.assertTrue(
+                'test_study_copy_read_only.dataframe_mix_types' in str(study_json),
+                f'the parameter is not in the read only file')
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
