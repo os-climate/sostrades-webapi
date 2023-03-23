@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.study_case_controller import get_logs, get_raw_logs
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
 """
@@ -38,7 +38,7 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import load_p
 from sos_trades_api.config import Config
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sos_trades_core.api import get_sos_logger
+from sostrades_core.api import get_sos_logger
 from sqlalchemy.sql.expression import and_
 
 calculation_semaphore = threading.Semaphore()
@@ -84,7 +84,8 @@ def execute_calculation(study_id, username):
 
             if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.RUNNING:
                 calculation_semaphore.release()
-                raise CalculationError('Study already submitted.\nIt must be stopped/terminated before running a new one.')
+                raise CalculationError(
+                    'Study already submitted.\nIt must be stopped/terminated before running a new one.')
 
         # Create a new execution entry and associate it to the study
         new_study_case_execution = StudyCaseExecution()
@@ -107,7 +108,8 @@ def execute_calculation(study_id, username):
             .delete()
         db.session.commit()
         # Clearing all execution log regarding the given study case
-        # But only log that does not rely to calculation (null study_case_execution_id key)
+        # But only log that does not rely to calculation (null
+        # study_case_execution_id key)
         StudyCaseExecutionLog.query\
             .filter(StudyCaseExecutionLog.study_case_id == study_id)\
             .filter(StudyCaseExecutionLog.study_case_execution_id == None)\
@@ -136,15 +138,14 @@ def execute_calculation(study_id, username):
                     LOGGER.addHandler(handler)
 
             # Load study data if not loaded
-            study.load_data(display_treeview=False)
-            study.load_disciplines_data()
-            study.load_cache()
+            study.load_study_case_from_source()
 
             exec_thread = ExecutionEngineThread(study, execution_logger)
             exec_thread.start()
         elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_SUBPROCESS:
             log_file = study.raw_log_file_path_absolute()
-            exec_subprocess = ExecutionEngineSubprocess(study.study.current_execution_id, log_file)
+            exec_subprocess = ExecutionEngineSubprocess(
+                study.study.current_execution_id, log_file)
             pid = exec_subprocess.run()
             new_study_case_execution.execution_type = StudyCaseExecution.EXECUTION_TYPE_PROCESS
             new_study_case_execution.process_identifier = pid
@@ -208,7 +209,8 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
     if study_case_execution_id is None:
         study_case_execution_id = study_case.current_execution_id
 
-    # If no execution registered on study case object, then there is nothing to stop
+    # If no execution registered on study case object, then there is nothing
+    # to stop
     if study_case is None:
         raise InvalidStudy(
             f'Requested study case (identifier {study_case_id} does not exist in the database')
@@ -220,17 +222,21 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
 
         if study_case_execution is not None:
             try:
-                app.logger.info(f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{study_case_execution.kubernetes_pod_name}')
+                app.logger.info(
+                    f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{study_case_execution.kubernetes_pod_name}')
                 if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S and \
                         len(study_case_execution.kubernetes_pod_name) > 0:
                     exec_kubernetes = ExecutionEngineKubernetes()
-                    exec_kubernetes.delete(study_case_execution.kubernetes_pod_name)
+                    exec_kubernetes.delete(
+                        study_case_execution.kubernetes_pod_name)
                 elif study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
                         study_case_execution.process_identifier > 0:
                     try:
-                        os.kill(study_case_execution.process_identifier, signal.SIGTERM)
+                        os.kill(study_case_execution.process_identifier,
+                                signal.SIGTERM)
                     except Exception as ex:
-                        app.logger.exception(f'This error occurs when trying to kill process {study_case_execution.process_identifier}')
+                        app.logger.exception(
+                            f'This error occurs when trying to kill process {study_case_execution.process_identifier}')
 
                 # Update execution
                 study_case_execution.execution_status = StudyCaseExecution.STOPPED
@@ -258,7 +264,8 @@ def calculation_status(study_id):
 
         # Check associated execution object
         if study_case.current_execution_id is not None:
-            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(study_case.current_execution_id)).first()
+            study_case_execution = StudyCaseExecution.query.filter(
+                StudyCaseExecution.id.like(study_case.current_execution_id)).first()
 
             # In case execution has been deleted an study not updated
             if study_case_execution is not None:
@@ -276,7 +283,8 @@ def calculation_status(study_id):
                     if not study_case_execution.execution_status == StudyCaseExecution.PENDING and \
                             not study_case_execution.execution_status == StudyCaseExecution.RUNNING:
                         exec_kubernetes = ExecutionEngineKubernetes()
-                        exec_kubernetes.delete(study_case_execution.kubernetes_pod_name)
+                        exec_kubernetes.delete(
+                            study_case_execution.kubernetes_pod_name)
 
                         study_case_execution.kubernetes_pod_name = ''
                         db.session.add(study_case_execution)
@@ -310,12 +318,12 @@ def calculation_status(study_id):
 
 def calculation_logs(study_case_id, study_case_execution_id=None):
     """
-        Retrieve execution logs from database for a given study case
+        Retrieve execution logs from file for a given study case
 
     :param study_case_id: study case identifier
     :param study_case_execution_id: execution identifier (optional)
 
-    :return: StudyCaseExecutionLog[]
+    :return: list of string
     """
     if study_case_id is not None:
         result = []
@@ -325,10 +333,12 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
                 StudyCase.id.like(study_case_id)).first()
 
             if study_case is None:
-                raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
+                raise InvalidStudy(
+                    f'Requested study case (identifier {study_case_id} does not exist in the database')
 
             file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
+
                 result = file_tail(file_path, 200)
 
         except Exception as ex:
@@ -358,14 +368,16 @@ def calculation_raw_logs(study_case_id, study_case_execution_id):
                 StudyCase.id.like(study_case_id)).first()
 
             if study_case is None:
-                raise InvalidStudy(f'Requested study case (identifier {study_case_id} does not exist in the database')
+                raise InvalidStudy(
+                    f'Requested study case (identifier {study_case_id} does not exist in the database')
 
             if study_case_execution_id is None:
                 study_case_execution_id = study_case.current_execution_id
 
             study = StudyCaseManager(study_case_id)
 
-            file_path = study.raw_log_file_path_absolute(study_case_execution_id)
+            file_path = study.raw_log_file_path_absolute(
+                study_case_execution_id)
 
         except Exception as ex:
             print(ex)
@@ -429,7 +441,8 @@ def delete_calculation_entry(study_case_id, study_case_execution_id):
     """
     if study_case_id is not None and study_case_execution_id is not None:
 
-        study_case = StudyCase.query.filter(StudyCase.id == study_case_id).first()
+        study_case = StudyCase.query.filter(
+            StudyCase.id == study_case_id).first()
 
         if study_case is not None:
             if study_case.current_execution_id == study_case_execution_id:
@@ -447,5 +460,3 @@ def delete_calculation_entry(study_case_id, study_case_execution_id):
     else:
         raise InvalidStudy(
             f'Study case execution (identifier {study_case_id}/{study_case_execution_id} does not exist in the database')
-
-

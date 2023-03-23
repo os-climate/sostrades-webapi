@@ -19,7 +19,7 @@ Process management
 """
 from sos_trades_api.server.base_server import db
 from sqlalchemy import and_
-from sos_trades_core.sos_processes.processes_factory import SoSProcessFactory
+from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
 from sos_trades_api.models.database_models import Process, AccessRights, \
     ProcessAccessUser, ProcessAccessGroup, StudyCase, User, Group
 from sos_trades_api.tools.right_management.functional import process_access_right
@@ -111,7 +111,8 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                     existing_process = loaded_process[0]
                 else:
                     # Remove last entry in duplicate
-                    loaded_process_sorted = sorted(loaded_process, key=lambda proc: proc.id)
+                    loaded_process_sorted = sorted(
+                        loaded_process, key=lambda proc: proc.id)
                     for i in range(1, len(loaded_process_sorted)):
                         logger.info(f'Removed one duplicate entry for process {loaded_process_sorted[i].name} '
                                     f'with path {loaded_process_sorted[i].process_path}'
@@ -133,24 +134,29 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                     set_process_group_right(default_manager_group.id,
                                             existing_process.id, manager_right.id, False)
 
-                # Add default right to each group in the default process access files:
+                # Add default right to each group in the default process access
+                # files:
                 if process_module in default_group_rights.keys():
 
                     for group_name in default_group_rights[process_module]:
                         # check if group exists in DB
-                        group = Group.query.filter(Group.name == group_name).first()
+                        group = Group.query.filter(
+                            Group.name == group_name).first()
                         if group is not None:
                             new_process_access_group_count += 1
                             set_process_group_right(group.id,
                                                     existing_process.id, manager_right.id, True)
 
-                # Add default right to each user in the default process access files:
+                # Add default right to each user in the default process access
+                # files:
                 if process_module in default_user_rights.keys():
                     for user_mail in default_user_rights[process_module]:
                         # check if user exists in DB
-                        user = User.query.filter(User.email == user_mail).first()
+                        user = User.query.filter(
+                            User.email == user_mail).first()
                         if user is not None:
-                            process_access_user = process_access_right.ProcessAccess(user.id)
+                            process_access_user = process_access_right.ProcessAccess(
+                                user.id)
                             # if the user has no access to the process:
                             if process_access_user is not None and not process_access_user.check_user_right_for_process(
                                     right_type=AccessRights.MANAGER, process_id=existing_process.id):
@@ -227,12 +233,15 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                                 f'with id : {process_deleted.id} and name : "{process_deleted.name}"')
                     delete_study_cases(scs_ids_to_delete)
                     for sc_id, sc_name in scs_info_deleted.items():
-                        logger.info(f'Removed study case with id : {sc_id} and name : "{sc_name}"')
+                        logger.info(
+                            f'Removed study case with id : {sc_id} and name : "{sc_name}"')
 
         logger.info('Start deleting disabled process...')
-        disabled_process_to_delete = Process.query.filter(Process.disabled == True).all()
+        disabled_process_to_delete = Process.query.filter(
+            Process.disabled == True).all()
         for process in disabled_process_to_delete:
-            logger.info(f'Removed process with id : {process.id} and name : "{process.name}"')
+            logger.info(
+                f'Removed process with id : {process.id} and name : "{process.name}"')
             db.session.delete(process)
 
     db.session.commit()
@@ -242,7 +251,7 @@ def set_process_user_right(user_id, process_id, right_id, is_source_file):
     """Set specific right on the specified user regarding given process identifier
 
     If the user_right doesn't already exists, it create a ProcessAccessUser instance with the defined right
-    
+
     :param user_id: The identifier of the user that needs the right
     :type user_id: int
 
@@ -282,7 +291,7 @@ def set_process_group_right(group_id, process_id, right_id, is_source_file):
     """Set specific right on the specified group regarding given process identifier
 
     If the group_right doesn't already exists, create a ProcessAccessGroup  instancewith the defined right
-    
+
     :param group_id: The identifier of the user that needs the right
     :type group_id: int
 

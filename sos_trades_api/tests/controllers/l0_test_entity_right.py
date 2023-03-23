@@ -29,7 +29,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     """ Test class for methods related to calculation controller
     Default accounts & group and a created user / group are used to check those controller
     """
-    test_repository_name = 'sos_trades_core.sos_processes.test'
+    test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
     test_study_name = 'test_creation'
     test_study_id = None
@@ -151,7 +151,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(self.test_user_id, self.user_profile_id, entities_rights)
+            apply_entities_changes(
+                self.test_user_id, self.user_profile_id, entities_rights)
             group_access_user = GroupAccessUser.query \
                 .filter(GroupAccessUser.group_id == created_group.id) \
                 .filter(GroupAccessUser.user_id == created_user.id).first()
@@ -300,7 +301,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(self.test_user_id, self.user_profile_id, entities_rights)
+            apply_entities_changes(
+                self.test_user_id, self.user_profile_id, entities_rights)
             process_access_user = ProcessAccessUser.query \
                 .filter(ProcessAccessUser.process_id == self.test_process_id) \
                 .filter(ProcessAccessUser.user_id == self.test_user_id).first()

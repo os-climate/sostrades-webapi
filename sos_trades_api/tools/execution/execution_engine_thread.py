@@ -24,7 +24,7 @@ from sos_trades_api.models.database_models import StudyCase, StudyCaseDiscipline
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.execution.execution_engine_observer import ExecutionEngineObserver
 from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 
 
 class ExecutionEngineThread(threading.Thread):
@@ -69,7 +69,7 @@ class ExecutionEngineThread(threading.Thread):
             sce.study_case_id = self.__study_case_id
             sce.study_case_execution_id = self.__study_case_execution_id
             sce.discipline_key = discipline.get_disc_full_name()
-            sce.status = SoSDiscipline.STATUS_PENDING
+            sce.status = ProxyDiscipline.STATUS_PENDING
             status_setup_list.append(sce)
 
         # Initialized record for each discipline
@@ -131,7 +131,8 @@ class ExecutionEngineThread(threading.Thread):
 
             with app.app_context():
                 study_case_execution = StudyCaseExecution.query. \
-                    filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
+                    filter(StudyCaseExecution.id.like(
+                        self.__study_case_execution_id)).first()
 
                 # Check if no stop has been requested
                 # If it is the case then avoid to overwrite data
@@ -155,10 +156,13 @@ class ExecutionEngineThread(threading.Thread):
                         study_case = StudyCase.query.filter(
                             StudyCase.id.like(self.__study_case_id)).first()
 
-                        # Update last modification date to make record to be updated
-                        self.__execution_logger.info(f'Study case modification date before update: {study_case.modification_date}')
+                        # Update last modification date to make record to be
+                        # updated
+                        self.__execution_logger.info(
+                            f'Study case modification date before update: {study_case.modification_date}')
 
-                        new_modification_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                        new_modification_date = datetime.now().astimezone(
+                            timezone.utc).replace(tzinfo=None)
 
                         # /!\ /!\ /!\ /!\
                         # When execution is externalize, some behaviour regarding host operating system
@@ -171,7 +175,8 @@ class ExecutionEngineThread(threading.Thread):
                         if study_case.modification_date >= new_modification_date:
                             self.__execution_logger.warning(
                                 f'Generated modification date ({new_modification_date}) is anterior to the old one, please check operating system timezone')
-                            study_case.modification_date = study_case.modification_date + timedelta(seconds=5)
+                            study_case.modification_date = study_case.modification_date + \
+                                timedelta(seconds=5)
                         else:
                             study_case.modification_date = new_modification_date
                             self.__execution_logger.info(

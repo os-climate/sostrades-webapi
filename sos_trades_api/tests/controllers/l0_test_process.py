@@ -50,7 +50,7 @@ class TestProcess(DatabaseUnitTestConfiguration):
             'SOS_TRADES_PROCESS_REPOSITORY']
 
         # Retrieve all process list
-        from sos_trades_core.sos_processes.processes_factory import SoSProcessFactory
+        from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
         process_factory = SoSProcessFactory(
             additional_repository_list=additional_repository_list)
 
@@ -85,7 +85,8 @@ class TestProcess(DatabaseUnitTestConfiguration):
             standard_account_process = api_get_processes_for_user(
                 standard_account)
 
-            process_filtered = filter(lambda x: x.is_manager or x.is_contributor, standard_account_process)
+            process_filtered = filter(
+                lambda x: x.is_manager or x.is_contributor, standard_account_process)
 
             self.assertEqual(len((list(process_filtered))), 0,
                              'Some processes are accessible by the test account')

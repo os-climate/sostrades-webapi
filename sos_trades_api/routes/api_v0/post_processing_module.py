@@ -22,7 +22,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import ligh
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import api_key_required, has_user_access_right
-from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 
 
 @app.route(f'/api/v0/post-processing/<int:study_id>', methods=['GET'])
@@ -48,9 +48,9 @@ def get_post_processing(study_id: int, ):
             filters_only=False)
 
         payload = {
-           disc_name: disc_val.post_processings
-           for disc_name, disc_values in all_post_processing_bundle.items()
-           for disc_val in disc_values
+            disc_name: disc_val.post_processings
+            for disc_name, disc_values in all_post_processing_bundle.items()
+            for disc_val in disc_values
         }
 
         return make_response(jsonify(payload), 200)
@@ -84,9 +84,11 @@ def get_post_processing_html(study_id: int):
                 post_processing_figs = []
                 for post_processing in discipline_value.post_processings:
                     try:
-                        post_processing_figs.append(go.Figure(post_processing).to_html(full_html=False, include_plotlyjs='cdn'))
+                        post_processing_figs.append(go.Figure(post_processing).to_html(
+                            full_html=False, include_plotlyjs='cdn'))
                     except Exception:
-                        app.logger.exception('Error on post processing to html')
+                        app.logger.exception(
+                            'Error on post processing to html')
 
                 discipline_figs.append(post_processing_figs)
 

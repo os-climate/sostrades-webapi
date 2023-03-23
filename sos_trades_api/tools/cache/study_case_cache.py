@@ -139,16 +139,8 @@ class StudyCaseCache:
         :type study_case_identifier: int
         """
 
-        if not self.is_study_case_cached(study_case_identifier):
-            study_case_manager = StudyCaseManager(study_case_identifier)
-            study_case_manager.attach_logger()
-        else:
-            study_case_manager = self.__study_case_manager_dict[study_case_identifier]
-            old_modification_date = study_case_manager.study.modification_date
-            study_case_manager.update_study_case()
-
-            if old_modification_date < study_case_manager.study.modification_date:
-                study_case_manager.load_status = LoadStatus.NONE
+        study_case_manager = StudyCaseManager(study_case_identifier)
+        study_case_manager.attach_logger()
 
         self.__study_case_dict[study_case_manager.study.id] = StudyCaseReference(
             study_case_manager.study.id, study_case_manager.study.modification_date

@@ -18,7 +18,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
 
-from sos_trades_core.api import get_sos_logger
+from sostrades_core.api import get_sos_logger
 import time
 
 
