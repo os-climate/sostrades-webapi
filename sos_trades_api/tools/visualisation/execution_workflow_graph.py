@@ -18,7 +18,6 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
 
-from sostrades_core.api import get_sos_logger
 import time
 from graphviz import Digraph
 #from sostrades_core.execution_engine.scatter_data import SoSScatterData
@@ -46,7 +45,7 @@ class SoSExecutionWorkflow:
     def get_execution_workflow_graph(self):
 
         start_time = time.time()
-        logger = get_sos_logger('SoS')
+        logger = logging.getLogger(__name__)
         self.construct_execution_workflow_graph(
             GEMS_graph=self.GEMS_graph, level=0, parentId=None
         )

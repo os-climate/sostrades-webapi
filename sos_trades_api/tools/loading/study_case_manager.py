@@ -46,7 +46,6 @@ import os
 
 from eventlet import sleep
 from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
-from sostrades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
 import json
@@ -149,7 +148,7 @@ class StudyCaseManager(BaseStudyManager):
             self.__study.name,
             self.__root_dir,
             yield_method=sleep,
-            logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'),
+            logger=logging.getLogger(f'{self.__study_identifier}.sostrades_core.ExecutionEngine'),
         )
 
         self.__study_database_logger = None
