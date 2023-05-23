@@ -133,9 +133,9 @@ def execute_calculation(study_id, username):
 
                 # Then share handlers with GEMS logger to retrieve GEMS execution
                 # message
-                LOGGER = logging.getLogger("gemseo")
+                gemseo_logger = logging.getLogger("gemseo")
                 for handler in execution_logger.handlers:
-                    LOGGER.addHandler(handler)
+                    gemseo_logger.addHandler(handler)
 
             # Load study data if not loaded
             study.load_study_case_from_source()

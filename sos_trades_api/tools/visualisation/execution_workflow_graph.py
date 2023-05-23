@@ -20,6 +20,8 @@ tooling to generate D3 js data structure for N2 matrix purpose
 
 import time
 from graphviz import Digraph
+import logging
+
 #from sostrades_core.execution_engine.scatter_data import SoSScatterData
 
 

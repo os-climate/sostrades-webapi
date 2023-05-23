@@ -18,8 +18,6 @@ import os
 import time
 import argparse
 import logging
-
-import logging_tree
 import yaml
 import git
 import re
@@ -341,4 +339,3 @@ if __name__ == '__main__':
         launch_calculation_study(args['execute'])
     elif args['generate'] is not None:
         launch_generate_reference(args["generate"])
-    logging_tree.printout()
