@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import logging
 import time
 
 from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
