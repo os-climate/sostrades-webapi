@@ -1,6 +1,7 @@
 # SoSTrades SAAS
 
 
+
 ## Purpose
 
 This API is designed to offer some access point for command line requests.
