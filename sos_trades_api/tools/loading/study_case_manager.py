@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import logging
 import time
 
 from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
@@ -46,7 +47,6 @@ import os
 
 from eventlet import sleep
 from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
-from sostrades_core.api import get_sos_logger
 from pathlib import Path
 from shutil import copy
 import json
@@ -149,7 +149,7 @@ class StudyCaseManager(BaseStudyManager):
             self.__study.name,
             self.__root_dir,
             yield_method=sleep,
-            logger=get_sos_logger(f'{self.__study_identifier}.SoS.EE'),
+            logger=logging.getLogger(f'{self.__study_identifier}.sostrades_core.ExecutionEngine'),
         )
 
         self.__study_database_logger = None

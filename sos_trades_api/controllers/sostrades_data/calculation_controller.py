@@ -38,7 +38,6 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import load_p
 from sos_trades_api.config import Config
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sostrades_core.api import get_sos_logger
 from sqlalchemy.sql.expression import and_
 
 calculation_semaphore = threading.Semaphore()
@@ -124,18 +123,19 @@ def execute_calculation(study_id, username):
         study.study_case_manager_save_backup_files()
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
-
+            # Execution logs issue is here, stdout/stderr can't redirected to a file and contain information (outside of loggers).
+            # Threaded mode is legacy, use subprocess instead
             # Initialize execution logger
-            execution_logger = get_sos_logger('SoS')
+            execution_logger = logging.getLogger('sostrades_core')
 
             # If handlers has been define, link gems logger
             if execution_logger.hasHandlers():
 
                 # Then share handlers with GEMS logger to retrieve GEMS execution
                 # message
-                LOGGER = logging.getLogger("GEMS")
+                gemseo_logger = logging.getLogger("gemseo")
                 for handler in execution_logger.handlers:
-                    LOGGER.addHandler(handler)
+                    gemseo_logger.addHandler(handler)
 
             # Load study data if not loaded
             study.load_study_case_from_source()

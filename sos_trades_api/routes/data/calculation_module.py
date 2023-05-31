@@ -34,7 +34,7 @@ def study_case_execution(study_id):
         # (Contributor)
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
-            app.logger.warn(
+            app.logger.warning(
                 f'Start execution request, user not allowed to execute study case {study_id} ')
             raise BadRequest(
                 'You do not have the necessary rights to execute this study case')
@@ -60,7 +60,7 @@ def study_case_stop(study_id):
         # (Contributor)
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
-            app.logger.warn(
+            app.logger.warning(
                 f'Stop execution request, user {user.id} is not allowed to execute study case {study_id} ')
             raise BadRequest(
                 'You do not have the necessary rights to stop execution of this study case')
