@@ -125,7 +125,7 @@ class CustomJsonEncoder(JSONEncoder):
             return int(o)
         elif isinstance(o, float):
             return float(o)
-        elif isinstance(o, np.complex):
+        elif isinstance(o, complex):
             return o.real
         elif isinstance(o, datetime):
             return str(o)
