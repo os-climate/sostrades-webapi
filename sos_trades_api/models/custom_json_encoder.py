@@ -30,8 +30,8 @@ from sostrades_core.tools.post_processing.tables.table_style import TableStyles
 from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from sostrades_core.tools.post_processing.tables.instanciated_table import InstanciatedTable
 from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import TwoAxesInstanciatedChart
-from sostrades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import InstantiatedPlotlyNativeChart
-
+from sostrades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import \
+    InstantiatedPlotlyNativeChart
 
 from sos_trades_api.models.loaded_group import LoadedGroup
 from sos_trades_api.models.entity_rights import EntityRight, \
@@ -123,9 +123,9 @@ class CustomJsonEncoder(JSONEncoder):
             return o.to_dict()
         elif isinstance(o, np.integer):
             return int(o)
-        elif isinstance(o, np.float):
+        elif isinstance(o, float):
             return float(o)
-        elif isinstance(o, np.complex):
+        elif isinstance(o, complex):
             return o.real
         elif isinstance(o, datetime):
             return str(o)
