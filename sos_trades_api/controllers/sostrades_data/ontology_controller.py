@@ -47,7 +47,8 @@ def ontology_enable(default_returned_valued):
             ontology_endpoint = app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]
 
             if len(ontology_endpoint) == 0:
-                app.logger.info('Ontology endpoint not defined, no request executed')
+                app.logger.info(
+                    'Ontology endpoint not defined, no request executed')
                 return default_returned_valued
 
             grace_period = app.config.get("ONTOLOGY_GRACE_PERIOD")
@@ -81,7 +82,7 @@ def set_ontology_grace_period():
 
 
 @ontology_enable({})
-def load_ontology(ontology_request:dict)->dict:
+def load_ontology(ontology_request: dict)->dict:
     """Given a dictionary of entities, return ontology metadata
 
     :params: request
@@ -122,9 +123,11 @@ def load_ontology(ontology_request:dict)->dict:
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
+
 
 @ontology_enable({})
 def load_ontology_usages(ontology_request):
@@ -164,7 +167,8 @@ def load_ontology_usages(ontology_request):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -192,7 +196,8 @@ def load_models():
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -232,7 +237,8 @@ def load_models_status_filtered(process_list):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     # Deserialized Model status list
     model_list = []
@@ -269,9 +275,11 @@ def load_parameters():
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
+
 
 @ontology_enable({})
 def load_parameter_label_list():
@@ -296,7 +304,8 @@ def load_parameter_label_list():
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -326,7 +335,8 @@ def load_markdown_documentation_metadata(identifier):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -357,7 +367,8 @@ def load_ontology_processes():
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     process_list_sorted = sorted(
         ontology_response_data, key=lambda x: x['label'].lower()
@@ -382,7 +393,8 @@ def load_process_metadata(process_identifier):
     complete_url = f'{ontology_endpoint}/process/{process_identifier}'
 
     try:
-        resp = requests.request(method='GET', url=complete_url, verify=ssl_path)
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path)
 
         if resp.status_code == 200:
             ontology_response_data = resp.json()
@@ -390,7 +402,8 @@ def load_process_metadata(process_identifier):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -423,7 +436,8 @@ def load_processes_metadata(processes_identifier):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -444,7 +458,8 @@ def load_repository_metadata(repository_identifier):
     complete_url = f'{ontology_endpoint}/repository/{repository_identifier}'
 
     try:
-        resp = requests.request(method='GET', url=complete_url, verify=ssl_path)
+        resp = requests.request(
+            method='GET', url=complete_url, verify=ssl_path)
 
         if resp.status_code == 200:
             ontology_response_data = resp.json()
@@ -452,7 +467,8 @@ def load_repository_metadata(repository_identifier):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -485,9 +501,11 @@ def load_repositories_metadata(repositories_identifier):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
+
 
 @ontology_enable({})
 def load_ontology_general_information():
@@ -525,7 +543,8 @@ def load_ontology_general_information():
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return ontology_response_data
 
@@ -535,7 +554,7 @@ def load_n2_matrix(treeview):
     """Regarding the given treeview object, generate the n2 matrix parameters associated to the process
 
     :params: treeview
-    :type: sos_trades_core.tools.tree.treeview.Treeview
+    :type: sostrades_core.tools.tree.treeview.Treeview
 
     :return: tuple of parameters
     """
@@ -562,7 +581,8 @@ def load_n2_matrix(treeview):
     except ConnectionError:
         set_ontology_grace_period()
     except:
-        app.logger.exception('An exception occurs when trying to reach Ontology server')
+        app.logger.exception(
+            'An exception occurs when trying to reach Ontology server')
 
     return (
         ontology_response_data['tree_nodes'],

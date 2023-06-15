@@ -46,7 +46,8 @@ app = Flask(server_name)
 app.logger.propagate = False
 
 for handler in app.logger.handlers:
-    handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
+    handler.setFormatter(logging.Formatter(
+        "[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
 
 
 # Env constant
@@ -120,7 +121,8 @@ def load_specific_study(study_identifier):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
 
     with app.app_context():
-        study_manager = study_case_cache.get_study_case(study_identifier, False)
+        study_manager = study_case_cache.get_study_case(
+            study_identifier, False)
         study_case_manager_loading(study_manager, False, False)
         study_manager.loaded = True
         study_manager.load_in_progress = False
@@ -147,8 +149,9 @@ def database_process_setup():
                 Group.is_default_applicative_group).first()
             if group_manager_account_account is None:
                 group_manager_account_account = Group.query.filter(
-                Group.name == Group.SOS_TRADES_DEV_GROUP).first()
-                print('No default group have been found. Group Sostrades_dev is get by default')
+                    Group.name == Group.SOS_TRADES_DEV_GROUP).first()
+                print(
+                    'No default group have been found. Group Sostrades_dev is get by default')
 
             app.logger.info(
                 'Starting loading available processes and references')
@@ -161,7 +164,8 @@ def database_process_setup():
                 'Finished loading available processes and references')
             app.logger.info('Clean disabled study case')
             clean_database_with_disabled_study_case(app.logger)
-            app.logger.info('Finished cleaning disabled study case, server is ready...')
+            app.logger.info(
+                'Finished cleaning disabled study case, server is ready...')
 
             database_initialized = True
         except:
@@ -180,7 +184,8 @@ def check_identity_provider_availability():
     # -------- SAML V2 provider
     # Test if SAML settings file path is filled
     if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
-        app.logger.info('SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
+        app.logger.info(
+            'SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
     else:
         app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
 
@@ -193,14 +198,16 @@ def check_identity_provider_availability():
 
     # -------- Github oauth provider
     if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
-        app.logger.info('GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
+        app.logger.info(
+            'GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
     else:
         app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
 
         # Check that the settings.json file is present:
         settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
         if not os.path.exists(settings_json_file):
-            app.logger.info('GitHub IdP/oauth settings.json file not found, SSO will be disabled')
+            app.logger.info(
+                'GitHub IdP/oauth settings.json file not found, SSO will be disabled')
         else:
             app.logger.info('GitHub IdP/oauth settings.json file found')
 
@@ -224,7 +231,7 @@ def database_check_study_case_state(with_deletion=False):
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
     if with_deletion:
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import  delete_study_cases
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
         from shutil import rmtree
         studies_to_delete = []
         folders_to_delete = []
@@ -246,19 +253,23 @@ def database_check_study_case_state(with_deletion=False):
         print(f'\nCheck file system regarding available data\'s')
         base_path = StudyCaseManager.get_root_study_data_folder()
 
-        # Get all sub elements inside root data folder (looking for group folder)
+        # Get all sub elements inside root data folder (looking for group
+        # folder)
         group_folder_list = listdir(base_path)
         for group_folder in group_folder_list:
 
-            # Construct the path to the current element and check the element is a folder
+            # Construct the path to the current element and check the element
+            # is a folder
             built_group_path = join(base_path, group_folder)
             if path.isdir(built_group_path) and group_folder.isdigit():
 
-                # Get all sub elements inside group data folder (looking for study folder)
+                # Get all sub elements inside group data folder (looking for
+                # study folder)
                 study_folder_list = listdir(built_group_path)
 
                 for study_folder in study_folder_list:
-                    # Construct the path to the current element and check the element is a folder
+                    # Construct the path to the current element and check the
+                    # element is a folder
                     built_study_path = join(built_group_path, study_folder)
 
                     if path.isdir(built_study_path) and study_folder.isdigit():
@@ -273,14 +284,13 @@ def database_check_study_case_state(with_deletion=False):
             is_date_ok = False
             try:
                 study_case_manager = StudyCaseManager(study_case.id)
-                study_case_manager.load_data(display_treeview=False)
-                study_case_manager.load_disciplines_data()
-                study_case_manager.load_cache()
+                study_case_manager.load_study_case_from_source()
                 is_load_ok = True
 
                 current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
                 date_delta = current_date - study_case.modification_date
-                print(f'DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}')
+                print(
+                    f'DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}')
                 is_date_ok = date_delta.days > 30
 
             except:
@@ -290,7 +300,8 @@ def database_check_study_case_state(with_deletion=False):
             if study_case.id in study_on_disk and study_on_disk[study_case.id] == study_case.group_id:
                 del study_on_disk[study_case.id]
 
-            study_group_result = list(filter(lambda g: g.id == study_case.group_id, all_group))
+            study_group_result = list(
+                filter(lambda g: g.id == study_case.group_id, all_group))
             group_name = 'Unknown'
             if len(study_group_result) == 1:
                 group_name = study_group_result[0].name
@@ -313,7 +324,8 @@ def database_check_study_case_state(with_deletion=False):
             print(f'All failed database studies deleted {studies_to_delete}.')
 
         for study_folder, group_folder in study_on_disk.items():
-            study_group_result = list(filter(lambda g: g.id == int(group_folder), all_group))
+            study_group_result = list(
+                filter(lambda g: g.id == int(group_folder), all_group))
             group_name = 'Unknown'
             if len(study_group_result) == 1:
                 group_name = f'{study_group_result[0].name}?'
@@ -379,7 +391,8 @@ def database_change_user_profile(username, new_profile=None):
                 raise Exception(f'User {username} not found')
 
             # Get old user profile for logging purpose"
-            old_user_profile = UserProfile.query.filter(UserProfile.id == user.user_profile_id).first()
+            old_user_profile = UserProfile.query.filter(
+                UserProfile.id == user.user_profile_id).first()
             old_user_profile_name = None
             if old_user_profile is not None:
                 old_user_profile_name = old_user_profile.name
@@ -387,7 +400,8 @@ def database_change_user_profile(username, new_profile=None):
             # Get information's about new profile
             new_profile_id = None
             if new_profile is not None:
-                new_user_profile = UserProfile.query.filter(UserProfile.name == new_profile).first()
+                new_user_profile = UserProfile.query.filter(
+                    UserProfile.name == new_profile).first()
                 if new_user_profile is None:
                     raise Exception(f'Profile {new_profile} not found')
                 else:
@@ -398,7 +412,8 @@ def database_change_user_profile(username, new_profile=None):
                 user.user_profile_id = new_profile_id
                 db.session.add(user)
                 db.session.commit()
-                app.logger.info(f'User {username} profile changed from {old_user_profile_name} to {new_profile}')
+                app.logger.info(
+                    f'User {username} profile changed from {old_user_profile_name} to {new_profile}')
             else:
                 app.logger.info(f'Profile already up-to-date')
 
@@ -430,15 +445,18 @@ def database_create_api_key(group_name, api_key_name):
             .filter(AccessRights.access_right == AccessRights.OWNER).first()
 
         if result is None:
-            app.logger.error('To generate an api key, the group must exist and have a user as group OWNER.')
+            app.logger.error(
+                'To generate an api key, the group must exist and have a user as group OWNER.')
             exit()
 
         group = result.Group
 
-        device_already_exist = Device.query.filter(Device.group_id == group.id).first()
+        device_already_exist = Device.query.filter(
+            Device.group_id == group.id).first()
 
         if device_already_exist:
-            app.logger.error('There is already an api key available for this group')
+            app.logger.error(
+                'There is already an api key available for this group')
             exit()
 
         device = Device()
@@ -532,10 +550,12 @@ def database_list_api_key():
             for device in devices:
                 app.logger.info(device)
 
+
 def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
-    clean_all_allocations_services_and_deployments
+        clean_all_allocations_services_and_deployments
     clean_all_allocations_services_and_deployments()
+
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -557,7 +577,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         else:
             app.logger.setLevel(logging.INFO)
         database_process_setup()
-
 
     @click.command('check_study_case_state')
     @click.option('-wd', '--with_deletion', is_flag=True)
@@ -611,7 +630,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         database_rename_applicative_group(new_name)
 
-
     @click.command('change_user_profile')
     @click.argument('username')
     @click.option('-p', '--profile', type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER]), default=None)
@@ -627,7 +645,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             profile = None
         database_change_user_profile(username, profile)
 
-
     @click.command('create_api_key')
     @click.argument('group_name')
     @click.argument('api_key_name')
@@ -642,7 +659,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         database_create_api_key(group_name, api_key_name)
 
-
     @click.command('renew_api_key')
     @click.argument('group_name')
     @with_appcontext
@@ -653,7 +669,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
 
         database_renew_api_key(group_name)
-
 
     @click.command('revoke_api_key')
     @click.argument('group_name')
@@ -666,7 +681,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         database_revoke_api_key(group_name)
 
-
     @click.command('list_api_key')
     @with_appcontext
     def list_api_key():
@@ -675,7 +689,8 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         database_list_api_key()
 
-    # Add custom command on flask cli to clean allocations, services and deployments
+    # Add custom command on flask cli to clean allocations, services and
+    # deployments
     @click.command('clean_all_allocations')
     @with_appcontext
     def clean_all_allocations():
@@ -713,7 +728,8 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Put here all imports from model
     # For migration to detect new tables
-    # After running migration script, remove them from here to prevent import error
+    # After running migration script, remove them from here to prevent import
+    # error
     if not app == None and not db == None:
         migrate = Migrate(app, db, compare_type=False)
 
@@ -749,7 +765,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     def before_request():
         session[START_TIME] = time.time()
 
-
     @app.after_request
     def after_request(response):
 
@@ -780,6 +795,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         response.cache_control.must_revalidate = True
 
         return response
+
 
 @app.route('/api/ping', methods=['GET'])
 def ping():

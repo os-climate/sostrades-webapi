@@ -24,7 +24,7 @@ import time
 from sqlalchemy import and_
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
 from sos_trades_api.server.base_server import db, app
-from sos_trades_core.execution_engine.sos_discipline import SoSDiscipline
+from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
 from copy import deepcopy
 
 
@@ -70,11 +70,10 @@ class ExecutionEngineObserver():
         execution
         """
         # Send a status to update into the queue
-        if isinstance(discipline, SoSDiscipline):
+        if isinstance(discipline, SoSMDODiscipline):
 
             # Send update to the queue
-            self.__queue.put([discipline.get_disc_full_name(
-            ), discipline.status])
+            self.__queue.put([discipline.name, discipline.status])
 
     def __update_database(self):
         """ Threaded methods to update the database without blocking execution process

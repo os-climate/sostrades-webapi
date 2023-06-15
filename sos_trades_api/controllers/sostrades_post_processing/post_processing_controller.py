@@ -9,7 +9,7 @@ post processing Functions
 """
 
 from sos_trades_api.server.base_server import study_case_cache
-from sos_trades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 
 
@@ -50,7 +50,7 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
         # Check if discipline of the node has to be filtered
         if not discipline_module == '':
             match_discipline = list(filter(
-                lambda d: d.__module__ == discipline_module, discipline_list))
+                lambda d: d.get_module() == discipline_module, discipline_list))
 
             if len(match_discipline) > 0:
                 discipline_list = match_discipline
@@ -88,7 +88,8 @@ def load_post_processing_graph_filters(study_id, discipline_key):
     study_manager = light_load_study_case(study_id)
 
     if discipline_key in study_manager.execution_engine.dm.disciplines_dict:
-        discipline = study_manager.execution_engine.dm.get_discipline(discipline_key)
+        discipline = study_manager.execution_engine.dm.get_discipline(
+            discipline_key)
 
         post_processing_factory = PostProcessingFactory()
 
@@ -102,9 +103,9 @@ def load_post_processing_graph_filters(study_id, discipline_key):
             f'Discipline \'{discipline_key}\' does not exist in this study case.')
 
 
-def reset_study_from_cache_and_light_load(study_id):
+def reset_study_from_cache(study_id):
     """
-        Reset study from cache before launch only the load study in cache
+        Reset study from cache
         :params: study_id, id of the study to load
         :type: integer
     """
@@ -115,8 +116,7 @@ def reset_study_from_cache_and_light_load(study_id):
         study_case_cache.delete_study_case_from_cache(study_id)
 
         # Create the updated one
-        study_case_cache.get_study_case(study_id, False)
+        study_manager = study_case_cache.get_study_case(study_id, False)
 
-    study_manager = light_load_study_case(study_id, False)
-    return study_manager
+        return study_manager
 

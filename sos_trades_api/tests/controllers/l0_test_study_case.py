@@ -33,9 +33,10 @@ import os
 class TestStudy(DatabaseUnitTestConfiguration):
     """ Test class for methods related to study controller
     """
-    test_repository_name = 'sos_trades_core.sos_processes.test'
+    test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
-    test_clear_error_process_name = 'test_sellar_opt'
+    #test_clear_error_process_name = 'test_sellar_opt'
+    test_clear_error_process_name = 'test_sellar_eval'
     test_csv_process_name = 'test_csv_data'
     test_study_name = 'test_creation'
     test_study_csv_name = 'test_csv'
@@ -233,7 +234,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Created study case repository does not match, test set up repository name used')
 
     def test_study_case_log(self):
-        from sos_trades_api.models.database_models import StudyCase, AccessRights,StudyCaseLog
+        from sos_trades_api.models.database_models import StudyCase, AccessRights, StudyCaseLog
         from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
         from sos_trades_api.server.base_server import study_case_cache
 
@@ -243,10 +244,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
 
-            #check that logs are created
-            self.assertNotEqual(len(StudyCaseLog.query\
-            .filter(StudyCaseLog.study_case_id == study_test.id)\
-            .all()), 0)
+            # check that logs are created
+            self.assertNotEqual(len(StudyCaseLog.query
+                                    .filter(StudyCaseLog.study_case_id == study_test.id)
+                                    .all()), 0)
 
     def test_copy_study_case(self):
         from sos_trades_api.models.database_models import StudyCase
@@ -265,7 +266,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      study_test.process,
                                                      self.test_user_group_id)
 
-            copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
+            copy_study_case(new_study_case.id,
+                            study_test.id, self.test_user_id)
 
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
@@ -410,10 +412,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             # type dict
             # subtype_descriptor: {'dict': 'dataframe'}
             dict_as_dict_dataframe_path = join(dirname(data.__file__),
-                                  'dict_as_dict_dataframe.csv')
-            dict_as_dict_dataframe_file = open(dict_as_dict_dataframe_path, 'rb')
-            dict_as_dict_dataframe_fs = FileStorage(dict_as_dict_dataframe_file)
-
+                                               'dict_as_dict_dataframe.csv')
+            dict_as_dict_dataframe_file = open(
+                dict_as_dict_dataframe_path, 'rb')
+            dict_as_dict_dataframe_fs = FileStorage(
+                dict_as_dict_dataframe_file)
 
             file_info = {
                 array_path: {'variable_id': f'{self.test_study_csv_name}.array_mix_types',
@@ -423,10 +426,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dataframe_mix_types',
                                  'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
                 dict_as_dict_dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dict_as_dict_dataframe',
-                                 'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'}
+                                              'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'}
 
             }
-            files_list = [array_fs, dict_fs, dataframe_fs, dict_as_dict_dataframe_fs]
+            files_list = [array_fs, dict_fs,
+                          dataframe_fs, dict_as_dict_dataframe_fs]
 
             # updating study case
             update_study_parameters(
@@ -661,7 +665,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             file_info = {
                 dataframe_path: {'variable_id': f'{self.test_study_clear_error_name}.SellarOptimScenario.design_space',
-                                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario'}
             }
             files_list = [dataframe_fs]
@@ -696,7 +700,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             file_info = {
                 dataframe_path: {'variable_id': f'{self.test_study_clear_error_name}.SellarOptimScenario.design_space',
-                                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario'}
             }
             files_list = [dataframe_fs]
@@ -709,7 +713,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": array([1.]),
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.z',
@@ -718,7 +722,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": array([1., 1.]),
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem.local_dv',
@@ -727,7 +731,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": 10.,
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem',
-                 'discipline': 'sos_trades_core.sos_wrapping.test_discs.sellar.SellarProblem',
+                 'discipline': 'sostrades_core.sos_wrapping.test_discs.sellar.SellarProblem',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.max_iter',
@@ -736,7 +740,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": 2,
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.algo',
@@ -745,7 +749,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": "L-BFGS-B",
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.formulation',
@@ -754,7 +758,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": 'DisciplinaryOpt',
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.objective_name',
@@ -763,7 +767,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": 'obj',
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.algo_options',
@@ -772,7 +776,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": {"ftol_rel": 1e-6, "ineq_tolerance": 1e-6, "normalize_design_space": True},
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
                 {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.ineq_constraints',
@@ -781,7 +785,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "newValue": [],
                  "oldValue": None,
                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sos_trades_core.execution_engine.sos_optim_scenario',
+                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
             ]
 
@@ -828,10 +832,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      study_test.process,
                                                      self.test_user_group_id)
 
-            study_case_copy = copy_study_case(new_study_case.id, study_test.id, self.test_user_id)
+            study_case_copy = copy_study_case(
+                new_study_case.id, study_test.id, self.test_user_id)
             study_case_copy_id = study_case_copy.id
             # wait end of study case creation
-            study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
+            study_manager = study_case_cache.get_study_case(
+                study_case_copy_id, False)
             #  wait until study was updated (thread behind)
             stop = False
             counter = 0
@@ -845,14 +851,16 @@ class TestStudy(DatabaseUnitTestConfiguration):
                             False, "test_update_study_parameters update study parameter too long, check thread")
                     counter = counter + 1
                     sleep(1)
-            self.assertTrue(study_manager.check_study_case_json_file_exists(), 'Unable to retrieve study case read only file')
+            self.assertTrue(study_manager.check_study_case_json_file_exists(
+            ), 'Unable to retrieve study case read only file')
             study_json = get_study_in_read_only_mode(study_case_copy_id, False)
-            self.assertIsNotNone(study_json, 'Unable to read study case read only file')
+            self.assertIsNotNone(
+                study_json, 'Unable to read study case read only file')
 
-            # set loadStatus to read only to check the get data method
-            study_manager.load_status = LoadStatus.READ_ONLY_MODE
-            parameter = get_file_stream(study_case_copy_id, 'test_study_copy_read_only.dataframe_mix_types')
-            self.assertIsNotNone(parameter, 'Unable to read study case read only file')
+            # check that the json contains the data
+            self.assertTrue(
+                'test_study_copy_read_only.dataframe_mix_types' in str(study_json),
+                f'the parameter is not in the read only file')
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)

@@ -29,7 +29,7 @@ from builtins import classmethod
 class TestStudy(DatabaseUnitTestConfiguration):
     """ Test class for methods related to study controller
     """
-    test_repository_name = 'sos_trades_core.sos_processes.test'
+    test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
     test_study_name = 'test_creation'
     test_study_id = None

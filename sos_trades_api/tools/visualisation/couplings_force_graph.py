@@ -13,19 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import logging
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
 
-from sos_trades_core.api import get_sos_logger
 import time
 
 
 def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hierarchyLinks):
 
     start_time = time.time()
-    logger = get_sos_logger('SoS')
+    logger = logging.getLogger(__name__)
 
     couplingLinks = []
     groupedLinksDict = {}

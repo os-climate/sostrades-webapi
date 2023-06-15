@@ -51,7 +51,7 @@ def launch_calculation_study(study_identifier):
     """
 
     # Initialize execution logger
-    execution_logger = get_sos_logger('SoS')
+    execution_logger = logging.getLogger(__name__)
 
     study_case = None
     exec_engine = None
@@ -73,9 +73,7 @@ def launch_calculation_study(study_identifier):
 
             study = StudyCaseManager(study_case_execution.study_case_id)
 
-            study.load_data(display_treeview=False)
-            study.load_disciplines_data()
-            study.load_cache()
+            study.load_study_case_from_source()
             loading_done = True
         except:
             execution_logger.exception(
@@ -131,7 +129,7 @@ def launch_generate_reference(reference_identifier):
     """
 
     # Initialize generation logger with DEBUG logging output
-    generation_log = get_sos_logger('SoS')
+    generation_log = logging.getLogger('sostrades_core')
     generation_log.setLevel(DEBUG)
 
     # Instantiate and attach database logger
@@ -141,7 +139,7 @@ def launch_generate_reference(reference_identifier):
 
     # Then share handlers with GEMS logger to retrieve GEMS execution
     # message
-    gems_logger = logging.getLogger("GEMS")
+    gems_logger = logging.getLogger("gemseo")
     for handler in generation_log.handlers:
         gems_logger.addHandler(handler)
 
@@ -192,7 +190,8 @@ def launch_generate_reference(reference_identifier):
 
         elapsed_time = time.time() - start_time
 
-        generation_log.debug(f'Reference/Usecase loading time : {elapsed_time} seconds')
+        generation_log.debug(
+            f'Reference/Usecase loading time : {elapsed_time} seconds')
 
         start_time = time.time()
         generation_log.debug('Start Reference/Usecase generation...')
@@ -247,7 +246,7 @@ def trace_source_code(
     """
 
     if logger is None:
-        logger = get_sos_logger('SoS')
+        logger = logging.getLogger(__name__)
 
     traceability_dict = {}
 
@@ -326,7 +325,6 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api.server.split_mode import main_server
     from sos_trades_api.config import Config
-    from sos_trades_core.api import get_sos_logger
     from sos_trades_api.tools.logger.reference_mysql_handler import (
         ReferenceMySQLHandler,
     )

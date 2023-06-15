@@ -1,4 +1,3 @@
-# SoSTrades_WebAPi
 
 
 ## Packages installation
