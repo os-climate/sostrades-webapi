@@ -11,6 +11,8 @@ flask-jwt-extended==3.24.1
 flask_login==0.5.0
 Flask-Migrate==2.5.2
 flask-socketio==4.3.0
+python-socketio==4.5.1  # Must be added to freeze version, so message server works
+python-engineio==3.12.1  # Must be added to freeze version, so message server works
 Flask-SQLAlchemy==2.4.1
 furl==2.1.3
 graphviz
@@ -39,8 +41,6 @@ nose2==0.9.1
 # Unused old requirements
 # Flask-Cors==3.0.8
 # passlib==1.7.2
-# python-socketio==4.5.1
-# python-engineio==3.12.1
 # requests-toolbelt==0.9.1
 # gitpython==3.1.31 # dans sostrades-core
 # pycryptodome==3.9.9 # dans sostrades-core
