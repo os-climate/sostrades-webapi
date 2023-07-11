@@ -179,7 +179,7 @@ def is_usecase_data(process, usecase, logger):
         imported_module = import_module('.'.join([process.process_path, process.name, usecase]))
         imported_usecase = getattr(imported_module, 'Study')()
 
-        if hasattr(imported_usecase, 'run_usecase') and not imported_usecase.run_usecase:
+        if hasattr(imported_usecase, 'run_usecase') and not imported_usecase.run_usecase():
             return True
         else:
             return False

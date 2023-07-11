@@ -19,7 +19,7 @@ Class overlad defaut json encoder to manage our class
 """
 
 from simplejson import JSONEncoder
-from datetime import datetime
+from _datetime import datetime
 
 from pandas import DataFrame, Index, Series
 import numpy as np
