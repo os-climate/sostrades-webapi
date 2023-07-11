@@ -38,11 +38,7 @@ class ReferenceGenerationSubprocess():
     def run(self):
         """ Launch the process using subprocess.Popen
         """
-
         path = join(dirname(sos_trades_api.__file__),
-                '..', 'server_scripts', 'calculation', 'launch_calculation.py')
-        # subprocess.Popen(
-        # f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)
-        with open(r'C:\Users\sumane\og.txt', 'wb') as log_file:
-            subprocess.Popen(f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdout=log_file,
-                         stderr=log_file, stdin=subprocess.PIPE)
+                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
+        subprocess.Popen(
+            f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)

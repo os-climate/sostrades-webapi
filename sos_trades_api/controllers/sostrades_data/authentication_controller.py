@@ -24,7 +24,7 @@ from flask_jwt_extended import (
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.models.database_models import User
 from sos_trades_api.tools.authentication.authentication import PasswordResetRequested
-# from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException
+from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException
 from sos_trades_api.tools.authentication.saml import manage_saml_assertion, SamlAuthenticationError
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.smtp.smtp_service import send_new_user_mail
@@ -76,16 +76,15 @@ def authenticate_user_standard(username, password):
                         f'"{username}" login or password is incorrect (with local database)')
                     raise InvalidCredentials(
                         'User login or password is incorrect')
-#        else:
-#            # Check credential using LDAP request
-#            user = check_credentials(username, password)
-#    except LDAPException as ex:
-#        app.logger.exception(
-#            f'{username} login or password is incorrect (with LDAP)')
-#        raise InvalidCredentials(
-#            'User login or password is incorrect')
-    except:
-        print('---------')
+        else:
+            # Check credential using LDAP request
+            user = check_credentials(username, password)
+    except LDAPException as ex:
+        app.logger.exception(
+            f'{username} login or password is incorrect (with LDAP)')
+        raise InvalidCredentials(
+            'User login or password is incorrect')
+
     if user:
 
         email = user.email
