@@ -222,7 +222,7 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
     with open(service_k8_filepath) as f:
         k8_service_tplt = Template(f.read())
         k8_service_tplt = k8_service_tplt.render( pod_name=pod_name)
-        k8_service = yaml.load(k8_service_tplt)
+        k8_service = yaml.safe_load(k8_service_tplt)
     namespace = k8_service['metadata']['namespace']
 
     # check service existance
@@ -269,7 +269,7 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
     with open(deployment_k8_filepath) as f:
         k8_deploy_tplt = Template(f.read())
         k8_deploy_tplt = k8_deploy_tplt.render(pod_name=pod_name)
-        k8_deploy = yaml.load(k8_deploy_tplt)
+        k8_deploy = yaml.safe_load(k8_deploy_tplt)
     namespace = k8_deploy['metadata']['namespace']
 
     # check deployment existance
@@ -418,7 +418,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
         with open(study_k8_filepath) as f:
             yaml_content = Template(f.read())
             yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
-            k8_conf = yaml.load(yaml_content)
+            k8_conf = yaml.safe_load(yaml_content)
         if k8_conf is not None:
 
             # Retrieve pod configuration
@@ -580,7 +580,7 @@ def kubernetes_service_delete_study_server(pod_identifiers):
         with open(study_k8_filepath) as f:
             yaml_content = Template(f.read())
             yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
-            k8_conf = yaml.load(yaml_content)
+            k8_conf = yaml.safe_load(yaml_content)
         if k8_conf is not None:
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
