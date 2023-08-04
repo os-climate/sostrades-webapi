@@ -71,7 +71,7 @@ group_id = Column(Integer,
 #### Database initialize process
 To retrieve automatically all processes in the repositories of the PYTHONPATH (processes must be in a file named 'process.py'):
 ```bash
-flask db init_process
+flask init_process
 ```
 All the process will be associated to the default applicative group named "SoSTrades_Dev".
 
