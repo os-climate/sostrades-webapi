@@ -91,7 +91,8 @@ class ResourceAccess:
 
         # retrieve all  subgroups of each group user access authorised with
         # access rights
-        for ugi in self._user_groups_list.keys():
+        init_user_groups_list = list(self._user_groups_list.keys())
+        for ugi in init_user_groups_list:
             group_groups = (
                 db.session.query(Group, AccessRights)
                 .filter(Group.id == GroupAccessGroup.group_id)
