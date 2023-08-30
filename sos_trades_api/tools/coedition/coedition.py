@@ -149,7 +149,7 @@ def add_notification_db(study_case_id, user, coedition_type):
     return new_notification.id
 
 
-def add_change_db(notification_id, variable_id, variable_type, change_type, new_value,
+def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
                   old_value, old_value_blob, last_modified):
     """ Add study change to database
     """
@@ -163,6 +163,8 @@ def add_change_db(notification_id, variable_id, variable_type, change_type, new_
     new_change.old_value = old_value
     new_change.old_value_blob = old_value_blob
     new_change.last_modified = last_modified
+    new_change.deleted_columns = deleted_columns
+
 
     # Save change
     db.session.add(new_change)
