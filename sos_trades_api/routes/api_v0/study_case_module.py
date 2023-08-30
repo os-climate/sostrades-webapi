@@ -165,6 +165,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
         files = None
         files_info = None
         parameters_to_save = []
+        columns_to_delete = []
 
         if request.files:
             files = []
@@ -178,16 +179,15 @@ def update_study_parameters_by_study_case_id(study_id: int):
                         "namespace": tuple(variable_id.rsplit('.', 1))[0],
                         "discipline": "Data"
                 }
-
         if request.json:
             for parameter_json in request_json:
-
+                columns_to_delete = parameter_json.get("column_deleted")
                 parameter_json["changeType"] = StudyCaseChange.SCALAR_CHANGE
                 parameter_json["oldValue"] = ""  # TODO oldValue est necessaire pour le revert ?
                 parameter_json["namespace"], parameter_json["var_name"] = tuple(parameter_json.get("variableId").rsplit('.', 1))
                 parameters_to_save.append(parameter_json)
 
-        resp = update_study_parameters(study_id, user, files, files_info, parameters_to_save)
+        resp = update_study_parameters(study_id, user, files, files_info, parameters_to_save, columns_to_delete)
         return make_response(jsonify(resp), 200)
 
     except Exception as e:

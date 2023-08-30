@@ -446,7 +446,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         return result
 
 
-def update_study_parameters(study_id, user, files_list, file_info, parameters_to_save):
+def update_study_parameters(study_id, user, files_list, file_info, parameters_to_save, columns_to_delete):
     """
     Configure the study case in the data manager or dump the study case on disk from a parameters list
     :param: study_id, id of the study
@@ -470,7 +470,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_id, True)
 
         # Create notification
-        if parameters_to_save != [] or files_list != None:
+        if parameters_to_save != [] or files_list != None or columns_to_delete != []:
             # Add notification to database
             new_notification_id = add_notification_db(study_id, user,
                                                       UserCoeditionAction.SAVE)
@@ -493,9 +493,21 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
 
                 # Delete file
                 remove(file_path)
+
+                # Check column of dataframe
+                column_to_delete_str = ''
+                if columns_to_delete:
+                    columns_list_from_csv = value.columns.tolist()
+                    # Check if the targeted columns are still in the dataframe of the csv
+                    contains_all_column = all(column in columns_list_from_csv for column in columns_to_delete)
+                    column_to_delete_str = ','.join(columns_to_delete)
+                    if contains_all_column:
+                        raise ValueError(f'The columns "{column_to_delete_str}" you want to delete are still present in the dataframe')
+
                 # Add file to parameters_to_save
                 parameters_to_save.append(
                     {'variableId': file_info[file.filename]['variable_id'],
+                     'columns_to_deleted': column_to_delete_str,
                      'newValue': value,
                      'namespace': file_info[file.filename]['namespace'],
                      'discipline': file_info[file.filename]['discipline'],
@@ -513,6 +525,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 add_change_db(new_notification_id,
                               file_info[file.filename]['variable_id'],
                               StudyCaseChange.CSV_CHANGE,
+                              column_to_delete_str,
                               StudyCaseChange.CSV_CHANGE,
                               None,
                               None,
@@ -608,6 +621,15 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                 parameter_dm_data_dict['dataframe_descriptor'] is not None:
 
                             df_descriptor = parameter_dm_data_dict['dataframe_descriptor']
+                            if columns_to_delete != []:
+                                columns = set(df_descriptor.keys()).intersection(columns_to_delete)
+                                if columns is not None:
+                                    for column in columns:
+                                        dataframe_descriptor = df_descriptor.get(column)
+                                        if len(dataframe_descriptor) == 4 and dataframe_descriptor[3] is True:
+                                            df_descriptor.pop(column)
+                                        else:
+                                            raise ValueError(f'The column "{column}" is not removable')
                             for colname in df_descriptor.keys():
                                 type = df_descriptor[colname]
                                 if type[0] == "array":
@@ -622,6 +644,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         add_change_db(new_notification_id,
                                       parameter['variableId'],
                                       parameter_dm_data_dict['type'],
+                                      parameter['columns_to_deleted'],
                                       parameter['changeType'],
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
