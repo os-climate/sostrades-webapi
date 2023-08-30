@@ -638,6 +638,7 @@ class StudyCaseChange(db.Model):
     old_value = Column(Text, index=False, unique=False)
     old_value_blob = Column(LargeBinary().with_variant(LONGBLOB, "mysql"), index=False, unique=False)
     last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    deleted_columns = Column(TEXT, index=False, unique=False)
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -652,7 +653,8 @@ class StudyCaseChange(db.Model):
             'new_value': self.new_value,
             'old_value': self.old_value,
             'old_value_blob': True if self.old_value_blob is not None else False,
-            'last_modified': self.last_modified
+            'last_modified': self.last_modified,
+            'deleted_columns': self.deleted_columns
         }
 
 
