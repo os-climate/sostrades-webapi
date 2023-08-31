@@ -182,6 +182,10 @@ def update_study_parameters_by_study_case_id(study_id):
         if 'parameters' in request.form:
             parameters = json.loads(request.form['parameters'])
 
+        columns_to_delete = []
+        if 'column_deleted' in request.form:
+            columns_to_delete = json.loads(request.form['column_deleted'])
+
         missing_parameter = []
         if files_data is None or file_info is None:
             missing_parameter.append(
@@ -194,7 +198,7 @@ def update_study_parameters_by_study_case_id(study_id):
             raise BadRequest('\n'.join(missing_parameter))
 
         resp = make_response(
-            jsonify(update_study_parameters(study_id, user, files_data, file_info, parameters)), 200)
+            jsonify(update_study_parameters(study_id, user, files_data, file_info, parameters, columns_to_delete)), 200)
         return resp
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')
