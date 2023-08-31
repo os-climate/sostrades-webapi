@@ -624,6 +624,7 @@ def get_study_case_notifications(study_identifier):
                             new_change.old_value = isevaluatable(ch.old_value)
                             new_change.old_value_blob = ch.old_value_blob
                             new_change.last_modified = ch.last_modified
+                            new_change.deleted_columns = ch.deleted_columns
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes
