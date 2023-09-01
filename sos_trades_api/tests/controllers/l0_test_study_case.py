@@ -302,6 +302,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  'discipline': 'Disc1',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
             ]
+            columns_to_delete = []
 
             study_manager = study_case_cache.get_study_case(
                 study_test.id, False)
@@ -312,7 +313,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # updating study case
             update_study_parameters(
-                study_test.id, user_test, None, None, parameters_update_list)
+                study_test.id, user_test, None, None, parameters_update_list, columns_to_delete)
 
         #  wait until study was updated (thread behind)
         stop = False
@@ -431,10 +432,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
             }
             files_list = [array_fs, dict_fs,
                           dataframe_fs, dict_as_dict_dataframe_fs]
-
+            columns_to_delete = []
             # updating study case
             update_study_parameters(
-                study_csv_test.id, user_test, files_list, file_info, [])
+                study_csv_test.id, user_test, files_list, file_info, [], columns_to_delete)
 
         #  wait until study was updated (thread behind)
         stop = False
@@ -545,10 +546,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             study_manager = study_case_cache.get_study_case(
                 study_test.id, False)
-
+            columns_to_delete = []
             # updating study case
             update_study_parameters(
-                study_test.id, user_test, None, None, parameters_update_list)
+                study_test.id, user_test, None, None, parameters_update_list, columns_to_delete)
 
             #  wait until study was updated (thread behind)
             stop = False
@@ -669,10 +670,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                  'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario'}
             }
             files_list = [dataframe_fs]
-
+            columns_to_delete = []
             # updating study case with wrong design space
             update_study_parameters(
-                study_clear_error_test.id, user_test, files_list, file_info, [])
+                study_clear_error_test.id, user_test, files_list, file_info, [], columns_to_delete)
 
             #  wait until study was updated (thread behind)
             stop = False
@@ -788,10 +789,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
             ]
-
+            columns_to_delete = []
             # updating study case with correct design space
             update_study_parameters(
-                study_clear_error_test.id, user_test, files_list, file_info, parameters_update_list)
+                study_clear_error_test.id, user_test, files_list, file_info, parameters_update_list, columns_to_delete)
 
             #  wait until study was updated (thread behind)
             stop = False
