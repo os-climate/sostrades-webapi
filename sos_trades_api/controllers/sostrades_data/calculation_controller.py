@@ -338,9 +338,11 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
 
             file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
-
-                result = file_tail(file_path, 200)
-
+                try:
+                    result = file_tail(file_path, 200)
+                except UnicodeDecodeError:
+                    # Must try with encoding latin, because some characters are not utf-8 encoded
+                    result = file_tail(file_path, 200, encoding="latin")
         except Exception as ex:
             print(ex)
         finally:

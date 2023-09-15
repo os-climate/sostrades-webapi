@@ -85,7 +85,7 @@ def convert_list_to_arrays(input_list):
         # Si l'élément est un nombre return the element
         return input_list
 
-def file_tail(file_name, line_count):
+def file_tail(file_name, line_count, encoding="utf-8"):
     """
     Open a file and return the {{line_count}} last line
     Code use file pointer location to  avoid to read the entire file
@@ -95,6 +95,9 @@ def file_tail(file_name, line_count):
 
     :param line_count: number of line to read
     :type integer
+
+    :param encoding: encoding to use
+    :type str
 
     :return: list of string
     """
@@ -133,9 +136,9 @@ def file_tail(file_name, line_count):
                 if read_byte == b'\n':
 
                     # Check if line contain any characters
-                    if len(binary_buffer.decode(encoding="latin").strip()) != 0:
+                    if len(binary_buffer.decode(encoding=encoding).strip()) != 0:
                         # We achieve to find the beginning of the line, so we can store it in the result
-                        result.append(binary_buffer.decode(encoding="latin")[::-1])
+                        result.append(binary_buffer.decode(encoding=encoding)[::-1])
 
                     # Reset binary buffer
                     binary_buffer = bytearray()
@@ -150,7 +153,7 @@ def file_tail(file_name, line_count):
         # This case occurs if we reach the beginning of the file before having read all the requested lines
         # So save the last store line
         if len(binary_buffer) > 0:
-            result.append(binary_buffer.decode(encoding="latin")[::-1])
+            result.append(binary_buffer.decode(encoding=encoding)[::-1])
 
     # Reverse the list before returning
     return list(reversed(result))
