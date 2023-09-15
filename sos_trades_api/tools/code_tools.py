@@ -133,9 +133,9 @@ def file_tail(file_name, line_count):
                 if read_byte == b'\n':
 
                     # Check if line contain any characters
-                    if len(binary_buffer.decode().strip()) != 0:
+                    if len(binary_buffer.decode(encoding="latin").strip()) != 0:
                         # We achieve to find the beginning of the line, so we can store it in the result
-                        result.append(binary_buffer.decode()[::-1])
+                        result.append(binary_buffer.decode(encoding="latin")[::-1])
 
                     # Reset binary buffer
                     binary_buffer = bytearray()
@@ -150,7 +150,7 @@ def file_tail(file_name, line_count):
         # This case occurs if we reach the beginning of the file before having read all the requested lines
         # So save the last store line
         if len(binary_buffer) > 0:
-            result.append(binary_buffer.decode()[::-1])
+            result.append(binary_buffer.decode(encoding="latin")[::-1])
 
     # Reverse the list before returning
     return list(reversed(result))
