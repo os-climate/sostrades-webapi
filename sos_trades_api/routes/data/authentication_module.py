@@ -212,7 +212,7 @@ def github_oauth_is_available():
     return make_response(jsonify(github_settings.is_available), 200)
 
 
-@app.route(f'/api/data/github/oauth/authorize', methods=['GET'])
+@app.route(f'/api/data/github/oauth/authorize', methods=['POST'])
 def github_oauth_authorize():
 
     github_settings = GitHubSettings()
