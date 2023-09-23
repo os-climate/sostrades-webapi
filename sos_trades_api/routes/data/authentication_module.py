@@ -218,8 +218,6 @@ def github_oauth_authorize():
     github_settings = GitHubSettings()
 
     github_oauth_url = ''
-    # uri = request.json.get('redirect_uri', None)
-
     if github_settings.is_available:
 
         params = {
@@ -228,9 +226,7 @@ def github_oauth_authorize():
             'state': GitHubSettings.get_state(),
             'allow_signup': 'true'
         }
-        # if uri != '':
-          # params['redirect_uri'] = uri
-            
+        
         github_oauth_url = furl(github_settings.authorize_url).set(params).url
 
     return make_response(jsonify(github_oauth_url), 200)
