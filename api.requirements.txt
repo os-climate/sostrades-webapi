@@ -47,7 +47,7 @@ defusedxml==0.7.1
     # via python3-saml
 dill==0.3.7
     # via openturns
-dnspython==1.16.0
+dnspython==2.2.1
     # via
     #   -r ./sostrades-webapi/requirements.in
     #   eventlet
