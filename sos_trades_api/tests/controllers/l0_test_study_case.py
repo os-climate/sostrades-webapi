@@ -36,7 +36,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
     #test_clear_error_process_name = 'test_sellar_opt'
-    test_clear_error_process_name = 'test_sellar_eval'
+    test_clear_error_process_name = 'test_sellar_opt_discopt'
     test_csv_process_name = 'test_csv_data'
     test_study_name = 'test_creation'
     test_study_csv_name = 'test_csv'
