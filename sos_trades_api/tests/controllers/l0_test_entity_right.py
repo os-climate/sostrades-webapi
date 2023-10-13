@@ -31,7 +31,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     """
     test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
-    test_study_name = 'test_creation'
+    test_study_name = 'study_test_creation'
     test_study_id = None
     test_user_id = None
     test_process_id = None
