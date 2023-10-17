@@ -112,6 +112,13 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
     new_user.set_password(password)
 
     db.session.add(new_user)
+
+    # Default group => all_users
+    all_user_group = Group.query.filter_by(name=Group.ALL_USERS_GROUP).first()
+    member_right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
+
+    set_user_access_group(all_user_group.id, new_user.id, member_right.id)
+
     db.session.commit()
 
     # Send an email for renewing password to user
@@ -356,12 +363,7 @@ def create_test_user_account():
 
                 db.session.add(user)
                 db.session.flush()
-
-                user_access_group = GroupAccessUser()
-                user_access_group.group_id = all_user_group.id
-                user_access_group.user_id = user.id
-                user_access_group.right_id = member_right.id
-                db.session.add(user_access_group)
+                set_user_access_group(all_user_group.id, user.id, member_right.id)
             except Exception as exc:
                 raise exc
 
@@ -414,12 +416,7 @@ def create_standard_user_account(username, email, firstname, lastname):
 
                 db.session.add(user)
                 db.session.flush()
-
-                user_access_group = GroupAccessUser()
-                user_access_group.group_id = all_user_group.id
-                user_access_group.user_id = user.id
-                user_access_group.right_id = member_right.id
-                db.session.add(user_access_group)
+                set_user_access_group(all_user_group.id, user.id, member_right.id)
             except Exception as exc:
                 raise exc
 
@@ -518,3 +515,28 @@ def set_user_default_group(group_id, user_id):
 
     else:
         raise InvalidUser(f'User cannot be found in the database')
+
+
+def set_user_access_group(group_id, user_id, right_id):
+    """
+            Set a group access to a user
+
+            :param group_id: group identifier
+            :type group_id: int
+
+            :param user_id: user identifier
+            :type user_id: int
+
+            :param right_id: access_right identifier
+            :type right_id: int
+
+        """
+    try:
+        user_access_group = GroupAccessUser()
+        user_access_group.group_id = group_id
+        user_access_group.user_id = user_id
+        user_access_group.right_id = right_id
+        db.session.add(user_access_group)
+    except Exception as exc:
+        db.session.rollback()
+        raise exc

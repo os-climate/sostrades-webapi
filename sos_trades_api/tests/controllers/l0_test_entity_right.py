@@ -62,7 +62,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
     def setUp(self):
         super().setUp()
-        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
+        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, \
+            StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
         from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -107,20 +108,31 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                     new_user_test_auth)
                 DatabaseUnitTestConfiguration.db.session.commit()
 
-            # Create test studycase
-            new_study_case = create_empty_study_case(self.test_user_id,
-                                                     self.test_study_name,
-                                                     self.test_repository_name,
-                                                     self.test_process_name,
-                                                     self.default_group_id)
+            # Create a new study if it does not already exist
+            create_new_study = True
+            # Retrieve all studies with the targeted group
+            all_studies = StudyCase.query.filter(StudyCase.group_id == default_group.id).all()
+            if all_studies is not None:
+                for study in all_studies:
+                    if study.name == self.test_study_name:
+                        self.test_study_id = study.id
+                        create_new_study = False
 
-            self.test_study_id = new_study_case.id
+            if create_new_study:
+                # Create test study_case
+                new_study_case = create_empty_study_case(self.test_user_id,
+                                                         self.test_study_name,
+                                                         self.test_repository_name,
+                                                         self.test_process_name,
+                                                         self.default_group_id)
 
-            created_study = create_study_case(self.test_user_id,
-                                              self.test_study_id,
-                                              None)
+                self.test_study_id = new_study_case.id
 
-            self.test_study_id = created_study.study_case.id
+                created_study = create_study_case(self.test_user_id,
+                                                  self.test_study_id,
+                                                  None)
+
+                self.test_study_id = created_study.study_case.id
 
     def tearDown(self):
         super().tearDown()
@@ -188,7 +200,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      'User right for study case created not coherent, other user than test user has access right to the study')
                 if ent_r.entity_type == EntityType.GROUP:
                     self.assertEqual(ent_r.entity_object.id, self.default_group_id,
-                                     'Group right for study case created not coherent, other group than SoSTrades Dev group has access right to the study')
+                                     'Group right for study case created not coherent, other group than All user group has access right to the study')
 
     def test_04_get_group_entities_rights(self):
         # Created group should have 2 entity right, one for test _user, one for
@@ -247,8 +259,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                 created_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertFalse(created_user_authorised_group,
                              'the user created must not be authorized for the resource created_group')
-            self.assertFalse(created_user_authorised_sc,
-                             'the user created must not be authorized for the resource study case')
+            self.assertTrue(created_user_authorised_sc,
+                            'the user created must be authorized for the resource study case')
             # Test user should have access to everything
             test_user_authorised_group = verify_user_authorised_for_resource(
                 self.test_user_id, self.user_profile_id, entities_rights_group)
@@ -257,9 +269,9 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             test_user_authorised_process = verify_user_authorised_for_resource(
                 self.test_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertTrue(test_user_authorised_group,
-                            'test user must  be authorized for the resource created_group')
+                            'test user must be authorized for the resource created_group')
             self.assertTrue(test_user_authorised_sc,
-                            'test user  must  be authorized for the resource study case')
+                            'test user must be authorized for the resource study case')
             self.assertTrue(test_user_authorised_process,
                             'test user must not be authorized for the resource process')
 

@@ -29,4 +29,4 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api.server import message_server
 
-    message_server.socketio.run(message_server.app, host='127.0.0.1', port=5002)
+    message_server.socketio.run(message_server.app, host='0.0.0.0', port=8002)
