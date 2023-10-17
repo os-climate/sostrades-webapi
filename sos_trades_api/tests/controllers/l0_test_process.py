@@ -88,5 +88,5 @@ class TestProcess(DatabaseUnitTestConfiguration):
             process_filtered = filter(
                 lambda x: x.is_manager or x.is_contributor, standard_account_process)
 
-            self.assertGreater(len((list(process_filtered))), 0,
-                               'Test account does not have access to standard processes of the "all_user" group')
+            self.assertEqual(len((list(process_filtered))), 0,
+                             'Some processes are accessible by the test account')
