@@ -200,7 +200,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      'User right for study case created not coherent, other user than test user has access right to the study')
                 if ent_r.entity_type == EntityType.GROUP:
                     self.assertEqual(ent_r.entity_object.id, self.default_group_id,
-                                     'Group right for study case created not coherent, other group than All user group has access right to the study')
+                                     'Group right for study case created not coherent, other group than SoSTrades Dev group has access right to the study')
 
     def test_04_get_group_entities_rights(self):
         # Created group should have 2 entity right, one for test _user, one for
@@ -259,8 +259,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                 created_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertFalse(created_user_authorised_group,
                              'the user created must not be authorized for the resource created_group')
-            self.assertTrue(created_user_authorised_sc,
-                            'the user created must be authorized for the resource study case')
+            self.assertFalse(created_user_authorised_sc,
+                             'the user created must not be authorized for the resource study case')
             # Test user should have access to everything
             test_user_authorised_group = verify_user_authorised_for_resource(
                 self.test_user_id, self.user_profile_id, entities_rights_group)
