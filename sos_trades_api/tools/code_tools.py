@@ -136,11 +136,13 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     # List of lines returned to caller
     result = []
 
+    app.logger.info("Opening log file")
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
-
+        app.logger.info("Log file opened. Setting pointer to end.")
         # Set file pointer to the end and initialize pointer value
         file_object.seek(0, SEEK_END)
+        app.logger.info("Telling pointer location.")
         pointer_location = file_object.tell()
 
         # Boolean to drive the loop
@@ -154,20 +156,23 @@ def file_tail(file_name, line_count, encoding="utf-8"):
             elif len(result) == line_count:
                 stop = True
             else:
+                app.logger.info(f"Seeking {pointer_location}.")
                 # Set file object to the location of the pointer
                 file_object.seek(pointer_location)
+
+                app.logger.info(f"Reading byte.")
 
                 # Read current character
                 read_byte = file_object.read(1)
 
                 # Check if read character is a carriage return
                 if read_byte == b'\n':
-
+                    app.logger.info(f"Decoding buffer.")
                     # Check if line contain any characters
                     if len(binary_buffer.decode(encoding=encoding).strip()) != 0:
                         # We achieve to find the beginning of the line, so we can store it in the result
                         result.append(binary_buffer.decode(encoding=encoding)[::-1])
-
+                    
                     # Reset binary buffer
                     binary_buffer = bytearray()
                 else:
@@ -177,11 +182,13 @@ def file_tail(file_name, line_count, encoding="utf-8"):
                 # Shift the pointer to the previous location
                 # (for the next loop)
                 pointer_location -= 1
+                app.logger.info(f"End of loop.")
 
         # This case occurs if we reach the beginning of the file before having read all the requested lines
         # So save the last store line
         if len(binary_buffer) > 0:
+            app.logger.info(f"Reached beginning of file.")
             result.append(binary_buffer.decode(encoding=encoding)[::-1])
-
+    app.logger.info(f"Returning.")
     # Reverse the list before returning
     return list(reversed(result))
