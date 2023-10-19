@@ -18,10 +18,14 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 various function useful to python coding
 """
 
+import logging
 from os import SEEK_END
 import ast
+from time import time
+from typing import Optional
 import numpy as np
 from io import StringIO
+from sos_trades_api.server.base_server import app
 
 
 def isevaluatable(s):
@@ -85,6 +89,30 @@ def convert_list_to_arrays(input_list):
         # Si l'élément est un nombre return the element
         return input_list
 
+
+def time_function(logger: Optional[logging.Logger] = None):
+    """
+    This decorator times another function and logs time spend in logger given as argument (if any)
+    """
+
+    def inner(func):
+        def wrapper_function(*args, **kwargs):
+            """fonction wrapper"""
+            t_start = time()
+            return_args = func(*args, **kwargs)
+            t_end = time()
+            execution_time = t_end - t_start
+            if logger is not None:
+                logger.info(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            else:
+                print(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            return return_args
+
+        return wrapper_function
+
+    return inner
+
+@time_function(logger=app.logger)
 def file_tail(file_name, line_count, encoding="utf-8"):
     """
     Open a file and return the {{line_count}} last line
