@@ -135,10 +135,11 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     # List of lines returned to caller
     result = []
+    app.logger.info(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
-
+        app.logger.info(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
         file_object.seek(0, SEEK_END)
         pointer_location = file_object.tell()
@@ -182,6 +183,7 @@ def file_tail(file_name, line_count, encoding="utf-8"):
         # So save the last store line
         if len(binary_buffer) > 0:
             result.append(binary_buffer.decode(encoding=encoding)[::-1])
-
+            
+    app.logger.info(f"Done parsing logs {file_name}.")
     # Reverse the list before returning
     return list(reversed(result))
