@@ -18,10 +18,14 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 various function useful to python coding
 """
 
+import logging
 from os import SEEK_END
 import ast
+from time import time
+from typing import Optional
 import numpy as np
 from io import StringIO
+from sos_trades_api.server.base_server import app
 
 
 def isevaluatable(s):
@@ -85,6 +89,30 @@ def convert_list_to_arrays(input_list):
         # Si l'élément est un nombre return the element
         return input_list
 
+
+def time_function(logger: Optional[logging.Logger] = None):
+    """
+    This decorator times another function and logs time spend in logger given as argument (if any)
+    """
+
+    def inner(func):
+        def wrapper_function(*args, **kwargs):
+            """fonction wrapper"""
+            t_start = time()
+            return_args = func(*args, **kwargs)
+            t_end = time()
+            execution_time = t_end - t_start
+            if logger is not None:
+                logger.info(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            else:
+                print(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            return return_args
+
+        return wrapper_function
+
+    return inner
+
+@time_function(logger=app.logger)
 def file_tail(file_name, line_count, encoding="utf-8"):
     """
     Open a file and return the {{line_count}} last line
@@ -107,10 +135,11 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     # List of lines returned to caller
     result = []
+    app.logger.info(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
-
+        app.logger.info(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
         file_object.seek(0, SEEK_END)
         pointer_location = file_object.tell()
@@ -136,9 +165,10 @@ def file_tail(file_name, line_count, encoding="utf-8"):
                 if read_byte == b'\n':
 
                     # Check if line contain any characters
-                    if len(binary_buffer.decode(encoding=encoding).strip()) != 0:
+                    decoded_buffer = binary_buffer.decode(encoding=encoding, errors="ignore")
+                    if len(decoded_buffer.strip()) != 0:
                         # We achieve to find the beginning of the line, so we can store it in the result
-                        result.append(binary_buffer.decode(encoding=encoding)[::-1])
+                        result.append(decoded_buffer[::-1])
 
                     # Reset binary buffer
                     binary_buffer = bytearray()
@@ -153,7 +183,8 @@ def file_tail(file_name, line_count, encoding="utf-8"):
         # This case occurs if we reach the beginning of the file before having read all the requested lines
         # So save the last store line
         if len(binary_buffer) > 0:
-            result.append(binary_buffer.decode(encoding=encoding)[::-1])
-
+            result.append(binary_buffer.decode(encoding=encoding, errors="ignore")[::-1])
+            
+    app.logger.info(f"Done parsing logs {file_name}.")
     # Reverse the list before returning
     return list(reversed(result))
