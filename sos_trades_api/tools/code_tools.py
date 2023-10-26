@@ -137,6 +137,10 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     result = []
     app.logger.info(f"Opening log file {file_name}.")
 
+    # Add monitoring of time spent on some lines
+    time_spent_read = 0
+    time_spent_seek = 0
+
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
         app.logger.info(f"Log file opened {file_name}.")
@@ -155,11 +159,16 @@ def file_tail(file_name, line_count, encoding="utf-8"):
             elif len(result) == line_count:
                 stop = True
             else:
+                start_ts = time.time()
                 # Set file object to the location of the pointer
                 file_object.seek(pointer_location)
 
+                # Diagnosis : monitor time spent
+                time_spent_seek += time.time() - start_ts
+                start_ts = time.time()
                 # Read current character
                 read_byte = file_object.read(1)
+                time_spent_read += time.time() - start_ts
 
                 # Check if read character is a carriage return
                 if read_byte == b'\n':
@@ -185,6 +194,6 @@ def file_tail(file_name, line_count, encoding="utf-8"):
         if len(binary_buffer) > 0:
             result.append(binary_buffer.decode(encoding=encoding, errors="ignore")[::-1])
             
-    app.logger.info(f"Done parsing logs {file_name}.")
+    app.logger.info(f"Done parsing logs {file_name}. Time spent reading : {time_spent_read}s. Time spent seeking : {time_spent_seek}s.")
     # Reverse the list before returning
     return list(reversed(result))
