@@ -19,7 +19,7 @@ various function useful to python coding
 """
 
 import logging
-from os import SEEK_END
+from os import SEEK_END, SEEK_CUR
 import ast
 from time import time
 from typing import Optional
@@ -161,7 +161,7 @@ def file_tail(file_name, line_count, encoding="utf-8"):
             else:
                 start_ts = time()
                 # Set file object to the location of the pointer
-                file_object.seek(pointer_location)
+                file_object.seek(-1, SEEK_CUR)
 
                 # Diagnosis : monitor time spent
                 time_spent_seek += time() - start_ts
