@@ -159,13 +159,13 @@ def file_tail(file_name, line_count, encoding="utf-8"):
             elif len(result) == line_count:
                 stop = True
             else:
-                start_ts = time.time()
+                start_ts = time()
                 # Set file object to the location of the pointer
                 file_object.seek(pointer_location)
 
                 # Diagnosis : monitor time spent
                 time_spent_seek += time() - start_ts
-                start_ts = time.time()
+                start_ts = time()
                 # Read current character
                 read_byte = file_object.read(1)
                 time_spent_read += time() - start_ts
