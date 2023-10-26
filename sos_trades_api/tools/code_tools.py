@@ -145,7 +145,7 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     with open(file_name, 'rb') as file_object:
         app.logger.info(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
-        file_object.seek(0, SEEK_END)
+        file_object.seek(-1, SEEK_END)
         pointer_location = file_object.tell()
 
         # Boolean to drive the loop
@@ -160,15 +160,15 @@ def file_tail(file_name, line_count, encoding="utf-8"):
                 stop = True
             else:
                 start_ts = time()
-                # Set file object to the location of the pointer
-                file_object.seek(-1, SEEK_CUR)
-
-                # Diagnosis : monitor time spent
-                time_spent_seek += time() - start_ts
-                start_ts = time()
                 # Read current character
                 read_byte = file_object.read(1)
                 time_spent_read += time() - start_ts
+                start_ts = time()
+                # Set file object to the location of the pointer
+                file_object.seek(-2, SEEK_CUR)
+
+                # Diagnosis : monitor time spent
+                time_spent_seek += time() - start_ts
 
                 # Check if read character is a carriage return
                 if read_byte == b'\n':
