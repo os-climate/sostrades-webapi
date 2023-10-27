@@ -19,7 +19,7 @@ various function useful to python coding
 """
 
 import logging
-from os import SEEK_END
+import os
 import ast
 from time import time
 from typing import Optional
@@ -132,59 +132,48 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     # Temporary buffer to store read lines during process
     binary_buffer = bytearray()
+    buffer_size = 4096
 
-    # List of lines returned to caller
-    result = []
     app.logger.info(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
         app.logger.info(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
-        file_object.seek(0, SEEK_END)
-        pointer_location = file_object.tell()
+        file_object.seek(0, os.SEEK_END)
+        file_size = file_object.tell()
+        read_size = 0
 
-        # Boolean to drive the loop
-        stop = False
-        while not stop:
+        # keep track of previous iteration read bytes, to reduce seek function calls
+        previous_n_read_bytes = 0
 
-            # If we reach the beginning of the file, then  stop the loop
-            if pointer_location < 0:
-                stop = True
-            # If we have stored all the needed lines
-            elif len(result) == line_count:
-                stop = True
-            else:
-                # Set file object to the location of the pointer
-                file_object.seek(pointer_location)
-
-                # Read current character
-                read_byte = file_object.read(1)
-
-                # Check if read character is a carriage return
-                if read_byte == b'\n':
-
-                    # Check if line contain any characters
-                    decoded_buffer = binary_buffer.decode(encoding=encoding, errors="ignore")
-                    if len(decoded_buffer.strip()) != 0:
-                        # We achieve to find the beginning of the line, so we can store it in the result
-                        result.append(decoded_buffer[::-1])
-
-                    # Reset binary buffer
-                    binary_buffer = bytearray()
-                else:
-                    # If last read character is not eol then add it in buffer
-                    binary_buffer.extend(read_byte)
-
-                # Shift the pointer to the previous location
-                # (for the next loop)
-                pointer_location -= 1
-
-        # This case occurs if we reach the beginning of the file before having read all the requested lines
-        # So save the last store line
-        if len(binary_buffer) > 0:
-            result.append(binary_buffer.decode(encoding=encoding, errors="ignore")[::-1])
+        # While we haven't read enough lines, or reached the end of the file
+        while binary_buffer.count(b'\n') < line_count and read_size < file_size:
+            # Amount of bytes to read
+            n_bytes_to_read = min(buffer_size, file_size - read_size)
             
+            # Seek position from current position
+            offset_from_current_pos = -(n_bytes_to_read + previous_n_read_bytes)
+            file_object.seek(offset_from_current_pos, os.SEEK_CUR)
+
+            # Read bytes
+            read_bytes = file_object.read(n_bytes_to_read)
+            read_size += n_bytes_to_read
+
+            # Replace pointer
+            binary_buffer.extend(read_bytes[::-1])
+
+            # Keep track of bytes read this iteration
+            previous_n_read_bytes = n_bytes_to_read
+        
+    # Decode buffer
+    content = binary_buffer[::-1].decode(encoding=encoding, errors="ignore")
+
+    # Split lines
+    lines = content.split('\n')
+    if len(lines) > line_count:
+        # Trim aditionnal lines
+        lines = lines[-line_count:]
+    
     app.logger.info(f"Done parsing logs {file_name}.")
-    # Reverse the list before returning
-    return list(reversed(result))
+    return lines
