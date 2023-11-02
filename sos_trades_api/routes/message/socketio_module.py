@@ -26,7 +26,7 @@ from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, Coedit
 def connect():
     user = get_authenticated_user()
     remove_user_from_all_rooms(user.id)
-    emit('connect', {'message': f'{user.username} has joined'})
+    #emit('connect', {'message': f'{user.username} has joined'})
 
 
 @socketio.on('disconnect')
