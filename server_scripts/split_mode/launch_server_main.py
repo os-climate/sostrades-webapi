@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/10/02-2023/11/02 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,4 +30,4 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api.server.split_mode import main_server
 
-    main_server.app.run(host='127.0.0.1', port='5000')
+    main_server.app.run(host='0.0.0.0', port='8000')

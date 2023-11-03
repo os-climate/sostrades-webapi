@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/08/30-2023/11/02 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +28,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
 
-from sos_trades_api.tools.code_tools import isevaluatable
+from sos_trades_api.tools.code_tools import isevaluatable, time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
@@ -701,6 +702,7 @@ def study_case_logs(study_case_identifier):
         )
 
 
+@time_function(logger=app.logger)
 def get_raw_logs(study_case_identifier):
     """
     Return the location of the raw logs file path
