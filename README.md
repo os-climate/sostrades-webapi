@@ -2,7 +2,7 @@
 
 ## Packages installation
 ### Online (no vpn) install
-pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org 
+pip install -r requirements.in --trusted-host pypi.org --trusted-host files.pythonhosted.org 
 
 ###Python path
 It is necessary to add the sostrades-webapi folder to the PYTHONPATH.
