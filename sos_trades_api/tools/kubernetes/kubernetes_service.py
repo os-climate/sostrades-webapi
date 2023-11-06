@@ -438,6 +438,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                         resp = requests.request(
                             method='GET', url=study_server_url, verify=ssl_path
                         )
+                        app.logger.info(f'request pod {pod_identifiers}:{resp}')
 
                         if resp.status_code == 200:
                             study_response_data = resp.json()
