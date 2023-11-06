@@ -490,9 +490,9 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
 
     pod_list = api_instance.list_namespaced_pod(
         namespace=pod_namespace)
-    app.logger.info(f'request pod pod list found: {pod_list}')
+    app.logger.info(f'iterate into pod list to find: {pod_identifiers}')
     for pod in pod_list.items:
-
+        app.logger.info(f'check request pod service: {pod.metadata.name}')
         if pod.metadata.name in pod_identifiers:
             result.update({pod.metadata.name: pod.status.phase})
             break
