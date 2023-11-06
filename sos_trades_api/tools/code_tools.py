@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/09/14-2023/11/03 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,10 +19,14 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 various function useful to python coding
 """
 
-from os import SEEK_END
+import logging
+import os
 import ast
+from time import time
+from typing import Optional
 import numpy as np
 from io import StringIO
+from sos_trades_api.server.base_server import app
 
 
 def isevaluatable(s):
@@ -85,6 +90,30 @@ def convert_list_to_arrays(input_list):
         # Si l'élément est un nombre return the element
         return input_list
 
+
+def time_function(logger: Optional[logging.Logger] = None):
+    """
+    This decorator times another function and logs time spend in logger given as argument (if any)
+    """
+
+    def inner(func):
+        def wrapper_function(*args, **kwargs):
+            """fonction wrapper"""
+            t_start = time()
+            return_args = func(*args, **kwargs)
+            t_end = time()
+            execution_time = t_end - t_start
+            if logger is not None:
+                logger.info(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            else:
+                print(f"Execution time {func.__name__}: {execution_time:.4f}s")
+            return return_args
+
+        return wrapper_function
+
+    return inner
+
+@time_function(logger=app.logger)
 def file_tail(file_name, line_count, encoding="utf-8"):
     """
     Open a file and return the {{line_count}} last line
@@ -104,56 +133,48 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     # Temporary buffer to store read lines during process
     binary_buffer = bytearray()
+    buffer_size = 4096
 
-    # List of lines returned to caller
-    result = []
+    app.logger.info(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
-
+        app.logger.info(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
-        file_object.seek(0, SEEK_END)
-        pointer_location = file_object.tell()
+        file_object.seek(0, os.SEEK_END)
+        file_size = file_object.tell()
+        read_size = 0
 
-        # Boolean to drive the loop
-        stop = False
-        while not stop:
+        # keep track of previous iteration read bytes, to reduce seek function calls
+        previous_n_read_bytes = 0
 
-            # If we reach the beginning of the file, then  stop the loop
-            if pointer_location < 0:
-                stop = True
-            # If we have stored all the needed lines
-            elif len(result) == line_count:
-                stop = True
-            else:
-                # Set file object to the location of the pointer
-                file_object.seek(pointer_location)
+        # While we haven't read enough lines, or reached the end of the file
+        while binary_buffer.count(b'\n') < line_count and read_size < file_size:
+            # Amount of bytes to read
+            n_bytes_to_read = min(buffer_size, file_size - read_size)
+            
+            # Seek position from current position
+            offset_from_current_pos = -(n_bytes_to_read + previous_n_read_bytes)
+            file_object.seek(offset_from_current_pos, os.SEEK_CUR)
 
-                # Read current character
-                read_byte = file_object.read(1)
+            # Read bytes
+            read_bytes = file_object.read(n_bytes_to_read)
+            read_size += n_bytes_to_read
 
-                # Check if read character is a carriage return
-                if read_byte == b'\n':
+            # Replace pointer
+            binary_buffer.extend(read_bytes[::-1])
 
-                    # Check if line contain any characters
-                    if len(binary_buffer.decode(encoding=encoding).strip()) != 0:
-                        # We achieve to find the beginning of the line, so we can store it in the result
-                        result.append(binary_buffer.decode(encoding=encoding)[::-1])
+            # Keep track of bytes read this iteration
+            previous_n_read_bytes = n_bytes_to_read
+        
+    # Decode buffer
+    content = binary_buffer[::-1].decode(encoding=encoding, errors="ignore")
 
-                    # Reset binary buffer
-                    binary_buffer = bytearray()
-                else:
-                    # If last read character is not eol then add it in buffer
-                    binary_buffer.extend(read_byte)
-
-                # Shift the pointer to the previous location
-                # (for the next loop)
-                pointer_location -= 1
-
-        # This case occurs if we reach the beginning of the file before having read all the requested lines
-        # So save the last store line
-        if len(binary_buffer) > 0:
-            result.append(binary_buffer.decode(encoding=encoding)[::-1])
-
-    # Reverse the list before returning
-    return list(reversed(result))
+    # Split lines
+    lines = content.split('\n')
+    if len(lines) > line_count:
+        # Trim aditionnal lines
+        lines = lines[-line_count:]
+    
+    app.logger.info(f"Done parsing logs {file_name}.")
+    return lines
