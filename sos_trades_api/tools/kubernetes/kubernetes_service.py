@@ -211,7 +211,9 @@ def kubernetes_service_allocate(pod_name):
     core_api_instance = client.CoreV1Api(client.ApiClient())
     apps_api_instance = client.AppsV1Api(client.ApiClient())
 
+    app.logger.info(f'allocation create service: {pod_name}')     
     kubernetes_study_server_service_create(pod_name, core_api_instance)
+    app.logger.info(f'allocation create deployment: {pod_name}')     
     kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
 
 
@@ -414,20 +416,21 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     if Path(study_k8_filepath).exists() and pod_identifiers is not None:
 
         app.logger.debug(f'pod configuration file found')
-
+        app.logger.info(f'request pod check config')
         k8_conf = None
         with open(study_k8_filepath) as f:
             yaml_content = Template(f.read())
             yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
             k8_conf = yaml.safe_load(yaml_content)
         if k8_conf is not None:
-
+            app.logger.info(f'request pod config found: {study_k8_filepath}')
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
+            
             if len(result) > 0:
                 status = list(result.values())[0]
-
+                app.logger.info(f'request status found: {status}')
                 if status == "Running":
                     result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
@@ -436,6 +439,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                     ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
                     study_response_data = ""
                     try:
+                        app.logger.info(f'ask for request: {study_server_url}')
                         resp = requests.request(
                             method='GET', url=study_server_url, verify=ssl_path
                         )
@@ -445,6 +449,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                             study_response_data = resp.json()
 
                     except:
+                        app.logger.info(f'error for request: An exception occurs when trying to reach study server')
                         app.logger.exception('An exception occurs when trying to reach study server')
 
                     if study_response_data == "pong":
@@ -455,7 +460,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
 
     else:
         pass  # launch exception
-
+    app.logger.info(f'study response data:{result}')
     return result
 
 
@@ -485,7 +490,7 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
 
     pod_list = api_instance.list_namespaced_pod(
         namespace=pod_namespace)
-
+    app.logger.info(f'request pod pod list found: {pod_list}')
     for pod in pod_list.items:
 
         if pod.metadata.name in pod_identifiers:
@@ -496,6 +501,7 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
             if pod.metadata.name.startswith(f"{pod_identifiers}-"):
                 result.update({pod.metadata.name: pod.status.phase})
                 break
+    app.logger.info(f'request pod service found: {result}')
     return result
 
 

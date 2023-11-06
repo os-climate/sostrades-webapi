@@ -38,8 +38,9 @@ def create_allocation(study_case_identifier):
         new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
+    
     new_study_case_allocation.kubernetes_pod_name = f'sostrades-study-server-{study_case_identifier}'
-
+    app.logger.info(f'study case create pod name: {new_study_case_allocation.kubernetes_pod_name}')     
     db.session.add(new_study_case_allocation)
     db.session.commit()
 
@@ -53,6 +54,7 @@ def load_study_allocation(study_case_allocation):
     """
     Load service and deployment if they do not exists and wait for pod running in a thread
     """
+    app.logger.info(f'load study case allocation: {study_case_allocation.kubernetes_pod_name}')     
     if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         #launch creation
         try:
@@ -80,10 +82,11 @@ def get_allocation_status(pod_name):
         elif pod_status == "IN_PROGRESS":
             status = StudyCaseAllocation.IN_PROGRESS
         else:
+            app.logger.info(f'exception raised pod not found')
             raise Exception("pod not found")
     else:
         status = StudyCaseAllocation.DONE
-
+    app.logger.info(f'pod returned status: {status}')
     return status
 
 def delete_study_server_services_and_deployments(pod_names):
