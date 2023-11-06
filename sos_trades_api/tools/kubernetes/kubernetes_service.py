@@ -435,7 +435,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                     result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
                     port = k8_conf['spec']['ports'][0]["port"]
-                    study_server_url = f"http://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
+                    study_server_url = f"{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
                     ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
                     study_response_data = ""
                     try:
