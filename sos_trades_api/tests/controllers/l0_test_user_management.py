@@ -50,10 +50,10 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             self.lastname = 'user1_ln'
             self.username = 'user1_usrnme'
             self.password = 'user1_passwd'
-            self.email = 'user1@airbus.com'
+            self.email = 'user1@fake.com'
             self.user_profile_id = 2
             # Set field to update
-            self.new_email = 'mailhasbeenmodified@airbus.com'
+            self.new_email = 'mailhasbeenmodified@fake.com'
 
     def tearDown(self):
         super().tearDown()

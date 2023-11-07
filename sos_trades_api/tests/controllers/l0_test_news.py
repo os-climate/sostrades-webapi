@@ -37,7 +37,7 @@ class TestNews(DatabaseUnitTestConfiguration):
     lastname = 'user1_ln'
     username = 'user1_usrnme'
     password = 'user1_passwd'
-    email = 'user1@airbus.com'
+    email = 'user1@fake.com'
     user_profile_id = 2
     created_user_id = None
 
