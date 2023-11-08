@@ -17,6 +17,8 @@ limitations under the License.
 import logging
 import time
 
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
+    load_repositories_metadata
 from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 
@@ -366,6 +368,16 @@ class StudyCaseManager(BaseStudyManager):
             #-------------------
             # save loaded study in read only mode
             loaded_study_case = LoadedStudyCase(self, False, True, None, True)
+            # Apply ontology
+            process_metadata = load_processes_metadata(
+                [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
+
+            repository_metadata = load_repositories_metadata(
+                [loaded_study_case.study_case.repository])
+
+            loaded_study_case.study_case.apply_ontology(
+                process_metadata, repository_metadata)
+
             # if the loaded status is not yet at LOADED, load treeview post
             # proc anyway
             if self.load_status != LoadStatus.LOADED:
