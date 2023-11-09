@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/08-2023/11/09 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,6 +44,6 @@ def application_support():
     """
     application support
     """
-    result = {'support': 'sos.trades@airbus.com'}
+    result = {'support': 'TransitionRisk@lists.os-climate.org'}
     resp = make_response(jsonify(result), 200)
     return resp

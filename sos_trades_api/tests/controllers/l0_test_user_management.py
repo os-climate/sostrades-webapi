@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/07-2023/11/09 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,10 +51,10 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             self.lastname = 'user1_ln'
             self.username = 'user1_usrnme'
             self.password = 'user1_passwd'
-            self.email = 'user1@airbus.com'
+            self.email = 'user1@fake.com'
             self.user_profile_id = 2
             # Set field to update
-            self.new_email = 'mailhasbeenmodified@airbus.com'
+            self.new_email = 'mailhasbeenmodified@fake.com'
 
     def tearDown(self):
         super().tearDown()
