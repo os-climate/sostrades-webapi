@@ -34,7 +34,9 @@ class Testheader(unittest.TestCase):
         self.pp = pprint.PrettyPrinter(indent=4, compact=True)
         self.ExtensionToIgnore = ["pkl", "png", "jpg", "csv", "md", "markdown", "avif", "json", "in", "gitignore", "cfg", "puml", "pdf", "txt", "ipynb", "zip", "rst","flaskenv"]
         #Add here the files to ignore       
-        self.FilesToIgnore = []
+        self.FilesToIgnore = ["migrations/versions/6fde15c1f0d5_default_group_v3.py",
+                              "migrations/versions/5e995cf0ba49_add_information_about_deleting_a_column_.py",
+                              "migrations/versions/224990fccd32_default_group_v2.py"]
         #commit from where to compare added, modeified deleted ...
         self.airbus_rev_commit = "09b208"
 
