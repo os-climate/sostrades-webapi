@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/10/13-2023/11/02 Copyright 2023 Capgemini
+Modifications on 2023/10/13-2023/11/09 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     lastname = 'user1_ln'
     username = 'user1_usrnme'
     password = 'user1_passwd'
-    email = 'user1@airbus.com'
+    email = 'user@fake.com'
     user_profile_id = 2
     created_user_id = None
 
