@@ -28,6 +28,8 @@ import yaml
 import time
 import requests
 
+from sos_trades_api.tools.code_tools import time_function
+
 
 class ExecutionEngineKuberneteError(Exception):
     """Base StudyCase Exception"""
@@ -405,8 +407,8 @@ def kubernetes_eeb_service_pods_status(pod_identifiers):
 
     return result
 
+@time_function(logger=app.logger)
 def kubernetes_study_service_pods_status(pod_identifiers):
-
     result = None
 
     # Retrieve the kubernetes configuration file regarding execution
