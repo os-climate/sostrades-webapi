@@ -18,6 +18,7 @@ import threading
 
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import StudyCaseAllocation
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.kubernetes import kubernetes_service
 from sos_trades_api.server.base_server import app, db
 
@@ -50,7 +51,7 @@ def create_allocation(study_case_identifier):
     return new_study_case_allocation
 
 
-
+@time_function(logger=app.logger)
 def load_study_allocation(study_case_allocation):
     """
     Load service and deployment if they do not exists and wait for pod running in a thread

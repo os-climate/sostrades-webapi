@@ -406,6 +406,7 @@ def kubernetes_eeb_service_pods_status(pod_identifiers):
         pass  # launch exception
 
     return result
+:
 
 @time_function(logger=app.logger)
 def kubernetes_study_service_pods_status(pod_identifiers):
@@ -416,7 +417,6 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     study_k8_filepath = Config().service_study_server_filepath
 
     if Path(study_k8_filepath).exists() and pod_identifiers is not None:
-
         app.logger.debug(f'pod configuration file found')
         app.logger.debug(f'request pod check config')
         k8_conf = None
@@ -465,7 +465,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     return result
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_complete=True):
     '''
     check pod status
