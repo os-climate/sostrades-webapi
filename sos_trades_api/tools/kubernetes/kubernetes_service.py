@@ -492,16 +492,16 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
         namespace=pod_namespace)
     app.logger.info(f'iterate into pod list to find: {pod_identifiers}')
     for pod in pod_list.items:
-        app.logger.info(f'check request pod service: {pod.metadata.name}')
+        app.logger.debug(f'check request pod service: {pod.metadata.name}')
         if pod.metadata.name in pod_identifiers:
             result.update({pod.metadata.name: pod.status.phase})
-            app.logger.info(f'found pod service: {pod.metadata.name}')
+            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
         elif not is_pod_name_complete:
             # check pod name start with study-server-id- (the "-" is to prevent amalgame with study-server ids
             if pod.metadata.name.startswith(f"{pod_identifiers}-"):
                 result.update({pod.metadata.name: pod.status.phase})
-                app.logger.info(f'found pod service: {pod.metadata.name}')
+                app.logger.debug(f'found pod service: {pod.metadata.name}')
                 break
     app.logger.info(f'request pod service found: {result}')
     return result
