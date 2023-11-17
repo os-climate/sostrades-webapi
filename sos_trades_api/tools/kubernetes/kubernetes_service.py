@@ -247,8 +247,10 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
         resp = core_api_instance.create_namespaced_service(body=k8_service, namespace=namespace)
         print(resp)
         # wait while service is created
-        count = 0
-        while count < 60:
+        interval_s = 1
+        max_s = 600
+        current_waiting_s = 0
+        while current_waiting_s < max_s:
             try:
                 service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
                 print(service)
@@ -260,8 +262,8 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
                     raise api_exception
             #if service.status.phase != 'Pending':
             #        break
-            time.sleep(10)
-            count += 1
+            time.sleep(interval_s)
+            current_waiting_s += interval_s
     else:
         print('service already exist')
 
@@ -293,8 +295,10 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         resp = apps_api_instance.create_namespaced_deployment(body=k8_deploy, namespace=namespace)
         print(resp)
         # wait while deployment is created
-        count = 0
-        while count < 60:
+        interval_s = 1
+        max_s = 600
+        current_waiting_s = 0
+        while current_waiting_s < max_s:
             try:
                 resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
                 print(resp.status)
@@ -304,15 +308,17 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
                     print(f'Not found')
                 else:
                     raise api_exception
-            time.sleep(10)
-            count += 1
+            time.sleep(interval_s)
+            current_waiting_s += interval_s
     else:
         print('deployement already exist')
 
     #check pod created
     pod_status = ""
-    count = 0
-    while count < 60:
+    interval_s = 1
+    max_s = 600
+    current_waiting_s = 0
+    while current_waiting_s < max_s:
         pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
 
         for pod in pod_list.items:
@@ -322,8 +328,8 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         if pod_status == "Running":
             break
 
-        time.sleep(10)
-        count += 1
+        time.sleep(interval_s)
+        current_waiting_s += interval_s
     if pod_status != "Running":
         raise ExecutionEngineKuberneteError("Pod not starting")
 
