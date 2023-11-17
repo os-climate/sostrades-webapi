@@ -170,6 +170,7 @@ class StudyCaseCache:
             ):
                 try:
                     self.__lock_cache[study_case_identifier].acquire()
+                    self.__study_case_dict[study_case_identifier].detach_logger()
                     self.__add_study_case_in_cache_from_database(study_case_identifier)
                 except Exception as error:
                     print(error)
