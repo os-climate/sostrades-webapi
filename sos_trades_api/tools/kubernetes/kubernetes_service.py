@@ -406,7 +406,7 @@ def kubernetes_eeb_service_pods_status(pod_identifiers):
         pass  # launch exception
 
     return result
-:
+
 
 @time_function(logger=app.logger)
 def kubernetes_study_service_pods_status(pod_identifiers):
