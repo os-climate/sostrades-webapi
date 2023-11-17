@@ -416,21 +416,21 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     if Path(study_k8_filepath).exists() and pod_identifiers is not None:
 
         app.logger.debug(f'pod configuration file found')
-        app.logger.info(f'request pod check config')
+        app.logger.debug(f'request pod check config')
         k8_conf = None
         with open(study_k8_filepath) as f:
             yaml_content = Template(f.read())
             yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
             k8_conf = yaml.safe_load(yaml_content)
         if k8_conf is not None:
-            app.logger.info(f'request pod config found: {study_k8_filepath}')
+            app.logger.debug(f'request pod config found: {study_k8_filepath}')
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
             
             if len(result) > 0:
                 status = list(result.values())[0]
-                app.logger.info(f'request status found: {status}')
+                app.logger.debug(f'request status found: {status}')
                 if status == "Running":
                     result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
@@ -439,18 +439,17 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                     ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
                     study_response_data = ""
                     try:
-                        app.logger.info(f'ask for request: {study_server_url}')
+                        app.logger.debug(f'ask for request: {study_server_url}')
                         resp = requests.request(
                             method='GET', url=study_server_url, verify=ssl_path
                         )
-                        app.logger.info(f'request pod {pod_identifiers}:{resp}')
+                        app.logger.debug(f'request pod {pod_identifiers}:{resp}')
 
                         if resp.status_code == 200:
                             study_response_data = resp.json()
 
-                    except:
-                        app.logger.info(f'error for request: An exception occurs when trying to reach study server')
-                        app.logger.exception('An exception occurs when trying to reach study server')
+                    except Exception as e:
+                        app.logger.error('An exception occurs when trying to reach study server', exc_info=e)
 
                     if study_response_data == "pong":
                         result = "DONE"
@@ -460,7 +459,7 @@ def kubernetes_study_service_pods_status(pod_identifiers):
 
     else:
         pass  # launch exception
-    app.logger.info(f'study response data:{result}')
+    app.logger.debug(f'study response data:{result}')
     return result
 
 
@@ -490,7 +489,7 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
 
     pod_list = api_instance.list_namespaced_pod(
         namespace=pod_namespace)
-    app.logger.info(f'iterate into pod list to find: {pod_identifiers}')
+    app.logger.debug(f'iterate into pod list to find: {pod_identifiers}')
     for pod in pod_list.items:
         app.logger.debug(f'check request pod service: {pod.metadata.name}')
         if pod.metadata.name in pod_identifiers:
@@ -503,7 +502,7 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
                 result.update({pod.metadata.name: pod.status.phase})
                 app.logger.debug(f'found pod service: {pod.metadata.name}')
                 break
-    app.logger.info(f'request pod service found: {result}')
+    app.logger.debug(f'request pod service found: {result}')
     return result
 
 
