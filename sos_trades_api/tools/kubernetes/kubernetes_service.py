@@ -219,7 +219,7 @@ def kubernetes_service_allocate(pod_name):
     kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_study_server_service_create(pod_name, core_api_instance):
     service_k8_filepath = Config().service_study_server_filepath
 
@@ -268,7 +268,7 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
         print('service already exist')
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance):
     deployment_k8_filepath = Config().deployment_study_server_filepath
 
