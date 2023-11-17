@@ -88,7 +88,6 @@ def allocation_for_new_study_case():
 
 @app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['POST'])
 @auth_required
-@time_function(logger=app.logger)
 def allocation_for_existing_study_case(study_case_identifier: int):
     user = session['user']
 
