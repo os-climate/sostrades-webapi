@@ -83,8 +83,9 @@ def get_allocation_status(pod_name):
         elif pod_status == "IN_PROGRESS":
             status = StudyCaseAllocation.IN_PROGRESS
         else:
-            app.logger.info(f'exception raised pod not found')
-            raise Exception("pod not found")
+            exc = Exception("pod not found")
+            app.logger.error(f'exception raised pod not found', exc_info = exc)
+            raise exc
     else:
         status = StudyCaseAllocation.DONE
     app.logger.info(f'pod returned status: {status}')
