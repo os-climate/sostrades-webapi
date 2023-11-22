@@ -33,7 +33,6 @@ import logging
 import os
 from os.path import dirname, join
 import time
-logging.basicConfig(level=logging.INFO)
 START_TIME = 'start_time'
 first_line_time = time.time()
 
