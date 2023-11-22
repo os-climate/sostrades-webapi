@@ -35,6 +35,7 @@ from os.path import dirname, join
 import time
 
 START_TIME = 'start_time'
+first_line_time = time.time()
 
 # Create  flask server and set local configuration
 server_name = __name__
@@ -92,8 +93,8 @@ try:
         app.logger.setLevel(logging.DEBUG)
         logging.getLogger('engineio.server').setLevel(logging.DEBUG)
 
-    app.logger.info(
-        f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
