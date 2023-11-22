@@ -508,7 +508,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 # Add file to parameters_to_save
                 parameters_to_save.append(
                     {'variableId': file_info[file.filename]['variable_id'],
-                     'columns_to_deleted': column_to_delete_str,
+                     'columnDeleted': column_to_delete_str,
                      'newValue': value,
                      'namespace': file_info[file.filename]['namespace'],
                      'discipline': file_info[file.filename]['discipline'],
@@ -645,15 +645,14 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         add_change_db(new_notification_id,
                                       parameter['variableId'],
                                       parameter_dm_data_dict['type'],
-                                      parameter['columns_to_deleted'],
+                                      parameter['columnDeleted'],
                                       parameter['changeType'],
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
                                       None,
                                       datetime.now())
                     except Exception as error:
-                        app.logger.exception(
-                            'Study change database insertion error')
+                        app.logger.exception(f'Study change database insertion error: {error}')
                 if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
                     connectors[parameter['variableId']] = value
                 else:
