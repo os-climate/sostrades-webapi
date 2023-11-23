@@ -17,7 +17,7 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Visualisation Functions
 """
-from sos_trades_api.server.base_server import study_case_cache
+from sos_trades_api.server.base_server import study_case_cache, app
 from sos_trades_api.tools.visualisation.execution_workflow_graph import SoSExecutionWorkflow
 from sos_trades_api.controllers.sostrades_data.ontology_controller import generate_n2_matrix
 from sos_trades_api.tools.visualisation.interface_diagram import InterfaceDiagramGenerator
@@ -37,8 +37,7 @@ def get_execution_sequence_graph_data(study_id):
     """
     Retrieve study case, execution sequence graph data
     """
-    study_manager = study_case_cache.get_study_case(
-        study_id, False, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, False, logger=app.logger)
 
     GEMS_graph = study_manager.execution_engine.root_process.coupling_structure.graph
 
@@ -63,7 +62,7 @@ def get_n2_diagram_graph_data(study_id):
     if not study_case_cache.is_study_case_cached(study_id):
         raise VisualisationError('Study case has to be loaded first before requesting for n2 diagram')
 
-    study_case_manager = study_case_cache.get_study_case(study_id, False, False)
+    study_case_manager = study_case_cache.get_study_case(study_id, False, False, logger=app.logger)
 
     return generate_n2_matrix(study_case_manager)
 
@@ -71,8 +70,7 @@ def get_interface_diagram_data(study_id):
     """
     Retrieve study case, interface diagram data
     """
-    study = study_case_cache.get_study_case(
-        study_id, False, False)
+    study = study_case_cache.get_study_case(study_id, False, False, logger=app.logger)
 
     # interface diagram generation
     interface_diagram= InterfaceDiagramGenerator(study)

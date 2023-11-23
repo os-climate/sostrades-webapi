@@ -135,11 +135,11 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     binary_buffer = bytearray()
     buffer_size = 4096
 
-    app.logger.info(f"Opening log file {file_name}.")
+    app.logger.debug(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
     with open(file_name, 'rb') as file_object:
-        app.logger.info(f"Log file opened {file_name}.")
+        app.logger.debug(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
         file_object.seek(0, os.SEEK_END)
         file_size = file_object.tell()
@@ -176,5 +176,5 @@ def file_tail(file_name, line_count, encoding="utf-8"):
         # Trim aditionnal lines
         lines = lines[-line_count:]
     
-    app.logger.info(f"Done parsing logs {file_name}.")
+    app.logger.debug(f"Done parsing logs {file_name}.")
     return lines

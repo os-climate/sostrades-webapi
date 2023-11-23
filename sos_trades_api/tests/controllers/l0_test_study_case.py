@@ -207,8 +207,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 study_test, 'Unable to retrieve study case created for test')
 
-            study_manager = study_case_cache.get_study_case(
-                study_test.id, False)
+            study_manager = study_case_cache.get_study_case(study_test.id, False)
 
             loaded_study = load_study_case(
                 study_test.id, AccessRights.MANAGER, self.test_user_id)
@@ -305,8 +304,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             ]
             columns_to_delete = []
 
-            study_manager = study_case_cache.get_study_case(
-                study_test.id, False)
+            study_manager = study_case_cache.get_study_case(study_test.id, False)
 
             # Wait in order to force modification date change (test failed on
             # too performant machine)
@@ -362,8 +360,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 user_test, 'Unable to retrieve user_test, check migrations')
 
-            study_manager = study_case_cache.get_study_case(
-                study_csv_test.id, False)
+            study_manager = study_case_cache.get_study_case(study_csv_test.id, False)
 
             # Wait in order to force modification date change (test failed on
             # too performant machine)
@@ -545,8 +542,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
             ]
 
-            study_manager = study_case_cache.get_study_case(
-                study_test.id, False)
+            study_manager = study_case_cache.get_study_case(study_test.id, False)
             columns_to_delete = []
             # updating study case
             update_study_parameters(
@@ -654,8 +650,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 StudyCase.id == self.test_study_clear_error_id).first()
             self.assertIsNotNone(study_clear_error_test)
 
-            study_manager = study_case_cache.get_study_case(
-                study_clear_error_test.id, False)
+            study_manager = study_case_cache.get_study_case(study_clear_error_test.id, False)
 
             user_test = User.query.filter(User.id == self.test_user_id).first()
             self.assertIsNotNone(user_test)
@@ -838,8 +833,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 new_study_case.id, study_test.id, self.test_user_id)
             study_case_copy_id = study_case_copy.id
             # wait end of study case creation
-            study_manager = study_case_cache.get_study_case(
-                study_case_copy_id, False)
+            study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
             stop = False
             counter = 0

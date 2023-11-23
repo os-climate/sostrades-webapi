@@ -26,7 +26,6 @@ from sos_trades_api.models.database_models import (
     Group,
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
@@ -207,7 +206,6 @@ class StudyCaseAccess(ProcessAccess):
             elif current_access_rights.access_right == AccessRights.RESTRICTED_VIEWER:
                 new_study_dto.is_restricted_viewer = True
 
-    @time_function(logger=app.logger)
     def check_user_right_for_study(self, right_type, study_case_identifier):
         """
         Methods that check that the given user right to have a specific right for a specific study
