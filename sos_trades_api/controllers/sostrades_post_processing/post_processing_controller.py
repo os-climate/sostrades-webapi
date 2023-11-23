@@ -8,7 +8,7 @@ Created on March, 2020
 post processing Functions
 """
 
-from sos_trades_api.server.base_server import study_case_cache
+from sos_trades_api.server.base_server import study_case_cache, app
 from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 
@@ -116,7 +116,7 @@ def reset_study_from_cache(study_id):
         study_case_cache.delete_study_case_from_cache(study_id)
 
         # Create the updated one
-        study_manager = study_case_cache.get_study_case(study_id, False)
+        study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
 
         return study_manager
 

@@ -15,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import jsonify, make_response, send_file, session
-from sos_trades_api.tools.code_tools import time_function
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.models.database_models import AccessRights
@@ -122,7 +121,6 @@ def study_case_execution_status(study_id):
 
 @app.route(f'/api/data/calculation/logs/<int:study_case_id>', methods=['GET'])
 @auth_required
-@time_function(logger=app.logger)
 def study_case_logs(study_case_id):
     if study_case_id is not None:
         # Checking if user can access study data

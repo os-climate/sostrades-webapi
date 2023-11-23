@@ -121,8 +121,7 @@ def load_specific_study(study_identifier):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
 
     with app.app_context():
-        study_manager = study_case_cache.get_study_case(
-            study_identifier, False)
+        study_manager = study_case_cache.get_study_case(study_identifier, False, logger=app.logger)
         study_case_manager_loading(study_manager, False, False)
         study_manager.loaded = True
         study_manager.load_in_progress = False
