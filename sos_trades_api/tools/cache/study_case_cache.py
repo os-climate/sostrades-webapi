@@ -75,7 +75,7 @@ class StudyCaseCache:
     Class that manage to store in memory several StudyCaseManager instances
     """
 
-    def __init__(self):
+    def __init__(self, logger=logging.getLogger(__name__)):
         """
         Constructor
         """
@@ -129,7 +129,7 @@ class StudyCaseCache:
                 self.__study_case_manager_dict[study_case.id] = study_case_manager
                 self.__lock_cache[study_case.id] = threading.Lock()
             except Exception as error:
-                print(error)
+                self.logger.error("Error while add_study_case_in_cache_from_values", exc_info=error)
             finally:
                 self.release_study_case(study_case.id)
 
@@ -150,7 +150,7 @@ class StudyCaseCache:
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
 
-    def get_study_case(self, study_case_identifier, with_lock, check_expire=True, logger=logging.getLogger(__name__)):
+    def get_study_case(self, study_case_identifier, with_lock, check_expire=True):
         """
         Retrieve a study case from the cache with option to update it if expired
 
@@ -178,7 +178,7 @@ class StudyCaseCache:
                         self.__study_case_dict[study_case_identifier].detach_logger()
                     self.__add_study_case_in_cache_from_database(study_case_identifier)
                 except Exception as error:
-                    logger.error("Error reloading study", exc_info=error)
+                    self.logger.error("Error reloading study", exc_info=error)
                 finally:
                     self.release_study_case(study_case_identifier)
 
