@@ -228,7 +228,7 @@ def get_study_case_url(study_id: int):
 
     try:
 
-        study_case_cache.get_study_case(study_id, False, logger=app.logger)
+        study_case_cache.get_study_case(study_id, False)
         study_url = f'{app.config.get("SOS_TRADES_FRONT_END_DNS", "")}study/{study_id}'
 
         return make_response(jsonify({"study_url": study_url}), 200)
