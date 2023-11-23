@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2023/11/02 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
-from sos_trades_api.tools.code_tools import file_tail, time_function
+from sos_trades_api.tools.code_tools import file_tail
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -317,7 +317,6 @@ def calculation_status(study_id):
             f'Requested study case (identifier {study_id} does not exist in the database')
 
 
-@time_function(logger=app.logger)
 def calculation_logs(study_case_id, study_case_execution_id=None):
     """
         Retrieve execution logs from file for a given study case

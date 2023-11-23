@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ def get_study_case_url(study_id: int):
 
     try:
 
-        study_case_cache.get_study_case(study_id, False)
+        study_case_cache.get_study_case(study_id, False, logger=app.logger)
         study_url = f'{app.config.get("SOS_TRADES_FRONT_END_DNS", "")}study/{study_id}'
 
         return make_response(jsonify({"study_url": study_url}), 200)

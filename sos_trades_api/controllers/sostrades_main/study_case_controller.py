@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,8 +75,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
     try:
 
-        study_case_manager = study_case_cache.get_study_case(
-            study_case_identifier, False)
+        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False, logger=app.logger)
 
         study_case = None
         with app.app_context():
@@ -198,7 +197,7 @@ def light_load_study_case(study_id, reload=False):
     :type: AccessRights enum
     """
 
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
     study_manager.detach_logger()
     if reload:
         study_manager.study_case_manager_reload_backup_files()
@@ -225,7 +224,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
 
     start_time = time.time()
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
 
     cache_duration = time.time() - start_time
     if reload:
@@ -312,8 +311,7 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
             # mode
             if execution_status == ProxyDiscipline.STATUS_DONE:
                 # launch the loading in background
-                study_manager = study_case_cache.get_study_case(
-                    study_id, False)
+                study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
                 read_only = study_access_right == AccessRights.COMMENTER
                 no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
                 launch_load_study_in_background(
@@ -350,8 +348,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
     :type user_id: integer
     """
     with app.app_context():
-        study_manager_source = study_case_cache.get_study_case(
-            source_study_case_identifier, False)
+        study_manager_source = study_case_cache.get_study_case(source_study_case_identifier, False, logger=app.logger)
 
         # Copy the last study case execution and then update study_id, creation
         # date and request_by.
@@ -390,8 +387,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         result = None
 
         try:
-            study_manager = study_case_cache.get_study_case(
-                study_case.id, False)
+            study_manager = study_case_cache.get_study_case(study_case.id, False, logger=app.logger)
 
             if study_manager.load_status == LoadStatus.NONE:
                 study_manager.load_status = LoadStatus.IN_PROGESS
@@ -467,8 +463,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
     user_id = user.id
 
     try:
-        study_manager = study_case_cache.get_study_case(
-            study_id, True)
+        study_manager = study_case_cache.get_study_case(study_id, True, logger=app.logger)
 
         # Create notification
         if parameters_to_save != [] or files_list != None or columns_to_delete != []:
@@ -508,7 +503,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 # Add file to parameters_to_save
                 parameters_to_save.append(
                     {'variableId': file_info[file.filename]['variable_id'],
-                     'columns_to_deleted': column_to_delete_str,
+                     'columnDeleted': column_to_delete_str,
                      'newValue': value,
                      'namespace': file_info[file.filename]['namespace'],
                      'discipline': file_info[file.filename]['discipline'],
@@ -645,15 +640,14 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         add_change_db(new_notification_id,
                                       parameter['variableId'],
                                       parameter_dm_data_dict['type'],
-                                      parameter['columns_to_deleted'],
+                                      parameter['columnDeleted'],
                                       parameter['changeType'],
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
                                       None,
                                       datetime.now())
                     except Exception as error:
-                        app.logger.exception(
-                            'Study change database insertion error')
+                        app.logger.exception(f'Study change database insertion error: {error}')
                 if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
                     connectors[parameter['variableId']] = value
                 else:
@@ -732,7 +726,7 @@ def get_file_stream(study_id, parameter_key):
         :param: parameter_key, key of the parameter to retrieve
         :type: string
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
     if study_manager.load_status == LoadStatus.LOADED:
         uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
         if uuid_param in study_manager.execution_engine.dm.data_dict:
@@ -764,7 +758,7 @@ def get_study_data_stream(study_id):
         :param: study_id, id of the study to export
         :type: integer
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
 
     try:
         tmp_folder = gettempdir()
@@ -839,7 +833,7 @@ def get_study_data_file_path(study_id) -> str:
     :type study_id: integer
 
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
 
     try:
         data_file_path = study_manager.study_data_file_path
@@ -908,7 +902,7 @@ def copy_study_discipline_data(study_id, discipline_from, discipline_to):
         :param: discipline_to, name of the discipline to update
         :type: string
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, logger=app.logger)
     # Check if each discipline key exisit in the current study case
     if discipline_from in study_manager.execution_engine.dm.disciplines_dict and discipline_to \
             in study_manager.execution_engine.dm.disciplines_dict:

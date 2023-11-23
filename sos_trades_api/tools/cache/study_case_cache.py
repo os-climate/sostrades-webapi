@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/17-2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import threading
+import logging
 
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
@@ -148,7 +150,7 @@ class StudyCaseCache:
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
 
-    def get_study_case(self, study_case_identifier, with_lock, check_expire=True):
+    def get_study_case(self, study_case_identifier, with_lock, check_expire=True, logger=logging.getLogger(__name__)):
         """
         Retrieve a study case from the cache with option to update it if expired
 
@@ -170,9 +172,13 @@ class StudyCaseCache:
             ):
                 try:
                     self.__lock_cache[study_case_identifier].acquire()
+
+                    # Detach logger only for StudyCaseManager
+                    if (isinstance(self.__study_case_dict[study_case_identifier], StudyCaseManager)):
+                        self.__study_case_dict[study_case_identifier].detach_logger()
                     self.__add_study_case_in_cache_from_database(study_case_identifier)
                 except Exception as error:
-                    print(error)
+                    logger.error("Error reloading study", exc_info=error)
                 finally:
                     self.release_study_case(study_case_identifier)
 

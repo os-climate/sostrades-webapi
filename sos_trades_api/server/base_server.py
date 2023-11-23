@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -126,8 +127,7 @@ def load_specific_study(study_identifier):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
 
     with app.app_context():
-        study_manager = study_case_cache.get_study_case(
-            study_identifier, False)
+        study_manager = study_case_cache.get_study_case(study_identifier, False, logger=app.logger)
         study_case_manager_loading(study_manager, False, False)
         study_manager.loaded = True
         study_manager.load_in_progress = False
