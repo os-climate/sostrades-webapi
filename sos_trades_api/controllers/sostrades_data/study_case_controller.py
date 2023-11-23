@@ -150,6 +150,7 @@ def create_study_case_allocation(study_case_identifier):
     study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
 
     if len(study_case_allocations) == 0:
+        app.logger.info('study case create first allocation')
         new_study_case_allocation = create_allocation(study_case_identifier)
 
     else:
@@ -158,6 +159,7 @@ def create_study_case_allocation(study_case_identifier):
     return new_study_case_allocation
 
 
+@time_function(logger=app.logger)
 def load_study_case_allocation(study_case_identifier):
     """
     Load a study case allocation and if server mode is kubernetes, check pod status
@@ -176,6 +178,7 @@ def load_study_case_allocation(study_case_identifier):
             need_reload = True
         else:
             try:
+                app.logger.info('study case check allocation status')
                 study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
                 need_reload = study_case_allocation.status == StudyCaseAllocation.ERROR
             except:
@@ -183,10 +186,12 @@ def load_study_case_allocation(study_case_identifier):
                 need_reload = True
         #if the pod is not launch or accessible, reload pod
         if need_reload:
+            app.logger.info('allocation need reload')
             study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
             load_study_allocation(study_case_allocation)
 
     else:
+        app.logger.info('study case create allocation')
         study_case_allocation = create_allocation(study_case_identifier)
 
 

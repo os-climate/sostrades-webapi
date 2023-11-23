@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/17-2023/11/20 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +27,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
     get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study)
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 

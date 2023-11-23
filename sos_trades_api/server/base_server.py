@@ -34,8 +34,8 @@ import logging
 import os
 from os.path import dirname, join
 import time
-
 START_TIME = 'start_time'
+first_line_time = time.time()
 
 # Create  flask server and set local configuration
 server_name = __name__
@@ -57,11 +57,13 @@ ENVIRONMENT = 'ENVIRONMENT'
 UNIT_TEST = 'UNIT_TEST'
 
 try:
+    app.logger.info('Loading configuration')
     config = Config()
     config.check()
     flask_config_dict = config.get_flask_config_dict()
     app.config.update(flask_config_dict)
 
+    app.logger.info('Connecting to database')
     # Register database on app
     db = SQLAlchemy()
     db.init_app(app)
@@ -69,12 +71,14 @@ try:
     # As flask application and database are initialized, then import
     # sos_trades_api dependencies
 
+    app.logger.info('Importing dependencies')
     import sos_trades_api
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
     from sos_trades_api.models.database_models import User, Group, UserProfile
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 
+    app.logger.info('Adding application logger handler')
     app_mysql_handler = ApplicationMySQLHandler(
         db=config.logging_database_data)
     app_mysql_handler.setFormatter(ApplicationRequestFormatter(
@@ -83,6 +87,7 @@ try:
 
     os.environ['FLASK_ENV'] = app.config['ENVIRONMENT']
 
+    app.logger.info('Configuring logger')
     if os.environ['FLASK_ENV'] == PRODUCTION:
         logging.basicConfig(level=logging.INFO)
 
@@ -93,8 +98,8 @@ try:
         app.logger.setLevel(logging.DEBUG)
         logging.getLogger('engineio.server').setLevel(logging.DEBUG)
 
-    app.logger.info(
-        f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
