@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from datetime import datetime, timedelta
 import threading
 import logging
 
@@ -75,6 +76,9 @@ class StudyCaseCache:
     Class that manage to store in memory several StudyCaseManager instances
     """
 
+    # elapsed time between two saving of the last active date of a study in seconds
+    ACTIVE_DATE_ELAPSED_WRITTING_TIME = 5
+
     def __init__(self, logger=logging.getLogger(__name__)):
         """
         Constructor
@@ -82,6 +86,7 @@ class StudyCaseCache:
         self.__study_case_dict = {}
         self.__study_case_manager_dict = {}
         self.__lock_cache = {}
+        self.__last_alive_date = {}
 
     def is_study_case_cached(self, study_case_identifier):
         """
@@ -147,6 +152,7 @@ class StudyCaseCache:
         self.__study_case_dict[study_case_manager.study.id] = StudyCaseReference(
             study_case_manager.study.id, study_case_manager.study.modification_date
         )
+        
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
 
@@ -212,3 +218,20 @@ class StudyCaseCache:
         if self.is_study_case_cached(study_identifier):
             self.__study_case_dict[study_identifier].modification_date = modification_date
             self.release_study_case(study_identifier)
+
+    def update_study_case_last_active_date(self, study_case_id)->bool:
+        '''
+        update study case last active date in dict only if there is more than an elapsed time between 2 update
+
+        '''
+        has_been_updated = False
+        delta_time = datetime.now() - timedelta(seconds=self.ACTIVE_DATE_ELAPSED_WRITTING_TIME)
+        #update the last active date if it is more than 5s elapsed time
+        if (study_case_id not in self.__last_alive_date 
+            or self.__last_alive_date[study_case_id] < delta_time):
+            self.__last_alive_date[study_case_id] = datetime.now()
+            has_been_updated = True
+        return has_been_updated
+
+    def get_saved_active_study(self):
+        return self.__last_alive_date.keys()

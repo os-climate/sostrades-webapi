@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/06-2023/11/20 Copyright 2023 Capgemini
+Modifications on 2023/11/06-2023/11/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ def create_allocation(study_case_identifier):
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
     
-    new_study_case_allocation.kubernetes_pod_name = f'sostrades-study-server-{study_case_identifier}'
+    new_study_case_allocation.kubernetes_pod_name = get_study_pod_name(study_case_identifier)
     app.logger.info(f'study case create pod name: {new_study_case_allocation.kubernetes_pod_name}')     
     db.session.add(new_study_case_allocation)
     db.session.commit()
@@ -50,6 +50,8 @@ def create_allocation(study_case_identifier):
 
     return new_study_case_allocation
 
+def get_study_pod_name(study_case_identifier):
+    return f'sostrades-study-server-{study_case_identifier}'
 
 @time_function(logger=app.logger)
 def load_study_allocation(study_case_allocation):
