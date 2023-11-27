@@ -983,7 +983,7 @@ def check_study_is_still_active_or_kill_pod():
             inactive_studies = []
             app.logger.info(f'Start check studies')
             try:
-                inactive_studies =  check_studies_last_active_date(last_hours)
+                inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
             except Exception as ex:
                 app.logger.error(f'Error wile checking the last active date in file: {ex}')
                 raise ex

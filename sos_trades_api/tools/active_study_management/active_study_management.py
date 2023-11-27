@@ -24,7 +24,7 @@ ACTIVE_STUDY_FILE_NAME = "active_study_"
 DATETIME_STR_FORMAT = '%m/%d/%y %H:%M:%S'
 
 
-def check_studies_last_active_date( delay_hr):
+def check_studies_last_active_date( delay_hr, logger):
     '''
     Read the active_study_date if it exists into the local folder file name active_study_{study_id}
     Check if the date is past a certain delay in hours from the current date
@@ -45,6 +45,7 @@ def check_studies_last_active_date( delay_hr):
             # read the file and get the last_active date
             with open(file, "r") as f:
                 last_active_date_str = f.readline()
+                logger.info(f'written date:{last_active_date_str}')
                 last_active_date = datetime.strptime(last_active_date_str, DATETIME_STR_FORMAT)
 
 
