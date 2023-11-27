@@ -970,13 +970,17 @@ def check_study_is_still_active_or_kill_pod():
     Check that the last date of the study is alive is less than a timespan last_hours in hours defined in the request
     If not, the allocation, service and deployment of the current study is deleted
     """
-    last_hours = Config().study_pod_delay
-    
-    if Config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
-        #delete allocation in db
-        with app.app_context():
+    with app.app_context():
+        app.logger.info(f'Start check on active study pod')
+        last_hours = Config().study_pod_delay
+        app.logger.info(f'Start check on active study pod since {last_hours} hour(s)')
+        app.logger.info(f'Server mode: {Config.server_mode}')
+        
+        if Config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
+            #delete allocation in db
+        
             inactive_studies = []
-            app.logger.info(f'Start check on active study pod since {last_hours} hour(s)')
+            app.logger.info(f'Start check studies')
             try:
                 inactive_studies =  check_studies_last_active_date(last_hours)
             except Exception as ex:
