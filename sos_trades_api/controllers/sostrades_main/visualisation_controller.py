@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,8 +38,7 @@ def get_execution_sequence_graph_data(study_id):
     """
     Retrieve study case, execution sequence graph data
     """
-    study_manager = study_case_cache.get_study_case(
-        study_id, False, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, False)
 
     GEMS_graph = study_manager.execution_engine.root_process.coupling_structure.graph
 
@@ -71,8 +71,7 @@ def get_interface_diagram_data(study_id):
     """
     Retrieve study case, interface diagram data
     """
-    study = study_case_cache.get_study_case(
-        study_id, False, False)
+    study = study_case_cache.get_study_case(study_id, False, False)
 
     # interface diagram generation
     interface_diagram= InterfaceDiagramGenerator(study)

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/02 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import jsonify
+from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
+from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments, get_study_pod_name
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
 
@@ -49,7 +51,7 @@ from sos_trades_api.server.base_server import db, app, study_case_cache
 
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
-from sos_trades_api.models.database_models import StudyCase, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
+from sos_trades_api.models.database_models import StudyCase, StudyCaseAllocation, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
     ReferenceStudy
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
@@ -75,8 +77,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
     try:
 
-        study_case_manager = study_case_cache.get_study_case(
-            study_case_identifier, False)
+        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
 
         study_case = None
         with app.app_context():
@@ -312,8 +313,7 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
             # mode
             if execution_status == ProxyDiscipline.STATUS_DONE:
                 # launch the loading in background
-                study_manager = study_case_cache.get_study_case(
-                    study_id, False)
+                study_manager = study_case_cache.get_study_case(study_id, False)
                 read_only = study_access_right == AccessRights.COMMENTER
                 no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
                 launch_load_study_in_background(
@@ -350,8 +350,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
     :type user_id: integer
     """
     with app.app_context():
-        study_manager_source = study_case_cache.get_study_case(
-            source_study_case_identifier, False)
+        study_manager_source = study_case_cache.get_study_case(source_study_case_identifier, False)
 
         # Copy the last study case execution and then update study_id, creation
         # date and request_by.
@@ -390,8 +389,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         result = None
 
         try:
-            study_manager = study_case_cache.get_study_case(
-                study_case.id, False)
+            study_manager = study_case_cache.get_study_case(study_case.id, False)
 
             if study_manager.load_status == LoadStatus.NONE:
                 study_manager.load_status = LoadStatus.IN_PROGESS
@@ -467,8 +465,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
     user_id = user.id
 
     try:
-        study_manager = study_case_cache.get_study_case(
-            study_id, True)
+        study_manager = study_case_cache.get_study_case(study_id, True)
 
         # Create notification
         if parameters_to_save != [] or files_list != None or columns_to_delete != []:
@@ -508,7 +505,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 # Add file to parameters_to_save
                 parameters_to_save.append(
                     {'variableId': file_info[file.filename]['variable_id'],
-                     'columns_to_deleted': column_to_delete_str,
+                     'columnDeleted': column_to_delete_str,
                      'newValue': value,
                      'namespace': file_info[file.filename]['namespace'],
                      'discipline': file_info[file.filename]['discipline'],
@@ -645,15 +642,14 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         add_change_db(new_notification_id,
                                       parameter['variableId'],
                                       parameter_dm_data_dict['type'],
-                                      parameter['columns_to_deleted'],
+                                      parameter['columnDeleted'],
                                       parameter['changeType'],
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
                                       None,
                                       datetime.now())
                     except Exception as error:
-                        app.logger.exception(
-                            'Study change database insertion error')
+                        app.logger.exception(f'Study change database insertion error: {error}')
                 if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
                     connectors[parameter['variableId']] = value
                 else:
@@ -959,3 +955,60 @@ def clean_database_with_disabled_study_case(logger=None):
         logger.info(f'Study case identifier to remove: {study_identifiers}')
 
         delete_study_cases(study_identifiers)
+
+def save_study_is_active(study_id):
+    '''
+    Save the date of the last use of the study in case of micro-service server mode
+    '''
+    if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
+        if study_case_cache.update_study_case_last_active_date(study_id):
+            save_study_last_active_date(study_id, datetime.now())
+    
+
+def check_study_is_still_active_or_kill_pod():
+    """
+    Check that the last date of the study is alive is less than a timespan last_hours in hours defined in the request
+    If not, the allocation, service and deployment of the current study is deleted
+    """
+    with app.app_context():
+        config = Config()
+        app.logger.info(f'Start check on active study pod')
+        last_hours = config.study_pod_delay
+        app.logger.info(f'Start check on active study pod since {last_hours} hour(s)')
+        app.logger.info(f'Server mode: {config.server_mode}')
+        
+        if config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
+            #delete allocation in db
+        
+            inactive_studies = []
+            app.logger.info(f'Start check studies')
+            try:
+                inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
+            except Exception as ex:
+                app.logger.error(f'Error wile checking the last active date in file: {ex}')
+                raise ex
+
+            for study_id in inactive_studies:
+                app.logger.info(f'Delete pod and allocation for study {study_id}')
+
+                #delete the file
+                delete_study_last_active_file(study_id)
+                
+                #get pod name
+                pod_name = [get_study_pod_name(study_id)]
+
+                # get associated allocation to the study
+                allocation = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_id).first()
+
+                # delete allocation in db
+                if allocation is not None:
+                    try:
+                        db.session.delete(allocation)
+                        db.session.commit()
+                    except Exception as ex:
+                        app.logger.error(f'An error occured while deleting Alocation from db : {ex}')
+                        db.session.rollback()
+                        raise ex
+            
+                #delete service and deployment (that will delete the pod)
+                delete_study_server_services_and_deployments(pod_name)

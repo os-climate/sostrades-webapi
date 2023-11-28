@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/02 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2023/11/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream,
+    create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
@@ -365,3 +365,28 @@ def load_study_data_in_read_only_mode_or_not(study_id):
         resp = make_response(loadedStudyJson, 200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
+@app.route(f'/api/main/study-case/<int:study_id>/is-active', methods=['POST'])
+@auth_required
+def store_study_last_active_date(study_id):
+    """
+    Save the date of the last user activity on the study
+    """
+    if study_id is not None:
+        user = session['user']
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve this information about this study case')
+        
+
+        save_study_is_active(study_id)
+        
+        resp = make_response(jsonify('OK'),200)
+        return resp
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
+

@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,6 +61,9 @@ class Config:
     CONFIG_EEB_CONFIGURATION_FILE = "EEB_PATH"
     CONFIG_RSA_ROOT_DIR = "SOS_TRADES_RSA"
 
+    CONFIG_STUDY_POD_DELAY = "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY"
+    CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
+
     def __init__(self):
         """Constructor
         """
@@ -96,6 +100,9 @@ class Config:
         self.__sql_alchemy_server_uri = ''
         self.__sql_alchemy_full_uri = ''
         self.__secret_key = ''
+
+        self.__study_pod_delay = None
+        self.__local_folder_path = ''
 
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
@@ -149,8 +156,8 @@ class Config:
                 except Exception as error:
                     raise ValueError(
                         f"Configuration variable '{self.CONFIG_DATA_ROOT_DIR}' values is not a valid folder path : {self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)}\n{error}")
-            else:
-                self.__data_root_dir = self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)
+            
+            self.__data_root_dir = self.__server_config_file.get(self.CONFIG_DATA_ROOT_DIR)
 
         return self.__data_root_dir
 
@@ -173,8 +180,8 @@ class Config:
                 except Exception as error:
                     raise ValueError(
                         f"Configuration variable '{self.CONFIG_REFERENCE_ROOT_DIR}' values is not a valid folder path : {self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)}\n{error}")
-            else:
-                self.__reference_root_dir = self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)
+            
+            self.__reference_root_dir = self.__server_config_file.get(self.CONFIG_REFERENCE_ROOT_DIR)
 
         return self.__reference_root_dir
 
@@ -346,6 +353,43 @@ class Config:
                 self.__rsa_private_key = join(self.__server_config_file.get(self.CONFIG_RSA_ROOT_DIR), 'private_key.pem')
 
         return self.__rsa_private_key
+    
+    @property
+    def study_pod_delay(self):
+        """study pod delay (get)
+        mandatory in kuberneted server mode
+        Give the delay to keep a study pod inactive befor truning it down
+        Necessary only in kuberneted server mode
+
+        :return float
+        :raise ValueError exception
+        """
+        if self.__study_pod_delay is None:
+            if self.__server_config_file.get(self.CONFIG_STUDY_POD_DELAY) is not None:
+                self.__study_pod_delay = self.__server_config_file.get(self.CONFIG_STUDY_POD_DELAY)
+
+        return self.__study_pod_delay
+
+    @property
+    def local_folder_path(self):
+        """local folder path (get)
+        Give the path to the local folder (usefull in micro-service mode)
+        Used to store the file with the study last alive date
+
+        :return string
+        :raise ValueError exception
+        """
+        if self.__local_folder_path == '':
+            if self.__server_config_file.get(self.CONFIG_LOCAL_FOLDER_PATH) is not None:
+                self.__local_folder_path = self.__server_config_file.get(self.CONFIG_LOCAL_FOLDER_PATH)
+                if not Path(self.__server_config_file.get(self.CONFIG_LOCAL_FOLDER_PATH)).exists():
+                    try:
+                        os.makedirs(self.__server_config_file.get(self.CONFIG_LOCAL_FOLDER_PATH), exist_ok=True)
+                    except Exception as error:
+                        raise ValueError(
+                            f"Configuration variable '{self.CONFIG_LOCAL_FOLDER_PATH}' values is not a valid folder path : {self.__server_config_file.get(self.CONFIG_LOCAL_FOLDER_PATH)}\n{error}")
+            
+        return self.__local_folder_path
 
     @property
     def sql_alchemy_database_name(self):

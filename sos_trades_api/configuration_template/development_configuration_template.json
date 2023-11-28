@@ -88,6 +88,12 @@
   "SOS_TRADES_REFERENCES": "/sostdata/references",
   "EEB_PATH": "/config/conf/eeb.yaml",
   "SOS_TRADES_RSA": "/config/rsa-key-pair/",
-  "SAML_V2_METADATA_FOLDER": "/config/saml-v2/"
+  "SAML_V2_METADATA_FOLDER": "/config/saml-v2/",
+
+  //Only used in "kubernetes" SOS_TRADES_SERVER_MODE
+  // Path to a local directory in the pod
+  "SOS_TRADES_LOCAL_FOLDER": "/tmp",
+  //delay to desactivate inactive study pod
+  "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY": 48
 
 }

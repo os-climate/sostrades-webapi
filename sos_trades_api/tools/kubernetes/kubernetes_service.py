@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/07/19-2023/11/02 Copyright 2023 Capgemini
+Modifications on 2023/07/19-2023/11/20 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import uuid
 import yaml
 import time
 import requests
+
+from sos_trades_api.tools.code_tools import time_function
 
 
 class ExecutionEngineKuberneteError(Exception):
@@ -211,11 +213,13 @@ def kubernetes_service_allocate(pod_name):
     core_api_instance = client.CoreV1Api(client.ApiClient())
     apps_api_instance = client.AppsV1Api(client.ApiClient())
 
+    app.logger.info(f'allocation create service: {pod_name}')     
     kubernetes_study_server_service_create(pod_name, core_api_instance)
+    app.logger.info(f'allocation create deployment: {pod_name}')     
     kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance)
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_study_server_service_create(pod_name, core_api_instance):
     service_k8_filepath = Config().service_study_server_filepath
 
@@ -243,8 +247,10 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
         resp = core_api_instance.create_namespaced_service(body=k8_service, namespace=namespace)
         print(resp)
         # wait while service is created
-        count = 0
-        while count < 60:
+        interval_s = 1
+        max_s = 600
+        current_waiting_s = 0
+        while current_waiting_s < max_s:
             try:
                 service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
                 print(service)
@@ -256,13 +262,13 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
                     raise api_exception
             #if service.status.phase != 'Pending':
             #        break
-            time.sleep(10)
-            count += 1
+            time.sleep(interval_s)
+            current_waiting_s += interval_s
     else:
         print('service already exist')
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_api_instance):
     deployment_k8_filepath = Config().deployment_study_server_filepath
 
@@ -289,8 +295,10 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         resp = apps_api_instance.create_namespaced_deployment(body=k8_deploy, namespace=namespace)
         print(resp)
         # wait while deployment is created
-        count = 0
-        while count < 60:
+        interval_s = 1
+        max_s = 600
+        current_waiting_s = 0
+        while current_waiting_s < max_s:
             try:
                 resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
                 print(resp.status)
@@ -300,15 +308,17 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
                     print(f'Not found')
                 else:
                     raise api_exception
-            time.sleep(10)
-            count += 1
+            time.sleep(interval_s)
+            current_waiting_s += interval_s
     else:
         print('deployement already exist')
 
     #check pod created
     pod_status = ""
-    count = 0
-    while count < 60:
+    interval_s = 1
+    max_s = 600
+    current_waiting_s = 0
+    while current_waiting_s < max_s:
         pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
 
         for pod in pod_list.items:
@@ -318,8 +328,8 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         if pod_status == "Running":
             break
 
-        time.sleep(10)
-        count += 1
+        time.sleep(interval_s)
+        current_waiting_s += interval_s
     if pod_status != "Running":
         raise ExecutionEngineKuberneteError("Pod not starting")
 
@@ -403,8 +413,9 @@ def kubernetes_eeb_service_pods_status(pod_identifiers):
 
     return result
 
-def kubernetes_study_service_pods_status(pod_identifiers):
 
+@time_function(logger=app.logger)
+def kubernetes_study_service_pods_status(pod_identifiers):
     result = None
 
     # Retrieve the kubernetes configuration file regarding execution
@@ -412,39 +423,41 @@ def kubernetes_study_service_pods_status(pod_identifiers):
     study_k8_filepath = Config().service_study_server_filepath
 
     if Path(study_k8_filepath).exists() and pod_identifiers is not None:
-
         app.logger.debug(f'pod configuration file found')
-
+        app.logger.debug(f'request pod check config')
         k8_conf = None
         with open(study_k8_filepath) as f:
             yaml_content = Template(f.read())
             yaml_content = yaml_content.render(service_name="svc", pod_name=pod_identifiers)
             k8_conf = yaml.safe_load(yaml_content)
         if k8_conf is not None:
-
+            app.logger.debug(f'request pod config found: {study_k8_filepath}')
             # Retrieve pod configuration
             pod_namespace = k8_conf['metadata']['namespace']
             result = kubernetes_service_pods_status(pod_identifiers, pod_namespace, False)
+            
             if len(result) > 0:
                 status = list(result.values())[0]
-
+                app.logger.debug(f'request status found: {status}')
                 if status == "Running":
                     result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
                     port = k8_conf['spec']['ports'][0]["port"]
-                    study_server_url = f"https://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
+                    study_server_url = f"http://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
                     ssl_path = app.config['INTERNAL_SSL_CERTIFICATE']
                     study_response_data = ""
                     try:
+                        app.logger.debug(f'ask for request: {study_server_url}')
                         resp = requests.request(
                             method='GET', url=study_server_url, verify=ssl_path
                         )
+                        app.logger.debug(f'request pod {pod_identifiers}:{resp}')
 
                         if resp.status_code == 200:
                             study_response_data = resp.json()
 
-                    except:
-                        app.logger.exception('An exception occurs when trying to reach study server')
+                    except Exception as e:
+                        app.logger.error('An exception occurs when trying to reach study server', exc_info=e)
 
                     if study_response_data == "pong":
                         result = "DONE"
@@ -454,11 +467,11 @@ def kubernetes_study_service_pods_status(pod_identifiers):
 
     else:
         pass  # launch exception
-
+    app.logger.debug(f'study response data:{result}')
     return result
 
 
-
+@time_function(logger=app.logger)
 def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_complete=True):
     '''
     check pod status
@@ -484,17 +497,20 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
 
     pod_list = api_instance.list_namespaced_pod(
         namespace=pod_namespace)
-
+    app.logger.debug(f'iterate into pod list to find: {pod_identifiers}')
     for pod in pod_list.items:
-
+        app.logger.debug(f'check request pod service: {pod.metadata.name}')
         if pod.metadata.name in pod_identifiers:
             result.update({pod.metadata.name: pod.status.phase})
+            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
         elif not is_pod_name_complete:
             # check pod name start with study-server-id- (the "-" is to prevent amalgame with study-server ids
             if pod.metadata.name.startswith(f"{pod_identifiers}-"):
                 result.update({pod.metadata.name: pod.status.phase})
+                app.logger.debug(f'found pod service: {pod.metadata.name}')
                 break
+    app.logger.debug(f'request pod service found: {result}')
     return result
 
 

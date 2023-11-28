@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/11/22-2023/11/23 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,8 +34,8 @@ import logging
 import os
 from os.path import dirname, join
 import time
-
 START_TIME = 'start_time'
+first_line_time = time.time()
 
 # Create  flask server and set local configuration
 server_name = __name__
@@ -46,8 +47,7 @@ app = Flask(server_name)
 app.logger.propagate = False
 
 for handler in app.logger.handlers:
-    handler.setFormatter(logging.Formatter(
-        "[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
+    handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
 
 
 # Env constant
@@ -56,11 +56,13 @@ ENVIRONMENT = 'ENVIRONMENT'
 UNIT_TEST = 'UNIT_TEST'
 
 try:
+    app.logger.info('Loading configuration')
     config = Config()
     config.check()
     flask_config_dict = config.get_flask_config_dict()
     app.config.update(flask_config_dict)
 
+    app.logger.info('Connecting to database')
     # Register database on app
     db = SQLAlchemy()
     db.init_app(app)
@@ -68,12 +70,14 @@ try:
     # As flask application and database are initialized, then import
     # sos_trades_api dependencies
 
+    app.logger.info('Importing dependencies')
     import sos_trades_api
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
     from sos_trades_api.models.database_models import User, Group, UserProfile
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
-
+    
+    app.logger.info('Adding application logger handler')
     app_mysql_handler = ApplicationMySQLHandler(
         db=config.logging_database_data)
     app_mysql_handler.setFormatter(ApplicationRequestFormatter(
@@ -82,18 +86,21 @@ try:
 
     os.environ['FLASK_ENV'] = app.config['ENVIRONMENT']
 
+    app.logger.info('Configuring logger')
     if os.environ['FLASK_ENV'] == PRODUCTION:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
 
         # Remove all trace
         logging.getLogger('engineio.server').setLevel(51)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
         app.logger.setLevel(logging.DEBUG)
         logging.getLogger('engineio.server').setLevel(logging.DEBUG)
 
-    app.logger.info(
-        f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder
     app.json_encoder = CustomJsonEncoder
@@ -104,7 +111,7 @@ except Exception as error:
     exit(-1)
 
 # Register own class for studycase caching
-study_case_cache = StudyCaseCache()
+study_case_cache = StudyCaseCache(logger=app.logger)
 
 # Create authentication token (JWT) manager
 jwt = JWTManager(app)
@@ -121,8 +128,7 @@ def load_specific_study(study_identifier):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
 
     with app.app_context():
-        study_manager = study_case_cache.get_study_case(
-            study_identifier, False)
+        study_manager = study_case_cache.get_study_case(study_identifier, False)
         study_case_manager_loading(study_manager, False, False)
         study_manager.loaded = True
         study_manager.load_in_progress = False
@@ -556,6 +562,11 @@ def clean_all_allocations_method():
         clean_all_allocations_services_and_deployments
     clean_all_allocations_services_and_deployments()
 
+def clean_inactive_study_pods():
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import \
+        check_study_is_still_active_or_kill_pod
+
+    check_study_is_still_active_or_kill_pod()
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -697,6 +708,15 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """  delete all allocations from db and delete services and deployments with kubernetes api
         """
         clean_all_allocations_method()
+    
+    # Add custom command on flask cli to clean inactive allocation, service and
+    # deployment
+    @click.command('clean_inactive_study_pod')
+    @with_appcontext
+    def clean_inactive_study_pod():
+        """  delete inactive current allocation from db and delete service and deployment with kubernetes api
+        """
+        clean_inactive_study_pods()
 
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
@@ -709,6 +729,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(revoke_api_key)
     app.cli.add_command(list_api_key)
     app.cli.add_command(clean_all_allocations)
+    app.cli.add_command(clean_inactive_study_pod)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
