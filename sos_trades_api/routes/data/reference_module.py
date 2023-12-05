@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import request, jsonify, make_response, send_file
+from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_EXECUTION
 
 from werkzeug.exceptions import BadRequest
 from sos_trades_api.server.base_server import app
@@ -32,6 +33,11 @@ def study_case_references():
         return resp
     if request.method == 'POST':
         user = get_authenticated_user()
+        if (not has_access_to(user.user_profile_id, APP_MODULE_EXECUTION)):
+            app.logger.warning(
+                f'Start generation request, user not allowed to generate a reference')
+            raise BadRequest(
+                'You do not have the necessary rights to generate this reference')
 
         repository_name = request.json.get('repository_name', None)
         process_name = request.json.get('process_name', None)

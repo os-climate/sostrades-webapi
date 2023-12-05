@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import jsonify, make_response, send_file, session
+from sos_trades_api.tools.right_management.access_right import APP_MODULE_EXECUTION, check_user_has_no_execution_rights, has_access_to
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.models.database_models import AccessRights
@@ -34,7 +35,8 @@ def study_case_execution(study_id):
         # Verify user has study case authorisation to execute study
         # (Contributor)
         study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+        if (not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id) 
+        or not has_access_to(user.user_profile_id, APP_MODULE_EXECUTION)):
             app.logger.warning(
                 f'Start execution request, user not allowed to execute study case {study_id} ')
             raise BadRequest(
@@ -60,7 +62,8 @@ def study_case_stop(study_id):
         # Verify user has study case authorisation to stop execution of study
         # (Contributor)
         study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+        if (not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id)
+            or not has_access_to(user.user_profile_id, APP_MODULE_EXECUTION)):
             app.logger.warning(
                 f'Stop execution request, user {user.id} is not allowed to execute study case {study_id} ')
             raise BadRequest(

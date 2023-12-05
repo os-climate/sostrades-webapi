@@ -19,6 +19,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for entity right procedures
 """
 
+
 from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 
 
@@ -48,6 +49,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     email = 'user@fake.com'
     user_profile_id = 2
     created_user_id = None
+
 
     # New group
     group_name = 'test_group'
@@ -238,7 +240,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     def test_05_verify_user_authorised_for_resource(self):
         from sos_trades_api.controllers.sostrades_data.entity_right_controller import \
             verify_user_authorised_for_resource
-        from sos_trades_api.models.database_models import Group, User
+        from sos_trades_api.models.database_models import Group, User, UserProfile
+        from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_EXECUTION
         with DatabaseUnitTestConfiguration.app.app_context():
             group_id = (Group.query
                         .filter(Group.name == self.group_name).first()).id
@@ -275,6 +278,22 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                             'test user must be authorized for the resource study case')
             self.assertTrue(test_user_authorised_process,
                             'test user must not be authorized for the resource process')
+
+            # check user is authorized for execution mode
+            profile_no_execution = UserProfile.query.filter(
+                UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
+            if profile_no_execution is not None:
+                
+                #retrieve standard user
+                standard_test_user = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+                
+                # check execution rights  
+                has_right = has_access_to(profile_no_execution.id, APP_MODULE_EXECUTION)
+                self.assertFalse(has_right,'this profile should have no execution right')
+                
+                has_right = has_access_to(standard_test_user.user_profile_id, APP_MODULE_EXECUTION)
+                self.assertTrue(has_right,'the standard user test profile should have execution right')
+
 
     def test_06_change_process_source_rights(self):
         from sos_trades_api.models.database_models import ProcessAccessUser, User, Group, AccessRights
@@ -322,3 +341,4 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
             self.assertEqual(process_access_user.source, ProcessAccessUser.SOURCE_USER,
                              'source not set to USER')
+    

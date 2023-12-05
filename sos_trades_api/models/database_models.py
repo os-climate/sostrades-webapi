@@ -32,6 +32,7 @@ import uuid
 class UserProfile(db.Model):
     STUDY_USER = 'Study user'
     STUDY_MANAGER = 'Study manager'
+    STUDY_USER_NO_EXECUTION = 'Study user without execution'
 
     """UserProfile class"""
 

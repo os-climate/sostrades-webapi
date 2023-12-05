@@ -22,6 +22,7 @@ from sos_trades_api.models.database_models import UserProfile
 from typing import List
 
 APP_MODULE_STUDY = 'STUDY'
+APP_MODULE_EXECUTION = 'EXECUTION'
 APP_MODULE_STUDY_MANAGER = 'STUDY_MANAGER'
 
 
@@ -41,8 +42,10 @@ def get_applicative_module(user_profile_id: int) -> List[str]:
 
     if profile is not None:
         if profile.name == UserProfile.STUDY_MANAGER:
-            result = [APP_MODULE_STUDY, APP_MODULE_STUDY_MANAGER]
+            result = [APP_MODULE_STUDY, APP_MODULE_STUDY_MANAGER, APP_MODULE_EXECUTION]
         elif profile.name == UserProfile.STUDY_USER:
+            result = [APP_MODULE_STUDY, APP_MODULE_EXECUTION]
+        elif profile.name == UserProfile.STUDY_USER_NO_EXECUTION:
             result = [APP_MODULE_STUDY]
 
     return result
@@ -65,8 +68,10 @@ def has_access_to(user_profile_id, applicative_module) -> bool:
 
     if profile is not None:
         if profile.name == UserProfile.STUDY_MANAGER:
-            result = applicative_module == APP_MODULE_STUDY_MANAGER or applicative_module == APP_MODULE_STUDY
-        elif profile.name == UserProfile.STUDY_USER:
+            result = applicative_module == APP_MODULE_STUDY_MANAGER or applicative_module == APP_MODULE_STUDY or applicative_module == APP_MODULE_EXECUTION
+        elif profile.name == UserProfile.STUDY_USER :
+            result = applicative_module == APP_MODULE_STUDY or applicative_module == APP_MODULE_EXECUTION
+        elif profile.name == UserProfile.STUDY_USER_NO_EXECUTION:
             result = applicative_module == APP_MODULE_STUDY
 
     return result
