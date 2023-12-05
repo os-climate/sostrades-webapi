@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import jsonify, make_response, send_file, session
-from sos_trades_api.tools.right_management.access_right import APP_MODULE_EXECUTION, check_user_has_no_execution_rights, has_access_to
+from sos_trades_api.tools.right_management.access_right import APP_MODULE_EXECUTION, has_access_to
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.models.database_models import AccessRights
