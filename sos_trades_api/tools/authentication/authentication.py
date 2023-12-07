@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/12/04 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -271,15 +272,15 @@ def manage_user(logged_user, logger):
         managed_user = User()
         managed_user.init_from_user(logged_user)
 
-        # Retrieve user profile : "Study user"
+        # Retrieve user profile : "Study user without execution"
         study_profile = UserProfile.query.filter(
-            UserProfile.name == UserProfile.STUDY_USER).first()
+            UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
 
         if study_profile is not None:
             managed_user.user_profile_id = study_profile.id
         else:
             logger.error(
-                f'Default user profile ({UserProfile.STUDY_USER}) not found, user "{managed_user.email}" has not been assigned with a default profile')
+                f'Default user profile ({UserProfile.STUDY_USER_NO_EXECUTION}) not found, user "{managed_user.email}" has not been assigned with a default profile')
 
         # User is basically created, so commit in database
         managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)

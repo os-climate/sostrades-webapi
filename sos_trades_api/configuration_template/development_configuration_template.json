@@ -94,6 +94,6 @@
   // Path to a local directory in the pod
   "SOS_TRADES_LOCAL_FOLDER": "/tmp",
   //delay to desactivate inactive study pod
-  "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY": 48
+  "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR": 10
 
 }

@@ -35,7 +35,7 @@ def upgrade():
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
-        raise exc
+        raise exec
 
 
 def downgrade():
