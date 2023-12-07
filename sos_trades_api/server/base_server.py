@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2023/11/23 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2023/12/04 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -643,12 +643,12 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     @click.command('change_user_profile')
     @click.argument('username')
-    @click.option('-p', '--profile', type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER]), default=None)
+    @click.option('-p', '--profile', type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER, UserProfile.STUDY_USER_NO_EXECUTION]), default=None)
     @with_appcontext
     def change_user_profile(username, profile):
         """ update user profile
         :param:username, the identification name of the user
-        :param:profile, profile value , 'Study user', 'Study manager' or nothing to set no profile
+        :param:profile, profile value , 'Study user', 'Study manager', 'Study user without execution', or nothing to set no profile
         """
 
         app.logger.setLevel(0)
