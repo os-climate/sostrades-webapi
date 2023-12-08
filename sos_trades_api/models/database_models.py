@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2023/12/04 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import uuid
 class UserProfile(db.Model):
     STUDY_USER = 'Study user'
     STUDY_MANAGER = 'Study manager'
+    STUDY_USER_NO_EXECUTION = 'Study user without execution'
 
     """UserProfile class"""
 

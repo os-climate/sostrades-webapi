@@ -420,7 +420,7 @@ typing-extensions==4.8.0
     #   black
 tzlocal==5.2
     # via trino
-urllib3==2.0.6
+urllib3==2.1.0
     # via
     #   -r ./sostrades-webapi/requirements.in
     #   kubernetes
