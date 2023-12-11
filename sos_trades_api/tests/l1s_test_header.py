@@ -31,11 +31,14 @@ class Testheader(unittest.TestCase):
         Initialize third data needed for testing
         '''
         self.pp = pprint.PrettyPrinter(indent=4, compact=True)
-        self.ExtensionToIgnore = ["pkl", "png", "jpg", "csv", "md", "markdown", "avif", "json", "in", "gitignore", "cfg", "puml", "pdf", "txt", "ipynb", "zip", "rst","flaskenv"]
+        self.ExtensionToIgnore = ["pkl", "png", "jpg", "csv", "md", "markdown", "avif", "json", "in", "gitignore", "cfg", "puml", "pdf", "txt", "ipynb", "zip", "rst"," flaskenv"," info"]
         #Add here the files to ignore       
         self.FilesToIgnore = ["migrations/versions/6fde15c1f0d5_default_group_v3.py",
                               "migrations/versions/5e995cf0ba49_add_information_about_deleting_a_column_.py",
-                              "migrations/versions/224990fccd32_default_group_v2.py"]
+                              "migrations/versions/224990fccd32_default_group_v2.py",
+                              "migrations/versions/59ef3f9fbb52_add_no_execution_profile.py",
+                              "sos_trades_api/version.info"]
+        
         #commit from where to compare added, modeified deleted ...
         self.airbus_rev_commit = "09b208"
 

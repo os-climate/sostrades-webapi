@@ -6,7 +6,6 @@ coverage.xml
 nosetests.xml
 .coverage
 sos_trades_api/app.db
-sos_trades_api/version.info
 build/
 dist/
 sos_trades_api.egg-info/
