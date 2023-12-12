@@ -203,7 +203,7 @@ def on_validation_change(data):
     room = data['study_case_id']
     user = get_authenticated_user()
     treenode = data['treenode_data_name']
-    validation = data['validation_state']
+    validation = data['study_case_validation']
 
     # Add notification to database
     add_notification_db(data['study_case_id'], user,
@@ -215,7 +215,7 @@ def on_validation_change(data):
           'study_case_id': room,
           'message': CoeditionMessage.VALIDATION_CHANGE,
           'treenode_data_name': treenode,
-          'validation_state': validation},
+          'study_case_validation': validation},
          room=room)
 
 
