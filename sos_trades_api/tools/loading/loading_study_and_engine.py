@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/12/06 Copyright 2023 Capgemini
+Modifications on 2023/12/06-2023/12/13 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ def study_need_to_be_updated(study_id, last_modification):
 
 
 
-def study_case_manager_loading(study_case_manager, no_data, read_only):
+def study_case_manager_loading(study_case_manager, no_data, read_only, profile_loading=False):
     """ Method that load data into a study case manager
         (usefull for threading study data loading)
 
@@ -98,57 +98,65 @@ def study_case_manager_loading(study_case_manager, no_data, read_only):
     :params: read_only, if treeview has to be tagged read only
     :type: boolean
 
+    :params: profile_loading, if run & print profiling of the function
+    :type: boolean
     """
     from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
-    with cProfile.Profile() as pr:
-        try:
-            start_time = time()
-            sleep()
-            app.logger.info(f'Loading in background {study_case_manager.study.name}')
-            study_case_manager.load_status = LoadStatus.IN_PROGESS
+    if profile_loading:
+        profiler = cProfile.Profile()
+        profiler.enable()
+    
+    try:
+        start_time = time()
+        sleep()
+        app.logger.info(f'Loading in background {study_case_manager.study.name}')
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-            study_case_manager.load_study_case_from_source()
-            load_study_case_time = time()
+        study_case_manager.load_study_case_from_source()
+        load_study_case_time = time()
 
-            study_case_manager.execution_engine.dm.treeview = None
+        study_case_manager.execution_engine.dm.treeview = None
 
-            study_case_manager.execution_engine.get_treeview(no_data, read_only)
-            treeview_generation_time = time()
+        study_case_manager.execution_engine.get_treeview(no_data, read_only)
+        treeview_generation_time = time()
 
-            # if the study has been edited (change of study name), the readonly file has been deleted
-            # at the end of the loading, if the readonly file has not been created
-            # and the status is DONE, create the file again
-            if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
-                    and not study_case_manager.check_study_case_json_file_exists():
-                study_case_manager.save_study_read_only_mode_in_file()
+        # if the study has been edited (change of study name), the readonly file has been deleted
+        # at the end of the loading, if the readonly file has not been created
+        # and the status is DONE, create the file again
+        if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
+                and not study_case_manager.check_study_case_json_file_exists():
+            study_case_manager.save_study_read_only_mode_in_file()
 
-            study_case_manager.load_status = LoadStatus.LOADED
+        study_case_manager.load_status = LoadStatus.LOADED
 
-            app.logger.info(
-                f'End background loading {study_case_manager.study.name}')
-            app.logger.info(f'Elapsed time synthesis:')
-            app.logger.info(
-                f'{"Data load":<25} {load_study_case_time - start_time:<5} seconds')
-            app.logger.info(
-                f'{"Treeview gen.":<25} {treeview_generation_time - load_study_case_time:<5} seconds')
-            app.logger.info(
-                f'{"Total time":<25} {treeview_generation_time - start_time:<5} seconds')
+        app.logger.info(
+            f'End background loading {study_case_manager.study.name}')
+        app.logger.info(f'Elapsed time synthesis:')
+        app.logger.info(
+            f'{"Data load":<25} {load_study_case_time - start_time:<5} seconds')
+        app.logger.info(
+            f'{"Treeview gen.":<25} {treeview_generation_time - load_study_case_time:<5} seconds')
+        app.logger.info(
+            f'{"Total time":<25} {treeview_generation_time - start_time:<5} seconds')
 
-        except Exception as ex:
-            study_case_manager.load_status = LoadStatus.IN_ERROR
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            study_case_manager.set_error(
-                ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-            app.logger.exception(
-                f'Error when loading in background {study_case_manager.study.name}')
-    profiling_output = io.StringIO()
-    stats = pstats.Stats(pr, stream=profiling_output)
-    stats.sort_stats(pstats.SortKey.CUMULATIVE)
-    stats.print_stats()
+    except Exception as ex:
+        study_case_manager.load_status = LoadStatus.IN_ERROR
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        study_case_manager.set_error(
+            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        app.logger.exception(
+            f'Error when loading in background {study_case_manager.study.name}')
+        
+    if profile_loading:
+        profiler.disable()
+        profiling_output = io.StringIO()
+        stats = pstats.Stats(profiler, stream=profiling_output)
+        stats.sort_stats(pstats.SortKey.CUMULATIVE)
+        stats.print_stats()
 
-    # Print log information, as it causes issue with DatabaseLogger
-    print("Profiling Information:\n%s", profiling_output.getvalue())
+        # Print log information, as it causes issue with DatabaseLogger
+        print("Profiling Information:\n%s", profiling_output.getvalue())
 
 
 def study_case_manager_update(study_case_manager, values, no_data, read_only, connectors=None):
