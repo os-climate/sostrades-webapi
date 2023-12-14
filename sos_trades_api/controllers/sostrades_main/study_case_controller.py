@@ -49,7 +49,8 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import Pro
 from sos_trades_api.config import Config
 from sos_trades_api.server.base_server import db, app, study_case_cache
 
-from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
+    CoeditionMessage
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
 from sos_trades_api.models.database_models import StudyCase, StudyCaseAllocation, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
     ReferenceStudy
@@ -470,8 +471,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         # Create notification
         if parameters_to_save != [] or files_list != None or columns_to_delete != []:
             # Add notification to database
-            new_notification_id = add_notification_db(study_id, user,
-                                                      UserCoeditionAction.SAVE)
+            new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.SAVE)
 
         if files_list != None:
             for file in files_list:

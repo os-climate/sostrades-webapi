@@ -47,7 +47,6 @@ class CoeditionMessage:
     EXECUTION = 'Study case execution just started.'
     CLAIM = 'User just claimed the study case execution right.'
     RELOAD = 'User just reload the study case.'
-    VALIDATION_CHANGE = 'User just changed validation state.'
 
 
 def add_user_to_room(user_id, study_case_id):
@@ -106,42 +105,21 @@ def get_user_list_in_room(study_case_id):
     return result
 
 
-def add_notification_db(study_case_id, user, coedition_type):
+def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction, message):
     """ Add coedition study notification to database
     """
+    # Check if coedition_type is a UserCoeditionAction and if user is an instance of the User class
+    if coedition_type not in vars(UserCoeditionAction).values():
+        raise ValueError("coedition_type must be a coedition action.")
+    if not isinstance(user, User):
+        raise ValueError("user must be an instance of the User class.")
 
     new_notification = Notification()
     new_notification.author = f'{user.firstname} {user.lastname}'
     new_notification.study_case_id = study_case_id
     new_notification.created = datetime.now()
-
-    if coedition_type == UserCoeditionAction.JOIN_ROOM:
-        new_notification.type = UserCoeditionAction.JOIN_ROOM
-        new_notification.message = CoeditionMessage.JOIN_ROOM
-
-    elif coedition_type == UserCoeditionAction.LEAVE_ROOM:
-        new_notification.type = UserCoeditionAction.LEAVE_ROOM
-        new_notification.message = CoeditionMessage.LEAVE_ROOM
-
-    elif coedition_type == UserCoeditionAction.SAVE:
-        new_notification.type = UserCoeditionAction.SAVE
-        new_notification.message = CoeditionMessage.SAVE
-
-    elif coedition_type == UserCoeditionAction.SUBMISSION:
-        new_notification.type = UserCoeditionAction.SUBMISSION
-        new_notification.message = CoeditionMessage.SUBMISSION
-
-    elif coedition_type == UserCoeditionAction.EXECUTION:
-        new_notification.type = UserCoeditionAction.EXECUTION
-        new_notification.message = CoeditionMessage.EXECUTION
-
-    elif coedition_type == UserCoeditionAction.CLAIM:
-        new_notification.type = UserCoeditionAction.CLAIM
-        new_notification.message = CoeditionMessage.CLAIM
-
-    elif coedition_type == UserCoeditionAction.VALIDATION_CHANGE:
-        new_notification.type = UserCoeditionAction.VALIDATION_CHANGE
-        new_notification.message = CoeditionMessage.VALIDATION_CHANGE
+    new_notification.type = coedition_type
+    new_notification.message = message
 
     # Save notification
     db.session.add(new_notification)
