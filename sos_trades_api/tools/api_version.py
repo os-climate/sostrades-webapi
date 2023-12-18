@@ -37,7 +37,7 @@ def application_version():
 
     #version = f'{datetime.now().strftime("%d.%m.%Y")}*'
 
-    version = "Not available"
+    version = "Version not available"
 
     if environ.get('FLASK_ENV') is None or environ['FLASK_ENV'] == 'development':
         return f'{datetime.now().strftime("%d.%m.%Y")}*' # id dev always give the last date
