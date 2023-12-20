@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2023/12/12 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +46,7 @@ def study_case_validation(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to copy this study case')
+                'You do not have the necessary rights to change a validation on this study case')
 
         # Proceed after right verification
         missing_parameter = []
