@@ -50,8 +50,7 @@ def on_join(data):
     users = get_user_list_in_room(data['study_case_id'])
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.JOIN_ROOM)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.JOIN_ROOM, CoeditionMessage.JOIN_ROOM)
 
     # Emit notification
     emit('room-user-update',
@@ -72,8 +71,7 @@ def on_leave(data):
     users = get_user_list_in_room(data['study_case_id'])
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.LEAVE_ROOM)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.LEAVE_ROOM, CoeditionMessage.LEAVE_ROOM)
 
     # Emit notification
     emit('room-user-update',
@@ -121,8 +119,7 @@ def on_submit(data):
     user = get_authenticated_user()
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.SUBMISSION)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.SUBMISSION, CoeditionMessage.SUBMISSION)
 
     # Emit notification
     emit('study-submitted',
@@ -140,8 +137,7 @@ def on_execute(data):
     user = get_authenticated_user()
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.EXECUTION)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.EXECUTION, CoeditionMessage.EXECUTION)
 
     # Emit notification
     emit('study-executed',
@@ -159,8 +155,7 @@ def on_claim(data):
     user = get_authenticated_user()
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.CLAIM)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.CLAIM, CoeditionMessage.CLAIM)
 
     # Emit notification
     emit('study-claimed',
@@ -203,19 +198,19 @@ def on_validation_change(data):
     room = data['study_case_id']
     user = get_authenticated_user()
     treenode = data['treenode_data_name']
-    validation = data['validation_state']
+    validation = data['study_case_validation']
+    message = f'User just {validation["validation_state"].lower()} "{validation["namespace"]}"'
 
     # Add notification to database
-    add_notification_db(data['study_case_id'], user,
-                        UserCoeditionAction.VALIDATION_CHANGE)
+    add_notification_db(data['study_case_id'], user, UserCoeditionAction.VALIDATION_CHANGE, message)
     # Emit notification
     emit('validation-change',
          {'author': f'{user.firstname} {user.lastname}',
           'type': UserCoeditionAction.VALIDATION_CHANGE,
           'study_case_id': room,
-          'message': CoeditionMessage.VALIDATION_CHANGE,
+          'message': message,
           'treenode_data_name': treenode,
-          'validation_state': validation},
+          'study_case_validation': validation},
          room=room)
 
 
