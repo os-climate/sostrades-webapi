@@ -654,13 +654,10 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             process_list = ['test_sample_generator', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
                             'test_sellar_subprocess_eval_generator']
 
-            process_list_new = ['test_driver_display_treeview', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
-                            'test_architecture_standard']
-
             # retrieve the created user_test
             user = User.query.filter(User.username == "user_test").first()
             if user is not None:
-                set_processes_to_user(process_list, user.id)
+                set_processes_to_user(process_list, user.id, app.logger)
             else:
                 raise Exception(f'User user_test not found in database')
         except Exception as ex:

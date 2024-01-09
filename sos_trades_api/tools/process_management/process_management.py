@@ -326,7 +326,7 @@ def set_process_group_right(group_id, process_id, right_id, is_source_file):
         db.session.flush()
 
 
-def set_processes_to_user(process_list: list[str], user_id: int):
+def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
     """Set specific process to the user
 
         :param process_list: List of the process targeted for the user
@@ -334,6 +334,9 @@ def set_processes_to_user(process_list: list[str], user_id: int):
 
         :param user_id: The user identifier
         :type user_id: integer
+
+        :param logger: logging message
+        :type logger: logging.Logger
 
         """
 
@@ -346,7 +349,7 @@ def set_processes_to_user(process_list: list[str], user_id: int):
             if process is not None:
                 process_id_list.append(process.id)
             else:
-                raise f'The process {process_name} does not exist on the database'
+                logger.error(f'The process {process_name} does not exist on the database')
 
     if len(process_id_list) > 0:
 
