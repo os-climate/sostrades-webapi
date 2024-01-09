@@ -430,6 +430,81 @@ def create_standard_user_account(username, email, firstname, lastname):
             db.session.commit()
 
 
+def database_create_user_test():
+    """Create a new user_test with all necessaries pre-requisite to be able to launch the test e2e
+        """
+    user_name = "user_test"
+    password = "User_test_e2e"
+
+    # Set Profile
+    study_user_profile = UserProfile.query.filter_by(name=UserProfile.STUDY_USER).first()
+
+    # Set Default group
+    all_user_group = Group.query.filter_by(name=Group.ALL_USERS_GROUP).first()
+
+    # Retrieve member rights to set it at "all user" group
+    member_right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
+
+    # Retrieve user_test to check if it already exists
+    user_test = User.query.filter_by(username=user_name).first()
+
+    if study_user_profile is not None and all_user_group is not None and member_right is not None and user_test is None:
+
+        try:
+            user = User()
+            user.username = user_name
+            user.email = "user_test@email.com"
+            user.firstname = user_name
+            user.lastname = user_name
+            user.account_source = User.LOCAL_ACCOUNT
+
+            user.user_profile_id = study_user_profile.id
+
+            # Set password to user
+            user.set_password(password)
+
+            db.session.add(user)
+            db.session.flush()
+            set_user_access_group(all_user_group.id, user.id, member_right.id)
+        except Exception as exe:
+            db.session.rollback()
+            raise exe
+
+        db.session.commit()
+    else:
+        if study_user_profile is None:
+            raise Exception(f"{UserProfile.STUDY_USER} not found in database")
+        if all_user_group is None:
+            raise Exception(f"{Group.ALL_USERS_GROUP} not found in database")
+        if member_right is None:
+            raise Exception(f"{AccessRights.MEMBER} not found in database")
+
+    # Check if the group e2e_tests already exist
+    group_e2e_tests = Group.query.filter_by(name="e2e_tests").first()
+    if group_e2e_tests is not None:
+        # Retrieve group_access_user for e2e_tests
+        user_test = User.query.filter_by(username=user_name).first()
+        group_access_user = GroupAccessUser.query.filter_by(group_id=group_e2e_tests.id).filter_by(user_id=user_test.id)
+        if group_access_user is not None:
+            try:
+                # Retrieve member rights to set it at "all user" group
+                owner_right = AccessRights.query.filter_by(access_right=AccessRights.OWNER).first()
+
+                # Create new group_access_user
+                new_group_access_user = GroupAccessUser()
+                new_group_access_user.user_id = user_test.id
+                new_group_access_user.group_id = group_e2e_tests.id
+                new_group_access_user.right_id = owner_right.id
+
+                db.session.add(new_group_access_user)
+                db.session.flush()
+            except Exception as exe:
+                db.session.rollback()
+                raise exe
+
+            db.session.commit()
+
+
 def reset_local_user_password_by_name(username):
     '''
     Generate and save a new password for the user with the username = USERNAME
