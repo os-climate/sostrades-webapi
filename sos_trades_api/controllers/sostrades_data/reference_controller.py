@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2023/11/22 Copyright 2023 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -133,7 +133,9 @@ def get_all_references(user_id, logger):
             new_usecase = StudyCaseDto()
             new_usecase.name = ref.name
             new_usecase.process = authorized_process.process_id
+            new_usecase.process_display_name = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
+            new_usecase.repository_display_name = authorized_process.repository_id
             new_usecase.description = 'Reference'
             new_usecase.creation_date = ref.creation_date
             new_usecase.study_type = ref.reference_type
