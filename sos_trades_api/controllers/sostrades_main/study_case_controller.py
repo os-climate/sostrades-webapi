@@ -887,6 +887,7 @@ def set_study_data_file(study_identifier, files_list):
 
     # Get date
     modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+    # Ensure all cache in distributed deployement are updated -> date is central in the database that is unique
     study_case = StudyCase.query.filter(
         StudyCase.id == study_identifier).first()
     study_case.modification_date = modify_date
