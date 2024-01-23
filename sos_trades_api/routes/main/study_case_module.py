@@ -384,9 +384,7 @@ def store_study_last_active_date(study_id):
 
         save_study_is_active(study_id)
         
-        # check studycase is loaded
-        isStudyLoaded = check_study_case_is_Loaded(study_id)
-        resp = make_response(jsonify(isStudyLoaded),200)
+        resp = make_response(jsonify("OK"),200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
