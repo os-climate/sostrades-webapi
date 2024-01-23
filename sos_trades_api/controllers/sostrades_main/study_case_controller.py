@@ -212,6 +212,16 @@ def light_load_study_case(study_id, reload=False):
     study_manager.attach_logger()
     return study_manager
 
+def check_study_case_is_Loaded(study_id):
+    """
+    Check study case is in cache and its status is LOADED
+    """
+    isLoaded = study_case_cache.is_study_case_cached(study_id)
+    if isLoaded:
+        study_manager = study_case_cache.get_study_case(study_id, False, False)
+        isLoaded = study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_PROGESS
+
+    return isLoaded
 
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
