@@ -433,8 +433,20 @@ def create_standard_user_account(username, email, firstname, lastname):
 def database_create_user_test():
     """Create a new user_test with all necessaries pre-requisite to be able to launch the test e2e
         """
-    user_name = "user_test"
-    password = "User_test_e2e"
+
+    user_name = app.config['USER_TEST_E2E'].get('USERNAME', None)
+    password = app.config['USER_TEST_E2E'].get('PASSWORD', None)
+    email = app.config['USER_TEST_E2E'].get('EMAIL', None)
+
+    # Check if the values are present
+    if user_name is None:
+        raise Exception(f'Environment variable "USERNAME" not found')
+
+    if password is None:
+        raise Exception(f'Environment variable "PASSWORD" not found')
+
+    if email is None:
+        raise Exception(f'Environment variable "EMAIL" not found')
 
     # Set Profile
     study_user_profile = UserProfile.query.filter_by(name=UserProfile.STUDY_USER).first()
@@ -453,7 +465,7 @@ def database_create_user_test():
         try:
             user = User()
             user.username = user_name
-            user.email = "user_test@email.com"
+            user.email = email
             user.firstname = user_name
             user.lastname = user_name
             user.account_source = User.LOCAL_ACCOUNT
