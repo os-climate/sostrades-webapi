@@ -324,3 +324,64 @@ def set_process_group_right(group_id, process_id, right_id, is_source_file):
         if is_source_file:
             process_access_group.source = ProcessAccessGroup.SOURCE_FILE
         db.session.flush()
+
+
+def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
+    """Set specific process to the user
+
+        :param process_list: List of the process targeted for the user
+        :type process_list: list
+
+        :param user_id: The user identifier
+        :type user_id: integer
+
+        :param logger: logging message
+        :type logger: logging.Logger
+
+        """
+
+    process_id_list = []
+
+    if process_list is not None and len(process_list) > 0:
+        for process_name in process_list:
+            # Retrieve id of the process
+            process = Process.query.filter_by(name=process_name).first()
+            if process is not None:
+                process_id_list.append(process.id)
+            else:
+                logger.error(f'The process {process_name} does not exist on the database')
+
+    if len(process_id_list) > 0:
+
+        # retrieve member access_rights
+        manager_right = AccessRights.query.filter(AccessRights.access_right == AccessRights.MANAGER).first()
+
+        if user_id is not None and manager_right is not None:
+            try:
+                for process_id in process_id_list:
+
+                    # Retrieve the process_access_user if it already exists in database
+                    process_access_user = ProcessAccessUser.query.filter(ProcessAccessUser.user_id == user_id)\
+                        .filter(ProcessAccessUser.process_id == process_id).first()
+
+                    # Add new process_access_user
+                    if process_access_user is None:
+                        new_process_access_user = ProcessAccessUser()
+                        new_process_access_user.user_id = user_id
+                        new_process_access_user.process_id = process_id
+                        new_process_access_user.right_id = manager_right.id
+                        new_process_access_user.source = ProcessAccessUser.SOURCE_FILE
+                        db.session.add(new_process_access_user)
+                        db.session.flush()
+                    else:
+                        if process_access_user.right_id is not manager_right.id:
+                            process_access_user.right = manager_right.id
+                            db.session.flush()
+                db.session.commit()
+
+            except Exception as ex:
+                db.session.rollback()
+                raise ex
+
+
+

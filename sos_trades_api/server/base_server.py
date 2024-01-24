@@ -19,21 +19,20 @@ import traceback as tb
 import click
 
 from werkzeug.exceptions import HTTPException
-from flask import json, jsonify, session, make_response
-from flask import Flask, render_template, request
+from flask import jsonify, session, make_response
+from flask import Flask, request
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
-from flask.helpers import send_from_directory
 from flask.cli import with_appcontext
 
 from sos_trades_api.config import Config
 
-
 import logging
 import os
-from os.path import dirname, join
+from os.path import join
 import time
+
 START_TIME = 'start_time'
 first_line_time = time.time()
 
@@ -76,7 +75,7 @@ try:
     from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
     from sos_trades_api.models.database_models import User, Group, UserProfile
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
-    
+
     app.logger.info('Adding application logger handler')
     app_mysql_handler = ApplicationMySQLHandler(
         db=config.logging_database_data)
@@ -631,6 +630,40 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         database_reset_user_password(username)
 
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('create_user_test')
+    @with_appcontext
+    def create_user_test():
+        """ user_test creation associated to ALl_user group and to a process list
+        """
+        from sos_trades_api.controllers.sostrades_data.user_controller import database_create_user_test
+        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
+
+        # Create the user test
+        try:
+            database_create_user_test()
+        except Exception as ex:
+            app.logger.error(f'The following error occurs when trying to create user_test\n{ex} ')
+            raise ex
+
+        # Set the necessary processes access at the user_test
+        try:
+
+            process_list = ['test_sample_generator', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
+                            'test_sellar_subprocess_eval_generator']
+
+            # retrieve the created user_test
+            user = User.query.filter(User.username == "user_test").first()
+            if user is not None:
+                set_processes_to_user(process_list, user.id, app.logger)
+            else:
+                raise Exception(f'User user_test not found in database')
+        except Exception as ex:
+            app.logger.error(f'The following error occurs when trying to set process to user_test\n{ex} ')
+            raise ex
+
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command('rename_applicative_group')
@@ -708,7 +741,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """  delete all allocations from db and delete services and deployments with kubernetes api
         """
         clean_all_allocations_method()
-    
+
     # Add custom command on flask cli to clean inactive allocation, service and
     # deployment
     @click.command('clean_inactive_study_pod')
@@ -730,6 +763,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(list_api_key)
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
+    app.cli.add_command(create_user_test)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access

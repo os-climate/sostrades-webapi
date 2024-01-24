@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
+    check_study_case_is_Loaded, create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
@@ -384,7 +384,28 @@ def store_study_last_active_date(study_id):
 
         save_study_is_active(study_id)
         
-        resp = make_response(jsonify('OK'),200)
+        resp = make_response(jsonify("OK"),200)
+        return resp
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
+
+
+@app.route(f'/api/main/study-case/<int:study_id>/is-up-and-loaded', methods=['Get'])
+@auth_required
+def check_study_is_loaded(study_id):
+    """
+    Check if the study is loaded
+    """
+    if study_id is not None:
+        user = session['user']
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve this information about this study case')
+        
+        # check studycase is loaded
+        isStudyLoaded = check_study_case_is_Loaded(study_id)
+        resp = make_response(jsonify(isStudyLoaded),200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 

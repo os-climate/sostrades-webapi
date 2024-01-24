@@ -92,6 +92,14 @@ flask db reset_standard_user_password username
 The username of the user will be passed in argument
 The updated password will be saved in a file on the local server.
 
+#### Database create a user_test
+If you want to create a user_test to run the tests webgui-test-e2e
+
+```bash
+flask create_user_test
+```
+The user_test will be on the group "all_user" and he will have access to a list of necessary processes to launch the test e2e
+
 #### Database rename the default applicative group
 If you want to rename the Sostrades applicative group named "SoSTrades_Dev" by default
 
