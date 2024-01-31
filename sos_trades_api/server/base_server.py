@@ -652,7 +652,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         try:
 
             process_list = ['test_sample_generator', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
-                            'test_sellar_subprocess_eval_generator']
+                            'test_architecture_standard']
 
             # retrieve the created user_test
             user = User.query.filter(User.username == "user_test").first()
