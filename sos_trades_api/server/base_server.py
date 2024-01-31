@@ -651,7 +651,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         # Set the necessary processes access at the user_test
         try:
 
-            process_list = ['test_sample_generator', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
+            process_list = ['tests_driver_eval.multi.test_multi_driver_subprocess_1_3', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
                             'test_architecture_standard']
 
             # retrieve the created user_test
