@@ -651,8 +651,8 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         # Set the necessary processes access at the user_test
         try:
 
-            process_list = ['test_driver_display_treeview', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
-                               'test_architecture_standard']
+            process_list = ['test_sample_generator', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
+                            'test_sellar_subprocess_eval_generator']
 
             # retrieve the created user_test
             user = User.query.filter(User.username == "user_test").first()
