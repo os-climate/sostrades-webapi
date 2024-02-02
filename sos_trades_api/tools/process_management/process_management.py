@@ -370,7 +370,7 @@ def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
                         new_process_access_user.user_id = user_id
                         new_process_access_user.process_id = process_id
                         new_process_access_user.right_id = manager_right.id
-                        new_process_access_user.source = ProcessAccessUser.SOURCE_FILE
+                        new_process_access_user.source = ProcessAccessUser.SOURCE_USER
                         db.session.add(new_process_access_user)
                         db.session.flush()
                     else:
