@@ -17,6 +17,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 import threading
 import logging
+import gc
 
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
@@ -109,6 +110,13 @@ class StudyCaseCache:
             del self.__study_case_dict[study_case_identifier]
             del self.__study_case_manager_dict[study_case_identifier]
             del self.__lock_cache[study_case_identifier]
+
+            self.__study_case_dict = {}
+            self.__study_case_manager_dict = {}
+            self.__lock_cache = {}
+            self.__last_alive_date = {}
+
+            gc.collect() 
 
     def add_study_case_in_cache_from_values(self, study_case_manager):
         """

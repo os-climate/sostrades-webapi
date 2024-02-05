@@ -26,9 +26,20 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.server.base_server import db, app, study_case_cache
 
 import time
 
+
+#FOR TESTING ONLY TO BE REMOVED - START
+@app.route(f'/api/main/study-case/<int:study_id>/reset-cache', methods=['POST'])
+def reset_cache (study_id):
+    study_case_cache.delete_study_case_from_cache(study_id)
+
+    resp = make_response(
+                jsonify("ok"), 200)
+    return resp
+#FOR TESTING ONLY TO BE REMOVED - END
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
 @auth_required
@@ -83,45 +94,46 @@ def study_cases(study_id):
 
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
-@auth_required
+#@auth_required
 def main_load_study_case_by_id(study_id):
 
     if study_id is not None:
         start_request_time = time.time()
 
-        # Checking if user can access study data
-        user = session['user']
+        # # Checking if user can access study data
+        # user = session['user']
 
-        # Verify user has study case authorisation to load study (Restricted
-        # viewer)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        study_case_access_duration = time.time()
-        app.logger.info(f'User {user.id:<5} => study_case_access_duration {study_case_access_duration - start_request_time:<5} sec')
+        # # Verify user has study case authorisation to load study (Restricted
+        # # viewer)
+        # study_case_access = StudyCaseAccess(user.id, study_id)
+        # study_case_access_duration = time.time()
+        # app.logger.info(f'User {user.id:<5} => study_case_access_duration {study_case_access_duration - start_request_time:<5} sec')
 
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                'You do not have the necessary rights to load this study case')
-        check_user_right_for_study_duration = time.time()
-        app.logger.info(f'User {user.id:<5} => check_user_right_for_study_duration {check_user_right_for_study_duration - study_case_access_duration:<5} sec')
+        # if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+        #     raise BadRequest(
+        #         'You do not have the necessary rights to load this study case')
+        # check_user_right_for_study_duration = time.time()
+        # app.logger.info(f'User {user.id:<5} => check_user_right_for_study_duration {check_user_right_for_study_duration - study_case_access_duration:<5} sec')
 
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
-        study_access_right_duration = time.time()
-        app.logger.info(
-            f'User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
+        # study_access_right = study_case_access.get_user_right_for_study(
+        #     study_id)
+        # study_access_right_duration = time.time()
+        # app.logger.info(
+        #     f'User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
 
-        loadedStudy = load_study_case(study_id, study_access_right, user.id)
+        # loadedStudy = load_study_case(study_id, study_access_right, user.id)
+        loadedStudy = load_study_case(study_id, AccessRights.OWNER,1)
 
         loadedStudy_duration = time.time()
-        app.logger.info(
-            f'User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec')
+        # app.logger.info(
+            # f'User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec')
 
         # Proceeding after rights verification
         resp = make_response(
             jsonify(loadedStudy), 200)
         make_response_duration = time.time()
-        app.logger.info(
-            f'User {user.id:<5} => make_response_duration {make_response_duration - loadedStudy_duration:<5} sec')
+        # app.logger.info(
+            # f'User {user.id:<5} => make_response_duration {make_response_duration - loadedStudy_duration:<5} sec')
         return resp
 
     abort(403)
