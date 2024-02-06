@@ -37,6 +37,7 @@ from datetime import datetime, timezone
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from importlib import import_module
 from eventlet import sleep
+from memory_profiler import profile
 
 
 class StudyCaseError(Exception):
@@ -84,7 +85,8 @@ def study_need_to_be_updated(study_id, last_modification):
         return is_anterior
 
 
-
+fp2=open('/usr/local/sostrades/data/memory_profiler-load_study_case_manager_loading.log','w+')
+@profile(stream=fp2)
 def study_case_manager_loading(study_case_manager, no_data, read_only, profile_loading=False):
     """ Method that load data into a study case manager
         (usefull for threading study data loading)

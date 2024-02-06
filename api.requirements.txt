@@ -440,6 +440,9 @@ zipp==3.17.0
     # via importlib-metadata
 
 guppy3
+pympler
+memory_profiler
+
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

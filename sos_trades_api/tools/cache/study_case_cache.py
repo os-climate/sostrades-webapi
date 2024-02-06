@@ -111,10 +111,10 @@ class StudyCaseCache:
             del self.__study_case_manager_dict[study_case_identifier]
             del self.__lock_cache[study_case_identifier]
 
-            self.__study_case_dict = {}
-            self.__study_case_manager_dict = {}
-            self.__lock_cache = {}
-            self.__last_alive_date = {}
+            # self.__study_case_dict = {}
+            # self.__study_case_manager_dict = {}
+            # self.__lock_cache = {}
+            # self.__last_alive_date = {}
 
             gc.collect() 
 

@@ -29,8 +29,10 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 from sos_trades_api.server.base_server import db, app, study_case_cache
 
 import time
+import gc
 
-
+from pympler import asizeof
+import numpy as np
 #FOR TESTING ONLY TO BE REMOVED - START
 @app.route(f'/api/main/study-case/<int:study_id>/reset-cache', methods=['POST'])
 def reset_cache (study_id):
@@ -39,6 +41,62 @@ def reset_cache (study_id):
     resp = make_response(
                 jsonify("ok"), 200)
     return resp
+
+
+@app.route('/api/ram', methods=['GET'])
+def get_ram():
+    res = []
+    # Trigger garbage collection to get more accurate results
+    gc.collect()
+ 
+    # Get a list of all allocated objects
+    all_objects = gc.get_objects()
+ 
+    # Print information about each object and its size
+    for obj in all_objects:
+        if type(obj).__module__.startswith("sos"):
+            size = asizeof.asizeof(obj)
+            res.append({
+                "object": str(obj),
+                "type": str(type(obj)),
+                "size": size
+            })
+    return make_response(jsonify(res), 200)
+ 
+@app.route('/api/ram_cache', methods=['GET'])
+def get_ram_cache():
+    res = []
+   
+    # Function to get the size of an object and its sub-objects recursively
+    def get_object_size(obj, depth):
+        res = []
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                res += get_object_size(value, depth)
+        elif isinstance(obj, (list, tuple)):
+            for item in obj:
+                res += get_object_size(item, depth)
+        elif hasattr(obj, "__dict__"):
+            if depth > 0:
+                for child in obj.__dict__.values():
+                    res += get_object_size(child, depth-1)
+            if type(obj).__module__.startswith("sos"):
+                sub_objs_size = sum(r["size_local"] for r in res)
+                size = asizeof.asizeof(obj)
+                res += [{
+                    "object": str(obj),
+                    "type": str(type(obj)),
+                    "size_total": size,
+                    "size_local": size - sub_objs_size,
+                }]
+        elif isinstance(obj, (str, np.ndarray, int, float, bool)):
+            pass
+        else:
+            print("Unhandled", type(obj))
+        return res
+    res = get_object_size(study_case_cache, depth=3)
+    return make_response(jsonify(res), 200)
+ 
 #FOR TESTING ONLY TO BE REMOVED - END
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
