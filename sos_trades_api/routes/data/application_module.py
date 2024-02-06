@@ -44,6 +44,6 @@ def application_support():
     """
     application support
     """
-    result = {'support': 'TransitionRisk@lists.os-climate.org'}
+    result = {'support': 'contact@sostrades.org'}
     resp = make_response(jsonify(result), 200)
     return resp
