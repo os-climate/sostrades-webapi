@@ -17,7 +17,6 @@ limitations under the License.
 from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.models.database_models import UserProfile
 from sos_trades_api.server.base_server import app
 from sos_trades_api.controllers.sostrades_data.news_controller import get_news, create_news, \
     update_news, delete_news

@@ -5,8 +5,6 @@ Revises: 224990fccd32
 Create Date: 2023-10-16 17:22:23.100757
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 from sos_trades_api.models.database_models import Group
 from sos_trades_api.server.base_server import db
@@ -33,7 +31,7 @@ def upgrade():
         db.session.add(sostrades_dev_group)
 
         db.session.commit()
-    except Exception as exc:
+    except Exception:
         db.session.rollback()
         raise exec
 

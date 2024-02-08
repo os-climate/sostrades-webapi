@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import threading
 
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import StudyCaseAllocation

@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from importlib import import_module
 from eventlet import sleep
-from memory_profiler import profile
+# from memory_profiler import profile
 
 
 class StudyCaseError(Exception):
@@ -85,8 +85,8 @@ def study_need_to_be_updated(study_id, last_modification):
         return is_anterior
 
 
-fp2=open('/usr/local/sostrades/data/memory_profiler-load_study_case_manager_loading.log','w+')
-@profile(stream=fp2)
+# fp2=open('/usr/local/sostrades/data/memory_profiler-load_study_case_manager_loading.log','w+')
+# @profile(stream=fp2)
 def study_case_manager_loading(study_case_manager, no_data, read_only, profile_loading=False):
     """ Method that load data into a study case manager
         (usefull for threading study data loading)
@@ -142,7 +142,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         app.logger.info(
             f'{"Total time":<25} {treeview_generation_time - start_time:<5} seconds')
 
-    except Exception as ex:
+    except Exception:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -232,7 +232,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
         app.logger.info(
             f'End background updating {study_case_manager.study.name}')
-    except Exception as ex:
+    except Exception:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -301,7 +301,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
         app.logger.info(
             f'End background reference loading {study_name}')
-    except Exception as ex:
+    except Exception:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -371,7 +371,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
 
         app.logger.info(
             f'End of loading usecase data in background {study_case_manager.study.name}')
-    except Exception as ex:
+    except Exception:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -433,7 +433,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
 
         app.logger.info(
             f'End of loading from study in background {study_case_manager.study.name}')
-    except Exception as ex:
+    except Exception:
 
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()

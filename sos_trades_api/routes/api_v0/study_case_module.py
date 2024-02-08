@@ -18,7 +18,6 @@ limitations under the License.
 
 import time
 from flask import request, make_response, abort, jsonify, send_file, session
-from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.models.database_models import AccessRights, StudyCaseChange, StudyCase

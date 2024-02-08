@@ -25,7 +25,6 @@ import ast
 from time import time
 from typing import Optional
 import numpy as np
-from io import StringIO
 from sos_trades_api.server.base_server import app
 
 
@@ -37,7 +36,7 @@ def isevaluatable(s):
     """
     try:
         return ast.literal_eval(s)
-    except (ValueError, SyntaxError) as e:
+    except (ValueError, SyntaxError):
         # deal with numpy arrays that have the numpy format (convert it to list then to array)
         if isinstance(s, str) and s.startswith('[') and s.endswith(']'):
             return evaluate_arrays(s)
@@ -72,7 +71,7 @@ def evaluate_arrays(input_str):
             return list(eval)
         else:
             return eval
-    except Exception as e:
+    except Exception:
         return input_str
     
 

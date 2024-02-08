@@ -15,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging
-import time
 
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -545,7 +544,7 @@ class StudyCaseManager(BaseStudyManager):
         if len(backup_files) > 0:
             for backup_file in backup_files:
                 # create backup file name
-                backup_file_and_extension = backup_file.name.split('.')
+                backup_file.name.split('.')
                 file_name = backup_file.name.replace(self.BACKUP_FILE_NAME, '')
 
                 # copy backup file in place of pickle:

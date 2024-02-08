@@ -23,7 +23,6 @@ from copy import deepcopy
 from os.path import join, dirname, abspath
 from pathlib import Path
 from builtins import property
-import yaml
 import json
 
 BASEDIR = abspath(dirname(__file__))
@@ -120,20 +119,20 @@ class Config:
 
         # -------------------------------------------------------------------
         # This first section check all mandatory data needs to run the server
-        execution_strategy = self.execution_strategy
-        server_mode = self.server_mode
+        self.execution_strategy
+        self.server_mode
 
 
-        data_root_dir = self.data_root_dir
-        reference_root_dir = self.reference_root_dir
-        rsa_public_key_file = self.rsa_public_key_file
-        rsa_private_key_file = self.rsa_private_key_file
+        self.data_root_dir
+        self.reference_root_dir
+        self.rsa_public_key_file
+        self.rsa_private_key_file
 
-        eeb_filepath = self.eeb_filepath
+        self.eeb_filepath
 
-        manifest_folder_path = self.manifests_folder_path
-        deployment_study_server_filepath = self.deployment_study_server_filepath
-        service_study_server_filepath = self.service_study_server_filepath
+        self.manifests_folder_path
+        self.deployment_study_server_filepath
+        self.service_study_server_filepath
 
         # pylint: enable=unused-variable
 

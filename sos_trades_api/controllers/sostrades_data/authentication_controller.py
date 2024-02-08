@@ -79,7 +79,7 @@ def authenticate_user_standard(username, password):
         else:
             # Check credential using LDAP request
             user = check_credentials(username, password)
-    except LDAPException as ex:
+    except LDAPException:
         app.logger.exception(
             f'{username} login or password is incorrect (with LDAP)')
         raise InvalidCredentials(

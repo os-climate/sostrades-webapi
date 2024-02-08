@@ -22,7 +22,7 @@ User Functions
 """
 import traceback
 from datetime import datetime, timezone
-from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, StudyCase, AccessRights
+from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, AccessRights
 from sos_trades_api.tools.smtp.smtp_service import send_right_update_mail, send_password_reset_mail
 from sos_trades_api.tools.authentication.password_generator import check_password, InvalidPassword
 from sos_trades_api.tools.authentication.password_generator import generate_password

@@ -382,7 +382,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                 # so we remove the read_only_file if it exists, it will be updated at the end of the reload
                 try:
                     study_case_manager.delete_loaded_study_case_in_json_file()
-                except BaseException as ex:
+                except BaseException:
                     app.logger.error(
                         f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
 

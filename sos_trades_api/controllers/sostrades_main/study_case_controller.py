@@ -19,7 +19,7 @@ from sos_trades_api.tools.active_study_management.active_study_management import
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments, get_study_pod_name
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
-from memory_profiler import profile
+# from memory_profiler import profile
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -224,8 +224,8 @@ def check_study_case_is_Loaded(study_id):
 
     return isLoaded
 
-fp1=open('/usr/local/sostrades/data/memory_profiler-load_load_study_case.log','w+')
-@profile(stream=fp1)
+# fp1=open('/usr/local/sostrades/data/memory_profiler-load_load_study_case.log','w+')
+# @profile(stream=fp1)
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
     Retrieve all the study cases shared groups names list from user_id
@@ -301,17 +301,20 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     # Return logical treeview coming from execution engine
     return loaded_study_case
 
-fp1=open('/usr/local/sostrades/data/memory_profiler-load_load_study_case.log','w+')
-@profile(stream=fp1)
+    app.logger.info("End loading")
+
+    return None
+
+
 def launch_load_study_in_background(study_manager,  no_data, read_only):
     """
     Launch only the background thread
     """
     if study_manager.load_status == LoadStatus.NONE:
         study_manager.load_status = LoadStatus.IN_PROGESS
-        # threading.Thread(
-        #     target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
-        study_case_manager_loading(study_manager, no_data, read_only)
+        threading.Thread(
+            target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
+        # study_case_manager_loading(study_manager, no_data, read_only)
 
 
 def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):

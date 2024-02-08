@@ -190,7 +190,7 @@ class ProcessAccess(ResourceAccess):
             process_id is not None
         ):
 
-            right_entity_number = 0
+            pass
 
             # retrieve process id
             if process_name is not None and repository_name is not None:

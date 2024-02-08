@@ -33,7 +33,7 @@ from sos_trades_api.models.database_models import User, Group, AccessRights, Gro
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
 from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
-from werkzeug.exceptions import BadRequest, Unauthorized
+from werkzeug.exceptions import Unauthorized
 
 
 class AuthenticationError(Exception):

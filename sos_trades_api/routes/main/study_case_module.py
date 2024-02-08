@@ -26,7 +26,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sos_trades_api.server.base_server import db, app, study_case_cache
+from sos_trades_api.server.base_server import app, study_case_cache
 
 import time
 import gc
@@ -152,11 +152,11 @@ def study_cases(study_id):
 
 
 @app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
-#@auth_required
+@auth_required
 def main_load_study_case_by_id(study_id):
 
     if study_id is not None:
-        start_request_time = time.time()
+        time.time()
 
         # # Checking if user can access study data
         # user = session['user']
@@ -182,14 +182,14 @@ def main_load_study_case_by_id(study_id):
         # loadedStudy = load_study_case(study_id, study_access_right, user.id)
         loadedStudy = load_study_case(study_id, AccessRights.OWNER,1)
 
-        loadedStudy_duration = time.time()
+        time.time()
         # app.logger.info(
             # f'User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec')
 
         # Proceeding after rights verification
         resp = make_response(
             jsonify(loadedStudy), 200)
-        make_response_duration = time.time()
+        time.time()
         # app.logger.info(
             # f'User {user.id:<5} => make_response_duration {make_response_duration - loadedStudy_duration:<5} sec')
         return resp

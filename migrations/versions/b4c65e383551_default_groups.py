@@ -6,7 +6,7 @@ Create Date: 2021-10-05 17:54:14.072536
 
 """
 from sos_trades_api.models.database_models import Group, GroupAccessUser
-from sos_trades_api.server.base_server import app, db
+from sos_trades_api.server.base_server import db
 
 
 # revision identifiers, used by Alembic.

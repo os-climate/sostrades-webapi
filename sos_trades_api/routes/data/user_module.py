@@ -17,10 +17,8 @@ from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest, Unauthorized
 
 from sos_trades_api.server.base_server import app
-from sos_trades_api.models.database_models import Group, User
 from sos_trades_api.tools.authentication.password_generator import generate_password
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user, \
-    study_manager_profile
+from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
 from sos_trades_api.controllers.sostrades_data.user_controller import add_user, update_user as update_user_controller, \
     get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, \
     change_user_password, set_user_default_group

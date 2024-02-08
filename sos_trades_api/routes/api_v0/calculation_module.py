@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from flask import make_response, jsonify, abort, redirect, url_for, session
+from flask import make_response, jsonify, abort, session
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 from sos_trades_api.models.database_models import AccessRights

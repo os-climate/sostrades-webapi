@@ -112,7 +112,7 @@ def saml_sso():
                     sso_built_url = auth.login(
                         return_to=f'{app.config["SOS_TRADES_K8S_DNS"]}')
                     session['AuthNRequestID'] = auth.get_last_request_id()
-    except Exception as ex:
+    except Exception:
         app.logger.exception('The following error occurs when trying to log using SSO')
         sso_built_url = ''
 

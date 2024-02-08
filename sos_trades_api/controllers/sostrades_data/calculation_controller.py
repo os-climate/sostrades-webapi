@@ -235,7 +235,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
                     try:
                         os.kill(study_case_execution.process_identifier,
                                 signal.SIGTERM)
-                    except Exception as ex:
+                    except Exception:
                         app.logger.exception(
                             f'This error occurs when trying to kill process {study_case_execution.process_identifier}')
 

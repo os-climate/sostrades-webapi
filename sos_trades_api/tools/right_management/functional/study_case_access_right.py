@@ -29,7 +29,7 @@ from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
-from sos_trades_api.server.base_server import db, app
+from sos_trades_api.server.base_server import db
 
 
 class StudyCaseAccess(ProcessAccess):
@@ -170,7 +170,6 @@ class StudyCaseAccess(ProcessAccess):
             current_study_case_group = gsc[0]
             current_access_rights = gsc[1]
 
-            loaded_study_case_to_manage = None
 
             if current_study_case_group.id in self._user_study_cases:
 

@@ -25,4 +25,3 @@ socketio = SocketIO()
 socketio.init_app(app, cors_allowed_origins='*', async_mode='eventlet', async_handlers=True)
 
 # load & register APIs
-from sos_trades_api.routes.message import *

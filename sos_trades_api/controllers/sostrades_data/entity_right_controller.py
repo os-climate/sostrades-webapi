@@ -16,8 +16,7 @@ limitations under the License.
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
 from sos_trades_api.models.database_models import \
-    ProcessAccessUser, ProcessAccessGroup, AccessRights, GroupAccessUser, GroupAccessGroup, User, StudyCaseAccessUser, \
-    StudyCaseAccessGroup
+    ProcessAccessUser, ProcessAccessGroup, AccessRights, GroupAccessUser, GroupAccessGroup, StudyCaseAccessUser, StudyCaseAccessGroup
 
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.models.entity_rights import \

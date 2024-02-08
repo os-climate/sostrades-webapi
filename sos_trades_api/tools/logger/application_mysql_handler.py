@@ -264,7 +264,7 @@ class ApplicationMySQLHandler(Handler):
                     conn.commit()
                     # then Exception vanished
 
-            except MySQLError as error:
+            except MySQLError:
                 conn.rollback()
                 cur.close()
                 conn.close()

@@ -234,9 +234,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Created study case repository does not match, test set up repository name used')
 
     def test_study_case_log(self):
-        from sos_trades_api.models.database_models import StudyCase, AccessRights, StudyCaseLog
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.database_models import StudyCase, StudyCaseLog
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -291,7 +289,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(
                 user_test, 'Unable to retrieve user_test, check migrations')
 
-            initial_modification_date = study_test.modification_date
+            study_test.modification_date
             parameters_update_list = [
                 {"variableId": f'{study_test.name}.Disc1.a',
                  "variableType": "float",
@@ -335,7 +333,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
                 study_test_updated, 'Unable to retrieve study case created and updated for test')
-            last_modification_date = study_test_updated.modification_date
+            study_test_updated.modification_date
             # self.assertNotEqual(initial_modification_date, last_modification_date,
             #                    'Modification date cannot be the same as the one at creation')
 
@@ -530,7 +528,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             user_test = User.query.filter(User.id == self.test_user_id).first()
             self.assertIsNotNone(user_test)
 
-            initial_modification_date = study_test.modification_date
+            study_test.modification_date
             parameters_update_list = [
                 {"variableId": f'{study_test.name}.Disc1.a',
                  "variableType": "float",
@@ -810,9 +808,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_study_case_read_only_mode(self):
         from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
-            delete_study_cases, copy_study_case, get_file_stream
+            delete_study_cases, copy_study_case
         from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
-        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
         from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
 

@@ -114,6 +114,6 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_data.reference_controller import get_all_references
         with DatabaseUnitTestConfiguration.app.app_context():
             try:
-                references_list = get_all_references(self.test_user_id, None)
+                get_all_references(self.test_user_id, None)
             except:
                 self.assertTrue(False, 'Error while retrieving all references')

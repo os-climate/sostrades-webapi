@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from flask import request, jsonify, make_response, abort, render_template
+from flask import jsonify, make_response, abort, render_template
 import plotly.graph_objects as go
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case

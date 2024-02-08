@@ -19,7 +19,6 @@ import threading
 import logging
 import gc
 
-from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
