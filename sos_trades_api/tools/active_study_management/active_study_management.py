@@ -44,7 +44,7 @@ def check_studies_last_active_date( delay_hr, logger):
             
             # read the file and get the last_active date
             with open(file, "r") as f:
-                last_active_date_str = f.readline()
+                last_active_date_str = f.readline().strip()
                 logger.info(f'written date:{last_active_date_str}')
                 last_active_date = datetime.strptime(last_active_date_str, DATETIME_STR_FORMAT)
 
