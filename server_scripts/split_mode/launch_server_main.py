@@ -33,6 +33,7 @@ if __name__ == '__main__':
     # Import server module after a basic configuration in order to set
     # correctly server  executing environment
     from sos_trades_api.server.split_mode import main_server
+    #from sos_trades_api.server.split_mode import post_processing_server
 
     
 

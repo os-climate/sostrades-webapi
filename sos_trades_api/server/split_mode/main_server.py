@@ -24,3 +24,4 @@ db = base_server.db
 
 # load & register APIs
 from sos_trades_api.routes.main import *
+from sos_trades_api.routes.post_processing import *
