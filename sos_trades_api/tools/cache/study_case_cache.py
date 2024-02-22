@@ -106,6 +106,9 @@ class StudyCaseCache:
         :type study_case_identifier: int
         """
         if self.is_study_case_cached(study_case_identifier):
+            # Detach logger only for StudyCaseManager
+            if (isinstance(self.__study_case_dict[study_case_identifier], StudyCaseManager)):
+                self.__study_case_dict[study_case_identifier].detach_logger()
             del self.__study_case_dict[study_case_identifier]
             del self.__study_case_manager_dict[study_case_identifier]
             del self.__lock_cache[study_case_identifier]
