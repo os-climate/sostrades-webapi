@@ -106,9 +106,8 @@ class StudyCaseCache:
         :type study_case_identifier: int
         """
         if self.is_study_case_cached(study_case_identifier):
-            # Detach logger only for StudyCaseManager
-            if (isinstance(self.__study_case_dict[study_case_identifier], StudyCaseManager)):
-                self.__study_case_dict[study_case_identifier].detach_logger()
+            # Detach logger
+            self.__study_case_manager_dict[study_case_identifier].detach_logger()
             del self.__study_case_dict[study_case_identifier]
             del self.__study_case_manager_dict[study_case_identifier]
             del self.__lock_cache[study_case_identifier]
@@ -121,6 +120,7 @@ class StudyCaseCache:
         :type study_case_manager: sos_trades_api.tools.loading.study_case_manager.StudyCaseManager
         """
 
+        study_case_manager.attach_logger()
         study_case = study_case_manager.study
         if not self.is_study_case_cached(study_case.id):
             self.__study_case_dict[study_case.id] = StudyCaseReference(
@@ -134,6 +134,7 @@ class StudyCaseCache:
                 self.__study_case_dict[study_case.id] = StudyCaseReference(
                     study_case.id, study_case.modification_date
                 )
+                self.__study_case_manager_dict[study_case.id].detach_logger()
                 self.__study_case_manager_dict[study_case.id] = study_case_manager
                 self.__lock_cache[study_case.id] = threading.Lock()
             except Exception as error:
@@ -182,9 +183,7 @@ class StudyCaseCache:
                 try:
                     self.__lock_cache[study_case_identifier].acquire()
 
-                    # Detach logger only for StudyCaseManager
-                    if (isinstance(self.__study_case_dict[study_case_identifier], StudyCaseManager)):
-                        self.__study_case_dict[study_case_identifier].detach_logger()
+                    self.__study_case_manager_dict[study_case_identifier].detach_logger()
                     self.__add_study_case_in_cache_from_database(study_case_identifier)
                 except Exception as error:
                     self.logger.error("Error reloading study", exc_info=error)
