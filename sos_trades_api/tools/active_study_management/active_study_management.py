@@ -83,6 +83,9 @@ def delete_study_last_active_file(study_id):
     file_path = os.path.join(local_path, f'{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
     if os.path.exists(file_path):
         os.remove(file_path)
+    log_file_path = os.path.join(local_path, f'{LOG_FILE_NAME}{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
+    if os.path.exists(log_file_path):
+        os.remove(log_file_path)
 
 def save_study_last_active_date(study_id, last_active_date):
     '''
