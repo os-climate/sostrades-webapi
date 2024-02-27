@@ -598,7 +598,10 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                         # In case of array (mono dimensional) take the dataframe first
                         # column
                         value = value.iloc[:, 0].values
-
+                    if 'list' in parameter_type:
+                        # In case of array (mono dimensional) take the dataframe first
+                        # column
+                        value = list(value.iloc[:, 0].values)
                     elif 'dict' in parameter_type:
                         # Changes 12/09/20022
                         # Check if it is a "simple" dict or if it has subtype
