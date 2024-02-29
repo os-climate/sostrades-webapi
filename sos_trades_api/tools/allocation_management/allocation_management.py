@@ -26,7 +26,7 @@ from sos_trades_api.server.base_server import app, db
 def create_allocation(study_case_identifier):
     """
     Create a study case allocation instance in order to follow study case resource activation
-    Save allocation in database to pass the allocation id to the thread that will launch kubernetes study pod
+    Save allocation in database to pass the allocation id to the thread that will launch docker/kubernetes study pod
     Launch kubernetes service to build the study pod if the server_mode is kubernetes
 
     :param study_case_identifier: study case identifier to allocate
@@ -39,6 +39,8 @@ def create_allocation(study_case_identifier):
     if Config().server_mode == Config.CONFIG_SERVER_MODE_MONO:
         new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
+        new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
+    elif Config().server_mode == Config.CONFIG_SERVER_MODE_DOCKER:
         new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
     
     new_study_case_allocation.kubernetes_pod_name = get_study_pod_name(study_case_identifier)
@@ -69,6 +71,20 @@ def load_study_allocation(study_case_allocation):
             study_case_allocation.status = StudyCaseAllocation.ERROR
             study_case_allocation.message = str(exception)
 
+    elif Config().server_mode == Config.CONFIG_SERVER_MODE_DOCKER:
+        #launch creation on docker
+        try:
+            pass
+            #TODO
+            # docker_service.docker_service_allocate(study_case_allocation.kubernetes_pod_name)
+            # study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+            # study_case_allocation.message = None
+        except Exception as exception:
+            study_case_allocation.status = StudyCaseAllocation.ERROR
+            study_case_allocation.message = str(exception)
+
+
+
 
 def get_allocation_status(pod_name):
     """
@@ -88,6 +104,18 @@ def get_allocation_status(pod_name):
         else:
             exc = Exception("pod not found")
             app.logger.error(f'exception raised pod not found', exc_info = exc)
+            raise exc
+    elif Config().server_mode == Config.CONFIG_SERVER_MODE_DOCKER:
+        pass
+        #TODO
+        pod_status = docker_service.docker_study_container_status(pod_name)
+        if pod_status == "DONE":
+            status = StudyCaseAllocation.DONE
+        elif pod_status == "IN_PROGRESS":
+            status = StudyCaseAllocation.IN_PROGRESS
+        else:
+            exc = Exception("container not found")
+            app.logger.error(f'exception raised container not found', exc_info = exc)
             raise exc
     else:
         status = StudyCaseAllocation.DONE

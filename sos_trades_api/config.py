@@ -51,6 +51,7 @@ class Config:
 
     CONFIG_SERVER_MODE = "SOS_TRADES_SERVER_MODE"
     CONFIG_SERVER_MODE_K8S = 'kubernetes'
+    CONFIG_SERVER_MODE_DOCKER = 'local_docker'
     CONFIG_SERVER_MODE_MONO = 'mono'
     CONFIG_MANIFESTS_FOLDER_PATH = "MANIFESTS_FOLDER_PATH"
     CONFIG_DEPLOYMENT_STUDY_SERVER_FILE_NAME = "deployment_study_case_server.yml.jinja"
@@ -83,7 +84,8 @@ class Config:
         self.__manifests_folder_path = ''
 
         self.__available_server_modes = [Config.CONFIG_SERVER_MODE_K8S,
-                                       Config.CONFIG_SERVER_MODE_MONO]
+                                       Config.CONFIG_SERVER_MODE_MONO,
+                                       config.CONFIG_SERVER_MODE_DOCKER]
 
         self.__server_mode = ''
 
