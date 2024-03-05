@@ -513,8 +513,11 @@ def get_user_shared_study_case(user_identifier: int):
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
                 elif allocation.status == StudyCaseAllocation.PENDING:
-                    user_study.creation_status = StudyCase.CREATION_ERROR
-                    user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
+                    if datetime.now() - allocation.creation_date > timedelta(minutes=1):
+                        app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
+                        user_study.creation_status = StudyCase.CREATION_ERROR
+                        user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
+                
                 
                     
 
