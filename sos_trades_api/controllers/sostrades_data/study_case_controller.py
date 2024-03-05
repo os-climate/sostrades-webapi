@@ -115,7 +115,7 @@ def create_empty_study_case(
     study_case.repository = repository_name
     study_case.name = name
     study_case.process = process_name
-    study_case.creation_status = StudyCase.NOT_STARTED
+    study_case.creation_status = StudyCase.CREATION_NOT_STARTED
     study_case.reference = reference
     study_case.from_type = from_type
 
@@ -305,7 +305,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
                     shutil.copyfile(file_path_initial, file_path_final)
 
             new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
-            new_study_case.creation_status = StudyCase.DONE
+            new_study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(new_study_case)
             db.session.commit()
 
@@ -504,6 +504,23 @@ def get_user_shared_study_case(user_identifier: int):
 
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
+            
+            # check pod status if creation status id not DONE:
+            if user_study.creation_status != StudyCase.CREATION_DONE:
+                allocation = get_study_case_allocation(user_study.id)
+                # deal with error cases:
+                if allocation.status != StudyCaseAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                    user_study.creation_status = StudyCase.CREATION_ERROR
+                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+                elif allocation.status == StudyCaseAllocation.PENDING:
+                    user_study.creation_status = StudyCase.CREATION_ERROR
+                    user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
+                else:
+                    user_study.creation_status = StudyCase.CREATION_ERROR
+                    user_study.error = "Creation status incoherent, please reload the study to finalize the creation"
+                    
+
+                
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)

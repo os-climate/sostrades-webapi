@@ -193,10 +193,10 @@ class Process(db.Model):
 
 class StudyCase(db.Model):
     """StudyCase class"""
-    NOT_STARTED = 'NOT_STARTED'
-    IN_PROGRESS = 'IN_PROGRESS'
-    DONE = 'DONE'
-    ERROR = 'IN_ERROR'
+    CREATION_NOT_STARTED = 'NOT_STARTED'
+    CREATION_IN_PROGRESS = 'IN_PROGRESS'
+    CREATION_DONE = 'DONE'
+    CREATION_ERROR = 'IN_ERROR'
 
     FROM_REFERENCE = 'Reference'
     FROM_USECASE = 'UsecaseData'
@@ -218,7 +218,7 @@ class StudyCase(db.Model):
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    creation_status = Column(String(64), index=False, unique=False, server_default=NOT_STARTED)
+    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_NOT_STARTED)
     reference = Column(String(64), unique=False, nullable=True)
     from_type = Column(String(64), unique=False)
     modification_date = Column(DateTime(timezone=True), server_default=func.now())

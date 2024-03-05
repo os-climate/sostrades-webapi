@@ -297,7 +297,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         with app.app_context():
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_manager.study.id).first()
-            study_case.creation_status = StudyCase.DONE
+            study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
@@ -380,7 +380,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         with app.app_context():
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_manager.study.id).first()
-            study_case.creation_status = StudyCase.DONE
+            study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
 
@@ -456,7 +456,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         with app.app_context():
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_manager.study.id).first()
-            study_case.creation_status = StudyCase.DONE
+            study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
