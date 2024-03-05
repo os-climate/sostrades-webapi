@@ -38,7 +38,7 @@ def create_allocation(study_case_identifier):
     new_study_case_allocation = StudyCaseAllocation()
     new_study_case_allocation.study_case_id = study_case_identifier
     if Config().server_mode == Config.CONFIG_SERVER_MODE_MONO:
-        new_study_case_allocation.status = StudyCaseAllocation.PENDING
+        new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
         new_study_case_allocation.status = StudyCaseAllocation.PENDING
     
@@ -94,7 +94,7 @@ def get_allocation_status(pod_name):
             status = StudyCaseAllocation.ERROR
 
     else:
-        status = StudyCaseAllocation.PENDING
+        status = StudyCaseAllocation.DONE
     app.logger.info(f'pod returned status: {status}')
     return status
 
