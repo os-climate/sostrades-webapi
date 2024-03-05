@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import traceback
-from sos_trades_api.models.database_models import ReferenceStudy, User, Process
+from sos_trades_api.models.database_models import ReferenceStudy, StudyCase, User, Process
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata, load_ontology_processes
@@ -79,10 +79,10 @@ def api_get_processes_for_user(user: User) -> List[LoadedProcess]:
 
                 if ref.reference_type == ReferenceStudy.TYPE_REFERENCE:
                     new_ref.description = 'Reference study'
-                    new_ref.study_type = 'Reference'
+                    new_ref.study_type = StudyCase.FROM_REFERENCE
                 else:
                     new_ref.description = 'Usecase data'
-                    new_ref.study_type = 'UsecaseData'
+                    new_ref.study_type = StudyCase.FROM_USECASE
                 process_ref_list.append(new_ref)
 
             if len(process_ref_list) > 0:

@@ -193,6 +193,14 @@ class Process(db.Model):
 
 class StudyCase(db.Model):
     """StudyCase class"""
+    CREATION_NOT_STARTED = 'PENDING'
+    CREATION_IN_PROGRESS = 'IN_PROGRESS'
+    CREATION_DONE = 'DONE'
+    CREATION_ERROR = 'IN_ERROR'
+
+    FROM_REFERENCE = 'Reference'
+    FROM_USECASE = 'UsecaseData'
+    FROM_STUDYCASE = 'Study'
 
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer,
@@ -210,6 +218,9 @@ class StudyCase(db.Model):
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_NOT_STARTED)
+    reference = Column(String(64), unique=False, nullable=True)
+    from_type = Column(String(64), unique=False)
     modification_date = Column(DateTime(timezone=True), server_default=func.now())
     user_id_execution_authorised = Column(Integer,
                                           ForeignKey(
@@ -230,14 +241,19 @@ class StudyCase(db.Model):
             'process': self.process,
             'description': self.description,
             'creation_date': self.creation_date,
-            'modification_date': self.modification_date
+            'modification_date': self.modification_date,
+            'reference': self.reference,
+            'from_type': self.from_type,
+            'creation_status': self.creation_status,
         }
 
 
 class StudyCaseAllocation(db.Model):
     """StudyCaseAllocation class"""
 
+    NOT_STARTED = 'NOT_STARTED'
     IN_PROGRESS = 'IN_PROGRESS'
+    PENDING = 'PENDING'
     DONE = 'DONE'
     ERROR = 'IN_ERROR'
 
@@ -251,6 +267,8 @@ class StudyCaseAllocation(db.Model):
     kubernetes_pod_name = Column(String(128), index=False, unique=True, server_default=None)
     message = Column(Text, index=False, unique=False, nullable=True)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    
+    
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -263,7 +281,6 @@ class StudyCaseAllocation(db.Model):
             'message': self.message,
             'creation_date': self.creation_date
         }
-
 
 class UserStudyPreference(db.Model):
     """UserStudyPreference class"""
