@@ -193,7 +193,7 @@ class Process(db.Model):
 
 class StudyCase(db.Model):
     """StudyCase class"""
-    CREATION_NOT_STARTED = 'NOT_STARTED'
+    CREATION_NOT_STARTED = 'PENDING'
     CREATION_IN_PROGRESS = 'IN_PROGRESS'
     CREATION_DONE = 'DONE'
     CREATION_ERROR = 'IN_ERROR'
