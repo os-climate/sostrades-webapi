@@ -86,8 +86,13 @@ def get_allocation_status(pod_name):
             status = StudyCaseAllocation.DONE
         elif pod_status == "Running":
             status = StudyCaseAllocation.IN_PROGRESS
-        else:
+        elif pod_status == "Pending":
             status = StudyCaseAllocation.PENDING
+        elif pod_status == None:
+            status = StudyCaseAllocation.NOT_STARTED
+        else:
+            status = StudyCaseAllocation.ERROR
+
     else:
         status = StudyCaseAllocation.DONE
     app.logger.info(f'pod returned status: {status}')

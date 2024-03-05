@@ -55,6 +55,7 @@ class StudyCaseDto:
         self.current_execution_id = None
         self.is_last_study_opened = False
         self.opening_date = ''
+        self.error = ''
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -63,6 +64,7 @@ class StudyCaseDto:
             self.repository = study_case_instance.repository
             self.creation_date = study_case_instance.creation_date
             self.creation_status = study_case_instance.creation_status
+            self.error = study_case_instance.error
             self.modification_date = study_case_instance.modification_date
             self.process_display_name = study_case_instance.process
             self.repository_display_name = study_case_instance.repository
@@ -134,6 +136,7 @@ class StudyCaseDto:
         result.update({'is_favorite': self.is_favorite})
         result.update({'is_last_study_opened': self.is_last_study_opened})
         result.update({'opening_date': self.opening_date})
+        result.update({'error': self.error})
 
         return result
 
