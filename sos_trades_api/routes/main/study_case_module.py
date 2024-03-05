@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    check_study_case_is_Loaded, create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
+    check_study_case_is_Loaded, load_or_create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
     update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
@@ -37,9 +37,7 @@ def study_cases(study_id):
         user = session['user']
 
         study_case_identifier = request.json.get('studyCaseIdentifier', None)
-        reference = request.json.get('reference', None)
-        from_type = request.json.get('type', None)
-
+        
         # Verify user has process authorisation to create study
         study_case_access = StudyCaseAccess(user.id, study_case_identifier)
         if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_case_identifier):
@@ -53,9 +51,11 @@ def study_cases(study_id):
 
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
-
-        resp = make_response(jsonify(create_study_case(
-            user.id, study_case_identifier, reference, from_type)), 200)
+        study_access_right = study_case_access.get_user_right_for_study(
+            study_id)
+        
+        resp = make_response(jsonify(load_or_create_study_case(
+            user.id, study_case_identifier, study_access_right)), 200)
         return resp
     elif request.method == 'DELETE':
         user = session['user']
@@ -110,7 +110,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f'User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec')
 
-        loadedStudy = load_study_case(study_id, study_access_right, user.id)
+        loadedStudy = load_or_create_study_case(user.id, study_id, study_access_right)
 
         loadedStudy_duration = time.time()
         app.logger.info(
@@ -149,9 +149,11 @@ def copy_study_case_by_id(study_id):
             raise BadRequest(
                 'You do not have the necessary rights to copy this study case')
 
-        # Proceeding after rights verification
-        resp = make_response(jsonify(copy_study_case(
-            study_id, source_study_case, user.id)), 200)
+        study_access_right = study_case_access.get_user_right_for_study(
+            study_id)
+        
+        resp = make_response(jsonify(load_or_create_study_case(
+            user.id, study_id, study_access_right)), 200)
 
         return resp
 
@@ -361,8 +363,8 @@ def load_study_data_in_read_only_mode_or_not(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        loadedStudyJson = load_study_case_with_read_only_mode(study_id,study_access_right, user.id)
-        resp = make_response(loadedStudyJson, 200)
+        loadedStudyJson = load_or_create_study_case(user.id, study_id, study_access_right, read_only_mode=True)
+        resp = make_response(jsonify(loadedStudyJson), 200)
         return resp
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 

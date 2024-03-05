@@ -21,6 +21,7 @@ import os
 import re
 
 ACTIVE_STUDY_FILE_NAME = "active_study_"
+LOG_FILE_NAME = "logs_"
 DATETIME_STR_FORMAT = '%m/%d/%y %H:%M:%S'
 
 
@@ -42,12 +43,21 @@ def check_studies_last_active_date( delay_hr, logger):
             last_active_date = None
             is_inactive = False
             
-            # read the file and get the last_active date
-            with open(file, "r") as f:
-                last_active_date_str = f.readline()
-                logger.info(f'written date:{last_active_date_str}')
-                last_active_date = datetime.strptime(last_active_date_str, DATETIME_STR_FORMAT)
+            try:
 
+                # read the file and get the last_active date
+                with open(file, "r") as f:
+                    last_active_date_str = f.readline().strip()
+                    logger.info(f'written date:{last_active_date_str}')
+                    last_active_date = datetime.strptime(last_active_date_str, DATETIME_STR_FORMAT)
+
+            except Exception as exception:
+                logger.info(f'An error append while checking active date:{str(exception)}')
+                log_file = os.path.join(local_path, f'{LOG_FILE_NAME}{os.path.basename(file)}')
+                with open(log_file, "a") as f:
+                    f.write(f"{datetime.now()}-check last active date error: {str(exception)}\n")
+                raise Exception(f'Log error is written in {log_file} file')
+                
 
             # check if the date is past the delay of inactivity
             if last_active_date != None:
@@ -73,6 +83,9 @@ def delete_study_last_active_file(study_id):
     file_path = os.path.join(local_path, f'{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
     if os.path.exists(file_path):
         os.remove(file_path)
+    log_file_path = os.path.join(local_path, f'{LOG_FILE_NAME}{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
+    if os.path.exists(log_file_path):
+        os.remove(log_file_path)
 
 def save_study_last_active_date(study_id, last_active_date):
     '''

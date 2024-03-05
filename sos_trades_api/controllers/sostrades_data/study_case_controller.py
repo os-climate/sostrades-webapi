@@ -70,6 +70,8 @@ def create_empty_study_case(
     repository_name: str,
     process_name: str,
     group_identifier: int,
+    reference: str,
+    from_type:str
 ):
     """
     Create study case object in database
@@ -84,6 +86,10 @@ def create_empty_study_case(
     :type process_name: str
     :param group_identifier: group identifier to which the study case will be attached
     :type group_identifier: int
+    :param reference: study case reference for creation
+    :type reference: str
+    :param from_type: study case type (Reference or UsecaseData) for creation
+    :type from_type: str
     :return: sos_trades_api.models.database_models.StudyCase
     """
 
@@ -109,6 +115,9 @@ def create_empty_study_case(
     study_case.repository = repository_name
     study_case.name = name
     study_case.process = process_name
+    study_case.creation_status = StudyCase.NOT_STARTED
+    study_case.reference = reference
+    study_case.from_type = from_type
 
     # Save study_case
     db.session.add(study_case)
@@ -229,11 +238,13 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
         """
     with app.app_context():
 
+        new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
+
         try:
             study_manager_source = StudyCaseManager(source_study_case_identifier)
-            new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
-
+            
             if new_study_case is not None:
+                
                 # Copy the last study case execution and then update study_id, creation date and request_by.
                 study_execution = StudyCaseExecution.query.filter(
                     StudyCaseExecution.study_case_id == source_study_case_identifier) \
@@ -264,12 +275,16 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
                     db.session.commit()
 
         except Exception as ex:
-            db.session.rollback()
+            if new_study_case is not None:
+                db.session.rollback()
+                db.session.delete(new_study_case)
+                db.session.commit()
             raise ex
 
         # Copy of study data sources from the study source_study_case_identifier to study new study
         try:
             study_case_manager = StudyCaseManager(str(new_study_identifier))
+            
 
             # Copy dm.pkl in the new
             study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
@@ -289,9 +304,19 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
                         os.makedirs(path_folder_final)
                     shutil.copyfile(file_path_initial, file_path_final)
 
+            new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
+            new_study_case.creation_status = StudyCase.DONE
+            db.session.add(new_study_case)
+            db.session.commit()
+
+            new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
             return new_study_case
 
         except Exception as ex:
+            if new_study_case is not None:
+                db.session.rollback()
+                db.session.delete(new_study_case)
+                db.session.commit()
             app.logger.error(
                 f'Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
             raise ex
