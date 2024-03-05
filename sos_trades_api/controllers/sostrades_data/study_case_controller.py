@@ -515,9 +515,7 @@ def get_user_shared_study_case(user_identifier: int):
                 elif allocation.status == StudyCaseAllocation.PENDING:
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
-                else:
-                    user_study.creation_status = StudyCase.CREATION_ERROR
-                    user_study.error = "Creation status incoherent, please reload the study to finalize the creation"
+                
                     
 
                 
