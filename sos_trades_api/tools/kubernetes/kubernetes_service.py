@@ -313,26 +313,6 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
     else:
         print('deployement already exist')
 
-    #check pod created
-    pod_status = ""
-    interval_s = 1
-    max_s = 600
-    current_waiting_s = 0
-    while current_waiting_s < max_s:
-        pod_list = core_api_instance.list_namespaced_pod(namespace=namespace)
-
-        for pod in pod_list.items:
-            if pod.metadata.name.startswith(f"{pod_name}-"):
-                pod_status = pod.status.phase
-                break
-        if pod_status == "Running":
-            break
-
-        time.sleep(interval_s)
-        current_waiting_s += interval_s
-    if pod_status != "Running":
-        raise ExecutionEngineKuberneteError("Pod not starting")
-
 
 
 def kubernetes_service_delete(pod_name):
@@ -416,7 +396,7 @@ def kubernetes_eeb_service_pods_status(pod_identifiers):
 
 @time_function(logger=app.logger)
 def kubernetes_study_service_pods_status(pod_identifiers):
-    result = None
+    status = None
 
     # Retrieve the kubernetes configuration file regarding execution
     # engine block
@@ -440,7 +420,6 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                 status = list(result.values())[0]
                 app.logger.debug(f'request status found: {status}')
                 if status == "Running":
-                    result = "IN_PROGRESS"
                     # the pod is running, we have to send a ping to the api to check that it is running too
                     port = k8_conf['spec']['ports'][0]["port"]
                     study_server_url = f"http://{pod_identifiers}.{pod_namespace}.svc.cluster.local:{port}/api/ping"
@@ -460,15 +439,15 @@ def kubernetes_study_service_pods_status(pod_identifiers):
                         app.logger.error('An exception occurs when trying to reach study server', exc_info=e)
 
                     if study_response_data == "pong":
-                        result = "DONE"
+                        status = "DONE"
 
         else:
             pass  # launch exception
 
     else:
         pass  # launch exception
-    app.logger.debug(f'study response data:{result}')
-    return result
+    app.logger.debug(f'study response data:{status}')
+    return status
 
 
 @time_function(logger=app.logger)

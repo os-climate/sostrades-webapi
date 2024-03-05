@@ -121,7 +121,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             created_study = create_study_case(self.test_user_id,
                                               self.test_study_id,
                                               self.test_uc_name,
-                                              from_type='Reference')
+                                              from_type=StudyCase.FROM_REFERENCE)
 
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
             execute_calculation(created_study.study_case.id,

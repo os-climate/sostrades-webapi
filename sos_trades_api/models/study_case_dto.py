@@ -38,6 +38,7 @@ class StudyCaseDto:
         self.creation_date = ''
         self.modification_date = ''
         self.execution_status = ''
+        self.creation_status = ''
         self.study_type = ''
         self.group_name = ''
         self.group_id = None
@@ -61,6 +62,7 @@ class StudyCaseDto:
             self.process = study_case_instance.process
             self.repository = study_case_instance.repository
             self.creation_date = study_case_instance.creation_date
+            self.creation_status = study_case_instance.creation_status
             self.modification_date = study_case_instance.modification_date
             self.process_display_name = study_case_instance.process
             self.repository_display_name = study_case_instance.repository
@@ -117,6 +119,7 @@ class StudyCaseDto:
         result.update({'creation_date': self.creation_date})
         result.update({'modification_date': self.modification_date})
         result.update({'execution_status': self.execution_status})
+        result.update({'creation_status': self.creation_status})
         result.update({'study_type': self.study_type})
         result.update({'group_name': self.group_name})
         result.update({'group_id': self.group_id})

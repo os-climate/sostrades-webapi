@@ -294,12 +294,24 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+        with app.app_context():
+            study_case = StudyCase.query.filter(
+                StudyCase.id == study_case_manager.study.id).first()
+            study_case.creation_status = StudyCase.DONE
+            db.session.add(study_case)
+            db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End background reference loading {study_name}')
     except Exception as ex:
+        with app.app_context():
+            study_case = StudyCase.query.filter(
+                StudyCase.id == study_case_manager.study.id).first()
+            study_case.creation_status = StudyCase.ERROR
+            db.session.add(study_case)
+            db.session.commit()
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -364,12 +376,26 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
+        with app.app_context():
+            study_case = StudyCase.query.filter(
+                StudyCase.id == study_case_manager.study.id).first()
+            study_case.creation_status = StudyCase.DONE
+            db.session.add(study_case)
+            db.session.commit()
+
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f'End of loading usecase data in background {study_case_manager.study.name}')
     except Exception as ex:
+        with app.app_context():
+            study_case = StudyCase.query.filter(
+                StudyCase.id == study_case_manager.study.id).first()
+            study_case.creation_status = StudyCase.ERROR
+            db.session.add(study_case)
+            db.session.commit()
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -426,6 +452,13 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
+        with app.app_context():
+            study_case = StudyCase.query.filter(
+                StudyCase.id == study_case_manager.study.id).first()
+            study_case.creation_status = StudyCase.DONE
+            db.session.add(study_case)
+            db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
 
