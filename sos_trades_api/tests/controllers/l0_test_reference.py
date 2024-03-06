@@ -46,7 +46,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
 
-        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
+        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
         from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -95,7 +95,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      self.test_study_name,
                                                      self.test_repository_name,
                                                      self.test_process_name,
-                                                     self.test_user_group_id)
+                                                     self.test_user_group_id,
+                                                     'Empty Study',
+                                                     StudyCase.FROM_REFERENCE
+                                                     )
 
             created_study = create_study_case(self.test_user_id,
                                               new_study_case.id,
