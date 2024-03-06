@@ -98,6 +98,9 @@ class StudyCaseManager(BaseStudyManager):
             self.process_id = None
             self.description = None
             self.creation_date = None
+            self.creation_status = None
+            self.reference = None
+            self.from_type = None
             self.modification_date = None
             self.user_id_execution_authorised = None
             self.current_execution_id = None
@@ -120,6 +123,9 @@ class StudyCaseManager(BaseStudyManager):
             self.process_id = study_case.process_id
             self.description = study_case.description
             self.creation_date = study_case.creation_date
+            self.creation_status = study_case.creation_status
+            self.reference = study_case.reference
+            self.from_type = study_case.from_type
             self.modification_date = study_case.modification_date
             self.user_id_execution_authorised = study_case.user_id_execution_authorised
             self.current_execution_id = study_case.current_execution_id

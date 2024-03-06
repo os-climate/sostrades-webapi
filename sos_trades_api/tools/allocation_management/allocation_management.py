@@ -31,6 +31,7 @@ def create_allocation(study_case_identifier):
 
     :param study_case_identifier: study case identifier to allocate
     :type study_case_identifier: int
+    
     :return: sos_trades_api.models.database_models.StudyCaseAllocation
     """
     # create allocation in DB
@@ -39,7 +40,7 @@ def create_allocation(study_case_identifier):
     if Config().server_mode == Config.CONFIG_SERVER_MODE_MONO:
         new_study_case_allocation.status = StudyCaseAllocation.DONE
     elif Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
-        new_study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
+        new_study_case_allocation.status = StudyCaseAllocation.PENDING
     
     new_study_case_allocation.kubernetes_pod_name = get_study_pod_name(study_case_identifier)
     app.logger.info(f'study case create pod name: {new_study_case_allocation.kubernetes_pod_name}')     
@@ -83,12 +84,15 @@ def get_allocation_status(pod_name):
         pod_status = kubernetes_service.kubernetes_study_service_pods_status(pod_name)
         if pod_status == "DONE":
             status = StudyCaseAllocation.DONE
-        elif pod_status == "IN_PROGRESS":
+        elif pod_status == "Running":
             status = StudyCaseAllocation.IN_PROGRESS
+        elif pod_status == "Pending":
+            status = StudyCaseAllocation.PENDING
+        elif pod_status == None:
+            status = StudyCaseAllocation.NOT_STARTED
         else:
-            exc = Exception("pod not found")
-            app.logger.error(f'exception raised pod not found', exc_info = exc)
-            raise exc
+            status = StudyCaseAllocation.ERROR
+
     else:
         status = StudyCaseAllocation.DONE
     app.logger.info(f'pod returned status: {status}')

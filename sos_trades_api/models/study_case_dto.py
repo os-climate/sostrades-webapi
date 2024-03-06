@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/03/05 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,6 +39,7 @@ class StudyCaseDto:
         self.creation_date = ''
         self.modification_date = ''
         self.execution_status = ''
+        self.creation_status = ''
         self.study_type = ''
         self.group_name = ''
         self.group_id = None
@@ -54,6 +56,7 @@ class StudyCaseDto:
         self.current_execution_id = None
         self.is_last_study_opened = False
         self.opening_date = ''
+        self.error = ''
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -61,6 +64,8 @@ class StudyCaseDto:
             self.process = study_case_instance.process
             self.repository = study_case_instance.repository
             self.creation_date = study_case_instance.creation_date
+            self.creation_status = study_case_instance.creation_status
+            self.error = study_case_instance.error
             self.modification_date = study_case_instance.modification_date
             self.process_display_name = study_case_instance.process
             self.repository_display_name = study_case_instance.repository
@@ -117,6 +122,7 @@ class StudyCaseDto:
         result.update({'creation_date': self.creation_date})
         result.update({'modification_date': self.modification_date})
         result.update({'execution_status': self.execution_status})
+        result.update({'creation_status': self.creation_status})
         result.update({'study_type': self.study_type})
         result.update({'group_name': self.group_name})
         result.update({'group_id': self.group_id})
@@ -131,6 +137,7 @@ class StudyCaseDto:
         result.update({'is_favorite': self.is_favorite})
         result.update({'is_last_study_opened': self.is_last_study_opened})
         result.update({'opening_date': self.opening_date})
+        result.update({'error': self.error})
 
         return result
 
