@@ -144,7 +144,7 @@ def allocation_for_copying_study_case(study_case_identifier: int):
             source_study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
 
         study_case = create_empty_study_case(user.id, new_name, source_study_case.repository, source_study_case.process, 
-                                             group_id, study_case_identifier, StudyCase.FROM_STUDYCASE)
+                                             group_id, str(study_case_identifier), StudyCase.FROM_STUDYCASE)
         new_study_case_allocation = create_study_case_allocation(study_case.id)
 
         resp = make_response(jsonify(new_study_case_allocation), 200)
