@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/03/06 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -114,14 +115,17 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                      self.test_study_name,
                                                      self.test_repository_name,
                                                      self.test_process_name,
-                                                     self.test_user_group_id)
+                                                     self.test_user_group_id,
+                                                     imported_usecase.study_name,
+                                                     StudyCase.FROM_REFERENCE
+                                                     )
 
             self.test_study_id = new_study_case.id
 
             created_study = create_study_case(self.test_user_id,
                                               self.test_study_id,
                                               self.test_uc_name,
-                                              from_type='Reference')
+                                              from_type=StudyCase.FROM_REFERENCE)
 
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
             execute_calculation(created_study.study_case.id,

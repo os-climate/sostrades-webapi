@@ -57,6 +57,8 @@ def allocation_for_new_study_case():
         repository = request.json.get('repository', None)
         process = request.json.get('process', None)
         group_id = request.json.get('group', None)
+        reference = request.json.get('reference', None)
+        from_type = request.json.get('type', None)
 
         # Verify user has process authorisation to create study
         process_access = ProcessAccess(user.id)
@@ -74,11 +76,14 @@ def allocation_for_new_study_case():
             missing_parameter.append('Missing mandatory parameter: process')
         if group_id is None:
             missing_parameter.append('Missing mandatory parameter: group')
+        #reference can be None
+        if from_type is None:
+            missing_parameter.append('Missing mandatory parameter: type')
 
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
 
-        study_case = create_empty_study_case(user.id, name, repository, process, group_id)
+        study_case = create_empty_study_case(user.id, name, repository, process, group_id, reference, from_type)
         new_study_case_allocation = create_study_case_allocation(study_case.id)
 
         resp = make_response(jsonify(new_study_case_allocation), 200)
@@ -138,7 +143,8 @@ def allocation_for_copying_study_case(study_case_identifier: int):
         with app.app_context():
             source_study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
 
-        study_case = create_empty_study_case(user.id, new_name, source_study_case.repository, source_study_case.process, group_id)
+        study_case = create_empty_study_case(user.id, new_name, source_study_case.repository, source_study_case.process, 
+                                             group_id, str(study_case_identifier), StudyCase.FROM_STUDYCASE)
         new_study_case_allocation = create_study_case_allocation(study_case.id)
 
         resp = make_response(jsonify(new_study_case_allocation), 200)
@@ -195,7 +201,7 @@ def copy_study_case(study_id):
             source_study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
 
         new_study_case = create_empty_study_case(user.id, study_name, source_study_case.repository,
-                                                 source_study_case.process, group_id)
+                                                 source_study_case.process, group_id, study_id, StudyCase.FROM_STUDYCASE)
 
         copy_study_case = copy_study(source_study_case.id, new_study_case.id, user.id)
 

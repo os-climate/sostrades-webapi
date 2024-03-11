@@ -69,6 +69,40 @@ from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from numpy import array
 
+def load_or_create_study_case(user_id, study_case_identifier, study_access_right=None, read_only_mode=False):
+    """
+    Check creation status in database, if not_started: create the studycase, else load it
+    """
+    loaded_study = None
+    with app.app_context():
+        is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
+        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
+
+        if (not is_in_cache and study_case_manager.study.creation_status != StudyCase.CREATION_DONE):
+            study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
+            with app.app_context():
+                study_case = StudyCase.query.filter(
+                    StudyCase.id == study_case_identifier).first()
+                study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
+                db.session.add(study_case)
+                db.session.commit()
+            if study_case_manager.study.from_type == StudyCase.FROM_STUDYCASE:
+                source_id = int(study_case_manager.study.reference)
+                source_study_case = StudyCase.query.filter( StudyCase.id == source_id).first()
+                if source_study_case is not None and source_study_case.creation_status != StudyCase.CREATION_DONE:
+                    study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+                    db.session.delete(study_case)
+                    db.session.commit()
+                    raise Exception('Source study case is not completely created. Load it again then copy it.')
+                loaded_study = copy_study_case(study_case_identifier, source_id, user_id)
+            else:
+                loaded_study = create_study_case(user_id, study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
+        elif read_only_mode:
+            loaded_study = load_study_case_with_read_only_mode(study_case_identifier, study_access_right, user_id)
+        else:
+            loaded_study = load_study_case(study_case_identifier, study_access_right, user_id)
+    return loaded_study
+
 
 def create_study_case(user_id, study_case_identifier, reference, from_type=None):
     """
@@ -85,7 +119,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_identifier).first()
 
-        if from_type == 'Reference':
+        if from_type == StudyCase.FROM_REFERENCE:
 
             # Get reference path
             reference_path = f'{study_case.repository}.{study_case.process}.{reference}'
@@ -120,7 +154,9 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         # Loading data for study created empty
         if reference is None:
-
+            study_case.creation_status = StudyCase.CREATION_DONE
+            db.session.add(study_case)
+            db.session.commit()
             study_case_manager.load_status = LoadStatus.LOADED
             study_case_manager.n2_diagram = {}
             study_case_manager.execution_engine.dm.treeview = None
@@ -128,7 +164,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         # Adding reference data and loading study data
         else:
-            if from_type == 'Reference':
+            if from_type == StudyCase.FROM_REFERENCE:
 
                 reference_basepath = Config().reference_root_dir
 
@@ -143,6 +179,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
                 if study_case_manager.load_status != LoadStatus.IN_PROGESS and study_case_manager.load_status != LoadStatus.LOADED:
                     study_case_manager.load_status = LoadStatus.IN_PROGESS
 
+                    #set creation is done ()
+                    study_case.creation_status = StudyCase.CREATION_DONE
+                    db.session.add(study_case)
+                    db.session.commit()
                     threading.Thread(
                         target=study_case_manager_loading_from_reference,
                         args=(study_case_manager, False, False, reference_folder, reference_identifier)).start()
@@ -347,7 +387,7 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
     # If the study is not in read only mode, it is normally loaded
     loaded_study = load_study_case(study_id, study_access_right, user_id)
 
-    return jsonify(loaded_study)
+    return loaded_study
 
 
 
