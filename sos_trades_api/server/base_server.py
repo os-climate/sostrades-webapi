@@ -650,18 +650,21 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
         # Set the necessary processes access at the user_test
         try:
-
+            user_name = app.config['USER_TEST_E2E'].get('USERNAME', None)
+            # Check if the values are present
+            if user_name is None:
+                raise Exception(f'Environment variable "USERNAME" not found')
             process_list = ['test_multi_driver_subprocess_1_3', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
                             'test_architecture_standard']
 
             # retrieve the created user_test
-            user = User.query.filter(User.username == "user_test").first()
+            user = User.query.filter(User.username == user_name).first()
             if user is not None:
                 set_processes_to_user(process_list, user.id, app.logger)
             else:
-                raise Exception(f'User user_test not found in database')
+                raise Exception(f'User {user_name} not found in database')
         except Exception as ex:
-            app.logger.error(f'The following error occurs when trying to set process to user_test\n{ex} ')
+            app.logger.error(f'The following error occurs when trying to set process to test user\n{ex} ')
             raise ex
 
     # Add custom command on flask cli to execute database init data setup
