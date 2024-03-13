@@ -448,9 +448,12 @@ def delete_study_cases_and_allocation(studies):
             try:
                 for sc in query:
                     db.session.delete(sc)
+                    app.logger.info(f"The study '{sc.id}' on group '{sc.group_id}', has been pushed to be deleted")
                 db.session.commit()
+                app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
             except Exception as ex:
                 db.session.rollback()
+                app.logger.warn(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked ")
                 raise ex
 
             # Once removed from db, remove it from file system
@@ -509,7 +512,7 @@ def get_user_shared_study_case(user_identifier: int):
             if user_study.creation_status != StudyCase.CREATION_DONE:
                 allocation = get_study_case_allocation(user_study.id)
                 # deal with error cases:
-                if allocation.status != StudyCaseAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                if allocation is None or (allocation.status != StudyCaseAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
                 elif allocation.status == StudyCaseAllocation.PENDING:
@@ -517,11 +520,6 @@ def get_user_shared_study_case(user_identifier: int):
                         app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
                         user_study.creation_status = StudyCase.CREATION_ERROR
                         user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
-                
-                
-                    
-
-                
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)
