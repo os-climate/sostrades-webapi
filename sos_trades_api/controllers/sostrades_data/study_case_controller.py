@@ -448,9 +448,12 @@ def delete_study_cases_and_allocation(studies):
             try:
                 for sc in query:
                     db.session.delete(sc)
+                    app.logger.warn(f"The study '{sc.id}' on group '{sc.group_id}', has been pushed to be deleted")
                 db.session.commit()
+                app.logger.warn(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
             except Exception as ex:
                 db.session.rollback()
+                app.logger.warn(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked ")
                 raise ex
 
             # Once removed from db, remove it from file system
