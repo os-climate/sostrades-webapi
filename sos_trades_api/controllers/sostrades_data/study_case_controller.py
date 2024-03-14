@@ -439,21 +439,21 @@ def delete_study_cases_and_allocation(studies):
     """
     # Verify that we find same number of studies by querying database
     with app.app_context():
-        query = StudyCase.query.filter(StudyCase.id.in_(
-            studies)).all()
-        query_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id.in_(
-            studies)).all()
+        query = StudyCase.query.filter(StudyCase.id.in_(studies)).all()
+        query_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id.in_(studies)).all()
         pod_names = [allocation.kubernetes_pod_name for allocation in query_allocations]
         if len(query) == len(studies):
             try:
                 for sc in query:
                     db.session.delete(sc)
-                    app.logger.info(f"The study '{sc.id}' on group '{sc.group_id}', has been pushed to be deleted")
+                    # Don't make app.logger requests while commiting a transaction as it may interfere
+                    # With database logging
+                    # app.logger.info(f"The study '{sc.id}' on group '{sc.group_id}', has been pushed to be deleted")
                 db.session.commit()
                 app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
             except Exception as ex:
                 db.session.rollback()
-                app.logger.warn(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked ")
+                app.logger.warning(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked")
                 raise ex
 
             # Once removed from db, remove it from file system
@@ -462,7 +462,6 @@ def delete_study_cases_and_allocation(studies):
                 rmtree(folder, ignore_errors=True)
 
             delete_study_server_services_and_deployments(pod_names)
-
 
             return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
