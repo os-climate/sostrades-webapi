@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -27,7 +28,7 @@ import os
 import signal
 import threading
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
-from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, \
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, \
     StudyCaseExecutionLog, StudyCaseExecution, Process, StudyCaseLog
 from sos_trades_api.controllers.error_classes import InvalidStudy
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
@@ -99,7 +100,6 @@ def execute_calculation(study_id, username):
         db.session.flush()
 
         study_case.current_execution_id = new_study_case_execution.id
-
         db.session.add(study_case)
 
         # Clearing all log regarding the given study case
@@ -123,6 +123,15 @@ def execute_calculation(study_id, username):
         # Create backup file if it does not exists
         study.study_case_manager_save_backup_files()
 
+        
+        #create pod allocation, launch pod in case of kubernetes strategy
+        log_file = study.raw_log_file_path_absolute()
+        new_pod_allocation = create_and_load_allocation(new_study_case_execution.id, PodAllocation.TYPE_EXECUTION, log_file)
+        StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
+            "current_allocation_id":new_pod_allocation.id
+        })
+        
+        
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
             # Execution logs issue is here, stdout/stderr can't redirected to a file and contain information (outside of loggers).
             # Threaded mode is legacy, use subprocess instead
@@ -148,22 +157,21 @@ def execute_calculation(study_id, username):
             exec_subprocess = ExecutionEngineSubprocess(
                 study.study.current_execution_id, log_file)
             pid = exec_subprocess.run()
-            new_study_case_execution.execution_type = StudyCaseExecution.EXECUTION_TYPE_PROCESS
-            new_study_case_execution.process_identifier = pid
-            db.session.add(new_study_case_execution)
-            db.session.commit()
+            StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
+                "execution_type":StudyCaseExecution.EXECUTION_TYPE_PROCESS,
+                "process_identifier": pid
+            })
+            
         elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            log_file = study.raw_log_file_path_relative()
-            exec_kubernetes = ExecutionEngineKubernetes()
-            pod_name = exec_kubernetes.run(study.study, log_file)
-            new_study_case_execution.execution_type = StudyCaseExecution.EXECUTION_TYPE_K8S
-            new_study_case_execution.kubernetes_pod_name = pod_name
-            db.session.add(new_study_case_execution)
-            db.session.commit()
+            StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
+                "execution_type":StudyCaseExecution.EXECUTION_TYPE_K8S
+            })
 
         else:
             raise CalculationError(
                 f'Unknown calculation strategy : {config.execution_strategy}')
+        
+        db.session.commit()
 
         app.logger.info(
             f'Start execution request: successfully submit study case {study_id} using {config.execution_strategy} strategy')

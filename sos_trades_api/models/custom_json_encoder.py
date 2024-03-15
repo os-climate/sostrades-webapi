@@ -43,8 +43,8 @@ from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
 from sos_trades_api.models.user_application_right import UserApplicationRight
 from sos_trades_api.models.model_status import ModelStatus
-from sos_trades_api.models.database_models import StudyCase, Group, User, GroupAccessUser, \
-    StudyCaseExecutionLog, ReferenceStudy, StudyCaseValidation, Link, StudyCaseAllocation, News
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, Group, User, GroupAccessUser, \
+    StudyCaseExecutionLog, ReferenceStudy, StudyCaseValidation, Link, News
 from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights, StudyCaseLog
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
@@ -100,7 +100,7 @@ class CustomJsonEncoder(JSONEncoder):
             return o.serialize()
         elif isinstance(o, Link):
             return o.serialize()
-        elif isinstance(o, StudyCaseAllocation):
+        elif isinstance(o, PodAllocation):
             return o.serialize()
         elif isinstance(o, News):
             return o.serialize()

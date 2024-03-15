@@ -19,8 +19,8 @@ import shutil
 from shutil import rmtree
 from datetime import datetime, timezone, timedelta
 
-from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
-    load_study_allocation, delete_study_server_services_and_deployments
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, load_allocation, \
+    delete_study_server_services_and_deployments
 from sostrades_core.tools.tree.serializer import DataSerializer
 
 """
@@ -37,6 +37,7 @@ from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
+    PodAllocation,
     StudyCaseChange,
     UserStudyPreference,
     StudyCase,
@@ -48,7 +49,6 @@ from sos_trades_api.models.database_models import (
     Group,
     GroupAccessUser,
     AccessRights,
-    StudyCaseAllocation, 
     User,
     UserLastOpenedStudy
 )
@@ -146,22 +146,21 @@ def create_empty_study_case(
     return study_case
 
 
-def create_study_case_allocation(study_case_identifier):
+def create_study_case_allocation(study_case_identifier)-> PodAllocation:
     """
     Create a study case allocation instance in order to follow study case resource activation
 
     :param study_case_identifier: study case identifier to allocate
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
 
     # First check that allocated resources does not already exist
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocations = get_study_case_allocation(study_case_identifier)
 
     if len(study_case_allocations) == 0:
         app.logger.info('study case create first allocation')
-        new_study_case_allocation = create_allocation(study_case_identifier)
-
+        new_study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY)
     else:
         raise InvalidStudy('Allocation already exist for this study case')
 
@@ -175,53 +174,42 @@ def load_study_case_allocation(study_case_identifier):
 
     ::param study_case_identifier: study case identifier to the allocation to load
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
-    need_reload = False
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
-    study_case_allocation = None
-    if len(study_case_allocations) > 0:
-        study_case_allocation = study_case_allocations[0]
+    study_case_allocation = get_study_case_allocation(study_case_identifier)
+    if study_case_allocation is not None:
         # First get allocation status
-        if study_case_allocation.kubernetes_pod_name is None:
-            need_reload = True
-        else:
-            try:
-                app.logger.info('study case check allocation status')
-                study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
-                need_reload = study_case_allocation.status == StudyCaseAllocation.ERROR
-            except:
-                study_case_allocation.status = StudyCaseAllocation.ERROR
-                need_reload = True
-        #if the pod is not launch or accessible, reload pod
-        if need_reload:
+        if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
             app.logger.info('allocation need reload')
-            study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
-            load_study_allocation(study_case_allocation)
+            study_case_allocation.identifier = study_case_identifier
+            study_case_allocation.pod_status = PodAllocation.NOT_STARTED
+            study_case_allocation.message = None
+            load_allocation(study_case_allocation)
 
     else:
         app.logger.info('study case create allocation')
-        study_case_allocation = create_allocation(study_case_identifier)
+        study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY)
 
 
     return study_case_allocation
 
-def get_study_case_allocation(study_case_identifier):
+def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     """
     Load a study case allocation and if server mode is kubernetes, check pod status
 
     ::param study_case_identifier: study case identifier to the allocation to load
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+    study_case_allocations = PodAllocation.query.filter(PodAllocation.id == study_case.current_allocation_id).all()
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
         try:
-            study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
+            study_case_allocation.pod_status = get_allocation_status(study_case_allocation)
         except Exception as exc:
-            study_case_allocation.status = StudyCaseAllocation.ERROR
+            study_case_allocation.pod_status = PodAllocation.ERROR
             study_case_allocation.message = str(exc)
     return study_case_allocation
 
@@ -441,25 +429,30 @@ def delete_study_cases_and_allocation(studies):
     with app.app_context():
         query = StudyCase.query.filter(StudyCase.id.in_(
             studies)).all()
-        query_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id.in_(
-            studies)).all()
-        pod_names = [allocation.kubernetes_pod_name for allocation in query_allocations]
+        
         if len(query) == len(studies):
+            pod_allocations = []
+            study_list = []
             try:
                 for sc in query:
-                    db.session.delete(sc)
+                    query_allocation = PodAllocation.query.filter(PodAllocation.id == sc.current_allocation_id).first()
+                    if query_allocation is not None:
+                        pod_allocations.append(query_allocation)
+                    study_list.append(sc)
+                # delete allocations
+                delete_study_server_services_and_deployments(pod_allocations)
+                # delete studies
+                db.session.delete(study_list)
                 db.session.commit()
             except Exception as ex:
                 db.session.rollback()
                 raise ex
 
+
             # Once removed from db, remove it from file system
             for study in query:
                 folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
                 rmtree(folder, ignore_errors=True)
-
-            delete_study_server_services_and_deployments(pod_names)
-
 
             return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
@@ -512,20 +505,14 @@ def get_user_shared_study_case(user_identifier: int):
                 if allocation is None:
                     app.logger.error(f"The study '{user_study.id}' has not an allocation but his status is not done")
                 else:
-                    if allocation.status != StudyCaseAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                    if allocation.status != PodAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
                         user_study.creation_status = StudyCase.CREATION_ERROR
                         user_study.error = "An error occured while creation, please reload the study to finalize the creation"
-                    elif allocation.status == StudyCaseAllocation.PENDING:
+                    elif allocation.pod_status == PodAllocation.PENDING:
                         if datetime.now() - allocation.creation_date > timedelta(minutes=1):
                             app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
                             user_study.creation_status = StudyCase.CREATION_ERROR
                             user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
-
-                
-                
-                    
-
-                
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)

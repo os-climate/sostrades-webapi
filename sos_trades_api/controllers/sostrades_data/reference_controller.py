@@ -19,11 +19,13 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
+
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation
 from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
-from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
+from sos_trades_api.models.database_models import PodAllocation, ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_eeb_service_pods_status, kubernetes_service_generate
@@ -66,16 +68,16 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         db.session.add(gen_ref_status)
         db.session.commit()
+
+        #create pod allocation, launch pod in case of kubernetes strategy
+        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, PodAllocation.TYPE_EXECUTION)
+        #save allocation id in referencestudy
+        ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
+            {'current_allocation_id': new_pod_allocation.id}
+        )
+        db.session.commit()
         try:
-            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                # Launch pod whom generate the ref
-                pod_name = kubernetes_service_generate(
-                    reference_path, gen_ref_status.id, user_id)
-                # Update db by adding the pod whom generate the ref
-                gen_ref_status.kubernete_pod_name = pod_name
-                db.session.add(gen_ref_status)
-                db.session.commit()
-            else:
+            if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
                 subprocess_generation = ReferenceGenerationSubprocess(
                     gen_ref_status.id)
                 subprocess_generation.run()
@@ -181,7 +183,7 @@ def get_reference_generation_status(ref_gen_id):
         result = ref_generation
         # Get pod status
         if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = kubernetes_eeb_service_pods_status(
+            pod_status = kubernetes_pods_status(
                 ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
         else:
             pod_status = 'Running'

@@ -52,7 +52,7 @@ from sos_trades_api.server.base_server import db, app, study_case_cache
 from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
     CoeditionMessage
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase
-from sos_trades_api.models.database_models import StudyCase, StudyCaseAllocation, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
     ReferenceStudy
 from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
@@ -1040,28 +1040,15 @@ def check_study_is_still_active_or_kill_pod():
             except Exception as ex:
                 app.logger.error(f'Error wile checking the last active date in file: {ex}')
                 raise ex
-
+            allocations_to_delete = []
             for study_id in inactive_studies:
                 app.logger.info(f'Delete pod and allocation for study {study_id}')
 
                 #delete the file
                 delete_study_last_active_file(study_id)
-                
-                #get pod name
-                pod_name = [get_study_pod_name(study_id)]
-
+                study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
                 # get associated allocation to the study
-                allocation = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_id).first()
-
-                # delete allocation in db
-                if allocation is not None:
-                    try:
-                        db.session.delete(allocation)
-                        db.session.commit()
-                    except Exception as ex:
-                        app.logger.error(f'An error occured while deleting Alocation from db : {ex}')
-                        db.session.rollback()
-                        raise ex
-            
-                #delete service and deployment (that will delete the pod)
-                delete_study_server_services_and_deployments(pod_name)
+                allocation = PodAllocation.query.filter(PodAllocation.id == study_case.current_allocation_id).first()
+                allocations_to_delete.append(allocation)
+            #delete service and deployment (that will delete the pod)
+            delete_study_server_services_and_deployments(allocations_to_delete)
