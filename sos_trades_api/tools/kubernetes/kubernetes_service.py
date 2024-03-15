@@ -235,17 +235,15 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
     try:
         resp = core_api_instance.read_namespaced_service(name=pod_name, namespace=namespace)
         service_found = True
-        print(f'Check: {resp}')
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print(f'Not found')
+            app.logger.info('Service not found')
         else:
             raise api_exception
 
     # create service
     if not service_found:
         resp = core_api_instance.create_namespaced_service(body=k8_service, namespace=namespace)
-        print(resp)
         # wait while service is created
         interval_s = 1
         max_s = 600
@@ -253,11 +251,10 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
         while current_waiting_s < max_s:
             try:
                 service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
-                print(service)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Service not found')
                 else:
                     raise api_exception
             #if service.status.phase != 'Pending':
@@ -265,7 +262,7 @@ def kubernetes_study_server_service_create(pod_name, core_api_instance):
             time.sleep(interval_s)
             current_waiting_s += interval_s
     else:
-        print('service already exist')
+        app.logger.info('Service already exist')
 
 
 @time_function(logger=app.logger)
@@ -286,14 +283,13 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         deployement_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print(f'Not found')
+            app.logger.info('Deployment not found')
         else:
             raise api_exception
 
     # create deployment
     if not deployement_found:
         resp = apps_api_instance.create_namespaced_deployment(body=k8_deploy, namespace=namespace)
-        print(resp)
         # wait while deployment is created
         interval_s = 1
         max_s = 600
@@ -301,18 +297,16 @@ def kubernetes_study_server_deployment_create(pod_name, core_api_instance, apps_
         while current_waiting_s < max_s:
             try:
                 resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
-                print(resp.status)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Deployment not found')
                 else:
                     raise api_exception
             time.sleep(interval_s)
             current_waiting_s += interval_s
     else:
-        print('deployement already exist')
-
+        app.logger.info('deployement already exist')
 
 
 def kubernetes_service_delete(pod_name):
@@ -323,7 +317,7 @@ def kubernetes_service_delete(pod_name):
 
     if Path(eeb_k8_filepath).exists() and len(pod_name) > 0:
 
-        app.logger.info(f'pod configuration file found')
+        app.logger.info('Pod configuration file found')
 
         k8_conf = None
         with open(eeb_k8_filepath) as f:
@@ -349,7 +343,6 @@ def kubernetes_service_delete(pod_name):
 
             resp = api_instance.delete_namespaced_pod(name=pod_name, namespace=pod_namespace)
             app.logger.info(f'k8s response : {resp}')
-
         else:
             message = f"Pod configuration not loaded or empty pod configuration"
             app.logger.error(message)
@@ -602,7 +595,7 @@ def kubernetes_service_delete_study_server(pod_identifiers):
                 service_found = True
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Service not found')
             # delete service
             if service_found:
                 try:
@@ -621,7 +614,7 @@ def kubernetes_service_delete_study_server(pod_identifiers):
                 deployement_found = True
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Deployment not found')
             # delete deployment
             if deployement_found:
                 try:
