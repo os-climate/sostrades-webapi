@@ -124,7 +124,7 @@ def execute_calculation(study_id, username):
 
         
         #create pod allocation, launch pod in case of kubernetes strategy
-        log_file = study.raw_log_file_path_absolute()
+        log_file = study.raw_log_file_path_relative()
         new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, log_file)
              
         
