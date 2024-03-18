@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -33,7 +33,6 @@ from sos_trades_api.models.database_models import PodAllocation, StudyCase, Stud
 from sos_trades_api.controllers.error_classes import InvalidStudy
 from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
 from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
-from sos_trades_api.tools.execution.execution_engine_kubernetes import ExecutionEngineKubernetes
 from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
     load_repositories_metadata
@@ -97,8 +96,8 @@ def execute_calculation(study_id, username):
         new_study_case_execution.requested_by = username
 
         db.session.add(new_study_case_execution)
-        db.session.flush()
-
+        db.session.commit()
+        current_execution_id = new_study_case_execution.id
         study_case.current_execution_id = new_study_case_execution.id
         db.session.add(study_case)
 
@@ -126,11 +125,8 @@ def execute_calculation(study_id, username):
         
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_absolute()
-        new_pod_allocation = create_and_load_allocation(new_study_case_execution.id, PodAllocation.TYPE_EXECUTION, log_file)
-        StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
-            "current_allocation_id":new_pod_allocation.id
-        })
-        
+        new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, log_file)
+             
         
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
             # Execution logs issue is here, stdout/stderr can't redirected to a file and contain information (outside of loggers).
@@ -171,7 +167,7 @@ def execute_calculation(study_id, username):
             raise CalculationError(
                 f'Unknown calculation strategy : {config.execution_strategy}')
         
-        db.session.commit()
+        
 
         app.logger.info(
             f'Start execution request: successfully submit study case {study_id} using {config.execution_strategy} strategy')
@@ -231,14 +227,15 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
 
         if study_case_execution is not None:
             try:
+                
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id and
+                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
+                                                            ).first()
                 app.logger.info(
-                    f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{study_case_execution.kubernetes_pod_name}')
-                if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S and \
-                        len(study_case_execution.kubernetes_pod_name) > 0:
-                    exec_kubernetes = ExecutionEngineKubernetes()
-                    exec_kubernetes.delete(
-                        study_case_execution.kubernetes_pod_name)
-                elif study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
+                    f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{pod_allocation.kubernetes_pod_name}')
+                if pod_allocation is not None:
+                    delete_pod_allocation(pod_allocation, study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S)
+                if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
                         study_case_execution.process_identifier > 0:
                     try:
                         os.kill(study_case_execution.process_identifier,
@@ -283,30 +280,28 @@ def calculation_status(study_id):
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
-                config = Config()
+                
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id and 
+                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
+                                                            ).first()
+                    
 
-                if config.execution_strategy == 'kubernetes' and \
-                        study_case_execution.execution_type is StudyCaseExecution.EXECUTION_TYPE_K8S and \
-                        len(study_case_execution.kubernetes_pod_name) > 0:
+                if study_case_execution.execution_status == StudyCaseExecution.PENDING or \
+                        study_case_execution.execution_status == StudyCaseExecution.RUNNING:
+                    # get pod status to check if pod is still running
+                    if pod_allocation is not None:
+                        try:
+                            pod_allocation.pod_status = get_allocation_status(pod_allocation)
+                        except Exception as exc:
+                            pod_allocation.pod_status = PodAllocation.ERROR
+                            pod_allocation.message = str(exc)
+                    db.session.add(pod_allocation)
+                    db.session.flush()
 
-                    if not study_case_execution.execution_status == StudyCaseExecution.PENDING and \
-                            not study_case_execution.execution_status == StudyCaseExecution.RUNNING:
-                        exec_kubernetes = ExecutionEngineKubernetes()
-                        exec_kubernetes.delete(
-                            study_case_execution.kubernetes_pod_name)
-
-                        study_case_execution.kubernetes_pod_name = ''
+                    if study_case_execution.execution_status == StudyCaseExecution.RUNNING and pod_allocation.pod_status != PodAllocation.RUNNING:
+                        study_case_execution.execution_status = StudyCaseExecution.FAILED
                         db.session.add(study_case_execution)
-                        db.session.commit()
-                    else:
-                        exec_kubernetes = ExecutionEngineKubernetes()
-                        status = exec_kubernetes.pods_status(
-                            [study_case_execution.kubernetes_pod_name])
-
-                        if study_case_execution.execution_status == StudyCaseExecution.RUNNING and status[study_case_execution.kubernetes_pod_name] == 'Failed':
-                            study_case_execution.execution_status = StudyCaseExecution.FAILED
-                            db.session.add(study_case_execution)
-                            db.session.commit()
+                    db.session.commit()
 
                 sce_list = StudyCaseDisciplineStatus.query\
                     .filter(StudyCaseDisciplineStatus.study_case_id == study_case.id)\
@@ -323,6 +318,7 @@ def calculation_status(study_id):
     else:
         raise InvalidStudy(
             f'Requested study case (identifier {study_id} does not exist in the database')
+
 
 
 def calculation_logs(study_case_id, study_case_execution_id=None):

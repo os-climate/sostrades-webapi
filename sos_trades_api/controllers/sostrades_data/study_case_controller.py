@@ -156,14 +156,15 @@ def create_study_case_allocation(study_case_identifier)-> PodAllocation:
     """
 
     # First check that allocated resources does not already exist
-    study_case_allocations = get_study_case_allocation(study_case_identifier)
+    study_case_allocation = get_study_case_allocation(study_case_identifier)
 
-    if len(study_case_allocations) == 0:
+    if study_case_allocation is None:
         app.logger.info('study case create first allocation')
         new_study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY)
+        
     else:
         raise InvalidStudy('Allocation already exist for this study case')
-
+    
     return new_study_case_allocation
 
 
@@ -189,7 +190,7 @@ def load_study_case_allocation(study_case_identifier):
     else:
         app.logger.info('study case create allocation')
         study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY)
-
+   
 
     return study_case_allocation
 
@@ -201,8 +202,9 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.PodAllocation
     """
-    study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
-    study_case_allocations = PodAllocation.query.filter(PodAllocation.id == study_case.current_allocation_id).all()
+    study_case_allocations = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier and 
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_STUDY
+                                                        ).all()
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
@@ -435,14 +437,13 @@ def delete_study_cases_and_allocation(studies):
             study_list = []
             try:
                 for sc in query:
-                    query_allocation = PodAllocation.query.filter(PodAllocation.id == sc.current_allocation_id).first()
-                    if query_allocation is not None:
-                        pod_allocations.append(query_allocation)
                     study_list.append(sc)
+                    db.session.delete(sc)
+
                 # delete allocations
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies) and PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
                 delete_study_server_services_and_deployments(pod_allocations)
                 # delete studies
-                db.session.delete(study_list)
                 db.session.commit()
             except Exception as ex:
                 db.session.rollback()
@@ -505,7 +506,7 @@ def get_user_shared_study_case(user_identifier: int):
                 if allocation is None:
                     app.logger.error(f"The study '{user_study.id}' has not an allocation but his status is not done")
                 else:
-                    if allocation.status != PodAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                    if allocation.status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
                         user_study.creation_status = StudyCase.CREATION_ERROR
                         user_study.error = "An error occured while creation, please reload the study to finalize the creation"
                     elif allocation.pod_status == PodAllocation.PENDING:

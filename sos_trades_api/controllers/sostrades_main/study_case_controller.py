@@ -16,7 +16,7 @@ limitations under the License.
 '''
 from flask import jsonify
 from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
-from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments, get_study_pod_name
+from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
 
@@ -1046,9 +1046,8 @@ def check_study_is_still_active_or_kill_pod():
 
                 #delete the file
                 delete_study_last_active_file(study_id)
-                study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
                 # get associated allocation to the study
-                allocation = PodAllocation.query.filter(PodAllocation.id == study_case.current_allocation_id).first()
+                allocation = PodAllocation.query.filter(PodAllocation.identifier == study_id and PodAllocation.pod_type == PodAllocation.TYPE_STUDY).first()
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)

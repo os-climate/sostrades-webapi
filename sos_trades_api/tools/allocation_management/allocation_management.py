@@ -23,7 +23,7 @@ from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_create
 import yaml
 
 from sos_trades_api.config import Config
-from sos_trades_api.models.database_models import PodAllocation, StudyCase
+from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
 from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.kubernetes import kubernetes_service
 from sos_trades_api.server.base_server import app, db
@@ -51,9 +51,15 @@ def create_and_load_allocation(identifier:int, allocation_type:str, log_file_pat
     new_pod_allocation.pod_status = PodAllocation.NOT_STARTED
     new_pod_allocation.pod_type = allocation_type
     
+    
     #load allocation
-    load_allocation(new_pod_allocation, log_file_path)
+    new_pod_allocation = load_allocation(new_pod_allocation, log_file_path)
+    
+    db.session.add(new_pod_allocation)
+    db.session.commit()
 
+    # refresh pod_allocation
+    new_pod_allocation = PodAllocation.query.filter(PodAllocation.id == new_pod_allocation.id).first()
     return new_pod_allocation
 
 def load_allocation(pod_allocation, log_file_path=None):
@@ -81,13 +87,14 @@ def load_allocation(pod_allocation, log_file_path=None):
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
             pod_allocation.pod_status = get_allocation_status(pod_allocation)
         else: 
-            pod_allocation.pod_status = PodAllocation.DONE
+            pod_allocation.pod_status = PodAllocation.RUNNING
     except Exception as exp:
         pod_allocation.pod_status = PodAllocation.IN_ERROR
         pod_allocation.message = f'error while pod creation: {str(exp)}'
 
-    db.session.add(pod_allocation)
-    db.session.commit()
+    
+
+    return pod_allocation
 
 def get_kubernetes_config_eeb(pod_name, identifier, pod_type, log_file_path=None):
     """
@@ -152,10 +159,8 @@ def get_allocation_status(pod_allocation:PodAllocation):
     status = ""
     if (pod_allocation.pod_type == PodAllocation.TYPE_STUDY and Config().server_mode == Config.CONFIG_SERVER_MODE_K8S) or \
         (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
-        pod_status = kubernetes_service.kubernetes_service_pods_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
-        if pod_status == "DONE":
-            status = PodAllocation.DONE
-        elif pod_status == "Running":
+        pod_status = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type == PodAllocation.TYPE_STUDY)
+        if pod_status == "Running":
             status = PodAllocation.RUNNING
         elif pod_status == "Pending":
             status = PodAllocation.PENDING
@@ -164,7 +169,7 @@ def get_allocation_status(pod_allocation:PodAllocation):
         else:
             status = PodAllocation.IN_ERROR
     else:
-        status = PodAllocation.DONE
+        status = PodAllocation.RUNNING
     app.logger.info(f'pod returned status: {status}')
     return status
 
@@ -174,29 +179,54 @@ def delete_study_server_services_and_deployments(study_case_allocations:list[Pod
     :param study_case_allocations: list of podAllocation to delete
     :type study_case_allocations: PodAllocation list
     """
-    if Config().server_mode == Config.CONFIG_SERVER_MODE_K8S:
+    try:
+        for alloc in study_case_allocations:
+            # delete allocation object
+            db.session.delete(alloc)
+        db.session.commit()
+        # delete service and deployment
+        for pod_allocation in study_case_allocations:
+            kubernetes_service.kubernetes_delete_deployment_and_service(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
+    
+        app.logger.info(f"all {len(study_case_allocations)} PodAllocation have been successfully deleted")
+    except Exception as ex:
+        db.session.rollback()
+        raise ex
         
-        try:
-            for alloc in study_case_allocations:
-                # remove allocation id in study case
-                study_cases = StudyCase.query.filter(StudyCase.current_allocation_id == alloc.id).all()
-                if len(study_cases) > 0:
-                    for study_case in study_cases:
-                        study_case.current_allocation_id = None
-                        db.session.add(study_case)
-                # delete allocation object
-                db.session.delete(alloc)
-            db.session.commit()
-            # delete service and deployment
-            for pod_allocation in study_case_allocations:
-                kubernetes_service.kubernetes_delete_deployment_and_service(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
+
+def delete_pod_allocation(pod_allocation:PodAllocation, delete_pod_needed):
+    """
+    Delete a pod allocations, delete associated pod in case if delete_pod_needed
+    :param pod_allocation: podAllocation to delete
+    :type pod_allocation: PodAllocation 
+    :param delete_pod_needed: if the pod needs to be deleted (for exemple if we are in execution mode kubernetes)
+    :type delete_pod_needed: boolean
+    """
+    try:
+        # delete allocation object
+        db.session.delete(pod_allocation)
+        db.session.flush()
+        # delete pod
+        if delete_pod_needed:
+            kubernetes_service.kubernetes_delete_pod(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
+    
+        app.logger.info(f"PodAllocation {pod_allocation.kubernetes_pod_name} have been successfully deleted")
+    except Exception as ex:
+        db.session.rollback()
+        raise ex
+    
+    db.session.commit()
         
-            app.logger.info(f"all {len(study_case_allocations)} PodAllocation have been successfully deleted")
-        except Exception as ex:
-            db.session.rollback()
-            raise ex
-        
-        
+
+def update_all_pod_status():
+    """
+    For all allocations 
+    """
+    all_allocations = PodAllocation.query.all()
+    for allocation in all_allocations:
+        allocation.pod_status = get_allocation_status(allocation)
+        db.session.add(allocation)
+    db.session.commit()
 
 
 def clean_all_allocations_services_and_deployments():

@@ -229,7 +229,6 @@ class StudyCase(db.Model):
                                               name='fk_study_case_user_id_execution_authorised'),
                                           nullable=True)
     current_execution_id = Column(Integer, nullable=True)
-    current_allocation_id = Column(Integer, nullable=True)
     error = Column(Text, index=False, unique=False, nullable=True)
     disabled = Column(Boolean, default=False, nullable=False)
 
@@ -259,18 +258,19 @@ class PodAllocation(db.Model):
     NOT_STARTED = 'NOT_STARTED'
     PENDING = 'PENDING'
     RUNNING = 'RUNNING'
-    DONE = 'DONE'
     COMPLETED = 'COMPLETED'
     IN_ERROR = 'IN_ERROR'
 
     id = Column(Integer, primary_key=True)
-    identifier = Column(Integer, index=False, unique=False, server_default=None)
+    identifier = Column(Integer, index=False, unique=False, nullable=False)
     kubernetes_pod_name = Column(String(128), index=False, unique=False, server_default=None)
-    kubernetes_pod_namespace = Column(String(128), index=False, unique=True, server_default=None)
+    kubernetes_pod_namespace = Column(String(128), index=False, unique=False, server_default=None)
     pod_status = Column(String(64), unique=False, server_default='')
-    pod_type = Column(String(64), unique=False, server_default='')
-    cpu_requested = Column(Integer, primary_key=True)
-    memory_requested = Column(Integer, primary_key=True)
+    pod_type = Column(String(64), unique=False, nullable=False)
+    cpu_requested = Column(Integer, index=False, unique=False)
+    memory_requested = Column(Integer, index=False, unique=False)
+    cpu_limit = Column(Integer, index=False, unique=False)
+    memory_limit = Column(Integer, index=False, unique=False)
     message = Column(Text, index=False, unique=False, nullable=True)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
     cpu_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
@@ -286,6 +286,8 @@ class PodAllocation(db.Model):
             'pod_type': self.pod_type,
             'cpu_requested': self.cpu_requested,
             'memory_requested': self.memory_requested,
+            'cpu_limit': self.cpu_limit,
+            'memory_limit': self.memory_limit,
             'cpu_usage': self.cpu_usage,
             'memory_usage': self.memory_usage,
             'kubernetes_pod_name': self.kubernetes_pod_name,
@@ -737,8 +739,9 @@ class StudyCaseExecution(db.Model):
     process_identifier = Column(Integer, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
     requested_by = Column(String(64), index=True, unique=False, server_default='', nullable=False)
-    current_allocation_id = Column(Integer, index=False, unique=False)
-
+    cpu_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
+    memory_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)  
+    
     def serialize(self):
         """ json serializer for dto purpose
             data manager attribute is not serialize because is is intended to be only server side data
@@ -746,11 +749,12 @@ class StudyCaseExecution(db.Model):
         return {
             'id': self.id,
             'study_case_id': self.study_case_id,
-            'current_allocation_id': self.current_allocation_id,
             'execution_status': self.execution_status,
             'execution_type': self.execution_type,
             'process_identifier': self.process_identifier,
             'creation_date': self.creation_date,
+            'cpu_usage': self.cpu_usage,
+            'memory_usage': self.memory_usage
         }
 
 
@@ -898,8 +902,8 @@ class ReferenceStudy(db.Model):
     creation_date = Column(DateTime(timezone=True), nullable=True)
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     generation_logs = Column(Text, index=False, unique=False)
-    current_allocation_id = Column(Integer, index=False, unique=False)
     disabled = Column(Boolean, default=False, nullable=False)
+    
 
     def serialize(self):
         """ json serializer for dto purpose

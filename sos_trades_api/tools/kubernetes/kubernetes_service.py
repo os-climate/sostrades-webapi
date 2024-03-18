@@ -212,16 +212,17 @@ def kubernetes_delete_pod(pod_name, pod_namespace):
     app.logger.info(f'k8s response : {resp}')
 
 
+    
+
 @time_function(logger=app.logger)
-def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_complete=True):
+def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is_pod_name_complete:bool=True)->str:
     '''
     check pod status
-    :param pod_identifiers: list of pod names or the pod_name
+    :param pod_or_service_name: pod name or service name (set is_pod_name_complete to false in case of service name)
     :param pod_namespace: namespace k8 where to find the pod
-    :param is_pod_name_complete: boolean to test if the pod name is exactly the pod name or just the begining of the name
-    in this case pod_identifiers is a pod_name
+    :param is_pod_name_complete: boolean to test if the pod_or_service_name is exactly the pod name or just the begining of the name
     '''
-    result = {}
+    result = None
 
     # Create k8 api client object
     kubernetes_load_kube_config()
@@ -230,19 +231,17 @@ def kubernetes_service_pods_status(pod_identifiers, pod_namespace, is_pod_name_c
 
     pod_list = api_instance.list_namespaced_pod(
         namespace=pod_namespace)
-    app.logger.debug(f'iterate into pod list to find: {pod_identifiers}')
+    app.logger.debug(f'iterate into pod list to find: {pod_or_service_name}')
     for pod in pod_list.items:
         app.logger.debug(f'check request pod service: {pod.metadata.name}')
-        if pod.metadata.name in pod_identifiers:
-            result.update({pod.metadata.name: pod.status.phase})
+        if pod.metadata.name == pod_or_service_name:
+            result = pod.status.phase
             app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
-        elif not is_pod_name_complete:
-            # check pod name start with study-server-id- (the "-" is to prevent amalgame with study-server ids
-            if pod.metadata.name.startswith(f"{pod_identifiers}-"):
-                result.update({pod.metadata.name: pod.status.phase})
-                app.logger.debug(f'found pod service: {pod.metadata.name}')
-                break
+        elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
+            result = pod.status.phase
+            app.logger.debug(f'found pod service: {pod.metadata.name}')
+            break
     app.logger.debug(f'request pod service found: {result}')
     return result
 
