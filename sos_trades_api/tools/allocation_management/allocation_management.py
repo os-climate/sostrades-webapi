@@ -101,9 +101,10 @@ def load_allocation(pod_allocation, log_file_path=None):
 
 def _get_flavor_in_config(selected_flavor):
     flavors = Config().kubernetes_flavor_config
-    if selected_flavor not in flavors:
-        raise Exception(f"This flavor {selected_flavor} doesn't exists")
-    return flavors[selected_flavor]
+    if selected_flavor in flavors:
+        return flavors[selected_flavor]
+    else:
+        return None
 
 def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_path=None):
     """
@@ -120,7 +121,8 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
         if k8_conf is not None:
             # Overload pod configuration file
             k8_conf['metadata']['name'] = pod_name
-            k8_conf['spec']['containers'][0]['resources'] = flavor
+            if flavor is not None:
+                k8_conf['spec']['containers'][0]['resources'] = flavor
             if pod_type == PodAllocation.TYPE_EXECUTION:
                 k8_conf['spec']['containers'][0]['args'] = [
                     '--execute', str(identifier), log_file_path]
@@ -136,7 +138,10 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
     k8_conf = None
     with open(file_path) as f:
         k8_tplt = Template(f.read())
-        k8_tplt = k8_tplt.render(pod_name=pod_name, flavor=flavor)
+        if flavor is not None:
+            k8_tplt = k8_tplt.render(pod_name=pod_name, flavor=flavor)
+        else:
+            k8_tplt = k8_tplt.render(pod_name=pod_name)
         k8_conf = yaml.safe_load(k8_tplt)
     return k8_conf
    
