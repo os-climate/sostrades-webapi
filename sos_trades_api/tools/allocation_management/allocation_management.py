@@ -72,17 +72,20 @@ def load_allocation(pod_allocation, log_file_path=None):
     config = Config()
     pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type)
     pod_allocation.kubernetes_pod_name = pod_name
+    selected_flavor_name = 'Medium' # next step: it will be selected in GUI
 
     try:
         if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
-            k8_service = get_kubernetes_jinja_config(pod_name, config.service_study_server_filepath)
-            k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath)
+            flavor = _get_flavor_in_config(selected_flavor_name)
+            k8_service = get_kubernetes_jinja_config(pod_name, config.service_study_server_filepath, flavor)
+            k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
             kubernetes_create_deployment_and_service(k8_service, k8_deployment)
             pod_allocation.kubernetes_pod_namespace = k8_deployment['metadata']['namespace']
             pod_allocation.pod_status = get_allocation_status(pod_allocation)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            k8_conf = get_kubernetes_config_eeb(pod_name, pod_allocation.identifier, pod_allocation.pod_type, log_file_path)
+            flavor = _get_flavor_in_config(selected_flavor_name)
+            k8_conf = get_kubernetes_config_eeb(pod_name, pod_allocation.identifier, pod_allocation.pod_type, flavor, log_file_path)
             kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
             pod_allocation.pod_status = get_allocation_status(pod_allocation)
@@ -96,7 +99,13 @@ def load_allocation(pod_allocation, log_file_path=None):
 
     return pod_allocation
 
-def get_kubernetes_config_eeb(pod_name, identifier, pod_type, log_file_path=None):
+def _get_flavor_in_config(selected_flavor):
+    flavors = Config().kubernetes_flavor_config
+    if selected_flavor not in flavors:
+        raise Exception(f"This flavor {selected_flavor} doesn't exists")
+    return flavors[selected_flavor]
+
+def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_path=None):
     """
     Get pod configuration
     """
@@ -111,6 +120,7 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, log_file_path=None
         if k8_conf is not None:
             # Overload pod configuration file
             k8_conf['metadata']['name'] = pod_name
+            k8_conf['spec']['containers'][0]['resources'] = flavor
             if pod_type == PodAllocation.TYPE_EXECUTION:
                 k8_conf['spec']['containers'][0]['args'] = [
                     '--execute', str(identifier), log_file_path]
@@ -119,14 +129,14 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, log_file_path=None
                 '--generate', str(identifier)]
     return k8_conf
 
-def get_kubernetes_jinja_config(pod_name, file_path):
+def get_kubernetes_jinja_config(pod_name, file_path, flavor):
     '''
     Get config kubernetes file from jinja template to be rendered with pod_name
     '''
     k8_conf = None
     with open(file_path) as f:
         k8_tplt = Template(f.read())
-        k8_tplt = k8_tplt.render(pod_name=pod_name)
+        k8_tplt = k8_tplt.render(pod_name=pod_name, flavor=flavor)
         k8_conf = yaml.safe_load(k8_tplt)
     return k8_conf
    
