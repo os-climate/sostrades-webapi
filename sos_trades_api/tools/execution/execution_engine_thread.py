@@ -187,14 +187,6 @@ class ExecutionEngineThread(threading.Thread):
                             StudyCaseExecution.id.like(study_case.current_execution_id)).first()
                         study_case_execution.execution_status = StudyCaseExecution.FINISHED if not execution_error else StudyCaseExecution.FAILED
                         db.session.add(study_case_execution)
-
-                        # save new allocation status as the pod will be deleted
-                        pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case.current_execution_id 
-                                                                    and PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION).first()
-                        if pod_allocation is not None:
-                            pod_allocation.pod_status = PodAllocation.COMPLETED
-                            db.session.add(pod_allocation)
-
                         db.session.commit()
 
                         elapsed_time = time.time() - start_time

@@ -780,6 +780,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)
+    app.cli.add_command(update_pod_allocations_status)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
