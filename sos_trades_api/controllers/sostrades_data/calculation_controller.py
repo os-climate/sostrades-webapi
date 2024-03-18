@@ -96,7 +96,7 @@ def execute_calculation(study_id, username):
         new_study_case_execution.requested_by = username
 
         db.session.add(new_study_case_execution)
-        db.session.commit()
+        db.session.flush()
         current_execution_id = new_study_case_execution.id
         study_case.current_execution_id = new_study_case_execution.id
         db.session.add(study_case)
@@ -153,20 +153,21 @@ def execute_calculation(study_id, username):
             exec_subprocess = ExecutionEngineSubprocess(
                 study.study.current_execution_id, log_file)
             pid = exec_subprocess.run()
-            StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
+            StudyCaseExecution.query.filter(StudyCaseExecution.id == current_execution_id).update({
                 "execution_type":StudyCaseExecution.EXECUTION_TYPE_PROCESS,
                 "process_identifier": pid
             })
+            db.session.commit()
             
         elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            StudyCaseExecution.query.filter(StudyCaseExecution.id == new_study_case_execution.id).update({
+            StudyCaseExecution.query.filter(StudyCaseExecution.id == current_execution_id).update({
                 "execution_type":StudyCaseExecution.EXECUTION_TYPE_K8S
             })
+            db.session.commit()
 
         else:
             raise CalculationError(
                 f'Unknown calculation strategy : {config.execution_strategy}')
-        
         
 
         app.logger.info(

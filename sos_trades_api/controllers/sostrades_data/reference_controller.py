@@ -192,7 +192,7 @@ def get_reference_generation_status(ref_gen_id):
                 
                 result.execution_status = ReferenceStudy.FAILED
                 result.generation_logs = error_msg
-            db.session.Add(pod_allocation)
+            db.session.add(pod_allocation)
             db.session.commit()
     else:
         result = ReferenceStudy()
