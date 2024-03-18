@@ -63,6 +63,7 @@ class Config:
 
     CONFIG_STUDY_POD_DELAY = "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR"
     CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
+    CONFIG_FLAVOR_KUBERNETES = "FLAVOR_KUBERNETES"
 
     def __init__(self):
         """Constructor
@@ -103,6 +104,7 @@ class Config:
 
         self.__study_pod_delay = None
         self.__local_folder_path = ''
+        self.__kubernetes_flavor = None
 
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
@@ -576,3 +578,15 @@ class Config:
         del flask_config_dict['SECRET_KEY_ENV_VAR']
 
         return flask_config_dict
+    
+    @property
+    def kubernetes_flavor_config(self):
+        """skubernetes_flavor_config information of flavor config in k8
+
+        :return {} dict of flavor
+        """
+        if self.__kubernetes_flavor is None and self.CONFIG_FLAVOR_KUBERNETES in self.__server_config_file:
+            self.__kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
+
+        return self.__kubernetes_flavor
+

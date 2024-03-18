@@ -19,6 +19,7 @@ import os
 import time
 import argparse
 import logging
+from sos_trades_api.models.database_models import PodAllocation
 import yaml
 import git
 import re
@@ -212,6 +213,7 @@ def launch_generate_reference(reference_identifier):
             )
             main_server.db.session.add(ref_updated)
             main_server.db.session.commit()
+
 
             trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:

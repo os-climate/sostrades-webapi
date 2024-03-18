@@ -19,14 +19,15 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
+
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status
 from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
-from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
+from sos_trades_api.models.database_models import PodAllocation, ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_eeb_service_pods_status, kubernetes_service_generate
 from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
 
@@ -66,16 +67,12 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         db.session.add(gen_ref_status)
         db.session.commit()
+
+        #create pod allocation, launch pod in case of kubernetes strategy
+        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, PodAllocation.TYPE_REFERENCE)
         try:
-            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                # Launch pod whom generate the ref
-                pod_name = kubernetes_service_generate(
-                    reference_path, gen_ref_status.id, user_id)
-                # Update db by adding the pod whom generate the ref
-                gen_ref_status.kubernete_pod_name = pod_name
-                db.session.add(gen_ref_status)
-                db.session.commit()
-            else:
+            # if execution is not kubernetes, lunch generation in subprocess
+            if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
                 subprocess_generation = ReferenceGenerationSubprocess(
                     gen_ref_status.id)
                 subprocess_generation.run()
@@ -179,24 +176,24 @@ def get_reference_generation_status(ref_gen_id):
         ReferenceStudy.id == ref_gen_id).first()
     if ref_generation is not None:
         result = ref_generation
-        # Get pod status
-        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = kubernetes_eeb_service_pods_status(
-                ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
-        else:
-            pod_status = 'Running'
-        if (ref_generation.execution_status == ReferenceStudy.RUNNING or
-                ref_generation.execution_status == ReferenceStudy.PENDING)\
-                and pod_status not in ['Running', 'Pending']:
-            # Generation running and pod not running -> ERROR
-            error_msg = 'Regeneration status not coherent.'
-            # Update generation in db to FAILED
-            ReferenceStudy.query.filter(ReferenceStudy.id == ref_gen_id)\
-                .update({'execution_status': ReferenceStudy.FAILED,
-                         'generation_logs': error_msg})
+
+        # Get pod allocation
+        pod_allocation = get_reference_allocation_and_status(ref_generation.id)
+        if pod_allocation != None:
+            if (ref_generation.execution_status == ReferenceStudy.RUNNING \
+                    and pod_allocation.pod_status != PodAllocation.RUNNING) \
+                or (ref_generation.execution_status == ReferenceStudy.FAILED):
+                # Generation running and pod not running -> ERROR
+                error_msg = 'Regeneration status not coherent.'
+                # Update generation in db to FAILED
+                ReferenceStudy.query.filter(ReferenceStudy.id == ref_gen_id)\
+                    .update({'execution_status': ReferenceStudy.FAILED,
+                            'generation_logs': error_msg})
+                
+                result.execution_status = ReferenceStudy.FAILED
+                result.generation_logs = error_msg
+            db.session.Add(pod_allocation)
             db.session.commit()
-            result.execution_status = ReferenceStudy.FAILED
-            result.generation_logs = error_msg
     else:
         result = ReferenceStudy()
         result.id = ref_gen_id
@@ -274,16 +271,25 @@ def check_reference_is_regenerating(reference_path):
     '''
     # Retrieve ongoing generation from db
     ref_is_running = False
-    generation_is_running = ReferenceStudy.query\
-        .filter(ReferenceStudy.reference_path == reference_path).first()
+    generation_reference_status = get_reference_execution_status_by_name(reference_path)
 
-    if generation_is_running:
-        if generation_is_running.execution_status == ReferenceStudy.PENDING \
-                or generation_is_running.execution_status == ReferenceStudy.RUNNING:
+    if generation_reference_status == ReferenceStudy.PENDING \
+                or generation_reference_status == ReferenceStudy.RUNNING:
             ref_is_running = True
 
     return ref_is_running
 
+def get_reference_allocation_and_status(reference_id)-> PodAllocation:
+    """
+    get allocation and check allocation pod status
+    """
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id and 
+                                                PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
+                                                ).first()
+    #TODO: remove this when the cronjob to check status is added
+    if pod_allocation is not None:
+        pod_allocation.pod_status = get_allocation_status(pod_allocation)
+    return pod_allocation
 
 def get_reference_execution_status_by_name(reference_path):
     """
@@ -293,8 +299,14 @@ def get_reference_execution_status_by_name(reference_path):
     """
     ref = ReferenceStudy.query \
         .filter(ReferenceStudy.reference_path == reference_path).first()
-
     if ref is not None:
-        return ref.execution_status
+        reference_status = ref.execution_status
+        # get allocation
+        pod_allocation = get_reference_allocation_and_status(ref.id)
+        if pod_allocation is not None:
+            if (pod_allocation.pod_status != PodAllocation.RUNNING and reference_status == ReferenceStudy.RUNNING):
+                reference_status = ReferenceStudy.FAILED
+
+        return reference_status
     else:
         return ReferenceStudy.UNKNOWN
