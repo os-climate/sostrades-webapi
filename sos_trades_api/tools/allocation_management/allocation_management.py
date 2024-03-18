@@ -159,15 +159,18 @@ def get_allocation_status(pod_allocation:PodAllocation):
     status = ""
     if (pod_allocation.pod_type == PodAllocation.TYPE_STUDY and Config().server_mode == Config.CONFIG_SERVER_MODE_K8S) or \
         (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
-        pod_status = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type == PodAllocation.TYPE_STUDY)
-        if pod_status == "Running":
-            status = PodAllocation.RUNNING
-        elif pod_status == "Pending":
-            status = PodAllocation.PENDING
-        elif pod_status == None:
-            status = PodAllocation.NOT_STARTED
+        if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
+            pod_status = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
+            if pod_status == "Running":
+                status = PodAllocation.RUNNING
+            elif pod_status == "Pending":
+                status = PodAllocation.PENDING
+            elif pod_status == None:
+                status = PodAllocation.NOT_STARTED
+            else:
+                status = PodAllocation.IN_ERROR
         else:
-            status = PodAllocation.IN_ERROR
+            status = PodAllocation.NOT_STARTED
     else:
         status = PodAllocation.RUNNING
     app.logger.info(f'pod returned status: {status}')
