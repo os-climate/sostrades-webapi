@@ -93,7 +93,7 @@ def kubernetes_create_deployment_and_service(k8_service_conf, k8_deployment_conf
     apps_api_instance = client.AppsV1Api(client.ApiClient())
     
     kubernetes_service_create(k8_service_conf, core_api_instance)   
-    kubernetes_deployment_create(k8_deployment_conf, core_api_instance, apps_api_instance)
+    kubernetes_deployment_create(k8_deployment_conf, apps_api_instance)
 
 
 @time_function(logger=app.logger)
