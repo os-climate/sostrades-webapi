@@ -19,7 +19,6 @@ import os
 import time
 import argparse
 import logging
-from sos_trades_api.models.database_models import PodAllocation
 import yaml
 import git
 import re
@@ -332,6 +331,7 @@ if __name__ == '__main__':
         ReferenceMySQLHandler,
     )
     from sos_trades_api.models.database_models import ReferenceStudy, StudyCaseExecution
+    from sos_trades_api.models.database_models import PodAllocation
     from importlib import import_module
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
     from sos_trades_api.tools.execution.execution_engine_thread import (
