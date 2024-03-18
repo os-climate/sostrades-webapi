@@ -229,8 +229,7 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
 
     api_instance = client.CoreV1Api(client.ApiClient())
 
-    pod_list = api_instance.list_namespaced_pod(
-        namespace=pod_namespace)
+    pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
     app.logger.debug(f'iterate into pod list to find: {pod_or_service_name}')
     for pod in pod_list.items:
         app.logger.debug(f'check request pod service: {pod.metadata.name}')
