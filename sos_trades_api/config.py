@@ -581,12 +581,42 @@ class Config:
     
     @property
     def kubernetes_flavor_config(self):
-        """skubernetes_flavor_config information of flavor config in k8
+        """Retrieve Kubernetes flavor configuration from server config.
 
-        :return {} dict of flavor
+        :return: A dictionary containing Kubernetes flavor configuration.
+        :rtype: dict
+        :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found.
+        :raises ValueError: If Kubernetes flavor configuration is not valid.
+
         """
         if self.__kubernetes_flavor is None and self.CONFIG_FLAVOR_KUBERNETES in self.__server_config_file:
             self.__kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
+
+            if not isinstance(self.__kubernetes_flavor, dict):
+                raise ValueError("Kubernetes flavor configuration must be a dictionary")
+
+            # Iterate through each flavor
+            for flavor, config in self.__kubernetes_flavor.items():
+                if not isinstance(config, dict):
+                    raise ValueError(f"Configuration for flavor '{flavor}' must be a dictionary")
+
+                # Check if 'requests' and 'limits' are defined
+                if 'requests' not in config or 'limits' not in config:
+                    raise ValueError(f"'requests' and 'limits' must be defined for flavor '{flavor}'")
+
+                requests = config['requests']
+                limits = config['limits']
+
+                # Check if 'memory' and 'cpu' are defined under 'requests'
+                if not isinstance(requests, dict) or 'memory' not in requests or 'cpu' not in requests:
+                    raise ValueError(f"'memory' and 'cpu' must be defined under 'requests' for flavor '{flavor}'")
+
+                # Check if 'memory' and 'cpu' are defined under 'limits'
+                if not isinstance(limits, dict) or 'memory' not in limits or 'cpu' not in limits:
+                    raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
+    
+        elif self.__kubernetes_flavor is None:
+                raise KeyError("CONFIG_FLAVOR_KUBERNETES key not found in server config")
 
         return self.__kubernetes_flavor
 
