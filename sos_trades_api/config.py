@@ -137,6 +137,7 @@ class Config:
         deployment_study_server_filepath = self.deployment_study_server_filepath
         service_study_server_filepath = self.service_study_server_filepath
 
+        kubernetes_flavor_config = self.kubernetes_flavor_config
         # pylint: enable=unused-variable
 
     @property

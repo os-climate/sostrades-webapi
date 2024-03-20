@@ -180,6 +180,10 @@ def get_allocation_status(pod_allocation:PodAllocation):
                 status = PodAllocation.RUNNING
             elif pod_status == "Pending":
                 status = PodAllocation.PENDING
+            elif pod_status == "Completed":
+                status = PodAllocation.COMPLETED
+            elif pod_status == "OOMKILL":
+                status = PodAllocation.OOMKILL
             elif pod_status == None:
                 status = PodAllocation.NOT_STARTED
             else:

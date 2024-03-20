@@ -506,7 +506,7 @@ def get_user_shared_study_case(user_identifier: int):
                 if allocation is None:
                     app.logger.error(f"The study '{user_study.id}' has not an allocation but his status is not done")
                 else:
-                    if allocation.status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                    if allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
                         user_study.creation_status = StudyCase.CREATION_ERROR
                         user_study.error = "An error occured while creation, please reload the study to finalize the creation"
                     elif allocation.pod_status == PodAllocation.PENDING:
