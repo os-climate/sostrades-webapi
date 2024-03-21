@@ -264,12 +264,11 @@ def get_container_error_reason(pod):
     if container_status.ready is False:
         waiting_state = container_status.state.waiting
         terminated_state = container_status.state.terminated
-        app.logger.debug(f'container state waiting: {waiting_state}, message: {waiting_state.message}, reason: {waiting_state.reason}')
-        app.logger.debug(f'container state terminated: {terminated_state}, message: {terminated_state.message}, reason: {terminated_state.reason}')
+        
         # if status in error get the reason
-        if waiting_state is not None and waiting_state.message is not None and 'Error' in waiting_state.message:
+        if waiting_state is not None and waiting_state.reason is not None:
             status = waiting_state.reason
-        if terminated_state is not None and terminated_state.message is not None and 'Error' in terminated_state.message:
+        if terminated_state is not None and terminated_state.reason is not None:
             status = terminated_state.reason
     return status
 
