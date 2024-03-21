@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -277,7 +277,7 @@ def calculation_status(study_id):
             # In case execution has been deleted an study not updated
             if study_case_execution is not None:
 
-                status = study_case_execution.execution_status
+                
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
@@ -289,20 +289,14 @@ def calculation_status(study_id):
 
                 if study_case_execution.execution_status == StudyCaseExecution.PENDING or \
                         study_case_execution.execution_status == StudyCaseExecution.RUNNING:
-                    # get pod status to check if pod is still running
-                    if pod_allocation is not None:
-                        try:
-                            pod_allocation.pod_status = get_allocation_status(pod_allocation)
-                        except Exception as exc:
-                            pod_allocation.pod_status = PodAllocation.ERROR
-                            pod_allocation.message = str(exc)
-                    db.session.add(pod_allocation)
-                    db.session.flush()
 
-                    if study_case_execution.execution_status == StudyCaseExecution.RUNNING and pod_allocation.pod_status != PodAllocation.RUNNING:
+                    if ((study_case_execution.execution_status == StudyCaseExecution.RUNNING and pod_allocation.pod_status != PodAllocation.RUNNING)
+                    or pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]):
                         study_case_execution.execution_status = StudyCaseExecution.FAILED
                         db.session.add(study_case_execution)
                     db.session.commit()
+
+                status = study_case_execution.execution_status
 
                 sce_list = StudyCaseDisciplineStatus.query\
                     .filter(StudyCaseDisciplineStatus.study_case_id == study_case.id)\
@@ -312,9 +306,9 @@ def calculation_status(study_id):
                 for sce in sce_list:
                     disciplines_status_dict[sce.discipline_key] = sce.status
 
-                return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, cpu_usage, memory_usage)
+                return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, pod_allocation.message,  cpu_usage, memory_usage)
 
-        return LoadedStudyCaseExecutionStatus(study_id, {}, '', '----', '----')
+        return LoadedStudyCaseExecutionStatus(study_id, {}, '', '', '----', '----')
 
     else:
         raise InvalidStudy(
