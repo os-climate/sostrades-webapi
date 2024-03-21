@@ -73,7 +73,7 @@ def load_allocation(pod_allocation, log_file_path=None):
     pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type)
     pod_allocation.kubernetes_pod_name = pod_name
     selected_flavor_name = 'Medium' # next step: it will be selected in GUI
-
+    pod_allocation.flavor = selected_flavor_name
     try:
         if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
             flavor = _get_flavor_in_config(selected_flavor_name)
@@ -81,14 +81,14 @@ def load_allocation(pod_allocation, log_file_path=None):
             k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
             kubernetes_create_deployment_and_service(k8_service, k8_deployment)
             pod_allocation.kubernetes_pod_namespace = k8_deployment['metadata']['namespace']
-            pod_allocation.pod_status = get_allocation_status(pod_allocation)
+            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             flavor = _get_flavor_in_config(selected_flavor_name)
             k8_conf = get_kubernetes_config_eeb(pod_name, pod_allocation.identifier, pod_allocation.pod_type, flavor, log_file_path)
             kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
-            pod_allocation.pod_status = get_allocation_status(pod_allocation)
+            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         else: 
             pod_allocation.pod_status = PodAllocation.RUNNING
     except Exception as exp:
@@ -169,31 +169,33 @@ def get_allocation_status(pod_allocation:PodAllocation):
 
     :param study_case_identifier: study case identifier to allocate
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.PodAllocation status
+    :return: sos_trades_api.models.database_models.PodAllocation status and reason (str)
     """
     status = ""
+    reason = ""
     if (pod_allocation.pod_type == PodAllocation.TYPE_STUDY and Config().server_mode == Config.CONFIG_SERVER_MODE_K8S) or \
         (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
         if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
-            pod_status = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
+            pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
             if pod_status == "Running":
                 status = PodAllocation.RUNNING
             elif pod_status == "Pending":
                 status = PodAllocation.PENDING
-            elif pod_status == "Completed":
+            elif pod_status == "Succeeded":
                 status = PodAllocation.COMPLETED
-            elif pod_status == "OOMKILL":
+            elif pod_status == "Failed":
                 status = PodAllocation.OOMKILL
             elif pod_status == None:
                 status = PodAllocation.NOT_STARTED
             else:
                 status = PodAllocation.IN_ERROR
+            
         else:
             status = PodAllocation.NOT_STARTED
     else:
         status = PodAllocation.RUNNING
     app.logger.info(f'pod returned status: {status}')
-    return status
+    return status, reason
 
 def delete_study_server_services_and_deployments(study_case_allocations:list[PodAllocation]):
     """
@@ -246,7 +248,7 @@ def update_all_pod_status():
     """
     all_allocations = PodAllocation.query.all()
     for allocation in all_allocations:
-        allocation.pod_status = get_allocation_status(allocation)
+        allocation.pod_status, allocation.message = get_allocation_status(allocation)
         db.session.add(allocation)
     db.session.commit()
 

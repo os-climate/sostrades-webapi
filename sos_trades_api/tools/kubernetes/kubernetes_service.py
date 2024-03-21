@@ -222,8 +222,10 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
     :param pod_or_service_name: pod name or service name (set is_pod_name_complete to false in case of service name)
     :param pod_namespace: namespace k8 where to find the pod
     :param is_pod_name_complete: boolean to test if the pod_or_service_name is exactly the pod name or just the begining of the name
+    :return: status (str) and reason (str) of pod
     '''
     result = None
+    reason = None
 
     # Create k8 api client object
     kubernetes_load_kube_config()
@@ -233,17 +235,38 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
     app.logger.debug(f'iterate into pod list to find: {pod_or_service_name}')
     for pod in pod_list.items:
-        app.logger.debug(f'check request pod service: {pod.metadata.name}')
         if pod.metadata.name == pod_or_service_name:
             result = pod.status.phase
+            reason = get_container_error_reason(pod)
             app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
         elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
             result = pod.status.phase
+            reason = get_container_error_reason(pod)
             app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
     app.logger.debug(f'request pod service found: {result}')
-    return result
+    return result, reason
+
+def get_container_error_reason(pod):
+    """
+    get reason if error in pod
+    :param pod:pod to check
+    :type pod: pod api client
+    :return: message reason
+    :return type: str
+    """
+    status = None
+    # get the container status
+    container_status = pod.status.container_statuses[0]
+    # check status
+    if container_status.started is False or container_status.ready is False:
+        waiting_state = container_status.state.waiting
+        # if status in error get the reason
+        if waiting_state.message is not None and 'Error' in waiting_state.message:
+            status = waiting_state.reason
+    return status
+
 
 def kubernetes_load_kube_config():
     # load k8 api rights config or incluster config

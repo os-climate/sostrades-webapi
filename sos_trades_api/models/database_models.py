@@ -268,14 +268,10 @@ class PodAllocation(db.Model):
     kubernetes_pod_namespace = Column(String(128), index=False, unique=False, server_default=None)
     pod_status = Column(String(64), unique=False, server_default='')
     pod_type = Column(String(64), unique=False, nullable=False)
-    cpu_requested = Column(Integer, index=False, unique=False)
-    memory_requested = Column(Integer, index=False, unique=False)
-    cpu_limit = Column(Integer, index=False, unique=False)
-    memory_limit = Column(Integer, index=False, unique=False)
+    flavor = Column(String(64), unique=False, nullable=True, server_default='')
     message = Column(Text, index=False, unique=False, nullable=True)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    cpu_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
-    memory_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)    
+        
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -285,12 +281,7 @@ class PodAllocation(db.Model):
             'identifier': self.identifier,
             'pod_status': self.pod_status,
             'pod_type': self.pod_type,
-            'cpu_requested': self.cpu_requested,
-            'memory_requested': self.memory_requested,
-            'cpu_limit': self.cpu_limit,
-            'memory_limit': self.memory_limit,
-            'cpu_usage': self.cpu_usage,
-            'memory_usage': self.memory_usage,
+            'flavor': self.flavor,
             'kubernetes_pod_name': self.kubernetes_pod_name,
             'kubernetes_pod_namespace': self.kubernetes_pod_namespace,
             'message': self.message,

@@ -209,7 +209,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
         try:
-            study_case_allocation.pod_status = get_allocation_status(study_case_allocation)
+            study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
         except Exception as exc:
             study_case_allocation.pod_status = PodAllocation.ERROR
             study_case_allocation.message = str(exc)
