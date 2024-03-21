@@ -1047,7 +1047,7 @@ def check_study_is_still_active_or_kill_pod():
                 #delete the file
                 delete_study_last_active_file(study_id)
                 # get associated allocation to the study
-                allocation = PodAllocation.query.filter(PodAllocation.identifier == study_id and PodAllocation.pod_type == PodAllocation.TYPE_STUDY).first()
+                allocation = PodAllocation.query.filter(PodAllocation.identifier == study_id).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).first()
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)

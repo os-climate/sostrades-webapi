@@ -229,7 +229,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
         if study_case_execution is not None:
             try:
                 
-                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id and
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter(
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
                 app.logger.info(
@@ -282,7 +282,7 @@ def calculation_status(study_id):
                 memory_usage = study_case_execution.memory_usage
 
                 
-                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id and 
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter( 
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
                     
