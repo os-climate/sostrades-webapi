@@ -19,7 +19,7 @@ import shutil
 from shutil import rmtree
 from datetime import datetime, timezone, timedelta
 
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, load_allocation, \
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, load_allocation, \
     delete_study_server_services_and_deployments
 from sostrades_core.tools.tree.serializer import DataSerializer
 
@@ -208,11 +208,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
-        try:
-            study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
-        except Exception as exc:
-            study_case_allocation.pod_status = PodAllocation.ERROR
-            study_case_allocation.message = str(exc)
+        
     return study_case_allocation
 
 

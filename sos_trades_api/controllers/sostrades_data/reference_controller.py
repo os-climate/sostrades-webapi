@@ -20,7 +20,7 @@ Reference Functions
 from tempfile import gettempdir
 import io
 
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation
 from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
