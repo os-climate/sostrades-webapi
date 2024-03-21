@@ -290,7 +290,7 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     """
     get allocation and check allocation pod status
     """
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id and 
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
                                                 ).first()
     return pod_allocation

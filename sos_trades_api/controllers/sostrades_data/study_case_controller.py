@@ -202,7 +202,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.PodAllocation
     """
-    study_case_allocations = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier and 
+    study_case_allocations = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).filter(
                                                         PodAllocation.pod_type == PodAllocation.TYPE_STUDY
                                                         ).all()
     study_case_allocation = None
@@ -437,7 +437,7 @@ def delete_study_cases_and_allocation(studies):
                     db.session.delete(sc)
 
                 # delete allocations
-                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies) and PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies)).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
                 delete_study_server_services_and_deployments(pod_allocations)
                 # delete studies
                 db.session.commit()
