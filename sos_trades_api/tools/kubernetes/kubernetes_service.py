@@ -259,9 +259,11 @@ def get_container_error_reason(pod):
     status = None
     # get the container status
     container_status = pod.status.container_statuses[0]
+    app.logger.debug(f'found container: {container_status}')
     # check status
-    if container_status.started is False or container_status.ready is False:
+    if container_status.ready is False:
         waiting_state = container_status.state.waiting
+        app.logger.debug(f'container state: {waiting_state}, message: {waiting_state.message}, reason: {waiting_state.reason}')
         # if status in error get the reason
         if waiting_state.message is not None and 'Error' in waiting_state.message:
             status = waiting_state.reason

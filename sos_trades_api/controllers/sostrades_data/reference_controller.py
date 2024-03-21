@@ -160,47 +160,55 @@ def get_all_references(user_id, logger):
             result, key=lambda res: res.process_display_name.lower())
     return result
 
+def get_generation_status(reference:ReferenceStudy)->ReferenceStudy:
+    '''
+    Get reference status from pod allocation
+    '''
+    result = reference
 
-def get_reference_generation_status(ref_gen_id):
+    # Get pod allocation
+    pod_allocation = get_reference_allocation_and_status(reference.id)
+    if pod_allocation != None:
+        # if the execution is at running (meaning it has already started) but the pod is not running anymore
+        #it means it has failed : save failed status and save error msg
+        if (reference.execution_status == ReferenceStudy.RUNNING \
+                and pod_allocation.pod_status != PodAllocation.RUNNING) \
+            or (reference.execution_status == ReferenceStudy.FAILED):
+            # Generation running and pod not running -> ERROR
+            error_msg = 'Regeneration status not coherent.'
+            if pod_allocation.message is not None or pod_allocation.message != '':
+                error_msg = pod_allocation.message
+            # Update generation in db to FAILED
+            ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
+                .update({'execution_status': ReferenceStudy.FAILED,
+                        'generation_logs': error_msg})
+            
+            result.execution_status = ReferenceStudy.FAILED
+            result.generation_logs = error_msg
+        # if pod is pending, execution too
+        elif (reference.execution_status == ReferenceStudy.UNKNOWN \
+                and pod_allocation.pod_status == PodAllocation.PENDING):
+            result.execution_status = ReferenceStudy.PENDING
+        db.session.add(pod_allocation)
+        db.session.commit()
+    return result
+
+def get_reference_generation_status_by_id(ref_gen_id):
     '''
         Get the status of a generation, looked by id
         Also check if the generation is running in the container
         or if an error happened
         :params: ref_gen_id
         :type: Int
-        :return: Dictionnary containing ref gen id, status of the generation, logs associated to the generation
-        :type: Dict
+        :return: reference Study with updated status
+        :type: ReferenceStudy
     '''
     # Retrieve ongoing generation from db
     ref_generation = ReferenceStudy.query.filter(
         ReferenceStudy.id == ref_gen_id).first()
     if ref_generation is not None:
-        result = ref_generation
-
-        # Get pod allocation
-        pod_allocation = get_reference_allocation_and_status(ref_generation.id)
-        if pod_allocation != None:
-            if (ref_generation.execution_status == ReferenceStudy.RUNNING \
-                    and pod_allocation.pod_status != PodAllocation.RUNNING) \
-                or (ref_generation.execution_status == ReferenceStudy.FAILED):
-                # Generation running and pod not running -> ERROR
-                error_msg = 'Regeneration status not coherent.'
-                # Update generation in db to FAILED
-                ReferenceStudy.query.filter(ReferenceStudy.id == ref_gen_id)\
-                    .update({'execution_status': ReferenceStudy.FAILED,
-                            'generation_logs': error_msg})
-                
-                result.execution_status = ReferenceStudy.FAILED
-                result.generation_logs = error_msg
-            db.session.add(pod_allocation)
-            db.session.commit()
-    else:
-        result = ReferenceStudy()
-        result.id = ref_gen_id
-        result.execution_status = ReferenceStudy.UNKNOWN
-        result.generation_logs = 'Error cannot retrieve reference generation from database'
-    return result
-
+       ref_generation = get_generation_status(ref_generation)
+    return ref_generation
 
 def get_reference_generation_status_by_name(repository_name, process_name, usecase_name):
     '''
@@ -220,7 +228,7 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
         ReferenceStudy.reference_path == ref_name).first()
 
     if ref_generation is not None:
-        result = ref_generation
+        result = get_generation_status(ref_generation)
     else:
         result = ReferenceStudy()
         result.id = None
@@ -228,8 +236,7 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
         result.generation_logs = 'Error cannot retrieve reference generation from database'
     return result
 
-
-def get_references_generation_status(references_list):
+def get_references_generation_status_list(references_list):
     refs_status = []
     for ref in references_list:
         ref_status = get_reference_generation_status_by_name(
@@ -286,9 +293,6 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id and 
                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
                                                 ).first()
-    #TODO: remove this when the cronjob to check status is added
-    if pod_allocation is not None:
-        pod_allocation.pod_status = get_allocation_status(pod_allocation)
     return pod_allocation
 
 def get_reference_execution_status_by_name(reference_path):

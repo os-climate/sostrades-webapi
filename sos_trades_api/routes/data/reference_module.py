@@ -21,7 +21,7 @@ from werkzeug.exceptions import BadRequest
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.reference_controller import (
-    get_all_references, get_logs, get_reference_generation_status, get_references_generation_status, generate_reference)
+    get_all_references, get_logs, get_reference_generation_status_by_id, get_references_generation_status_list, generate_reference)
 
 
 @app.route(f'/api/data/reference', methods=['GET', 'POST'])
@@ -60,7 +60,7 @@ def study_case_references():
 def reference_generation_status(ref_gen_id):
     if ref_gen_id is not None:
         resp = make_response(
-            jsonify(get_reference_generation_status(ref_gen_id)), 200)
+            jsonify(get_reference_generation_status_by_id(ref_gen_id)), 200)
         return resp
 
 
@@ -71,7 +71,7 @@ def references_generation_status():
     if references_list is None:
         raise BadRequest('Missing mandatory parameter: references_list')
     resp = make_response(
-        jsonify(get_references_generation_status(references_list)), 200)
+        jsonify(get_references_generation_status_list(references_list)), 200)
     return resp
 
 
