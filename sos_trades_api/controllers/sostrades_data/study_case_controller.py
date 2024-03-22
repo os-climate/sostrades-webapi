@@ -441,8 +441,10 @@ def delete_study_cases_and_allocation(studies):
                 delete_study_server_services_and_deployments(pod_allocations)
                 # delete studies
                 db.session.commit()
+                app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
             except Exception as ex:
                 db.session.rollback()
+                app.logger.warning(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked")
                 raise ex
 
 
@@ -499,17 +501,14 @@ def get_user_shared_study_case(user_identifier: int):
             if user_study.creation_status != StudyCase.CREATION_DONE:
                 allocation = get_study_case_allocation(user_study.id)
                 # deal with error cases:
-                if allocation is None:
-                    app.logger.error(f"The study '{user_study.id}' has not an allocation but his status is not done")
-                else:
-                    if allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS:
+                if allocation is None or (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
+                    user_study.creation_status = StudyCase.CREATION_ERROR
+                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+                elif allocation.pod_status == PodAllocation.PENDING:
+                    if datetime.now() - allocation.creation_date > timedelta(minutes=1):
+                        app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
                         user_study.creation_status = StudyCase.CREATION_ERROR
-                        user_study.error = "An error occured while creation, please reload the study to finalize the creation"
-                    elif allocation.pod_status == PodAllocation.PENDING:
-                        if datetime.now() - allocation.creation_date > timedelta(minutes=1):
-                            app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
-                            user_study.creation_status = StudyCase.CREATION_ERROR
-                            user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
+                        user_study.error = "Waiting for a study pod to end the creation of the study, may need to be reloaded"
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)
