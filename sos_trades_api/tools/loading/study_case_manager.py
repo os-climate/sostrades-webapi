@@ -36,10 +36,6 @@ from sos_trades_api.models.database_models import (
     Group,
     AccessRights,
 )
-from sostrades_core.execution_engine.data_connector.ontology_data_connector import (
-    GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
-    OntologyDataConnector,
-)
 from sos_trades_api.server.base_server import db, app
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
@@ -196,11 +192,6 @@ class StudyCaseManager(BaseStudyManager):
         """
 
         super()._init_exec_engine()
-        self.execution_engine.connector_container.register_persistent_connector(
-            OntologyDataConnector.NAME,
-            GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
-            {'endpoint': app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]},
-        )
 
     def raw_log_file_path_absolute(
         self, specific_study_case_execution_identifier=None
