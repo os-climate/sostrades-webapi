@@ -248,8 +248,6 @@ pyjwt==1.7.1
     #   -r ./sostrades-webapi/requirements.in
     #   flask-jwt-extended
     #   python-arango
-pymongo==4.4.1
-    # via -r ./sostrades-core/requirements.in
 pymoo==0.5.0
     # via -r ./gemseo/requirements.txt
 pyparsing==3.1.2
