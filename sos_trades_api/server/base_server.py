@@ -567,6 +567,11 @@ def clean_inactive_study_pods():
 
     check_study_is_still_active_or_kill_pod()
 
+def update_all_pod_status_method():
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+        update_all_pod_status
+    update_all_pod_status()
+
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
@@ -750,9 +755,17 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     @click.command('clean_inactive_study_pod')
     @with_appcontext
     def clean_inactive_study_pod():
-        """  delete inactive current allocation from db and delete service and deployment with kubernetes api
+        """  delete inactive current study allocation from db and delete service and deployment with kubernetes api
         """
         clean_inactive_study_pods()
+
+    # Add custom command on flask cli to update all current allocations
+    @click.command('update_pod_allocations_status')
+    @with_appcontext
+    def update_pod_allocations_status():
+        """  update all allocations from db 
+        """
+        update_all_pod_status_method()
 
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
@@ -767,6 +780,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)
+    app.cli.add_command(update_pod_allocations_status)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
