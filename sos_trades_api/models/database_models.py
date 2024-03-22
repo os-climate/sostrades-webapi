@@ -18,6 +18,7 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Database models
 """
+from enum import Enum
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, UniqueConstraint, LargeBinary
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -247,40 +248,48 @@ class StudyCase(db.Model):
             'creation_status': self.creation_status,
         }
 
+class PodAllocation(db.Model):
+    """PodAllocation class"""
 
-class StudyCaseAllocation(db.Model):
-    """StudyCaseAllocation class"""
+    TYPE_STUDY = "STUDY"
+    TYPE_EXECUTION = "EXECUTION"
+    TYPE_REFERENCE = "REFERENCE"
 
     NOT_STARTED = 'NOT_STARTED'
-    IN_PROGRESS = 'IN_PROGRESS'
     PENDING = 'PENDING'
-    DONE = 'DONE'
-    ERROR = 'IN_ERROR'
+    RUNNING = 'RUNNING'
+    COMPLETED = 'COMPLETED'
+    IN_ERROR = 'IN_ERROR'
+    OOMKILL = 'OOMKILL'
 
     id = Column(Integer, primary_key=True)
-    study_case_id = Column(Integer,
-                           ForeignKey(f'{StudyCase.__tablename__}.id',
-                                      ondelete="CASCADE",
-                                      name='fk_study_case_allocation_study_case_id'),
-                           nullable=False, unique=True, index=True)
-    status = Column(String(64), unique=False, server_default='')
-    kubernetes_pod_name = Column(String(128), index=False, unique=True, server_default=None)
+    identifier = Column(Integer, index=False, unique=False, nullable=False)
+    kubernetes_pod_name = Column(String(128), index=False, unique=False, server_default=None)
+    kubernetes_pod_namespace = Column(String(128), index=False, unique=False, server_default=None)
+    pod_status = Column(String(64), unique=False, server_default='')
+    pod_type = Column(String(64), unique=False, nullable=False)
+    flavor = Column(String(64), unique=False, nullable=True, server_default='')
     message = Column(Text, index=False, unique=False, nullable=True)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    
-    
+        
 
     def serialize(self):
         """ json serializer for dto purpose
         """
         return {
             'id': self.id,
-            'study_case_id': self.study_case_id,
-            'status': self.status,
+            'identifier': self.identifier,
+            'pod_status': self.pod_status,
+            'pod_type': self.pod_type,
+            'flavor': self.flavor,
             'kubernetes_pod_name': self.kubernetes_pod_name,
+            'kubernetes_pod_namespace': self.kubernetes_pod_namespace,
             'message': self.message,
             'creation_date': self.creation_date
         }
+
+
+
 
 class UserStudyPreference(db.Model):
     """UserStudyPreference class"""
@@ -718,13 +727,12 @@ class StudyCaseExecution(db.Model):
                                name='fk_study_case_execution_study_case_id'))
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     execution_type = Column(String(64), index=True, unique=False, server_default='')
-    kubernetes_pod_name = Column(String(128), index=False, unique=False, server_default='')
     process_identifier = Column(Integer, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
     requested_by = Column(String(64), index=True, unique=False, server_default='', nullable=False)
     cpu_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
-    memory_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
-
+    memory_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)  
+    
     def serialize(self):
         """ json serializer for dto purpose
             data manager attribute is not serialize because is is intended to be only server side data
@@ -734,7 +742,6 @@ class StudyCaseExecution(db.Model):
             'study_case_id': self.study_case_id,
             'execution_status': self.execution_status,
             'execution_type': self.execution_type,
-            'kubernetes_pod_name': self.kubernetes_pod_name,
             'process_identifier': self.process_identifier,
             'creation_date': self.creation_date,
             'cpu_usage': self.cpu_usage,
@@ -886,8 +893,8 @@ class ReferenceStudy(db.Model):
     creation_date = Column(DateTime(timezone=True), nullable=True)
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     generation_logs = Column(Text, index=False, unique=False)
-    kubernete_pod_name = Column(String(128), index=False, unique=False, server_default='')
     disabled = Column(Boolean, default=False, nullable=False)
+    
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -901,7 +908,6 @@ class ReferenceStudy(db.Model):
             'creation_date': self.creation_date,
             'execution_status': self.execution_status,
             'generation_logs': self.generation_logs,
-            'kubernete_pod_name': self.kubernete_pod_name,
             'disabled': self.disabled
         }
 
