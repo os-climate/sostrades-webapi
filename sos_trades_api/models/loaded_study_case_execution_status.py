@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/03/21 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,12 +22,13 @@ Class that represent a state of an executed study case
 
 class LoadedStudyCaseExecutionStatus:
 
-    def __init__(self, study_case_id, study_case_execution, study_case_execution_status,
+    def __init__(self, study_case_id, study_case_execution, study_case_execution_status, study_case_execution_error_message,
                  study_case_execution_cpu, study_case_execution_memory):
 
         self.study_case_id = study_case_id
         self.study_case_execution = study_case_execution
         self.study_case_execution_status = study_case_execution_status
+        self.study_case_execution_error_message = study_case_execution_error_message
         self.study_case_execution_cpu = study_case_execution_cpu
         self.study_case_execution_memory = study_case_execution_memory
 
@@ -37,6 +39,7 @@ class LoadedStudyCaseExecutionStatus:
             'study_case_id': self.study_case_id,
             'disciplines_status': self.study_case_execution,
             'study_case_execution_status': self.study_case_execution_status,
+            'study_case_execution_error_message': self.study_case_execution_error_message,
             'study_case_execution_cpu': self.study_case_execution_cpu,
             'study_case_execution_memory': self.study_case_execution_memory
         }
