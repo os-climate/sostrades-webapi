@@ -642,7 +642,6 @@ class StudyCaseChange(db.Model):
 
     CSV_CHANGE = 'csv'
     SCALAR_CHANGE = 'scalar'
-    CONNECTOR_DATA_CHANGE = 'connector_data'
 
     id = Column(Integer, primary_key=True)
     notification_id = Column(Integer,

@@ -581,7 +581,6 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               datetime.now())
 
         values = {}
-        connectors = {}
         for parameter in parameters_to_save:
             uuid_param = study_manager.execution_engine.dm.data_id_map[parameter['variableId']]
 
@@ -703,8 +702,6 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       datetime.now())
                     except Exception as error:
                         app.logger.exception(f'Study change database insertion error: {error}')
-                if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
-                    connectors[parameter['variableId']] = value
                 else:
                     values[parameter['variableId']] = value
 
@@ -716,7 +713,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-                target=study_case_manager_update, args=(study_manager, values, False, False, connectors)).start()
+                target=study_case_manager_update, args=(study_manager, values, False, False)).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)

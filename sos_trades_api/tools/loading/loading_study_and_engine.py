@@ -159,7 +159,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         print("Profiling Information:\n%s", profiling_output.getvalue())
 
 
-def study_case_manager_update(study_case_manager, values, no_data, read_only, connectors=None):
+def study_case_manager_update(study_case_manager, values, no_data, read_only):
     """ Method that inject data into a study case manager
         (usefull for threading study data loading)
 
@@ -174,9 +174,6 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
     :params: read_only, if treeview has to be tagged read only
     :type: boolean
-
-    :params: connectors, connectors to inject in study manager
-    :type: dictionary
     """
     from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
@@ -190,7 +187,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only, co
 
         # Update parameter into dictionary
         study_case_manager.load_data(
-            from_input_dict=values, display_treeview=False, from_connectors_dict=connectors)
+            from_input_dict=values, display_treeview=False)
 
         # Persist data using the current persistence strategy
         study_case_manager.save_study_case()
