@@ -702,8 +702,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       datetime.now())
                     except Exception as error:
                         app.logger.exception(f'Study change database insertion error: {error}')
-                else:
-                    values[parameter['variableId']] = value
+                values[parameter['variableId']] = value
 
                 # Invalidate all linked validation discipline
                 invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
