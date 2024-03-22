@@ -305,8 +305,12 @@ def calculation_status(study_id):
                 disciplines_status_dict = {}
                 for sce in sce_list:
                     disciplines_status_dict[sce.discipline_key] = sce.status
+                
+                message = ''
+                if pod_allocation is not None:
+                    message = pod_allocation.message
 
-                return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, pod_allocation.message,  cpu_usage, memory_usage)
+                return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, message,  cpu_usage, memory_usage)
 
         return LoadedStudyCaseExecutionStatus(study_id, {}, '', '', '----', '----')
 

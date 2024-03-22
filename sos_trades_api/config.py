@@ -616,7 +616,8 @@ class Config:
                 if not isinstance(limits, dict) or 'memory' not in limits or 'cpu' not in limits:
                     raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
     
-        elif self.__kubernetes_flavor is None:
+        elif self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file and \
+            (self.server_mode == Config.CONFIG_SERVER_MODE_K8S or self.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
                 raise KeyError("CONFIG_FLAVOR_KUBERNETES key not found in server config")
 
         return self.__kubernetes_flavor

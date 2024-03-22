@@ -28,6 +28,7 @@
         "migrations/versions/59ef3f9fbb52_add_no_execution_profile.py",
         "migrations/versions/5acd0bb7bad9_add_studycase_creation_status.py",
         "migrations/versions/5b6303f4ab8e_update_pod_allocation.py",
+        "migrations/versions/dda4d408a5e0_add_flavors_in_pod_allocation.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
