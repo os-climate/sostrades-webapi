@@ -99,7 +99,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      self.test_process_name,
                                                      self.test_user_group_id,
                                                      'Empty Study',
-                                                     StudyCase.FROM_REFERENCE
+                                                     StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                      )
 
             created_study = create_study_case(self.test_user_id,

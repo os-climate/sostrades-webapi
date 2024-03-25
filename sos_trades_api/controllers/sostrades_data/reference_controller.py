@@ -20,7 +20,7 @@ Reference Functions
 from tempfile import gettempdir
 import io
 
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status
 from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
@@ -32,7 +32,7 @@ from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
 
 
-def generate_reference(repository_name, process_name, usecase_name, user_id):
+def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int, flavor_name:str):
     '''
         Generate a reference
         :params: repository_name
@@ -43,6 +43,8 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
         :type: String
         :params: user_id
         :type: Int
+        :param flavor_name: name of the selected flavor
+        :type: str
         :return: gen_ref_status.id, id of the generation just launched
         :type: Int
     '''
@@ -64,12 +66,13 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
             .filter(ReferenceStudy.reference_path == reference_path).first()
         gen_ref_status.execution_status = gen_ref_status.PENDING
         gen_ref_status.user_id = user_id
+        gen_ref_status.generation_pod_flavor = flavor_name
 
         db.session.add(gen_ref_status)
         db.session.commit()
 
         #create pod allocation, launch pod in case of kubernetes strategy
-        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, PodAllocation.TYPE_REFERENCE)
+        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, PodAllocation.TYPE_REFERENCE, flavor_name)
         try:
             # if execution is not kubernetes, lunch generation in subprocess
             if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
@@ -138,6 +141,7 @@ def get_all_references(user_id, logger):
             new_usecase.study_type = ref.reference_type
             new_usecase.group_id = None
             new_usecase.group_name = 'All groups'
+            new_usecase.generation_pod_flavor = ref.generation_pod_flavor
 
             # Apply ontology on the usecase
             new_usecase.apply_ontology(process_metadata, repository_metadata)
@@ -293,6 +297,9 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
                                                 ).first()
+    if pod_allocation is not None:
+        pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+        
     return pod_allocation
 
 def get_reference_execution_status_by_name(reference_path):

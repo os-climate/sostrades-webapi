@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -125,7 +125,7 @@ def execute_calculation(study_id, username):
         
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_relative()
-        new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, log_file)
+        new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
              
         
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
@@ -286,12 +286,15 @@ def calculation_status(study_id):
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
                     
+                if pod_allocation is not None:
+                    pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+      
+                if pod_allocation is not None and (study_case_execution.execution_status == StudyCaseExecution.PENDING or \
+                        study_case_execution.execution_status == StudyCaseExecution.RUNNING):
 
-                if study_case_execution.execution_status == StudyCaseExecution.PENDING or \
-                        study_case_execution.execution_status == StudyCaseExecution.RUNNING:
-
-                    if ((study_case_execution.execution_status == StudyCaseExecution.RUNNING and pod_allocation.pod_status != PodAllocation.RUNNING)
-                    or pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]):
+                    if ((study_case_execution.execution_status == StudyCaseExecution.RUNNING 
+                          and pod_allocation.pod_status != PodAllocation.RUNNING)
+                            or pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]):
                         study_case_execution.execution_status = StudyCaseExecution.FAILED
                         db.session.add(study_case_execution)
                     db.session.commit()

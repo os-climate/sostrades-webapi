@@ -31,7 +31,7 @@ from pathlib import Path
 
 
 
-def create_and_load_allocation(identifier:int, allocation_type:str, log_file_path=None)->PodAllocation:
+def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, log_file_path:str=None)->PodAllocation:
     """
     Create a study case allocation instance in order to follow study case resource activation
     Save allocation in database to pass the allocation id to the thread that will launch kubernetes pod
@@ -42,6 +42,12 @@ def create_and_load_allocation(identifier:int, allocation_type:str, log_file_pat
                         id of referenceStudy in case of REFERENCE, 
                         or StudyCaseExecution Id in case of EXECUTION
     :type identifier: int
+    :param allocation_type: type of pod allocation into [STUDY, REFERENCE, EXECUTION]
+    :type allocation_type: str
+    :param flavor: selected flavor for the pod allocation
+    :type flavor: str
+    :param log_file_path:log file path (for execution)
+    :type log_file_path: str
     
     :return: sos_trades_api.models.database_models.PodAllocation
     """
@@ -50,6 +56,7 @@ def create_and_load_allocation(identifier:int, allocation_type:str, log_file_pat
     new_pod_allocation.identifier = identifier
     new_pod_allocation.pod_status = PodAllocation.NOT_STARTED
     new_pod_allocation.pod_type = allocation_type
+    new_pod_allocation.flavor = flavor
     
     
     #load allocation
@@ -62,7 +69,7 @@ def create_and_load_allocation(identifier:int, allocation_type:str, log_file_pat
     new_pod_allocation = PodAllocation.query.filter(PodAllocation.id == new_pod_allocation.id).first()
     return new_pod_allocation
 
-def load_allocation(pod_allocation, log_file_path=None):
+def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     '''
     launch pod creation with kubernetes API and get pod status if kubernetes strateg, else set status to DONE
     Then save pod allocation in DB
@@ -72,11 +79,17 @@ def load_allocation(pod_allocation, log_file_path=None):
     config = Config()
     pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type)
     pod_allocation.kubernetes_pod_name = pod_name
-    selected_flavor_name = 'Medium' # next step: it will be selected in GUI
-    pod_allocation.flavor = selected_flavor_name
+
+    # get selected flavor
+    flavors = config.kubernetes_flavor_config
+    flavor = None
+    if flavors is not None and len(flavors) > 0:
+        if pod_allocation.flavor not in flavors:
+            pod_allocation.flavor = list(flavors.keys())[0]
+        flavor = flavors[pod_allocation.flavor]
+
     try:
         if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
-            flavor = _get_flavor_in_config(selected_flavor_name)
             k8_service = get_kubernetes_jinja_config(pod_name, config.service_study_server_filepath, flavor)
             k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
             kubernetes_create_deployment_and_service(k8_service, k8_deployment)
@@ -84,12 +97,12 @@ def load_allocation(pod_allocation, log_file_path=None):
             pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            flavor = _get_flavor_in_config(selected_flavor_name)
             k8_conf = get_kubernetes_config_eeb(pod_name, pod_allocation.identifier, pod_allocation.pod_type, flavor, log_file_path)
             kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
             pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         else: 
+            pod_allocation.flavor = ''
             pod_allocation.pod_status = PodAllocation.RUNNING
     except Exception as exp:
         pod_allocation.pod_status = PodAllocation.IN_ERROR
@@ -99,12 +112,7 @@ def load_allocation(pod_allocation, log_file_path=None):
 
     return pod_allocation
 
-def _get_flavor_in_config(selected_flavor):
-    flavors = Config().kubernetes_flavor_config
-    if selected_flavor in flavors:
-        return flavors[selected_flavor]
-    else:
-        return None
+
 
 def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_path=None):
     """

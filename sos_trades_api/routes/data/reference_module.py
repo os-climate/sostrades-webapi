@@ -43,6 +43,7 @@ def study_case_references():
         repository_name = request.json.get('repository_name', None)
         process_name = request.json.get('process_name', None)
         usecase_name = request.json.get('usecase_name', None)
+        flavor_name = request.json.get('flavor', None)
 
         if repository_name is None:
             raise BadRequest('Missing mandatory parameter: repository_name')
@@ -51,7 +52,7 @@ def study_case_references():
         if usecase_name is None:
             raise BadRequest('Missing mandatory parameter: usecase_name')
         resp = make_response(
-            jsonify(generate_reference(repository_name, process_name, usecase_name, user.id)), 200)
+            jsonify(generate_reference(repository_name, process_name, usecase_name, user.id, flavor_name)), 200)
         return resp
 
 
