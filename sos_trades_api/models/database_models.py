@@ -219,7 +219,7 @@ class StudyCase(db.Model):
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_NOT_STARTED)
+    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_DONE)
     reference = Column(String(64), unique=False, nullable=True)
     from_type = Column(String(64), unique=False)
     modification_date = Column(DateTime(timezone=True), server_default=func.now())
@@ -249,7 +249,7 @@ class StudyCase(db.Model):
             'from_type': self.from_type,
             'creation_status': self.creation_status,
             'study_pod_flavor': self.study_pod_flavor,
-            'execution_pod_flavor': self.execution_pod_flavor,
+            'execution_pod_flavor': self.execution_pod_flavor
         }
 
 class PodAllocation(db.Model):

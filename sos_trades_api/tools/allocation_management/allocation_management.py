@@ -256,11 +256,13 @@ def update_all_pod_status():
     """
     For all allocations 
     """
-    all_allocations = PodAllocation.query.all()
-    for allocation in all_allocations:
-        allocation.pod_status, allocation.message = get_allocation_status(allocation)
-        db.session.add(allocation)
-    db.session.commit()
+    with app.app_context():
+        all_allocations = PodAllocation.query.all()
+        for allocation in all_allocations:
+            if allocation.pod_status != PodAllocation.COMPLETED:
+                allocation.pod_status, allocation.message = get_allocation_status(allocation)
+                db.session.add(allocation)
+        db.session.commit()
 
 
 def clean_all_allocations_services_and_deployments():
