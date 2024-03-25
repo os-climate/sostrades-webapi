@@ -118,7 +118,9 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                      self.test_process_name,
                                                      self.test_user_group_id,
                                                      imported_usecase.study_name,
-                                                     StudyCase.FROM_REFERENCE
+                                                     StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                      )
 
             self.test_study_id = new_study_case.id

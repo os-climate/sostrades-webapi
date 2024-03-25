@@ -102,6 +102,8 @@ class StudyCaseManager(BaseStudyManager):
             self.current_execution_id = None
             self.error = None
             self.disabled = None
+            self.study_pod_flavor = None
+            self.execution_pod_flavor = None
 
         def init_from_study_case(self, study_case: StudyCase):
             """
@@ -127,6 +129,8 @@ class StudyCaseManager(BaseStudyManager):
             self.current_execution_id = study_case.current_execution_id
             self.error = study_case.error
             self.disabled = study_case.disabled
+            self.study_pod_flavor = study_case.study_pod_flavor
+            self.execution_pod_flavor = study_case.execution_pod_flavor
 
     def __init__(self, study_identifier):
         """

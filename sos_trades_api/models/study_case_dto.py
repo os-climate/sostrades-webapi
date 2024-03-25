@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/03/05 Copyright 2024 Capgemini
+Modifications on 2024/03/05-2024/03/22 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,9 @@ class StudyCaseDto:
         self.is_last_study_opened = False
         self.opening_date = ''
         self.error = ''
+        self.study_pod_flavor = None
+        self.execution_pod_flavor = None
+        self.generation_pod_flavor = None
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -71,7 +74,8 @@ class StudyCaseDto:
             self.repository_display_name = study_case_instance.repository
             self.disabled = study_case_instance.disabled
             self.study_type = 'Study'
-            self.current_execution_id = study_case_instance.current_execution_id
+            self.study_pod_flavor = study_case_instance.study_pod_flavor
+            self.execution_pod_flavor = study_case_instance.execution_pod_flavor
 
             # Retrieve group owner
             if owner_group is None:
@@ -138,6 +142,9 @@ class StudyCaseDto:
         result.update({'is_last_study_opened': self.is_last_study_opened})
         result.update({'opening_date': self.opening_date})
         result.update({'error': self.error})
+        result.update({'study_pod_flavor': self.study_pod_flavor})
+        result.update({'execution_pod_flavor': self.execution_pod_flavor})
+        result.update({'generation_pod_flavor': self.generation_pod_flavor})
 
         return result
 
