@@ -213,7 +213,7 @@ def get_generation_status(reference:ReferenceStudy)->ReferenceStudy:
         # if the execution is at running (meaning it has already started) but the pod is not running anymore
         #it means it has failed : save failed status and save error msg
         if (reference.execution_status == ReferenceStudy.RUNNING \
-                and pod_allocation.pod_status != PodAllocation.RUNNING) \
+                and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) \
             or (reference.execution_status == ReferenceStudy.FAILED):
             # Generation running and pod not running -> ERROR
             error_msg = 'Regeneration status not coherent.'
