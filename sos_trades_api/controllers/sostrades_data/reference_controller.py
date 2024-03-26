@@ -32,7 +32,7 @@ from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
 
 
-def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int, flavor_name:str):
+def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int):
     '''
         Generate a reference
         :params: repository_name
@@ -43,8 +43,6 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
         :type: String
         :params: user_id
         :type: Int
-        :param flavor_name: name of the selected flavor
-        :type: str
         :return: gen_ref_status.id, id of the generation just launched
         :type: Int
     '''
@@ -66,13 +64,14 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
             .filter(ReferenceStudy.reference_path == reference_path).first()
         gen_ref_status.execution_status = gen_ref_status.PENDING
         gen_ref_status.user_id = user_id
-        gen_ref_status.generation_pod_flavor = flavor_name
 
         db.session.add(gen_ref_status)
         db.session.commit()
 
         #create pod allocation, launch pod in case of kubernetes strategy
-        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, PodAllocation.TYPE_REFERENCE, flavor_name)
+        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, 
+                                                        PodAllocation.TYPE_REFERENCE, 
+                                                        gen_ref_status.generation_pod_flavor)
         try:
             # if execution is not kubernetes, lunch generation in subprocess
             if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
@@ -92,6 +91,43 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
 
         return gen_ref_status.id
 
+def update_reference_flavor(ref_gen_id, selected_flavor:str)->bool:
+    '''
+        save the new selected flavor in database
+        :params ref_gen_id:  id of the reference to update
+        :type ref_gen_id: Int
+        :params selected_flavor: selected flavor name
+        :type selected_flavor: string
+        :return: reference is updated
+        :type: boolean
+    '''
+    # Retrieve ongoing generation from db
+    updated = False
+    ref_generation = ReferenceStudy.query.filter(
+        ReferenceStudy.id == ref_gen_id).first()
+    if ref_generation is not None:
+       ref_generation.generation_pod_flavor = selected_flavor
+       db.session.add(ref_generation)
+       db.session.commit()
+       updated = True
+    return updated
+
+def get_reference_flavor(ref_gen_id)->str:
+    '''
+        get the reference flavor in database
+        :params ref_gen_id:  id of the reference to get
+        :type ref_gen_id: Int
+        :return: reference pod size
+        :type: string
+    '''
+    # Retrieve ongoing generation from db
+    flavor = ""
+    ref_generation = ReferenceStudy.query.filter(
+        ReferenceStudy.id == ref_gen_id).first()
+    if ref_generation is not None:
+       flavor = ref_generation.generation_pod_flavor
+
+    return flavor
 
 def get_all_references(user_id, logger):
     '''
@@ -136,6 +172,7 @@ def get_all_references(user_id, logger):
             new_usecase.process_display_name = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
             new_usecase.repository_display_name = authorized_process.repository_id
+            new_usecase.regeneration_id = ref.id
             new_usecase.description = 'Reference'
             new_usecase.creation_date = ref.creation_date
             new_usecase.study_type = ref.reference_type
