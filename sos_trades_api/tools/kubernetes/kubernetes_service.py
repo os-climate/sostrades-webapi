@@ -229,19 +229,15 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
     api_instance = client.CoreV1Api(client.ApiClient())
 
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
-    app.logger.debug(f'iterate into pod list to find: {pod_or_service_name}')
     for pod in pod_list.items:
         if pod.metadata.name == pod_or_service_name:
             result = pod.status.phase
             reason = get_container_error_reason(pod)
-            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
         elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
             result = pod.status.phase
             reason = get_container_error_reason(pod)
-            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
-    app.logger.debug(f'request pod service found: {result}')
     return result, reason
 
 def get_container_error_reason(pod):
