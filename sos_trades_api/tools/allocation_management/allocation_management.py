@@ -221,7 +221,6 @@ def delete_study_server_services_and_deployments(study_case_allocations:list[Pod
                 (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
                 kubernetes_service.kubernetes_delete_deployment_and_service(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
     
-        app.logger.info(f"all {len(study_case_allocations)} PodAllocation have been successfully deleted")
     except Exception as ex:
         raise ex
         
