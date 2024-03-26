@@ -210,17 +210,16 @@ def delete_study_server_services_and_deployments(study_case_allocations:list[Pod
     :type study_case_allocations: PodAllocation list
     """
     try:
-        for alloc in study_case_allocations:
-            # delete allocation object
-            db.session.delete(alloc)
-        db.session.commit()
-        
+
         # delete service and deployment
         for pod_allocation in study_case_allocations:
             if (pod_allocation.pod_type == PodAllocation.TYPE_STUDY and Config().server_mode == Config.CONFIG_SERVER_MODE_K8S) or \
                 (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
                 kubernetes_service.kubernetes_delete_deployment_and_service(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace)
-    
+        for alloc in study_case_allocations:
+            # delete allocation object
+            db.session.delete(alloc)
+        db.session.commit()
     except Exception as ex:
         raise ex
         
