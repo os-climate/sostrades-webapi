@@ -264,7 +264,7 @@ def update_all_pod_status():
                 db.session.add(allocation)
         db.session.commit()
         if len(updated_allocation) > 0:
-            app.logger.info(f"Updated pod status: {', '.join(updated_allocation)}")
+            app.logger.debug(f"Updated pod status: {', '.join(updated_allocation)}")
 
 
 def clean_all_allocations_services_and_deployments():
