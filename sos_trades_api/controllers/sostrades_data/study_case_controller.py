@@ -381,10 +381,6 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                         study_to_update.name = new_study_name
                     
                     if update_flavor:
-                        pod_allocation = get_study_case_allocation(study_to_update.id)
-                        if pod_allocation is not None:
-                            # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
-                            delete_study_server_services_and_deployments([pod_allocation])
                         study_to_update.study_pod_flavor = new_flavor
 
                     if update_group_id:
@@ -406,6 +402,13 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                     db.session.add(study_to_update)
                     db.session.commit()
+
+                    if update_flavor:
+                        pod_allocation = get_study_case_allocation(study_to_update.id)
+                        if pod_allocation is not None:
+                            # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
+                            delete_study_server_services_and_deployments([pod_allocation])
+                        
 
                 except Exception as ex:
                     db.session.rollback()
