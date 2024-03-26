@@ -23,8 +23,7 @@ from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_create
 import yaml
 
 from sos_trades_api.config import Config
-from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
-from sos_trades_api.tools.code_tools import time_function
+from sos_trades_api.models.database_models import PodAllocation
 from sos_trades_api.tools.kubernetes import kubernetes_service
 from sos_trades_api.server.base_server import app, db
 from pathlib import Path
@@ -170,7 +169,6 @@ def get_pod_name(identifier, pod_type):
     elif pod_type == PodAllocation.TYPE_REFERENCE:
         return f'generation-g{identifier}-{uuid.uuid4()}'
 
-@time_function(logger=app.logger)
 def get_allocation_status(pod_allocation:PodAllocation):
     """
     If server mode is kubernetes, check pod status and set the allocation status accordingly, save status in DB
