@@ -260,7 +260,7 @@ def update_all_pod_status():
         for allocation in all_allocations:
             if allocation.pod_status != PodAllocation.COMPLETED:
                 allocation.pod_status, allocation.message = get_allocation_status(allocation)
-                updated_allocation.append(allocation.pod_name)
+                updated_allocation.append(allocation.kubernetes_pod_name)
                 db.session.add(allocation)
         db.session.commit()
         if len(updated_allocation) > 0:
