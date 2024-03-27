@@ -19,6 +19,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for authentication procedures
 """
 
+
 from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from importlib import import_module
 
@@ -96,7 +97,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
         from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         from sos_trades_api.controllers.sostrades_data.calculation_controller import execute_calculation
-        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseExecution
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseExecution, PodAllocation
         from sos_trades_api.config import Config
         with DatabaseUnitTestConfiguration.app.app_context():
             reference_basepath = Config().reference_root_dir
@@ -117,7 +118,9 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                      self.test_process_name,
                                                      self.test_user_group_id,
                                                      imported_usecase.study_name,
-                                                     StudyCase.FROM_REFERENCE
+                                                     StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                      )
 
             self.test_study_id = new_study_case.id
@@ -144,10 +147,13 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                           [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING,
                            StudyCaseExecution.FINISHED, StudyCaseExecution.FAILED],
                           'Study case execution status not coherent')
-            # sc_exec = StudyCaseDisciplineStatus.query\
-            #     .filter(StudyCaseDisciplineStatus.study_case_id == sc.id).all()
-            # self.assertGreater(
-            # len(sc_exec), 0, 'StudyCaseDisciplineStatus not added into db')
+            
+            #check allocation creation:
+            allocation = PodAllocation.query.filter(PodAllocation.identifier == sc.current_execution_id).filter(
+                                                    PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
+                                                    ).first()
+            self.assertIsNotNone(allocation, 'Allocation not found')
+            self.assertEqual(allocation.pod_status, PodAllocation.RUNNING,'Allocation has not the Running status')
 
     def test_02_calculation_status(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
@@ -198,3 +204,4 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             sc_status = calculation_status(sc.id)
             self.assertEqual(sc_status.study_case_execution_status, StudyCaseExecution.STOPPED,
                              'Study case status not stopped while stop_calculation was called')
+

@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/03/18 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ Execution engine threadns
 import threading
 import time
 from datetime import datetime, timezone, timedelta
-from sos_trades_api.models.database_models import StudyCase, StudyCaseDisciplineStatus, StudyCaseExecution
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, StudyCaseExecution
 from sos_trades_api.server.base_server import db, app
 from sos_trades_api.tools.execution.execution_engine_observer import ExecutionEngineObserver
 from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
@@ -187,7 +188,6 @@ class ExecutionEngineThread(threading.Thread):
                             StudyCaseExecution.id.like(study_case.current_execution_id)).first()
                         study_case_execution.execution_status = StudyCaseExecution.FINISHED if not execution_error else StudyCaseExecution.FAILED
                         db.session.add(study_case_execution)
-
                         db.session.commit()
 
                         elapsed_time = time.time() - start_time
