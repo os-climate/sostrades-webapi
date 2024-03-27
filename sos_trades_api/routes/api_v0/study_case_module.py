@@ -100,6 +100,7 @@ def copy_study_case_by_id(study_id):
         if study_id is not None:
             user = session['user']
             group = session['group']
+            
 
             new_study_name = request.json.get('new_study_name', None)
 
@@ -111,7 +112,7 @@ def copy_study_case_by_id(study_id):
                 source_study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
 
             study_case = create_empty_study_case(user.id, new_study_name, source_study_case.repository,
-                                                 source_study_case.process, group.id, study_id, StudyCase.FROM_STUDYCASE)
+                                                 source_study_case.process, group.id, study_id, StudyCase.FROM_STUDYCASE, source_study_case.study_pod_flavor, source_study_case.execution_pod_flavor)
 
             # Retrieve the source study
             copy_study_identifier = copy_study_case(study_case.id, study_id, user.id)

@@ -217,6 +217,24 @@ def check_identity_provider_availability():
             app.logger.info('GitHub IdP/oauth settings.json file found')
 
 
+def launch_thread_update_pod_allocation_status():
+    """
+    Start a thread that will update all pod_allocation status (that are not completed) by asking kubernetes api
+    all 5 seconds 
+    """
+    from threading import Thread, Event
+    from sos_trades_api.tools.allocation_management.allocation_management import update_all_pod_status
+    stopped = Event()
+    
+    def loop(): # the function that will be in a thread
+        interval = 15 #seconds
+        while not stopped.wait(interval): 
+            update_all_pod_status()
+
+    t = Thread(target=loop)
+    t.start()
+
+
 def database_check_study_case_state(with_deletion=False):
     """
     Check study case state in database

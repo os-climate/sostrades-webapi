@@ -21,7 +21,7 @@ from werkzeug.exceptions import BadRequest
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.reference_controller import (
-    get_all_references, get_logs, get_reference_generation_status_by_id, get_references_generation_status_list, generate_reference)
+    get_all_references, get_logs, get_reference_flavor, get_reference_generation_status_by_id, get_references_generation_status_list, generate_reference, update_reference_flavor)
 
 
 @app.route(f'/api/data/reference', methods=['GET', 'POST'])
@@ -54,10 +54,34 @@ def study_case_references():
             jsonify(generate_reference(repository_name, process_name, usecase_name, user.id)), 200)
         return resp
 
+@app.route(f'/api/data/reference/<int:ref_gen_id>/update-flavor', methods=['POST'])
+@auth_required
+def reference_update_flavor(ref_gen_id):
+    if ref_gen_id is None:
+        raise BadRequest('Missing mandatory parameter: reference id')
+    if ref_gen_id is not None:
+        flavor = request.json.get('flavor', None)
+        resp = make_response(
+            jsonify(update_reference_flavor(ref_gen_id, flavor)), 200)
+        return resp
+    
+@app.route(f'/api/data/reference/<int:ref_gen_id>/get-flavor', methods=['GET'])
+@auth_required
+def reference_get_flavor(ref_gen_id):
+    if ref_gen_id is None:
+        raise BadRequest('Missing mandatory parameter: reference id')
+    if ref_gen_id is not None:
+        
+        resp = make_response(
+            jsonify(get_reference_flavor(ref_gen_id)), 200)
+        return resp
+
 
 @app.route(f'/api/data/reference/<int:ref_gen_id>/status', methods=['GET'])
 @auth_required
 def reference_generation_status(ref_gen_id):
+    if ref_gen_id is None:
+        raise BadRequest('Missing mandatory parameter: reference id')
     if ref_gen_id is not None:
         resp = make_response(
             jsonify(get_reference_generation_status_by_id(ref_gen_id)), 200)

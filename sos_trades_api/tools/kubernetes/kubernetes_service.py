@@ -22,7 +22,6 @@ import time
 from kubernetes import client, config
 from sos_trades_api.server.base_server import app
 
-from sos_trades_api.tools.code_tools import time_function
 
 
 class ExecutionEngineKuberneteError(Exception):
@@ -34,7 +33,6 @@ class ExecutionEngineKuberneteError(Exception):
     def __str__(self):
         return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
 
-@time_function(logger=app.logger)
 def kubernetes_create_pod(k8_conf):
     '''
     create a pod with kubernetes api
@@ -79,7 +77,6 @@ def kubernetes_create_pod(k8_conf):
     return pod_name
 
 
-@time_function(logger=app.logger)
 def kubernetes_create_deployment_and_service(k8_service_conf, k8_deployment_conf):
     """
     Launch kubernetes service to build the study pod if the server_mode is Kubernetes
@@ -97,7 +94,6 @@ def kubernetes_create_deployment_and_service(k8_service_conf, k8_deployment_conf
     kubernetes_deployment_create(k8_deployment_conf, apps_api_instance)
 
 
-@time_function(logger=app.logger)
 def kubernetes_service_create(k8_service_conf, core_api_instance):
     '''
     create a kubernetes service with selected config if the service doesn't already exists
@@ -145,7 +141,6 @@ def kubernetes_service_create(k8_service_conf, core_api_instance):
         app.logger.info('Service already exist')
 
 
-@time_function(logger=app.logger)
 def kubernetes_deployment_create(k8_deploy_conf, apps_api_instance):
     '''
     create a kubernetes deployment with selected config if the deployment doesn't already exists
@@ -211,7 +206,6 @@ def kubernetes_delete_pod(pod_name, pod_namespace):
 
     
 
-@time_function(logger=app.logger)
 def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is_pod_name_complete:bool=True)->str:
     '''
     check pod status
@@ -229,19 +223,15 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
     api_instance = client.CoreV1Api(client.ApiClient())
 
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
-    app.logger.debug(f'iterate into pod list to find: {pod_or_service_name}')
     for pod in pod_list.items:
         if pod.metadata.name == pod_or_service_name:
             result = pod.status.phase
             reason = get_container_error_reason(pod)
-            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
         elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
             result = pod.status.phase
             reason = get_container_error_reason(pod)
-            app.logger.debug(f'found pod service: {pod.metadata.name}')
             break
-    app.logger.debug(f'request pod service found: {result}')
     return result, reason
 
 def get_container_error_reason(pod):

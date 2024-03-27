@@ -219,7 +219,7 @@ class StudyCase(db.Model):
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_NOT_STARTED)
+    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_DONE)
     reference = Column(String(64), unique=False, nullable=True)
     from_type = Column(String(64), unique=False)
     modification_date = Column(DateTime(timezone=True), server_default=func.now())
@@ -231,6 +231,8 @@ class StudyCase(db.Model):
     current_execution_id = Column(Integer, nullable=True)
     error = Column(Text, index=False, unique=False, nullable=True)
     disabled = Column(Boolean, default=False, nullable=False)
+    study_pod_flavor = Column(String(64), unique=False, nullable=True)
+    execution_pod_flavor = Column(String(64), unique=False, nullable=True)
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -246,6 +248,8 @@ class StudyCase(db.Model):
             'reference': self.reference,
             'from_type': self.from_type,
             'creation_status': self.creation_status,
+            'study_pod_flavor': self.study_pod_flavor,
+            'execution_pod_flavor': self.execution_pod_flavor
         }
 
 class PodAllocation(db.Model):
@@ -894,6 +898,7 @@ class ReferenceStudy(db.Model):
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     generation_logs = Column(Text, index=False, unique=False)
     disabled = Column(Boolean, default=False, nullable=False)
+    generation_pod_flavor = Column(String(64), unique=False, nullable=True)
     
 
     def serialize(self):
@@ -908,7 +913,8 @@ class ReferenceStudy(db.Model):
             'creation_date': self.creation_date,
             'execution_status': self.execution_status,
             'generation_logs': self.generation_logs,
-            'disabled': self.disabled
+            'disabled': self.disabled,
+            'generation_pod_flavor': self.generation_pod_flavor
         }
 
 
