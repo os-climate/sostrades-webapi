@@ -19,19 +19,20 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
+
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status
 from sos_trades_api.server.base_server import db
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
-from sos_trades_api.models.database_models import ReferenceStudy, ReferenceStudyExecutionLog
+from sos_trades_api.models.database_models import PodAllocation, ReferenceStudy, ReferenceStudyExecutionLog
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_eeb_service_pods_status, kubernetes_service_generate
 from sos_trades_api.config import Config
 from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
 
 
-def generate_reference(repository_name, process_name, usecase_name, user_id):
+def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int):
     '''
         Generate a reference
         :params: repository_name
@@ -66,16 +67,14 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         db.session.add(gen_ref_status)
         db.session.commit()
+
+        #create pod allocation, launch pod in case of kubernetes strategy
+        new_pod_allocation = create_and_load_allocation(gen_ref_status.id, 
+                                                        PodAllocation.TYPE_REFERENCE, 
+                                                        gen_ref_status.generation_pod_flavor)
         try:
-            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                # Launch pod whom generate the ref
-                pod_name = kubernetes_service_generate(
-                    reference_path, gen_ref_status.id, user_id)
-                # Update db by adding the pod whom generate the ref
-                gen_ref_status.kubernete_pod_name = pod_name
-                db.session.add(gen_ref_status)
-                db.session.commit()
-            else:
+            # if execution is not kubernetes, lunch generation in subprocess
+            if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
                 subprocess_generation = ReferenceGenerationSubprocess(
                     gen_ref_status.id)
                 subprocess_generation.run()
@@ -92,6 +91,43 @@ def generate_reference(repository_name, process_name, usecase_name, user_id):
 
         return gen_ref_status.id
 
+def update_reference_flavor(ref_gen_id, selected_flavor:str)->bool:
+    '''
+        save the new selected flavor in database
+        :params ref_gen_id:  id of the reference to update
+        :type ref_gen_id: Int
+        :params selected_flavor: selected flavor name
+        :type selected_flavor: string
+        :return: reference is updated
+        :type: boolean
+    '''
+    # Retrieve ongoing generation from db
+    updated = False
+    ref_generation = ReferenceStudy.query.filter(
+        ReferenceStudy.id == ref_gen_id).first()
+    if ref_generation is not None:
+       ref_generation.generation_pod_flavor = selected_flavor
+       db.session.add(ref_generation)
+       db.session.commit()
+       updated = True
+    return updated
+
+def get_reference_flavor(ref_gen_id)->str:
+    '''
+        get the reference flavor in database
+        :params ref_gen_id:  id of the reference to get
+        :type ref_gen_id: Int
+        :return: reference pod size
+        :type: string
+    '''
+    # Retrieve ongoing generation from db
+    flavor = ""
+    ref_generation = ReferenceStudy.query.filter(
+        ReferenceStudy.id == ref_gen_id).first()
+    if ref_generation is not None:
+       flavor = ref_generation.generation_pod_flavor
+
+    return flavor
 
 def get_all_references(user_id, logger):
     '''
@@ -136,11 +172,13 @@ def get_all_references(user_id, logger):
             new_usecase.process_display_name = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
             new_usecase.repository_display_name = authorized_process.repository_id
+            new_usecase.regeneration_id = ref.id
             new_usecase.description = 'Reference'
             new_usecase.creation_date = ref.creation_date
             new_usecase.study_type = ref.reference_type
             new_usecase.group_id = None
             new_usecase.group_name = 'All groups'
+            new_usecase.generation_pod_flavor = ref.generation_pod_flavor
 
             # Apply ontology on the usecase
             new_usecase.apply_ontology(process_metadata, repository_metadata)
@@ -163,47 +201,55 @@ def get_all_references(user_id, logger):
             result, key=lambda res: res.process_display_name.lower())
     return result
 
+def get_generation_status(reference:ReferenceStudy)->ReferenceStudy:
+    '''
+    Get reference status from pod allocation
+    '''
+    result = reference
 
-def get_reference_generation_status(ref_gen_id):
+    # Get pod allocation
+    pod_allocation = get_reference_allocation_and_status(reference.id)
+    if pod_allocation != None:
+        # if the execution is at running (meaning it has already started) but the pod is not running anymore
+        #it means it has failed : save failed status and save error msg
+        if (reference.execution_status == ReferenceStudy.RUNNING \
+                and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) \
+            or (reference.execution_status == ReferenceStudy.FAILED):
+            # Generation running and pod not running -> ERROR
+            error_msg = 'Regeneration status not coherent.'
+            if pod_allocation.message is not None or pod_allocation.message != '':
+                error_msg = pod_allocation.message
+            # Update generation in db to FAILED
+            ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
+                .update({'execution_status': ReferenceStudy.FAILED,
+                        'generation_logs': error_msg})
+            
+            result.execution_status = ReferenceStudy.FAILED
+            result.generation_logs = error_msg
+        # if pod is pending, execution too
+        elif (reference.execution_status == ReferenceStudy.UNKNOWN \
+                and pod_allocation.pod_status == PodAllocation.PENDING):
+            result.execution_status = ReferenceStudy.PENDING
+        db.session.add(pod_allocation)
+        db.session.commit()
+    return result
+
+def get_reference_generation_status_by_id(ref_gen_id):
     '''
         Get the status of a generation, looked by id
         Also check if the generation is running in the container
         or if an error happened
         :params: ref_gen_id
         :type: Int
-        :return: Dictionnary containing ref gen id, status of the generation, logs associated to the generation
-        :type: Dict
+        :return: reference Study with updated status
+        :type: ReferenceStudy
     '''
     # Retrieve ongoing generation from db
     ref_generation = ReferenceStudy.query.filter(
         ReferenceStudy.id == ref_gen_id).first()
     if ref_generation is not None:
-        result = ref_generation
-        # Get pod status
-        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = kubernetes_eeb_service_pods_status(
-                ref_generation.kubernete_pod_name).get(ref_generation.kubernete_pod_name)
-        else:
-            pod_status = 'Running'
-        if (ref_generation.execution_status == ReferenceStudy.RUNNING or
-                ref_generation.execution_status == ReferenceStudy.PENDING)\
-                and pod_status not in ['Running', 'Pending']:
-            # Generation running and pod not running -> ERROR
-            error_msg = 'Regeneration status not coherent.'
-            # Update generation in db to FAILED
-            ReferenceStudy.query.filter(ReferenceStudy.id == ref_gen_id)\
-                .update({'execution_status': ReferenceStudy.FAILED,
-                         'generation_logs': error_msg})
-            db.session.commit()
-            result.execution_status = ReferenceStudy.FAILED
-            result.generation_logs = error_msg
-    else:
-        result = ReferenceStudy()
-        result.id = ref_gen_id
-        result.execution_status = ReferenceStudy.UNKNOWN
-        result.generation_logs = 'Error cannot retrieve reference generation from database'
-    return result
-
+       ref_generation = get_generation_status(ref_generation)
+    return ref_generation
 
 def get_reference_generation_status_by_name(repository_name, process_name, usecase_name):
     '''
@@ -223,7 +269,7 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
         ReferenceStudy.reference_path == ref_name).first()
 
     if ref_generation is not None:
-        result = ref_generation
+        result = get_generation_status(ref_generation)
     else:
         result = ReferenceStudy()
         result.id = None
@@ -231,8 +277,7 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
         result.generation_logs = 'Error cannot retrieve reference generation from database'
     return result
 
-
-def get_references_generation_status(references_list):
+def get_references_generation_status_list(references_list):
     refs_status = []
     for ref in references_list:
         ref_status = get_reference_generation_status_by_name(
@@ -274,16 +319,25 @@ def check_reference_is_regenerating(reference_path):
     '''
     # Retrieve ongoing generation from db
     ref_is_running = False
-    generation_is_running = ReferenceStudy.query\
-        .filter(ReferenceStudy.reference_path == reference_path).first()
+    generation_reference_status = get_reference_execution_status_by_name(reference_path)
 
-    if generation_is_running:
-        if generation_is_running.execution_status == ReferenceStudy.PENDING \
-                or generation_is_running.execution_status == ReferenceStudy.RUNNING:
+    if generation_reference_status == ReferenceStudy.PENDING \
+                or generation_reference_status == ReferenceStudy.RUNNING:
             ref_is_running = True
 
     return ref_is_running
 
+def get_reference_allocation_and_status(reference_id)-> PodAllocation:
+    """
+    get allocation and check allocation pod status
+    """
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
+                                                PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
+                                                ).first()
+    if pod_allocation is not None:
+        pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+        
+    return pod_allocation
 
 def get_reference_execution_status_by_name(reference_path):
     """
@@ -293,8 +347,14 @@ def get_reference_execution_status_by_name(reference_path):
     """
     ref = ReferenceStudy.query \
         .filter(ReferenceStudy.reference_path == reference_path).first()
-
     if ref is not None:
-        return ref.execution_status
+        reference_status = ref.execution_status
+        # get allocation
+        pod_allocation = get_reference_allocation_and_status(ref.id)
+        if pod_allocation is not None:
+            if (pod_allocation.pod_status != PodAllocation.RUNNING and reference_status == ReferenceStudy.RUNNING):
+                reference_status = ReferenceStudy.FAILED
+
+        return reference_status
     else:
         return ReferenceStudy.UNKNOWN

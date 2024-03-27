@@ -213,6 +213,7 @@ def launch_generate_reference(reference_identifier):
             main_server.db.session.add(ref_updated)
             main_server.db.session.commit()
 
+
             trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:
             ReferenceStudy.query.filter(ReferenceStudy.id == reference_identifier).update(
@@ -330,6 +331,7 @@ if __name__ == '__main__':
         ReferenceMySQLHandler,
     )
     from sos_trades_api.models.database_models import ReferenceStudy, StudyCaseExecution
+    from sos_trades_api.models.database_models import PodAllocation
     from importlib import import_module
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
     from sos_trades_api.tools.execution.execution_engine_thread import (

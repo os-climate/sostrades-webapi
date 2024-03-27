@@ -36,10 +36,6 @@ from sos_trades_api.models.database_models import (
     Group,
     AccessRights,
 )
-from sostrades_core.execution_engine.data_connector.ontology_data_connector import (
-    GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
-    OntologyDataConnector,
-)
 from sos_trades_api.server.base_server import db, app
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
 from sos_trades_api.config import Config
@@ -106,6 +102,8 @@ class StudyCaseManager(BaseStudyManager):
             self.current_execution_id = None
             self.error = None
             self.disabled = None
+            self.study_pod_flavor = None
+            self.execution_pod_flavor = None
 
         def init_from_study_case(self, study_case: StudyCase):
             """
@@ -131,6 +129,8 @@ class StudyCaseManager(BaseStudyManager):
             self.current_execution_id = study_case.current_execution_id
             self.error = study_case.error
             self.disabled = study_case.disabled
+            self.study_pod_flavor = study_case.study_pod_flavor
+            self.execution_pod_flavor = study_case.execution_pod_flavor
 
     def __init__(self, study_identifier):
         """
@@ -196,11 +196,6 @@ class StudyCaseManager(BaseStudyManager):
         """
 
         super()._init_exec_engine()
-        self.execution_engine.connector_container.register_persistent_connector(
-            OntologyDataConnector.NAME,
-            GLOBAL_EXECUTION_ENGINE_ONTOLOGY_IDENTIFIER,
-            {'endpoint': app.config["SOS_TRADES_ONTOLOGY_ENDPOINT"]},
-        )
 
     def raw_log_file_path_absolute(
         self, specific_study_case_execution_identifier=None

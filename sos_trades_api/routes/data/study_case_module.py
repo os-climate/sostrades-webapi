@@ -22,12 +22,11 @@ from sos_trades_api.models.database_models import AccessRights, StudyCase, UserS
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    get_change_file_stream, get_user_shared_study_case, get_raw_logs, study_case_logs,
+    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
     get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study)
-from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -59,6 +58,7 @@ def allocation_for_new_study_case():
         group_id = request.json.get('group', None)
         reference = request.json.get('reference', None)
         from_type = request.json.get('type', None)
+        flavor = request.json.get('flavor', None)
 
         # Verify user has process authorisation to create study
         process_access = ProcessAccess(user.id)
@@ -83,8 +83,8 @@ def allocation_for_new_study_case():
         if len(missing_parameter) > 0:
             raise BadRequest('\n'.join(missing_parameter))
 
-        study_case = create_empty_study_case(user.id, name, repository, process, group_id, reference, from_type)
-        new_study_case_allocation = create_study_case_allocation(study_case.id)
+        study_case = create_empty_study_case(user.id, name, repository, process, group_id, reference, from_type, flavor, flavor)
+        new_study_case_allocation = create_study_case_allocation(study_case.id, flavor)
 
         resp = make_response(jsonify(new_study_case_allocation), 200)
         return resp
@@ -122,6 +122,7 @@ def allocation_for_copying_study_case(study_case_identifier: int):
 
         new_name = request.json.get('new_name', None)
         group_id = request.json.get('group_id', None)
+        flavor = request.json.get('flavor', None)
 
         # Verify user has study case authorisation to load study (Restricted viewer)
         study_case_access = StudyCaseAccess(user.id, study_case_identifier)
@@ -144,8 +145,9 @@ def allocation_for_copying_study_case(study_case_identifier: int):
             source_study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
 
         study_case = create_empty_study_case(user.id, new_name, source_study_case.repository, source_study_case.process, 
-                                             group_id, str(study_case_identifier), StudyCase.FROM_STUDYCASE)
-        new_study_case_allocation = create_study_case_allocation(study_case.id)
+                                             group_id, str(study_case_identifier), StudyCase.FROM_STUDYCASE, 
+                                             flavor, source_study_case.execution_pod_flavor)
+        new_study_case_allocation = create_study_case_allocation(study_case.id, source_study_case.study_pod_flavor)
 
         resp = make_response(jsonify(new_study_case_allocation), 200)
         return resp
@@ -190,6 +192,7 @@ def copy_study_case(study_id):
 
         group_id = request.json.get('group_id', None)
         study_name = request.json.get('new_study_name', None)
+        flavor = request.json.get('flavor', None)
 
         # Verify user has study case authorisation to update study (Manager)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -201,7 +204,8 @@ def copy_study_case(study_id):
             source_study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
 
         new_study_case = create_empty_study_case(user.id, study_name, source_study_case.repository,
-                                                 source_study_case.process, group_id, study_id, StudyCase.FROM_STUDYCASE)
+                                                 source_study_case.process, group_id, study_id, StudyCase.FROM_STUDYCASE, 
+                                                 flavor, source_study_case.execution_pod_flavor)
 
         copy_study_case = copy_study(source_study_case.id, new_study_case.id, user.id)
 
@@ -209,6 +213,46 @@ def copy_study_case(study_id):
         return response
     else:
         raise BadRequest('Missing mandatory parameter: study_id in url')
+
+
+@app.route(f'/api/data/study-case/<int:study_id>/update-execution-flavor', methods=['POST'])
+@auth_required
+def update_study_case_execution_flavor(study_id):
+    if study_id is not None:
+        # Checking if user can access study data
+        user = session['user']
+        flavor = request.json.get('flavor', None)
+
+        # Verify user has study case authorisation to update study (Manager)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to update this study case')
+
+        response = make_response(jsonify(edit_study_execution_flavor(study_id, flavor)), 200)
+        return response
+    else:
+        raise BadRequest('Missing mandatory parameter: study_id in url')
+
+
+@app.route(f'/api/data/study-case/<int:study_id>/get-execution-flavor', methods=['GET'])
+@auth_required
+def get_study_case_execution_flavor(study_id):
+    if study_id is not None:
+        # Checking if user can access study data
+        user = session['user']
+        # Verify user has study case authorisation to update study (Manager)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to update this study case')
+
+        response = make_response(jsonify(get_study_execution_flavor(study_id)), 200)
+        return response
+    else:
+        raise BadRequest('Missing mandatory parameter: study_id in url')
+
+
 
 
 @app.route(f'/api/data/study-case/<int:study_id>/edit', methods=['POST'])
@@ -221,6 +265,7 @@ def update_study_cases(study_id):
 
         group_id = request.json.get('group_id', None)
         study_name = request.json.get('new_study_name', None)
+        flavor = request.json.get('flavor', None)
 
         # Verify user has study case authorisation to update study (Manager)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -228,7 +273,7 @@ def update_study_cases(study_id):
             raise BadRequest(
                 'You do not have the necessary rights to update this study case')
 
-        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id)), 200)
+        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id, flavor)), 200)
         return response
     else:
         raise BadRequest('Missing mandatory parameter: study_id in url')

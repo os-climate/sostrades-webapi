@@ -19,8 +19,8 @@ import shutil
 from shutil import rmtree
 from datetime import datetime, timezone, timedelta
 
-from sos_trades_api.tools.allocation_management.allocation_management import create_allocation, get_allocation_status, \
-    load_study_allocation, delete_study_server_services_and_deployments
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, load_allocation, \
+    delete_study_server_services_and_deployments
 from sostrades_core.tools.tree.serializer import DataSerializer
 
 """
@@ -37,6 +37,7 @@ from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
+    PodAllocation,
     StudyCaseChange,
     UserStudyPreference,
     StudyCase,
@@ -48,7 +49,6 @@ from sos_trades_api.models.database_models import (
     Group,
     GroupAccessUser,
     AccessRights,
-    StudyCaseAllocation, 
     User,
     UserLastOpenedStudy
 )
@@ -71,7 +71,9 @@ def create_empty_study_case(
     process_name: str,
     group_identifier: int,
     reference: str,
-    from_type:str
+    from_type:str,
+    study_pod_flavor:str,
+    execution_pod_flavor:str
 ):
     """
     Create study case object in database
@@ -88,6 +90,10 @@ def create_empty_study_case(
     :type group_identifier: int
     :param reference: study case reference for creation
     :type reference: str
+    :param study_pod_flavor: study case pod selected flavor
+    :type study_pod_flavor: str
+    :param execution_pod_flavor: execution pod selected flavor
+    :type execution_pod_flavor: str
     :param from_type: study case type (Reference or UsecaseData) for creation
     :type from_type: str
     :return: sos_trades_api.models.database_models.StudyCase
@@ -118,6 +124,8 @@ def create_empty_study_case(
     study_case.creation_status = StudyCase.CREATION_NOT_STARTED
     study_case.reference = reference
     study_case.from_type = from_type
+    study_case.study_pod_flavor = study_pod_flavor
+    study_case.execution_pod_flavor = execution_pod_flavor
 
     # Save study_case
     db.session.add(study_case)
@@ -146,25 +154,27 @@ def create_empty_study_case(
     return study_case
 
 
-def create_study_case_allocation(study_case_identifier):
+def create_study_case_allocation(study_case_identifier:int, flavor:str=None)-> PodAllocation:
     """
     Create a study case allocation instance in order to follow study case resource activation
 
     :param study_case_identifier: study case identifier to allocate
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :param flavor: pod study flavor name
+    :type flavor: str
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
 
     # First check that allocated resources does not already exist
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocation = get_study_case_allocation(study_case_identifier)
 
-    if len(study_case_allocations) == 0:
+    if study_case_allocation is None:
         app.logger.info('study case create first allocation')
-        new_study_case_allocation = create_allocation(study_case_identifier)
-
+        new_study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, flavor)
+        
     else:
         raise InvalidStudy('Allocation already exist for this study case')
-
+    
     return new_study_case_allocation
 
 
@@ -175,54 +185,43 @@ def load_study_case_allocation(study_case_identifier):
 
     ::param study_case_identifier: study case identifier to the allocation to load
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
-    need_reload = False
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
-    study_case_allocation = None
-    if len(study_case_allocations) > 0:
-        study_case_allocation = study_case_allocations[0]
+    study_case_allocation = get_study_case_allocation(study_case_identifier)
+    if study_case_allocation is not None:
         # First get allocation status
-        if study_case_allocation.kubernetes_pod_name is None:
-            need_reload = True
-        else:
-            try:
-                app.logger.info('study case check allocation status')
-                study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
-                need_reload = study_case_allocation.status == StudyCaseAllocation.ERROR
-            except:
-                study_case_allocation.status = StudyCaseAllocation.ERROR
-                need_reload = True
-        #if the pod is not launch or accessible, reload pod
-        if need_reload:
+        if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
             app.logger.info('allocation need reload')
-            study_case_allocation.status = StudyCaseAllocation.IN_PROGRESS
-            load_study_allocation(study_case_allocation)
+            study_case_allocation.identifier = study_case_identifier
+            study_case_allocation.pod_status = PodAllocation.NOT_STARTED
+            study_case_allocation.message = None
+            load_allocation(study_case_allocation)
 
     else:
         app.logger.info('study case create allocation')
-        study_case_allocation = create_allocation(study_case_identifier)
-
+        study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+        if study_case is not None:
+            study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, study_case.study_pod_flavor)
+   
 
     return study_case_allocation
 
-def get_study_case_allocation(study_case_identifier):
+def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     """
     Load a study case allocation and if server mode is kubernetes, check pod status
 
     ::param study_case_identifier: study case identifier to the allocation to load
     :type study_case_identifier: int
-    :return: sos_trades_api.models.database_models.StudyCaseAllocation
+    :return: sos_trades_api.models.database_models.PodAllocation
     """
-    study_case_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id == study_case_identifier).all()
+    study_case_allocations = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).filter(
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_STUDY
+                                                        ).all()
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
-        try:
-            study_case_allocation.status = get_allocation_status(study_case_allocation.kubernetes_pod_name)
-        except Exception as exc:
-            study_case_allocation.status = StudyCaseAllocation.ERROR
-            study_case_allocation.message = str(exc)
+        study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
+        
     return study_case_allocation
 
 
@@ -322,7 +321,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
             raise ex
 
 
-def edit_study(study_id, new_group_id, new_study_name, user_id):
+def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
     """
     Update the group and the study_name for a study case
     :param study_id: id of the study to load
@@ -333,6 +332,8 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
     :type new_study_name: string
     :param user_id: id of the current user.
     :type user_id: integer
+    :param new_flavor: study pod flavor.
+    :type new_flavor: str
 
     """
     study_is_updated = False
@@ -349,24 +350,27 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
         update_study_name = study_case_manager.study.name != new_study_name
         update_group_id = study_case_manager.study.group_id != new_group_id
+        update_flavor = study_case_manager.study.study_pod_flavor != new_flavor
         # ---------------------------------------------------------------
         # First make update operation on data's (database and filesystem)
 
         # Perform database update
-        if update_study_name or update_group_id:
+        if update_study_name or update_group_id or update_flavor:
             study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
             if study_to_update is not None:
-                # Verify if the name already exist in the target group
-                study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
-                    Group).join(GroupAccessUser) \
-                    .filter(GroupAccessUser.user_id == user_id) \
-                    .filter(Group.id == new_group_id) \
-                    .filter(StudyCase.disabled == False).all()
+                if update_study_name:
+                    # Verify if the name already exist in the target group
+                    study_name_list = StudyCase.query.join(StudyCaseAccessGroup).join(
+                        Group).join(GroupAccessUser) \
+                        .filter(GroupAccessUser.user_id == user_id) \
+                        .filter(Group.id == new_group_id) \
+                        .filter(StudyCase.disabled == False).all()
 
-                for study in study_name_list:
-                    if study.name == new_study_name:
-                        raise InvalidStudy(
-                            f'The following study case name "{new_study_name}" already exist in the database for the target group')
+                    for study in study_name_list:
+                        if study.name == new_study_name:
+                            raise InvalidStudy(
+                                f'The following study case name "{new_study_name}" already exist in the database for the target group')
+
 
                 # Retrieve the study group access
                 update_group_access = StudyCaseAccessGroup.query \
@@ -375,6 +379,9 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                 try:
                     if update_study_name:
                         study_to_update.name = new_study_name
+                    
+                    if update_flavor:
+                        study_to_update.study_pod_flavor = new_flavor
 
                     if update_group_id:
 
@@ -395,6 +402,13 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
 
                     db.session.add(study_to_update)
                     db.session.commit()
+
+                    if update_flavor:
+                        pod_allocation = get_study_case_allocation(study_to_update.id)
+                        if pod_allocation is not None:
+                            # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
+                            delete_study_server_services_and_deployments([pod_allocation])
+                        
 
                 except Exception as ex:
                     db.session.rollback()
@@ -430,6 +444,34 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
     else:
         raise InvalidStudyExecution("This study is running, you cannot edit it during its run.")
 
+def get_study_execution_flavor(study_id:int):
+    study = StudyCase.query.filter(StudyCase.id == study_id).first()
+    execution_flavor = None
+    if study is not None:
+        execution_flavor = study.execution_pod_flavor
+    return execution_flavor
+
+def edit_study_execution_flavor(study_id,  new_execution_pod_flavor:str):
+    """
+    Update execution pod size of a study
+    :param study_id: id of the study to load
+    :type study_id: integer
+    :param new_execution_pod_flavor: execution pod flavor.
+    :type new_execution_pod_flavor: str
+
+    """
+    study_is_updated = False
+
+    study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_to_update is not None and new_execution_pod_flavor is not None:
+        update_flavor = study_to_update.execution_pod_flavor != new_execution_pod_flavor
+        if update_flavor:
+            study_to_update.execution_pod_flavor = new_execution_pod_flavor
+            db.session.add(study_to_update)
+            db.session.commit()
+            study_is_updated = True
+    return study_is_updated
+
 
 def delete_study_cases_and_allocation(studies):
     """
@@ -439,16 +481,21 @@ def delete_study_cases_and_allocation(studies):
     """
     # Verify that we find same number of studies by querying database
     with app.app_context():
-        query = StudyCase.query.filter(StudyCase.id.in_(studies)).all()
-        query_allocations = StudyCaseAllocation.query.filter(StudyCaseAllocation.study_case_id.in_(studies)).all()
-        pod_names = [allocation.kubernetes_pod_name for allocation in query_allocations]
+        query = StudyCase.query.filter(StudyCase.id.in_(
+            studies)).all()
+        
         if len(query) == len(studies):
+            pod_allocations = []
+            study_list = []
             try:
                 for sc in query:
+                    study_list.append(sc)
                     db.session.delete(sc)
-                    # Don't make app.logger requests while commiting a transaction as it may interfere
-                    # With database logging
-                    # app.logger.info(f"The study '{sc.id}' on group '{sc.group_id}', has been pushed to be deleted")
+
+                # delete allocations
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies)).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
+                delete_study_server_services_and_deployments(pod_allocations)
+                # delete studies
                 db.session.commit()
                 app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
             except Exception as ex:
@@ -456,12 +503,11 @@ def delete_study_cases_and_allocation(studies):
                 app.logger.warning(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked")
                 raise ex
 
+
             # Once removed from db, remove it from file system
             for study in query:
                 folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
                 rmtree(folder, ignore_errors=True)
-
-            delete_study_server_services_and_deployments(pod_names)
 
             return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
@@ -511,10 +557,10 @@ def get_user_shared_study_case(user_identifier: int):
             if user_study.creation_status != StudyCase.CREATION_DONE:
                 allocation = get_study_case_allocation(user_study.id)
                 # deal with error cases:
-                if allocation is None or (allocation.status != StudyCaseAllocation.DONE and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
+                if allocation is None or (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
-                elif allocation.status == StudyCaseAllocation.PENDING:
+                elif allocation.pod_status == PodAllocation.PENDING:
                     if datetime.now() - allocation.creation_date > timedelta(minutes=1):
                         app.logger.info(f"time for loading study pod: {datetime.now() - allocation.creation_date}")
                         user_study.creation_status = StudyCase.CREATION_ERROR
