@@ -182,19 +182,23 @@ def get_allocation_status(pod_allocation:PodAllocation):
     if (pod_allocation.pod_type == PodAllocation.TYPE_STUDY and Config().server_mode == Config.CONFIG_SERVER_MODE_K8S) or \
         (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
         if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
-            pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
-            if pod_status == "Running":
-                status = PodAllocation.RUNNING
-            elif pod_status == "Pending":
-                status = PodAllocation.PENDING
-            elif pod_status == "Succeeded":
-                status = PodAllocation.COMPLETED
-            elif pod_status == "Failed":
+            try:
+                pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
+                if pod_status == "Running":
+                    status = PodAllocation.RUNNING
+                elif pod_status == "Pending":
+                    status = PodAllocation.PENDING
+                elif pod_status == "Succeeded":
+                    status = PodAllocation.COMPLETED
+                elif pod_status == "Failed":
+                    status = PodAllocation.IN_ERROR
+                elif pod_status == None:
+                    status = PodAllocation.NOT_STARTED
+                else:
+                    status = PodAllocation.IN_ERROR
+            except Exception as ex:
                 status = PodAllocation.IN_ERROR
-            elif pod_status == None:
-                status = PodAllocation.NOT_STARTED
-            else:
-                status = PodAllocation.IN_ERROR
+                reason = f'Error while retrieving status: {str(ex)}'
             
         else:
             status = PodAllocation.NOT_STARTED
