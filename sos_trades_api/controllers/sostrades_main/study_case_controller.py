@@ -14,6 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
+
 from flask import jsonify
 from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
@@ -61,7 +63,8 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import load_p
     load_repositories_metadata
 import threading
 from sos_trades_api.tools.loading.loading_study_and_engine import study_case_manager_loading, \
-    study_case_manager_update, study_case_manager_loading_from_reference, \
+    study_case_manager_update, study_case_manager_update_from_dataset_mapping, \
+    study_case_manager_loading_from_reference, \
     study_case_manager_loading_from_usecase_data, \
     study_case_manager_loading_from_study
 from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
@@ -494,6 +497,43 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
             raise Exception(study_manager.error_message)
 
         return result
+
+
+def update_study_parameters_from_datasets_mapping(study_id, user_id, datasets_mapping):
+    """
+        Configure the study case in the data manager or dump the study case on disk from a parameters list
+        :param: study_id, id of the study
+        :type: integer
+        :param: user, user that did the modification of parameters
+        :type: integer
+        :param: datasets_mapping, namespace+parameter to connector_id+dataset_id+parameter mapping
+        :type: dict
+    """
+    try:
+        study_manager = study_case_cache.get_study_case(study_id, True)
+        if study_manager.load_status != LoadStatus.IN_PROGESS:
+            study_manager.clear_error()
+            study_manager.load_status = LoadStatus.IN_PROGESS
+            threading.Thread(
+             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping, False, False)).start()
+
+        if study_manager.load_status == LoadStatus.IN_ERROR:
+            raise Exception(study_manager.error_message)
+
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+
+        # Return logical treeview coming from execution engine
+        loaded_study_case = LoadedStudyCase(
+           study_manager, False, False, user_id)
+
+        return loaded_study_case
+
+    except Exception as error:
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+
+        raise StudyCaseError(error)
 
 
 def update_study_parameters(study_id, user, files_list, file_info, parameters_to_save, columns_to_delete):
