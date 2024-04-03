@@ -224,14 +224,15 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
 
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
     for pod in pod_list.items:
-        if pod.metadata.name == pod_or_service_name:
-            result = pod.status.phase
-            reason = get_container_error_reason(pod)
-            break
-        elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
-            result = pod.status.phase
-            reason = get_container_error_reason(pod)
-            break
+        if pod.status is not None and pod.metadata is not None and pod.metadata.name is not None:
+            if pod.metadata.name == pod_or_service_name:
+                result = pod.status.phase
+                reason = get_container_error_reason(pod)
+                break
+            elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
+                result = pod.status.phase
+                reason = get_container_error_reason(pod)
+                break
     return result, reason
 
 def get_container_error_reason(pod):
@@ -244,18 +245,19 @@ def get_container_error_reason(pod):
     """
     status = None
     # get the container status
-    container_status = pod.status.container_statuses[0]
-    app.logger.debug(f'found container: {container_status}, restart_count:{container_status.restart_count}')
-    # check status
-    if container_status.ready is False:
-        waiting_state = container_status.state.waiting
-        terminated_state = container_status.state.terminated
-        
-        # if status in error get the reason
-        if waiting_state is not None and waiting_state.reason is not None:
-            status = waiting_state.reason
-        if terminated_state is not None and terminated_state.reason is not None:
-            status = terminated_state.reason
+    if pod.status is not None and pod.status.container_statuses is not None and len(pod.status.container_statuses) > 0:
+        container_status = pod.status.container_statuses[0]
+        app.logger.debug(f'found container: {container_status}, restart_count:{container_status.restart_count}')
+        # check status
+        if container_status.ready is False:
+            waiting_state = container_status.state.waiting
+            terminated_state = container_status.state.terminated
+            
+            # if status in error get the reason
+            if waiting_state is not None and waiting_state.reason is not None:
+                status = waiting_state.reason
+            if terminated_state is not None and terminated_state.reason is not None:
+                status = terminated_state.reason
     return status
 
 
@@ -341,7 +343,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
         try:
             resp = core_api_instance.delete_namespaced_service(name=pod_name, namespace=pod_namespace)
             if resp.status != "Success":
-                app.logger.error(f'The deletion of the service named {pod_name} has not succeeded' )
+                app.logger.error(f'The deletion of the service named {pod_name} has not succeeded: {resp.status}' )
             else:
                 app.logger.info(f"service {pod_name} has been successfully deleted")
         except Exception as api_exception:
@@ -360,7 +362,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
         try:
             resp = apps_api_instance.delete_namespaced_deployment(name=pod_name, namespace=pod_namespace)
             if resp.status != "Success":
-                app.logger.error(f'The deletion of the deployment named {pod_name} has not succeeded' )
+                app.logger.error(f'The deletion of the deployment named {pod_name} has not succeeded: {resp.status}' )
             else:
                 app.logger.info(f"Deployment {pod_name} has been successfully deleted")
         except Exception as api_exception:
