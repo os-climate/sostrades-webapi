@@ -145,6 +145,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                 StudyCaseExecution.id == sc.current_execution_id).first()
             self.assertIn(sce.execution_status,
                           [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING,
+                           StudyCaseExecution.POD_PENDING, StudyCaseExecution.POD_ERROR,
                            StudyCaseExecution.FINISHED, StudyCaseExecution.FAILED],
                           'Study case execution status not coherent')
             

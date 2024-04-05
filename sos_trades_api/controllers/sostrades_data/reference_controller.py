@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/04/05 Copyright 2023 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,9 +19,10 @@ Reference Functions
 """
 from tempfile import gettempdir
 import io
-
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status
-from sos_trades_api.server.base_server import db
+import os
+import signal
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, delete_pod_allocation
+from sos_trades_api.server.base_server import db, app
 
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -48,16 +49,15 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
     '''
     # Build full name
     reference_path = '.'.join([repository_name, process_name, usecase_name])
+
     # Check if already runing
-    is_generating = check_reference_is_regenerating(
-        reference_path=reference_path)
-    if is_generating is True:
-        # Already running -> return the id
-        generation_running = ReferenceStudy.query\
-            .filter(ReferenceStudy.reference_path == reference_path,
-                    ReferenceStudy.execution_status.in_([
-                        ReferenceStudy.RUNNING,
-                        ReferenceStudy.PENDING])).first()
+    # Already running -> return the id
+    generation_running = ReferenceStudy.query\
+        .filter(ReferenceStudy.reference_path == reference_path,
+                ReferenceStudy.execution_status.in_([
+                    ReferenceStudy.RUNNING,
+                    ReferenceStudy.PENDING])).first()
+    if generation_running is not None:
         return generation_running.id
     else:
         gen_ref_status = ReferenceStudy.query \
@@ -77,7 +77,14 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
             if Config().execution_strategy != Config.CONFIG_EXECUTION_STRATEGY_K8S:
                 subprocess_generation = ReferenceGenerationSubprocess(
                     gen_ref_status.id)
-                subprocess_generation.run()
+                subprocess_id = subprocess_generation.run()
+                ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
+                {
+                    'execution_thread_id': subprocess_id
+                }
+                )
+                db.session.commit()
+
         except Exception as ex:
             ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
                 {
@@ -164,36 +171,31 @@ def get_all_references(user_id, logger):
         # Retrieve references for process
         process_references = list(filter(lambda ref_process: ref_process.process_id == authorized_process.id
                             and (authorized_process.is_manager or authorized_process.is_contributor), all_references))
-        for ref in process_references:
+        for proc_ref in process_references:
 
             new_usecase = StudyCaseDto()
-            new_usecase.name = ref.name
+            new_usecase.name = proc_ref.name
             new_usecase.process = authorized_process.process_id
             new_usecase.process_display_name = authorized_process.process_id
             new_usecase.repository = authorized_process.repository_id
             new_usecase.repository_display_name = authorized_process.repository_id
-            new_usecase.regeneration_id = ref.id
+            new_usecase.regeneration_id = proc_ref.id
             new_usecase.description = 'Reference'
-            new_usecase.creation_date = ref.creation_date
-            new_usecase.study_type = ref.reference_type
+            new_usecase.creation_date = proc_ref.creation_date
+            new_usecase.study_type = proc_ref.reference_type
             new_usecase.group_id = None
             new_usecase.group_name = 'All groups'
-            new_usecase.generation_pod_flavor = ref.generation_pod_flavor
+            new_usecase.generation_pod_flavor = proc_ref.generation_pod_flavor
 
             # Apply ontology on the usecase
             new_usecase.apply_ontology(process_metadata, repository_metadata)
 
             # Check if generation is running
-            is_running = check_reference_is_regenerating(ref.reference_path)
-            if is_running:
-                new_usecase.is_reference_running = is_running
-                new_usecase.regeneration_id = ref.id
-            # Get generation status
-            gen_status = get_reference_execution_status_by_name(ref.reference_path)
-            new_usecase.regeneration_status = gen_status
-            if new_usecase.creation_date is not None:
-                if gen_status == ReferenceStudy.UNKNOWN:
-                    new_usecase.regeneration_status = ReferenceStudy.FINISHED
+            proc_ref = get_generation_status(proc_ref)
+            new_usecase.is_reference_running = check_reference_is_regenerating(proc_ref)
+            new_usecase.regeneration_id = proc_ref.id
+            new_usecase.regeneration_status = proc_ref.execution_status
+            new_usecase.error = proc_ref.generation_logs
             result.append(new_usecase)
 
     if len(result) > 0:
@@ -201,7 +203,45 @@ def get_all_references(user_id, logger):
             result, key=lambda res: res.process_display_name.lower())
     return result
 
-def get_generation_status(reference:ReferenceStudy)->ReferenceStudy:
+def stop_generation(reference_id):
+    '''
+    stop the generation of the reference, kill the pod in case of kubernetes execution
+    '''
+    reference = ReferenceStudy.query.filter(ReferenceStudy.id.like(reference_id)).first()
+
+    if reference is not None:
+        try:  
+            is_kubernetes_execution = Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S
+            pod_allocation = get_reference_allocation_and_status(reference_id)
+            # try delete pod associated
+            if pod_allocation is not None:
+                delete_pod_allocation(pod_allocation, is_kubernetes_execution)
+            
+            if not is_kubernetes_execution and reference.execution_thread_id is not None and reference.execution_thread_id > 0:
+                try:
+                    os.kill(reference.execution_thread_id,signal.SIGTERM)
+                except Exception as ex:
+                    app.logger.exception(
+                            f'This error occurs when trying to kill process {reference.execution_thread_id}')
+
+            # Update execution
+            reference = ReferenceStudy.query.filter(ReferenceStudy.id.like(reference_id)).first()
+            reference.execution_status = ReferenceStudy.STOPPED
+            db.session.add(reference)
+            db.session.commit()
+
+        except Exception as error:
+
+            # Update execution before submitted process
+            ReferenceStudy.query.filter(ReferenceStudy.id.like(reference_id)).update({
+                'generation_logs':str(error)
+            })
+            db.session.commit()
+
+            raise error
+
+
+def get_generation_status(reference:ReferenceStudy):
     '''
     Get reference status from pod allocation
     '''
@@ -210,28 +250,34 @@ def get_generation_status(reference:ReferenceStudy)->ReferenceStudy:
     # Get pod allocation
     pod_allocation = get_reference_allocation_and_status(reference.id)
     if pod_allocation != None:
+        error_msg = ''
+        pod_status = ''
+        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+            pod_status = f' - pod status:{pod_allocation.pod_status}'
         # if the execution is at running (meaning it has already started) but the pod is not running anymore
         #it means it has failed : save failed status and save error msg
         if (reference.execution_status == ReferenceStudy.RUNNING \
-                and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) \
-            or (reference.execution_status == ReferenceStudy.FAILED):
+                and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)):
             # Generation running and pod not running -> ERROR
-            error_msg = 'Regeneration status not coherent.'
-            if pod_allocation.message is not None or pod_allocation.message != '':
-                error_msg = pod_allocation.message
+            error_msg = ' - Regeneration status not coherent.'
+            if pod_allocation.message is not None and pod_allocation.message != '':
+                error_msg = f' - pod error message:{pod_allocation.message}'
             # Update generation in db to FAILED
             ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
-                .update({'execution_status': ReferenceStudy.FAILED,
-                        'generation_logs': error_msg})
+                .update({'execution_status': ReferenceStudy.POD_ERROR,
+                        'generation_logs': pod_status + error_msg})
             
-            result.execution_status = ReferenceStudy.FAILED
-            result.generation_logs = error_msg
+            result.execution_status = ReferenceStudy.POD_ERROR
+            result.generation_logs = pod_status + error_msg
         # if pod is pending, execution too
-        elif (reference.execution_status == ReferenceStudy.UNKNOWN \
-                and pod_allocation.pod_status == PodAllocation.PENDING):
+        elif (pod_allocation.pod_status == PodAllocation.PENDING):
             result.execution_status = ReferenceStudy.PENDING
+            result.generation_logs = '- Pod is loading'
+        
+        
         db.session.add(pod_allocation)
         db.session.commit()
+        
     return result
 
 def get_reference_generation_status_by_id(ref_gen_id):
@@ -277,13 +323,6 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
         result.generation_logs = 'Error cannot retrieve reference generation from database'
     return result
 
-def get_references_generation_status_list(references_list):
-    refs_status = []
-    for ref in references_list:
-        ref_status = get_reference_generation_status_by_name(
-            ref['repository'], ref['process'], ref['name'])
-        refs_status.append(ref_status)
-    return refs_status
 
 
 def get_logs(reference_path=None):
@@ -309,7 +348,7 @@ def get_logs(reference_path=None):
         return file_name
 
 
-def check_reference_is_regenerating(reference_path):
+def check_reference_is_regenerating(reference:ReferenceStudy):
     '''
         Check if a reference is in RUNNING phase in the db
         :params: reference_path name of the reference we are looking for
@@ -319,10 +358,9 @@ def check_reference_is_regenerating(reference_path):
     '''
     # Retrieve ongoing generation from db
     ref_is_running = False
-    generation_reference_status = get_reference_execution_status_by_name(reference_path)
-
-    if generation_reference_status == ReferenceStudy.PENDING \
-                or generation_reference_status == ReferenceStudy.RUNNING:
+    
+    if reference.execution_status == ReferenceStudy.PENDING \
+                or reference.execution_status == ReferenceStudy.RUNNING:
             ref_is_running = True
 
     return ref_is_running
@@ -354,6 +392,7 @@ def get_reference_execution_status_by_name(reference_path):
         if pod_allocation is not None:
             if (pod_allocation.pod_status != PodAllocation.RUNNING and reference_status == ReferenceStudy.RUNNING):
                 reference_status = ReferenceStudy.FAILED
+            
 
         return reference_status
     else:
