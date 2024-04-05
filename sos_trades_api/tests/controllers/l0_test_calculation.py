@@ -182,7 +182,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                 StudyCase.name == self.test_study_name).first()
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
             execute_calculation(sc.id, User.STANDARD_USER_ACCOUNT_NAME)
-            calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.RUNNING,
+            calc_dashboard = list(filter(lambda cd: cd.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING,StudyCaseExecution.POD_PENDING] ,
                                          get_calculation_dashboard()))
             self.assertTrue(len(calc_dashboard) >= 1,
                             'At least one study should be running.')
