@@ -68,7 +68,7 @@ def kubernetes_create_pod(k8_conf):
         resp = api_instance.read_namespaced_pod(name=pod_name,
                                                 namespace=pod_namespace)
 
-        if resp.status.phase != 'Pending':
+        if resp.status.phase is not None:
             break
         time.sleep(1)
     elapsed_time = time.time() - start_time
