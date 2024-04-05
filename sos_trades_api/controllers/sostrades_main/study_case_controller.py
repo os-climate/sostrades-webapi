@@ -418,7 +418,8 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
 
             if study_execution.execution_status == StudyCaseExecution.RUNNING \
                     or study_execution.execution_status == StudyCaseExecution.STOPPED \
-                    or study_execution.execution_status == StudyCaseExecution.PENDING:
+                    or study_execution.execution_status == StudyCaseExecution.PENDING \
+                    or study_execution.execution_status == StudyCaseExecution.POD_PENDING:
                 status = StudyCaseExecution.NOT_EXECUTED
             else:
                 status = study_execution.execution_status

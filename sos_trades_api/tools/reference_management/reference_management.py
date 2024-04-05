@@ -157,6 +157,7 @@ def save_reference_in_database(process, usecase, all_database_references,
         new_reference.reference_type = type_reference
         new_reference.creation_date = None
         new_reference.disabled = False
+        new_reference.generation_logs = ''
 
         if dm_pkl_exists:
             new_reference.execution_status = ReferenceStudy.FINISHED
