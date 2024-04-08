@@ -561,7 +561,7 @@ def get_user_shared_study_case(user_identifier: int):
             if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
                 allocation = get_study_case_allocation(user_study.id)
                 # deal with error cases:
-                if allocation is None or (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
+                if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
                 elif allocation.pod_status == PodAllocation.PENDING:

@@ -89,7 +89,7 @@ def generate_reference(repository_name:str, process_name:str, usecase_name:str, 
             ReferenceStudy.query.filter(ReferenceStudy.id == gen_ref_status.id).update(
                 {
                     'execution_status': ReferenceStudy.FAILED,
-                    'generation_logs': ex,
+                    'generation_logs': str(ex),
                     'creation_date': None,
                 }
             )
@@ -241,7 +241,7 @@ def stop_generation(reference_id):
             raise error
 
 
-def get_generation_status(reference:ReferenceStudy):
+def get_generation_status(reference: ReferenceStudy):
     '''
     Get reference status from pod allocation
     '''
@@ -249,13 +249,13 @@ def get_generation_status(reference:ReferenceStudy):
 
     # Get pod allocation
     pod_allocation = get_reference_allocation_and_status(reference.id)
-    if pod_allocation != None:
+    if pod_allocation is not None:
         error_msg = ''
         pod_status = ''
         if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             pod_status = f' - pod status:{pod_allocation.pod_status}'
         # if the execution is at running (meaning it has already started) but the pod is not running anymore
-        #it means it has failed : save failed status and save error msg
+        # it means it has failed : save failed status and save error msg
         if (reference.execution_status == ReferenceStudy.RUNNING \
                 and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)):
             # Generation running and pod not running -> ERROR
@@ -270,15 +270,15 @@ def get_generation_status(reference:ReferenceStudy):
             result.execution_status = ReferenceStudy.POD_ERROR
             result.generation_logs = pod_status + error_msg
         # if pod is pending, execution too
-        elif (pod_allocation.pod_status == PodAllocation.PENDING):
+        elif pod_allocation.pod_status == PodAllocation.PENDING:
             result.execution_status = ReferenceStudy.PENDING
             result.generation_logs = '- Pod is loading'
-        
         
         db.session.add(pod_allocation)
         db.session.commit()
         
     return result
+
 
 def get_reference_generation_status_by_id(ref_gen_id):
     '''
@@ -296,6 +296,7 @@ def get_reference_generation_status_by_id(ref_gen_id):
     if ref_generation is not None:
        ref_generation = get_generation_status(ref_generation)
     return ref_generation
+
 
 def get_reference_generation_status_by_name(repository_name, process_name, usecase_name):
     '''
@@ -324,7 +325,6 @@ def get_reference_generation_status_by_name(repository_name, process_name, useca
     return result
 
 
-
 def get_logs(reference_path=None):
     """
     Get logs from a reference
@@ -348,7 +348,7 @@ def get_logs(reference_path=None):
         return file_name
 
 
-def check_reference_is_regenerating(reference:ReferenceStudy):
+def check_reference_is_regenerating(reference: ReferenceStudy):
     '''
         Check if a reference is in RUNNING phase in the db
         :params: reference_path name of the reference we are looking for
@@ -364,6 +364,7 @@ def check_reference_is_regenerating(reference:ReferenceStudy):
             ref_is_running = True
 
     return ref_is_running
+
 
 def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     """

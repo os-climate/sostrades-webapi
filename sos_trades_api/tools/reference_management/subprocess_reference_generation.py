@@ -44,5 +44,5 @@ with app.app_context():
         db.session.commit()
     except Exception as e:
         ref_gen_model = ReferenceStudy.query.filter(ReferenceStudy.id == ref_model_id).update(
-            {'execution_status': ReferenceStudy.FAILED, 'generation_logs': e})
+            {'execution_status': ReferenceStudy.FAILED, 'generation_logs': str(e)})
         db.session.commit()

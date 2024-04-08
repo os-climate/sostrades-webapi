@@ -276,16 +276,13 @@ def calculation_status(study_id):
             study_case_execution = StudyCaseExecution.query.filter(
                 StudyCaseExecution.id.like(study_case.current_execution_id)).first()
 
-            # In case execution has been deleted an study not updated
+            # In case execution has been deleted and study not updated
             if study_case_execution is not None:
 
-                
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
                 update_study_case_execution_status(study_case_execution)
-                
-                
 
                 status = study_case_execution.execution_status
 

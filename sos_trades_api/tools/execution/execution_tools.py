@@ -17,7 +17,8 @@ from sos_trades_api.tools.allocation_management.allocation_management import get
 from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
 from sos_trades_api.server.base_server import db
 
-def update_study_case_execution_status(study_case_execution:StudyCaseExecution) :
+
+def update_study_case_execution_status(study_case_execution: StudyCaseExecution):
     pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter( 
                                                 PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                 ).first()
@@ -32,7 +33,7 @@ def update_study_case_execution_status(study_case_execution:StudyCaseExecution) 
                 and pod_allocation.pod_status != PodAllocation.RUNNING):
             study_case_execution.execution_status = StudyCaseExecution.FAILED
         # if the pod has failed, the error message is in the pod allocation
-        if  pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]:
+        if pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]:
             study_case_execution.execution_status = StudyCaseExecution.POD_ERROR
             if pod_allocation.message is not None and pod_allocation.message != '':
                 study_case_execution.message = f'Pod is in error : {pod_allocation.message}'
@@ -47,7 +48,10 @@ def update_study_case_execution_status(study_case_execution:StudyCaseExecution) 
                 study_case_execution.message = f'Pod is loading : {pod_allocation.message}'
             else:
                 study_case_execution.message = f'Pod is loading'
-                
+
+        elif pod_allocation.pod_status == PodAllocation.RUNNING:
+            study_case_execution.execution_status = StudyCaseExecution.RUNNING
+
         db.session.add(study_case_execution)
         db.session.commit()
 
