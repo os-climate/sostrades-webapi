@@ -27,6 +27,7 @@ from sos_trades_api.tools.authentication.authentication import PasswordResetRequ
 from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException
 from sos_trades_api.tools.authentication.saml import manage_saml_assertion, SamlAuthenticationError
 from sos_trades_api.tools.authentication.github import GitHubSettings
+from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
 from sos_trades_api.tools.smtp.smtp_service import send_new_user_mail
 from sos_trades_api.tools.authentication.authentication import InvalidCredentials, AuthenticationError, \
     get_authenticated_user, manage_user
@@ -186,6 +187,43 @@ def authenticate_user_github(github_api_user_response: dict, github_api_user_ema
     raise InvalidCredentials(
         'User login or password is incorrect')
 
+
+
+def authenticate_user_keycloak(userinfo: dict):
+    """
+    Authenticate a user in the platform using Keycloak
+    :param userinfo: Response from Keycloak userinfo API
+    :type userinfo: dict
+
+    :return: tuple (access_token, refresh_token, url to redirect authentication, user)
+    """
+
+    if userinfo:
+
+        # Placeholder: Créez ou mettez à jour l'utilisateur dans votre système en fonction des informations obtenues de Keycloak
+        keycloak_user, return_url = KeycloakAuthenticator.create_user_from_userinfo()
+        user, is_new_user = manage_user(keycloak_user, app.logger)
+
+
+        if is_new_user:
+            send_new_user_mail(user)
+
+        # Placeholder: Créez un jeton d'accès et un jeton de rafraîchissement
+        access_token = create_access_token(identity=user.email)
+        refresh_token = create_refresh_token(identity=user.email)
+
+        app.logger.info(f'"{user.username}" successfully logged (with Keycloak/OpenID)')
+
+        return (
+            access_token,
+            refresh_token,
+            return_url,
+            user
+        )
+
+    app.logger.error('User login or password is incorrect (in Keycloak assertion)')
+    raise InvalidCredentials(
+        'User login or password is incorrect')
 
 def deauthenticate_user():
     """

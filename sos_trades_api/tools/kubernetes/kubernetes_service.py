@@ -114,10 +114,9 @@ def kubernetes_service_create(k8_service_conf, core_api_instance):
     try:
         resp = core_api_instance.read_namespaced_service(name=pod_name, namespace=namespace)
         service_found = True
-        print(f'Check: {resp}')
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print(f'Not found')
+            app.logger.info('Service not found')
         else:
             raise api_exception
 
@@ -132,11 +131,10 @@ def kubernetes_service_create(k8_service_conf, core_api_instance):
         while current_waiting_s < max_s:
             try:
                 service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
-                print(service)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Service not found')
                 else:
                     raise api_exception
             #if service.status.phase != 'Pending':
@@ -144,7 +142,7 @@ def kubernetes_service_create(k8_service_conf, core_api_instance):
             time.sleep(interval_s)
             current_waiting_s += interval_s
     else:
-        print('service already exist')
+        app.logger.info('Service already exist')
 
 
 @time_function(logger=app.logger)
@@ -167,7 +165,7 @@ def kubernetes_deployment_create(k8_deploy_conf, apps_api_instance):
         deployement_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print(f'Not found')
+            app.logger.info('Deployment not found')
         else:
             raise api_exception
 
@@ -181,18 +179,16 @@ def kubernetes_deployment_create(k8_deploy_conf, apps_api_instance):
         while current_waiting_s < max_s:
             try:
                 resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
-                print(resp.status)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
-                    print(f'Not found')
+                    app.logger.info('Deployment not found')
                 else:
                     raise api_exception
             time.sleep(interval_s)
             current_waiting_s += interval_s
     else:
-        print('deployement already exist')
-
+        app.logger.info('deployement already exist')
 
 
 def kubernetes_delete_pod(pod_name, pod_namespace):
