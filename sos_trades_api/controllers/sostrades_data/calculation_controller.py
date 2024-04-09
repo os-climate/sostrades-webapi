@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2023/11/23 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/04/05 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
 from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
@@ -82,7 +83,8 @@ def execute_calculation(study_id, username):
             study_case_execution = StudyCaseExecution.query\
                 .filter(StudyCaseExecution.id == study_case.current_execution_id).first()
 
-            if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.RUNNING:
+            if study_case_execution is not None and \
+                study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING]:
                 calculation_semaphore.release()
                 raise CalculationError(
                     'Study already submitted.\nIt must be stopped/terminated before running a new one.')
@@ -90,7 +92,7 @@ def execute_calculation(study_id, username):
         # Create a new execution entry and associate it to the study
         new_study_case_execution = StudyCaseExecution()
         new_study_case_execution.study_case_id = study_case.id
-        new_study_case_execution.execution_status = StudyCaseExecution.RUNNING
+        new_study_case_execution.execution_status = StudyCaseExecution.PENDING
         new_study_case_execution.creation_date = datetime.now().astimezone(
             timezone.utc).replace(tzinfo=None)
         new_study_case_execution.requested_by = username
@@ -181,7 +183,7 @@ def execute_calculation(study_id, username):
 
         # Update execution before submitted process
         study_case_execution = StudyCaseExecution.query.filter(
-            and_(StudyCaseExecution.study_case_id == study_id, StudyCaseExecution.execution_status == StudyCaseExecution.RUNNING)).first()
+            and_(StudyCaseExecution.study_case_id == study_id, study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING])).first()
 
         if study_case_execution is not None:
             study_case_execution.execution_status = StudyCaseExecution.FAILED
@@ -274,30 +276,13 @@ def calculation_status(study_id):
             study_case_execution = StudyCaseExecution.query.filter(
                 StudyCaseExecution.id.like(study_case.current_execution_id)).first()
 
-            # In case execution has been deleted an study not updated
+            # In case execution has been deleted and study not updated
             if study_case_execution is not None:
 
-                
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
-                
-                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter( 
-                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
-                                                            ).first()
-                    
-                if pod_allocation is not None:
-                    pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
-      
-                if pod_allocation is not None and (study_case_execution.execution_status == StudyCaseExecution.PENDING or \
-                        study_case_execution.execution_status == StudyCaseExecution.RUNNING):
-
-                    if ((study_case_execution.execution_status == StudyCaseExecution.RUNNING 
-                          and pod_allocation.pod_status != PodAllocation.RUNNING)
-                            or pod_allocation.pod_status in [PodAllocation.IN_ERROR, PodAllocation.OOMKILL]):
-                        study_case_execution.execution_status = StudyCaseExecution.FAILED
-                        db.session.add(study_case_execution)
-                    db.session.commit()
+                update_study_case_execution_status(study_case_execution)
 
                 status = study_case_execution.execution_status
 
@@ -310,8 +295,8 @@ def calculation_status(study_id):
                     disciplines_status_dict[sce.discipline_key] = sce.status
                 
                 message = ''
-                if pod_allocation is not None:
-                    message = pod_allocation.message
+                if study_case_execution.message is not None:
+                    message = study_case_execution.message
 
                 return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, message,  cpu_usage, memory_usage)
 

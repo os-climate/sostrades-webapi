@@ -21,7 +21,7 @@ from werkzeug.exceptions import BadRequest
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
 from sos_trades_api.controllers.sostrades_data.reference_controller import (
-    get_all_references, get_logs, get_reference_flavor, get_reference_generation_status_by_id, get_references_generation_status_list, generate_reference, update_reference_flavor)
+    get_all_references, get_logs, get_reference_flavor, get_reference_generation_status_by_id, generate_reference, stop_generation, update_reference_flavor)
 
 
 @app.route(f'/api/data/reference', methods=['GET', 'POST'])
@@ -88,15 +88,27 @@ def reference_generation_status(ref_gen_id):
         return resp
 
 
-@app.route(f'/api/data/reference/status', methods=['POST'])
+@app.route(f'/api/data/reference/stop/<int:reference_id>', methods=['POST'])
 @auth_required
-def references_generation_status():
-    references_list = request.json.get('references_list', None)
-    if references_list is None:
-        raise BadRequest('Missing mandatory parameter: references_list')
-    resp = make_response(
-        jsonify(get_references_generation_status_list(references_list)), 200)
-    return resp
+def reference_stop(reference_id):
+    if reference_id is not None:
+        # Verify user has authorisation to stop execution of reference (execution rights)
+        user = get_authenticated_user()
+        if (not has_access_to(user.user_profile_id, APP_MODULE_EXECUTION)):
+            app.logger.warning(
+                f'Stop generation request, user {user.id} is not allowed to stop the generation {reference_id} ')
+            raise BadRequest(
+                'You do not have the necessary rights to stop the generation of this reference')
+        
+        # Proceeding after rights verification
+        stop_generation(reference_id)
+        resp = make_response(jsonify('Generation stopped', 200))
+        return resp
+
+    raise BadRequest('Missing mandatory parameter: reference identifier in url')
+
+
+
 
 
 @app.route(f'/api/data/reference/logs/download/', methods=['POST'])
