@@ -289,7 +289,7 @@ def authenticate_with_keycloak():
     # Get authorization URL
     keycloak = KeycloakAuthenticator()
     
-    auth_url = keycloak.auth_url("https://revison.gpp-sostrades.com/api/data/keycloak/callback")
+    auth_url = keycloak.auth_url("https://revision.gpp-sostrades.com/api/data/keycloak/callback")
  
     return redirect(auth_url)
 
@@ -303,7 +303,7 @@ def callback():
     keycloak = KeycloakAuthenticator()
 
     code = request.args.get('code')
-    token = keycloak.token("https://revison.gpp-sostrades.com/api/data/keycloak/callback", code)
+    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
     userinfo = keycloak.user_info(token['access_token'])
 
     access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
