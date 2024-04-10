@@ -201,7 +201,7 @@ def authenticate_user_keycloak(userinfo: dict):
     if userinfo:
 
         # Placeholder: Créez ou mettez à jour l'utilisateur dans votre système en fonction des informations obtenues de Keycloak
-        keycloak_user, return_url = KeycloakAuthenticator.create_user_from_userinfo()
+        keycloak_user, return_url = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
 
 
