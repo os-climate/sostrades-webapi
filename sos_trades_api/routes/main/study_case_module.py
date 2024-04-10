@@ -140,19 +140,18 @@ def update_study_from_datasets_mapping(study_id):
 
         # Proceeding after rights verification
         files_data = None
-        if 'datasets_mapping_file' in request.datasets_maping_file:
-            files_data = json.load(request.datasets_maping_file['datasets_mapping_file'])
+        if 'datasets_mapping_file' in request.files:
+            try:
+                file_content = request.files['datasets_mapping_file'].read().decode('utf-8')
+                files_data = json.loads(file_content)
 
-        missing_parameter = []
-        if files_data is None:
-            missing_parameter.append(
-                'Missing mandatory files data source or information')
-
-        if len(missing_parameter) > 1:
-            raise BadRequest('\n'.join(missing_parameter))
+            except Exception as ex:
+                raise BadRequest(f'Invalid JSON format : {ex}')
+        else:
+            raise BadRequest('Missing mandatory datasets_mapping_file')
 
         resp = make_response(
-            jsonify(update_study_parameters_from_datasets_mapping(study_id, user.id, files_data)), 200)
+            jsonify(update_study_parameters_from_datasets_mapping(study_id, user, files_data)), 200)
         return resp
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')

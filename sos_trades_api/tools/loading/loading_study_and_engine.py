@@ -236,7 +236,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             f'Error when updating in background {study_case_manager.study.name}')
 
 
-def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping, no_data, read_only):
+def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, no_data, read_only):
     """ Method that inject data into a study case manager from a datasets mapping
 
     :params: study_case_manager, study case manager instance to load
@@ -263,7 +263,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
         # Update parameter into dictionary
         study_case_manager.load_data(
-            from_datasets_mapping=datasets_mapping, display_treeview=False)
+            from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
 
         # Persist data using the current persistence strategy
         study_case_manager.save_study_case()

@@ -47,6 +47,7 @@ class CoeditionMessage:
     EXECUTION = 'Study case execution just started.'
     CLAIM = 'User just claimed the study case execution right.'
     RELOAD = 'User just reload the study case.'
+    IMPORT_DATASET = 'User just update parameter from dataset'
 
 
 def add_user_to_room(user_id, study_case_id):
