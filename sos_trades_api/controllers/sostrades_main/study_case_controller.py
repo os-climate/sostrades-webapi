@@ -499,9 +499,9 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         return result
 
 
-def update_study_parameters_from_datasets_mapping(study_id, user_id, datasets_mapping):
+def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mapping):
     """
-        Configure the study case in the data manager or dump the study case on disk from a parameters list
+        Configure the study case in the data manager  from a dataset
         :param: study_id, id of the study
         :type: integer
         :param: user, user that did the modification of parameters
@@ -510,7 +510,10 @@ def update_study_parameters_from_datasets_mapping(study_id, user_id, datasets_ma
         :type: dict
     """
     try:
+        # Retrieve study_manager
         study_manager = study_case_cache.get_study_case(study_id, True)
+
+        # Launch load study-case with new parameters from dataset
         if study_manager.load_status != LoadStatus.IN_PROGESS:
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
@@ -524,8 +527,10 @@ def update_study_parameters_from_datasets_mapping(study_id, user_id, datasets_ma
         study_case_cache.release_study_case(study_id)
 
         # Return logical treeview coming from execution engine
-        loaded_study_case = LoadedStudyCase(
-           study_manager, False, False, user_id)
+        loaded_study_case = LoadedStudyCase(study_manager, False, False, user.id)
+
+        # Add notification to database
+        add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.IMPORT_DATASET)
 
         return loaded_study_case
 

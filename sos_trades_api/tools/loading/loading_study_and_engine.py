@@ -15,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tools methods to manage behaviour around StudyCase
@@ -29,6 +28,7 @@ import pstats
 import traceback
 import sys
 from time import time
+from sostrades_core.datasets.dataset_mapping import DatasetsMapping
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
 from sos_trades_api.server.base_server import db
@@ -236,7 +236,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             f'Error when updating in background {study_case_manager.study.name}')
 
 
-def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, no_data, read_only):
+def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping, no_data, read_only):
     """ Method that inject data into a study case manager from a datasets mapping
 
     :params: study_case_manager, study case manager instance to load
@@ -260,6 +260,9 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
             f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
+
+        # Deserialize mapping
+        datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
 
         # Update parameter into dictionary
         study_case_manager.load_data(
