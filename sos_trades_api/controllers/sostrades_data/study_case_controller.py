@@ -224,7 +224,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
         study_case_allocation = study_case_allocations[0]
         study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
         if len(study_case_allocations) > 1:
-            app.logger.warning(f"We have several {len(study_case_allocations)} pod allocations for the same study id {study_case_identifier} but only one will be updated, is this normal ?")
+            app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
         
     return study_case_allocation
 
