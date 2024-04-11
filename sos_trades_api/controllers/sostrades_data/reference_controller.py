@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/04/05 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/04/11 Copyright 2023 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -372,7 +372,7 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     """
     pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
-                                                ).first()
+                                                ).order_by(PodAllocation.creation_date.asc()).last()
     if pod_allocation is not None:
         pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         
@@ -391,10 +391,9 @@ def get_reference_execution_status_by_name(reference_path):
         # get allocation
         pod_allocation = get_reference_allocation_and_status(ref.id)
         if pod_allocation is not None:
+            # Reference status is running, pod has been killed
             if (pod_allocation.pod_status != PodAllocation.RUNNING and reference_status == ReferenceStudy.RUNNING):
                 reference_status = ReferenceStudy.FAILED
-            
-
         return reference_status
     else:
         return ReferenceStudy.UNKNOWN
