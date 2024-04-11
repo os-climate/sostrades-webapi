@@ -370,13 +370,17 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     """
     get allocation and check allocation pod status
     """
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
-                                                PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
-                                                ).order_by(PodAllocation.creation_date.asc()).last()
-    if pod_allocation is not None:
-        pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+    pod_allocations = PodAllocation.query.filter(PodAllocation.identifier == reference_id).filter(
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE
+                                                        ).order_by(PodAllocation.creation_date.asc()).all()
+    reference_allocation = None
+    if len(pod_allocations) > 0:
+        reference_allocation = pod_allocations[-1]
+        reference_allocation.pod_status, reference_allocation.message = get_allocation_status(reference_allocation)
+        if len(pod_allocations) > 1:
+            app.logger.warning(f"We have several {len(pod_allocations)} pod allocations for the same reference but only one will be updated, is this normal ?")
         
-    return pod_allocation
+    return reference_allocation
 
 def get_reference_execution_status_by_name(reference_path):
     """
