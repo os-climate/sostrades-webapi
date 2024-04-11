@@ -378,7 +378,7 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
         reference_allocation = pod_allocations[-1]
         reference_allocation.pod_status, reference_allocation.message = get_allocation_status(reference_allocation)
         if len(pod_allocations) > 1:
-            app.logger.warning(f"We have several {len(pod_allocations)} pod allocations for the same reference id {reference_id} but only one will be updated, is this normal ?")
+            app.logger.warning(f"We have {len(pod_allocations)} pod allocations for the same reference (id {reference_id}) but only one will be updated, is this normal ?")
         
     return reference_allocation
 
