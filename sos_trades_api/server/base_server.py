@@ -230,6 +230,7 @@ def launch_thread_update_pod_allocation_status():
         interval = 15 #seconds
         while not stopped.wait(interval): 
             update_all_pod_status()
+            app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
 
     t = Thread(target=loop)
     t.start()

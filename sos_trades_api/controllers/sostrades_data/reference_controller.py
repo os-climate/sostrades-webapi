@@ -223,6 +223,8 @@ def stop_generation(reference_id):
         try:  
             is_kubernetes_execution = Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S
             pod_allocation = get_reference_allocation_and_status(reference_id)
+            app.logger.info("Retrieved status of pod of kubernetes from stop_generation()")
+
             # try delete pod associated
             if pod_allocation is not None:
                 delete_pod_allocation(pod_allocation, is_kubernetes_execution)
@@ -243,9 +245,9 @@ def stop_generation(reference_id):
         except Exception as error:
 
             # Update execution before submitted process
-            ReferenceStudy.query.filter(ReferenceStudy.id.like(reference_id)).update({
-                'generation_logs':str(error)
-            })
+            reference_study = ReferenceStudy.query.filter(ReferenceStudy.id == reference_id).first()
+            reference_study.generation_logs = error
+            db.session.add(reference_study)
             db.session.commit()
 
             raise error
@@ -272,10 +274,14 @@ def get_generation_status(reference: ReferenceStudy):
             error_msg = ' - Regeneration status not coherent.'
             if pod_allocation.message is not None and pod_allocation.message != '':
                 error_msg = f' - pod error message:{pod_allocation.message}'
+
             # Update generation in db to FAILED
-            ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
-                .update({'execution_status': ReferenceStudy.POD_ERROR,
-                        'generation_logs': pod_status + error_msg})
+            reference_study = ReferenceStudy.query.filter(ReferenceStudy.id == reference.id).first()
+            reference_study.execution_status = ReferenceStudy.POD_ERROR
+            reference_study.generation_logs = pod_status + error_msg
+
+            db.session.add(reference_study)
+            db.session.commit()
             
             result.execution_status = ReferenceStudy.POD_ERROR
             result.generation_logs = pod_status + error_msg
@@ -461,6 +467,7 @@ def get_reference_allocation_and_status_list(reference_ids:list[int])-> dict[int
         else:
             most_recent_allocation = max(allocations, key=lambda x: x.creation_date)
             most_recent_allocation.pod_status, most_recent_allocation.message = get_allocation_status(most_recent_allocation)
+            app.logger.info("Retrieved status of pod of kubernetes from get_reference_allocation_and_status_list()")
             reference_allocations[reference_id] = most_recent_allocation
             
             if len(allocations) > 1:
@@ -481,6 +488,7 @@ def get_reference_execution_status_by_name(reference_path):
         reference_status = ref.execution_status
         # get allocation
         pod_allocation = get_reference_allocation_and_status(ref.id)
+        app.logger.info("Retrieved status of pod of kubernetes from get_reference_execution_status_by_name()")
         if pod_allocation is not None:
             # Reference status is running, pod has been killed
             if (pod_allocation.pod_status != PodAllocation.RUNNING and reference_status == ReferenceStudy.RUNNING):
