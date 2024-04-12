@@ -283,7 +283,6 @@ def calculation_status(study_id):
                 memory_usage = study_case_execution.memory_usage
 
                 update_study_case_execution_status(study_case_execution)
-                app.logger.info("Retrieved status of pod of kubernetes from calculation_status()")
 
                 status = study_case_execution.execution_status
 
