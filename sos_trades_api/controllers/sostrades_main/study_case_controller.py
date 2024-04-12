@@ -78,7 +78,7 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
         is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
 
-        if (not is_in_cache and study_case_manager.study.creation_status != StudyCase.CREATION_DONE):
+        if not is_in_cache and (study_case_manager.study.creation_status != StudyCase.CREATION_DONE and study_case_manager.study.creation_status != ProxyDiscipline.STATUS_DONE):
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             with app.app_context():
                 study_case = StudyCase.query.filter(
@@ -89,7 +89,7 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
             if study_case_manager.study.from_type == StudyCase.FROM_STUDYCASE:
                 source_id = int(study_case_manager.study.reference)
                 source_study_case = StudyCase.query.filter( StudyCase.id == source_id).first()
-                if source_study_case is not None and source_study_case.creation_status != StudyCase.CREATION_DONE:
+                if source_study_case is not None and (source_study_case.creation_status != StudyCase.CREATION_DONE and source_study_case.creation_status != ProxyDiscipline.STATUS_DONE):
                     study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
                     db.session.delete(study_case)
                     db.session.commit()
@@ -418,7 +418,8 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
 
             if study_execution.execution_status == StudyCaseExecution.RUNNING \
                     or study_execution.execution_status == StudyCaseExecution.STOPPED \
-                    or study_execution.execution_status == StudyCaseExecution.PENDING:
+                    or study_execution.execution_status == StudyCaseExecution.PENDING \
+                    or study_execution.execution_status == StudyCaseExecution.POD_PENDING:
                 status = StudyCaseExecution.NOT_EXECUTED
             else:
                 status = study_execution.execution_status
@@ -581,7 +582,6 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               datetime.now())
 
         values = {}
-        connectors = {}
         for parameter in parameters_to_save:
             uuid_param = study_manager.execution_engine.dm.data_id_map[parameter['variableId']]
 
@@ -703,10 +703,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       datetime.now())
                     except Exception as error:
                         app.logger.exception(f'Study change database insertion error: {error}')
-                if parameter['changeType'] == StudyCaseChange.CONNECTOR_DATA_CHANGE:
-                    connectors[parameter['variableId']] = value
-                else:
-                    values[parameter['variableId']] = value
+                values[parameter['variableId']] = value
 
                 # Invalidate all linked validation discipline
                 invalidate_namespace_after_save(study_manager.study.id, user_fullname, user_department,
@@ -716,7 +713,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-                target=study_case_manager_update, args=(study_manager, values, False, False, connectors)).start()
+                target=study_case_manager_update, args=(study_manager, values, False, False)).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
