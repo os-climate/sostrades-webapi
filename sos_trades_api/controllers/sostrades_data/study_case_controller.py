@@ -169,6 +169,7 @@ def create_study_case_allocation(study_case_identifier:int, flavor:str=None)-> P
 
     # First check that allocated resources does not already exist
     study_case_allocation = get_study_case_allocation(study_case_identifier)
+    app.logger.info("Retrieved status of pod of kubernetes from create_study_case_allocation()")
 
     if study_case_allocation is None:
         app.logger.info('study case create first allocation')
@@ -190,6 +191,8 @@ def load_study_case_allocation(study_case_identifier):
     :return: sos_trades_api.models.database_models.PodAllocation
     """
     study_case_allocation = get_study_case_allocation(study_case_identifier)
+    app.logger.info("Retrieved status of pod of kubernetes from load_study_case_allocation()")
+
     if study_case_allocation is not None:
         # First get allocation status
         if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
@@ -198,6 +201,7 @@ def load_study_case_allocation(study_case_identifier):
             study_case_allocation.pod_status = PodAllocation.NOT_STARTED
             study_case_allocation.message = None
             load_allocation(study_case_allocation)
+            app.logger.info("Retrieved status of pod of kubernetes from load_study_case_allocation()")
 
     else:
         app.logger.info('study case create allocation')
@@ -223,9 +227,10 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
         study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
+        if len(study_case_allocations) > 1:
+            app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
         
     return study_case_allocation
-
 
 def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
     """ copy an existing study case with a new name but without loading this study
@@ -409,6 +414,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                     if update_flavor:
                         pod_allocation = get_study_case_allocation(study_to_update.id)
+                        app.logger.info("Retrieved status of pod of kubernetes from edit_study()")
                         if pod_allocation is not None:
                             # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
                             delete_study_server_services_and_deployments([pod_allocation])
@@ -560,6 +566,8 @@ def get_user_shared_study_case(user_identifier: int):
             # check pod status if creation status id not DONE:
             if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
                 allocation = get_study_case_allocation(user_study.id)
+                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L569")
+
                 # deal with error cases:
                 if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
                     user_study.creation_status = StudyCase.CREATION_ERROR
@@ -639,6 +647,7 @@ def get_user_shared_study_case(user_identifier: int):
             else:
                 current_execution = study_case_execution[0]
                 update_study_case_execution_status(current_execution)
+                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L650")
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
