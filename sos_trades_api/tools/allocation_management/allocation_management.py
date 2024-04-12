@@ -60,6 +60,7 @@ def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, 
     
     #load allocation
     new_pod_allocation = load_allocation(new_pod_allocation, log_file_path)
+    app.logger.info("Retrieved status of pod of kubernetes from create_and_load_allocation()")
     
     db.session.add(new_pod_allocation)
     db.session.commit()
