@@ -65,7 +65,7 @@ def update_database_with_references(logger=None):
             process_directory = dirname(imported_module.__file__)
             # Loop through activated usecases in folder
             for usecase_py in listdir(process_directory):
-                if usecase_py.startswith('usecase'):
+                if usecase_py.startswith('usecase') and usecase_py.endswith(".py"):
                     usecase = usecase_py.replace('.py', '')
                     # Check if imported_usecase is already generated
                     if isdir(join(reference_basepath, process.process_path, process.name, usecase)):
@@ -157,6 +157,7 @@ def save_reference_in_database(process, usecase, all_database_references,
         new_reference.reference_type = type_reference
         new_reference.creation_date = None
         new_reference.disabled = False
+        new_reference.generation_logs = ''
 
         if dm_pkl_exists:
             new_reference.execution_status = ReferenceStudy.FINISHED

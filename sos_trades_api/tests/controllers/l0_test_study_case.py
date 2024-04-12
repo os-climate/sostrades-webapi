@@ -113,7 +113,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      self.test_process_name,
                                                      self.test_user_group_id,
                                                      'Empty Study',
-                                                     StudyCase.FROM_REFERENCE
+                                                     StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                      )
 
             self.test_study_id = new_study_case.id
@@ -129,7 +131,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                          self.test_csv_process_name,
                                                          self.test_user_group_id,
                                                          'Empty Study',
-                                                         StudyCase.FROM_REFERENCE
+                                                         StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                          )
 
             self.test_study_csv_id = new_study_case_csv.id
@@ -145,7 +149,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                                  self.test_clear_error_process_name,
                                                                  self.test_user_group_id,
                                                                  'Empty Study',
-                                                                 StudyCase.FROM_REFERENCE
+                                                                 StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                                  )
 
             self.test_study_clear_error_id = new_study_case_clear_error.id
@@ -275,7 +281,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      study_test.process,
                                                      self.test_user_group_id,
                                                      str(study_test.id),
-                                                     StudyCase.FROM_STUDYCASE
+                                                     StudyCase.FROM_STUDYCASE,
+                                                     None,
+                                                     None
                                                      )
 
             copy_study_case(new_study_case.id,
@@ -841,7 +849,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      study_test.process,
                                                      self.test_user_group_id,
                                                      str(study_test.id),
-                                                     StudyCase.FROM_STUDYCASE
+                                                     StudyCase.FROM_STUDYCASE,
+                                                     None,
+                                                     None
                                                      )
 
             study_case_copy = copy_study_case(

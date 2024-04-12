@@ -118,7 +118,9 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                      self.test_process_name,
                                                      self.test_user_group_id,
                                                      imported_usecase.study_name,
-                                                     StudyCase.FROM_REFERENCE
+                                                     StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None
                                                      )
 
             self.test_study_id = new_study_case.id
@@ -143,6 +145,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                 StudyCaseExecution.id == sc.current_execution_id).first()
             self.assertIn(sce.execution_status,
                           [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING,
+                           StudyCaseExecution.POD_PENDING, StudyCaseExecution.POD_ERROR,
                            StudyCaseExecution.FINISHED, StudyCaseExecution.FAILED],
                           'Study case execution status not coherent')
             
@@ -179,7 +182,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                 StudyCase.name == self.test_study_name).first()
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
             execute_calculation(sc.id, User.STANDARD_USER_ACCOUNT_NAME)
-            calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.RUNNING,
+            calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.PENDING,
                                          get_calculation_dashboard()))
             self.assertTrue(len(calc_dashboard) >= 1,
                             'At least one study should be running.')

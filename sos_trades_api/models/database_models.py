@@ -194,10 +194,10 @@ class Process(db.Model):
 
 class StudyCase(db.Model):
     """StudyCase class"""
-    CREATION_NOT_STARTED = 'PENDING'
-    CREATION_IN_PROGRESS = 'IN_PROGRESS'
-    CREATION_DONE = 'DONE'
-    CREATION_ERROR = 'IN_ERROR'
+    CREATION_PENDING = 'CREATION PENDING'
+    CREATION_IN_PROGRESS = 'CREATION IN PROGRESS'
+    CREATION_DONE = 'CREATION DONE'
+    CREATION_ERROR = 'CREATION IN ERROR'
 
     FROM_REFERENCE = 'Reference'
     FROM_USECASE = 'UsecaseData'
@@ -219,7 +219,7 @@ class StudyCase(db.Model):
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_NOT_STARTED)
+    creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_DONE)
     reference = Column(String(64), unique=False, nullable=True)
     from_type = Column(String(64), unique=False)
     modification_date = Column(DateTime(timezone=True), server_default=func.now())
@@ -231,6 +231,8 @@ class StudyCase(db.Model):
     current_execution_id = Column(Integer, nullable=True)
     error = Column(Text, index=False, unique=False, nullable=True)
     disabled = Column(Boolean, default=False, nullable=False)
+    study_pod_flavor = Column(String(64), unique=False, nullable=True)
+    execution_pod_flavor = Column(String(64), unique=False, nullable=True)
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -246,6 +248,8 @@ class StudyCase(db.Model):
             'reference': self.reference,
             'from_type': self.from_type,
             'creation_status': self.creation_status,
+            'study_pod_flavor': self.study_pod_flavor,
+            'execution_pod_flavor': self.execution_pod_flavor
         }
 
 class PodAllocation(db.Model):
@@ -651,7 +655,6 @@ class StudyCaseChange(db.Model):
 
     CSV_CHANGE = 'csv'
     SCALAR_CHANGE = 'scalar'
-    CONNECTOR_DATA_CHANGE = 'connector_data'
 
     id = Column(Integer, primary_key=True)
     notification_id = Column(Integer,
@@ -711,9 +714,11 @@ class StudyCoeditionUser(db.Model):
 
 class StudyCaseExecution(db.Model):
     PENDING = 'PENDING'
+    POD_PENDING = 'POD PENDING'
     RUNNING = 'RUNNING'
     FINISHED = 'FINISHED'
     FAILED = 'FAILED'
+    POD_ERROR = 'POD ERROR'
     STOPPED = 'STOPPED'
     NOT_EXECUTED = 'NOT EXECUTED'
 
@@ -733,6 +738,7 @@ class StudyCaseExecution(db.Model):
     requested_by = Column(String(64), index=True, unique=False, server_default='', nullable=False)
     cpu_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)
     memory_usage = Column(String(32), index=False, unique=False, server_default='----', nullable=True)  
+    message = Column(String(64), index=False, unique=False, server_default='', nullable=True)
     
     def serialize(self):
         """ json serializer for dto purpose
@@ -746,7 +752,8 @@ class StudyCaseExecution(db.Model):
             'process_identifier': self.process_identifier,
             'creation_date': self.creation_date,
             'cpu_usage': self.cpu_usage,
-            'memory_usage': self.memory_usage
+            'memory_usage': self.memory_usage,
+            'message': self.message
         }
 
 
@@ -878,6 +885,8 @@ class ReferenceStudy(db.Model):
     RUNNING = 'RUNNING'
     FINISHED = 'FINISHED'
     FAILED = 'FAILED'
+    POD_ERROR = 'POD ERROR'
+    STOPPED = 'STOPPED'
     UNKNOWN = 'NOT GENERATED'
     TYPE_USECASE_DATA = 'UsecaseData'
     TYPE_REFERENCE = 'Reference'
@@ -895,7 +904,8 @@ class ReferenceStudy(db.Model):
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     generation_logs = Column(Text, index=False, unique=False)
     disabled = Column(Boolean, default=False, nullable=False)
-    
+    generation_pod_flavor = Column(String(64), unique=False, nullable=True)
+    execution_thread_id = Column(Integer, unique=False, nullable=True)
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -909,7 +919,9 @@ class ReferenceStudy(db.Model):
             'creation_date': self.creation_date,
             'execution_status': self.execution_status,
             'generation_logs': self.generation_logs,
-            'disabled': self.disabled
+            'disabled': self.disabled,
+            'generation_pod_flavor': self.generation_pod_flavor,
+            'execution_thread_id': self.execution_thread_id
         }
 
 

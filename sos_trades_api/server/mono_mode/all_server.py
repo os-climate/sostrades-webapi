@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 25/03/2024 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,8 +23,16 @@ from sos_trades_api.server import base_server
 app = base_server.app
 db = base_server.db
 
-from sos_trades_api.server.base_server import check_identity_provider_availability
+from sos_trades_api.server.base_server import check_identity_provider_availability, \
+        launch_thread_update_pod_allocation_status
 check_identity_provider_availability()
+
+config = base_server.config
+if config.execution_strategy == config.CONFIG_EXECUTION_STRATEGY_K8S or \
+    config.server_mode == config.CONFIG_SERVER_MODE_K8S:
+    launch_thread_update_pod_allocation_status()
+
+
 
 # load & register APIs
 from sos_trades_api.routes.data import *

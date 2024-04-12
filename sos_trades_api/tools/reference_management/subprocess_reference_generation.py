@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/04/08 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,5 +45,5 @@ with app.app_context():
         db.session.commit()
     except Exception as e:
         ref_gen_model = ReferenceStudy.query.filter(ReferenceStudy.id == ref_model_id).update(
-            {'execution_status': ReferenceStudy.FAILED, 'generation_logs': e})
+            {'execution_status': ReferenceStudy.FAILED, 'generation_logs': str(e)})
         db.session.commit()

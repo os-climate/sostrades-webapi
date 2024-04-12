@@ -129,7 +129,9 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                                          self.test_process_name,
                                                          self.default_group_id,
                                                          'Empty Study',
-                                                         StudyCase.FROM_REFERENCE)
+                                                         StudyCase.FROM_REFERENCE,
+                                                     None,
+                                                     None)
 
                 self.test_study_id = new_study_case.id
 
