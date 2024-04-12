@@ -23,7 +23,6 @@ from kubernetes import client, config
 from sos_trades_api.server.base_server import app
 
 
-
 class ExecutionEngineKuberneteError(Exception):
     """Base StudyCase Exception"""
 
@@ -261,17 +260,23 @@ def get_container_error_reason(pod):
     return status
 
 
+sos_kube_configured = False
 def kubernetes_load_kube_config():
-    # load k8 api rights config or incluster config
-    try:
-        config.load_kube_config()
-    except:
+    global sos_kube_configured
+
+    if not sos_kube_configured:
+        # load k8 api rights config or incluster config
         try:
-            config.load_incluster_config()  # How to set up the client from within a k8s pod
-        except config.config_exception.ConfigException as error:
-            message = f"Could not configure kubernetes python client : {error}"
-            app.logger.error(message)
-            raise ExecutionEngineKuberneteError(message)
+            config.load_kube_config()
+            sos_kube_configured = True
+        except:
+            try:
+                config.load_incluster_config()  # How to set up the client from within a k8s pod
+                sos_kube_configured = True
+            except config.config_exception.ConfigException as error:
+                message = f"Could not configure kubernetes python client : {error}"
+                app.logger.error(message)
+                raise ExecutionEngineKuberneteError(message)
 
 
 def kubernetes_get_pod_info(pod_name, pod_namespace):
@@ -367,4 +372,3 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
                 app.logger.info(f"Deployment {pod_name} has been successfully deleted")
         except Exception as api_exception:
             app.logger.error(api_exception)
-
