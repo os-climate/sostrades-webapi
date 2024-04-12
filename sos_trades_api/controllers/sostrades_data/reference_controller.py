@@ -455,7 +455,7 @@ def get_reference_allocation_and_status_list(reference_ids:list[int])-> dict[int
     
     # Find the most recent allocation for each reference ID
     for reference_id in reference_ids:
-        allocations = allocations_by_reference.get(key=reference_id, default=[])
+        allocations = allocations_by_reference.get(reference_id, [])
         if len(allocations) == 0:
             reference_allocations[reference_id] = None
         else:
