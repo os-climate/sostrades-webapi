@@ -319,7 +319,10 @@ def callback():
 @app.route('/api/data/keycloak/logout', methods=['GET'])
 def logout():
     keycloak = KeycloakAuthenticator()
-    logout_url = keycloak.logout_url("https://revision.gpp-sostrades.com/")
-    app.logger.info(f'User session logout')
+    code = request.args.get('code')
+    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    access_token = token['access_token']
+    keycloak.logout(access_token)
+
     deauthenticate_user()
-    return redirect(logout_url)
+    return redirect("https://revision.gpp-sostrades.com")
