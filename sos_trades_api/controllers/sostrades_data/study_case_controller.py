@@ -647,7 +647,6 @@ def get_user_shared_study_case(user_identifier: int):
             else:
                 current_execution = study_case_execution[0]
                 update_study_case_execution_status(current_execution)
-                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L650")
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
