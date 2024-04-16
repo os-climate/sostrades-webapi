@@ -347,10 +347,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if service_found:
         try:
             resp = core_api_instance.delete_namespaced_service(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the service named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"service {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
 
@@ -366,9 +363,6 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if deployement_found:
         try:
             resp = apps_api_instance.delete_namespaced_deployment(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the deployment named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"Deployment {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
