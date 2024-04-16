@@ -1,6 +1,7 @@
 '''
 Copyright 2022 Airbus SAS
 
+Modifications on 2024/04/05 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -40,5 +41,7 @@ class ReferenceGenerationSubprocess():
         """
         path = join(dirname(sos_trades_api.__file__),
                     '..', 'server_scripts', 'calculation', 'launch_calculation.py')
-        subprocess.Popen(
+        process = subprocess.Popen(
             f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)
+        
+        return process.pid

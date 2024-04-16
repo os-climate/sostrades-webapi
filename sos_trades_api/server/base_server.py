@@ -217,24 +217,6 @@ def check_identity_provider_availability():
             app.logger.info('GitHub IdP/oauth settings.json file found')
 
 
-def launch_thread_update_pod_allocation_status():
-    """
-    Start a thread that will update all pod_allocation status (that are not completed) by asking kubernetes api
-    all 5 seconds 
-    """
-    from threading import Thread, Event
-    from sos_trades_api.tools.allocation_management.allocation_management import update_all_pod_status
-    stopped = Event()
-    
-    def loop(): # the function that will be in a thread
-        interval = 15 #seconds
-        while not stopped.wait(interval): 
-            update_all_pod_status()
-
-    t = Thread(target=loop)
-    t.start()
-
-
 def database_check_study_case_state(with_deletion=False):
     """
     Check study case state in database
@@ -590,6 +572,18 @@ def update_all_pod_status_method():
         update_all_pod_status
     update_all_pod_status()
 
+def update_all_pod_status_loop_method():
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+        update_all_pod_status
+    interval = 15 #seconds
+    while True:
+        try:
+            update_all_pod_status()
+            app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
+        except Exception as ex:
+            app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+        time.sleep(interval)
+
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
@@ -785,6 +779,14 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         """
         update_all_pod_status_method()
 
+    # Add custom command on flask cli to update all current allocations
+    @click.command('update_pod_allocations_status_loop')
+    @with_appcontext
+    def update_pod_allocations_status_loop():
+        """  update all allocations from db 
+        """
+        update_all_pod_status_loop_method()
+
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
     app.cli.add_command(create_standard_user)
@@ -799,6 +801,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)
     app.cli.add_command(update_pod_allocations_status)
+    app.cli.add_command(update_pod_allocations_status_loop)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access

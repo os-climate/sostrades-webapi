@@ -78,7 +78,7 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
         is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
 
-        if (not is_in_cache and study_case_manager.study.creation_status != StudyCase.CREATION_DONE):
+        if not is_in_cache and (study_case_manager.study.creation_status != StudyCase.CREATION_DONE and study_case_manager.study.creation_status != ProxyDiscipline.STATUS_DONE):
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             with app.app_context():
                 study_case = StudyCase.query.filter(
@@ -89,7 +89,7 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
             if study_case_manager.study.from_type == StudyCase.FROM_STUDYCASE:
                 source_id = int(study_case_manager.study.reference)
                 source_study_case = StudyCase.query.filter( StudyCase.id == source_id).first()
-                if source_study_case is not None and source_study_case.creation_status != StudyCase.CREATION_DONE:
+                if source_study_case is not None and (source_study_case.creation_status != StudyCase.CREATION_DONE and source_study_case.creation_status != ProxyDiscipline.STATUS_DONE):
                     study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
                     db.session.delete(study_case)
                     db.session.commit()
@@ -418,7 +418,8 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
 
             if study_execution.execution_status == StudyCaseExecution.RUNNING \
                     or study_execution.execution_status == StudyCaseExecution.STOPPED \
-                    or study_execution.execution_status == StudyCaseExecution.PENDING:
+                    or study_execution.execution_status == StudyCaseExecution.PENDING \
+                    or study_execution.execution_status == StudyCaseExecution.POD_PENDING:
                 status = StudyCaseExecution.NOT_EXECUTED
             else:
                 status = study_execution.execution_status

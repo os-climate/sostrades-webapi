@@ -541,6 +541,8 @@ class StudyCaseManager(BaseStudyManager):
         reload_done = False
         root_folder = Path(self.dump_directory)
 
+        app.logger.warning(f"Reloading study case {self.__study_identifier}")
+
         # check that there is backup files
         backup_files = list(root_folder.rglob(f'*{self.BACKUP_FILE_NAME}.*'))
         if len(backup_files) > 0:

@@ -67,6 +67,7 @@ class StudyCaseDto:
             self.process = study_case_instance.process
             self.repository = study_case_instance.repository
             self.creation_date = study_case_instance.creation_date
+            self.current_execution_id = study_case_instance.current_execution_id
             self.creation_status = study_case_instance.creation_status
             self.error = study_case_instance.error
             self.modification_date = study_case_instance.modification_date

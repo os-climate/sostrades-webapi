@@ -116,14 +116,17 @@ def reset_study_from_cache(study_id):
         :params: study_id, id of the study to load
         :type: integer
     """
+    try:
+        # Check if study is already in cache
+        if study_case_cache.is_study_case_cached(study_id):
+            # Remove outdated study from the cache
+            study_case_cache.delete_study_case_from_cache(study_id)
 
-    # Check if study is already in cache
-    if study_case_cache.is_study_case_cached(study_id):
-        # Remove outdated study from the cache
-        study_case_cache.delete_study_case_from_cache(study_id)
+            # Create the updated one
+            study_manager = study_case_cache.get_study_case(study_id, False)
 
-        # Create the updated one
-        study_manager = study_case_cache.get_study_case(study_id, False)
+            return study_manager
 
-        return study_manager
+    except Exception as ex:
+        raise f'Error during reset study from cache : {ex}'
 

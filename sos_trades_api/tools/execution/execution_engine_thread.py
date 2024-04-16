@@ -43,6 +43,23 @@ class ExecutionEngineThread(threading.Thread):
 
     def run(self):
 
+        # set status at running:
+        with app.app_context():
+            study_case_execution = StudyCaseExecution.query.filter(
+                StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
+            if study_case_execution is not None:
+                study_case_execution.execution_status = StudyCaseExecution.RUNNING
+                study_case_execution.message = ''
+                db.session.add(study_case_execution)
+                db.session.commit()
+            else:
+                study_case_execution.execution_status = StudyCaseExecution.FAILED
+                study_case_execution.message = 'Execution id not found'
+                db.session.add(study_case_execution)
+                db.session.commit()
+                self.__execution_logger.error('Execution id not found')
+                execution_error = True
+        
         execution_error = False
         start_time = time.time()
         self.__execution_logger.debug(
