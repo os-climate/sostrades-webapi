@@ -315,3 +315,11 @@ def callback():
     app.logger.info(f'Github/OAuth authentication access granted to {user.email}')
 
     return redirect(url)
+
+@app.route('/api/data/keycloak/logout', methods=['GET'])
+def logout():
+    keycloak = KeycloakAuthenticator()
+    logout_url = keycloak.logout_url("https://revision.gpp-sostrades.com/")
+    app.logger.info(f'User session logout')
+    deauthenticate_user()
+    return redirect(logout_url)
