@@ -21,6 +21,7 @@ from sos_trades_api.tools.active_study_management.active_study_management import
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
+from sostrades_core.datasets.dataset_mapping import DatasetsMapping
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -513,12 +514,15 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         # Retrieve study_manager
         study_manager = study_case_cache.get_study_case(study_id, True)
 
+        # Deserialize mapping
+        datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
+
         # Launch load study-case with new parameters from dataset
         if study_manager.load_status != LoadStatus.IN_PROGESS:
             study_manager.clear_error()
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping, False, False)).start()
+             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping_deserialized, False, False)).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
