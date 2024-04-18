@@ -566,8 +566,7 @@ def get_user_shared_study_case(user_identifier: int):
             # check pod status if creation status id not DONE:
             if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
                 allocation = get_study_case_allocation(user_study.id)
-                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L569")
-
+                
                 # deal with error cases:
                 if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
                     user_study.creation_status = StudyCase.CREATION_ERROR
@@ -647,7 +646,6 @@ def get_user_shared_study_case(user_identifier: int):
             else:
                 current_execution = study_case_execution[0]
                 update_study_case_execution_status(current_execution)
-                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L650")
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 

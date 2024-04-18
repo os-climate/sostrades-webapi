@@ -104,6 +104,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
         else: 
             pod_allocation.flavor = ''
             pod_allocation.pod_status = PodAllocation.RUNNING
+            pod_allocation.message = ""
     except Exception as exp:
         pod_allocation.pod_status = PodAllocation.IN_ERROR
         pod_allocation.message = f'error while pod creation: {str(exp)}'
@@ -193,8 +194,9 @@ def get_allocation_status(pod_allocation:PodAllocation):
                     status = PodAllocation.COMPLETED
                 elif pod_status == "Failed":
                     status = PodAllocation.IN_ERROR
-                elif pod_status == None:
+                elif pod_status is None:
                     status = PodAllocation.NOT_STARTED
+                    reason = "Pod not found"
                 else:
                     status = PodAllocation.IN_ERROR
             except Exception as ex:
