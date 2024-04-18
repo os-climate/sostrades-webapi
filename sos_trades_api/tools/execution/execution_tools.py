@@ -51,9 +51,7 @@ def update_study_case_execution_status(study_case_execution: StudyCaseExecution)
         elif pod_allocation.pod_status == PodAllocation.RUNNING and study_case_execution.execution_status == StudyCaseExecution.POD_PENDING:
             study_case_execution.message = 'Pod is up, computation should start soon'
             study_case_execution.execution_status = StudyCaseExecution.PENDING
-        elif pod_allocation.pod_status == PodAllocation.RUNNING:
-            study_case_execution.execution_status = StudyCaseExecution.RUNNING
-            study_case_execution.execution_status = ''
+        
 
         db.session.add(study_case_execution)
         db.session.commit()
