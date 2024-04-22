@@ -574,7 +574,7 @@ def get_user_shared_study_case(user_identifier: int):
                     (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
                     user_study.creation_status = StudyCase.CREATION_ERROR
                     if allocation.pod_status == PodAllocation.OOMKILLED:
-                        user_study.error = "An error occured while creation, pod has been oomkilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
+                        user_study.error = "An error occured while creation, pod has been OOMKilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
                     else:
                         user_study.error = "An error occured while creation, please reload the study to finalize the creation"
 
