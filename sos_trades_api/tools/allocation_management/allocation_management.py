@@ -193,7 +193,10 @@ def get_allocation_status(pod_allocation:PodAllocation):
                 elif pod_status == "Succeeded":
                     status = PodAllocation.COMPLETED
                 elif pod_status == "Failed":
-                    status = PodAllocation.IN_ERROR
+                    if reason == "OOMKilled":
+                        status = PodAllocation.OOMKILLED
+                    else:
+                        status = PodAllocation.IN_ERROR
                 elif pod_status is None:
                     status = PodAllocation.NOT_STARTED
                     reason = "Pod not found"

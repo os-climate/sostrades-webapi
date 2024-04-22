@@ -230,6 +230,8 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
         
+        
+
     return study_case_allocation
 
 def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
@@ -568,9 +570,14 @@ def get_user_shared_study_case(user_identifier: int):
                 allocation = get_study_case_allocation(user_study.id)
                 
                 # deal with error cases:
-                if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
+                if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
+                    (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
                     user_study.creation_status = StudyCase.CREATION_ERROR
-                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+                    if allocation.pod_status == PodAllocation.OOMKILLED:
+                        user_study.error = "An error occured while creation, pod has been oomkilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
+                    else:
+                        user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+
                 elif allocation.pod_status == PodAllocation.PENDING:
                     user_study.creation_status = StudyCase.CREATION_PENDING
                     user_study.error = "Waiting for a study pod to end the creation of the study"
