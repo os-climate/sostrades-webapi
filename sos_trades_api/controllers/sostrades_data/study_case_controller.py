@@ -226,7 +226,12 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
-        study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
+        pod_status, message = get_allocation_status(study_case_allocation)
+        # if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
+        if pod_status != PodAllocation.NOT_STARTED or  (pod_status == PodAllocation.NOT_STARTED and \
+            study_case_allocation.pod_status != PodAllocation.IN_ERROR and study_case_allocation.pod_status != PodAllocation.OOMKILLED):
+            study_case_allocation.pod_status = pod_status
+            study_case_allocation.message = message
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
         

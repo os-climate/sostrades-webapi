@@ -210,6 +210,7 @@ def get_allocation_status(pod_allocation:PodAllocation):
             status = PodAllocation.NOT_STARTED
     else:
         status = PodAllocation.RUNNING
+        reason = ""
     
     return status, reason
 
