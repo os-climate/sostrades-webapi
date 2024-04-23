@@ -231,10 +231,9 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
             reason = get_container_error_reason(pod)
             
             # get the terminating status
-            if pod.metadata is not None:
-                app.logger.info("pod metadata timestamp: {pod.metadata.deletion_timestamp}")
-                if pod.metadata.deletion_timestamp is not None and pod.status.phase in ('Pending', 'Running'):
-                    result = "Failed"
+            if pod.metadata is not None and pod.metadata.deletion_timestamp is not None and pod.status.phase in ('Pending', 'Running'):
+                app.logger.info(f"pod metadata timestamp: {pod.metadata.deletion_timestamp}")
+                result = "Failed"
                 
             # Check case the pod has restarted with error or oomkilled
             # (restart_count > 0 => it has a deployment)
