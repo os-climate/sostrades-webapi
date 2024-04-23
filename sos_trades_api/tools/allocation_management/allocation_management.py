@@ -186,17 +186,16 @@ def get_allocation_status(pod_allocation:PodAllocation):
         if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
             try:
                 pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
-                if pod_status == "Running":
+                if reason == "OOMKilled":
+                    status = PodAllocation.OOMKILLED
+                elif pod_status == "Running":
                     status = PodAllocation.RUNNING
                 elif pod_status == "Pending":
                     status = PodAllocation.PENDING
                 elif pod_status == "Succeeded":
                     status = PodAllocation.COMPLETED
                 elif pod_status == "Failed":
-                    if reason == "OOMKilled":
-                        status = PodAllocation.OOMKILLED
-                    else:
-                        status = PodAllocation.IN_ERROR
+                    status = PodAllocation.IN_ERROR
                 elif pod_status is None:
                     status = PodAllocation.NOT_STARTED
                     reason = "Pod not found"
@@ -209,8 +208,8 @@ def get_allocation_status(pod_allocation:PodAllocation):
         else:
             status = PodAllocation.NOT_STARTED
     else:
-        status = PodAllocation.RUNNING
-        reason = ""
+        status = pod_allocation.pod_status
+        reason = pod_allocation.message
     
     return status, reason
 
