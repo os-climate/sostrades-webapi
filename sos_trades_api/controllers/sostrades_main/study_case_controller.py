@@ -516,13 +516,16 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
 
         # Deserialize mapping
         datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
+        datasets_parameter_changes = []
 
         # Launch load study-case with new parameters from dataset
         if study_manager.load_status != LoadStatus.IN_PROGESS:
-            study_manager.clear_error()
+            study_manager.clear_error() 
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping_deserialized, False, False)).start()
+             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping_deserialized,
+                                                                          datasets_parameter_changes, False, False)
+            ).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
@@ -534,7 +537,18 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         loaded_study_case = LoadedStudyCase(study_manager, False, False, user.id)
 
         # Add notification to database
-        add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.IMPORT_DATASET)
+        new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.IMPORT_DATASET)
+
+        # # Add change to database
+        # add_change_db(new_notification_id,
+        #               file_info[file.filename]['variable_id'],
+        #               StudyCaseChange.CSV_CHANGE,
+        #               None,
+        #               StudyCaseChange.CSV_CHANGE,
+        #               None,
+        #               None,
+        #               old_value_bytes,
+        #               datetime.now())
 
         return loaded_study_case
 
