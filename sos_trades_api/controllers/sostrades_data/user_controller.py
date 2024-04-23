@@ -15,6 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
+from sos_trades_api.models.user_dto import UserDto
+from sos_trades_api.tools.right_management import access_right
+from sos_trades_api.tools.right_management.access_right import has_access_to
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -64,6 +67,28 @@ def get_user_list() -> List[User]:
     users_query = User.query.all()
 
     return users_query
+
+
+def get_user_list_for_sharing(user: User) -> List[UserDto]:
+    """Ask database to retrieve all users information's
+    """
+    users_query = User.query.all()
+    user_dto_list = []
+
+    for user_from_database in users_query:
+        user_dto = UserDto(user.id)
+        user_dto.username = user_from_database.username
+        user_dto.firstname = user_from_database.firstname
+        user_dto.lastname = user_from_database.lastname
+        user_dto.department = user_from_database.department
+        user_dto.user_profile_id = user_from_database.user_profile_id
+
+        user_dto_list.append(user_dto)
+
+    if len(users_query) == len(user_dto_list):
+        return user_dto_list
+    else:
+        raise UserError(f'User list not coherent')
 
 
 def add_user(firstname, lastname, username, password, email, user_profile_id) -> User:

@@ -23,7 +23,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
     study_manager_profile
 from sos_trades_api.controllers.sostrades_data.user_controller import add_user, update_user as update_user_controller, \
     get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, \
-    change_user_password, set_user_default_group
+    change_user_password, set_user_default_group, get_user_list_for_sharing
 from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management import access_right
 from sos_trades_api.models.user_application_right import UserApplicationRight
@@ -32,7 +32,18 @@ from sos_trades_api.models.user_application_right import UserApplicationRight
 @app.route(f'/api/data/user', methods=['GET'])
 @auth_required
 def users():
+
     resp = make_response(jsonify(get_user_list()), 200)
+    return resp
+
+
+@app.route(f'/api/data/user/share', methods=['GET'])
+@auth_required
+def users_for_sharing():
+
+    user = session['user']
+
+    resp = make_response(jsonify(get_user_list_for_sharing(user)), 200)
     return resp
 
 

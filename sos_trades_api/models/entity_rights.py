@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+from sos_trades_api.models.user_dto import UserDto
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -187,8 +187,14 @@ class ProcessEntityRights():
         elif isinstance(access_db_object, ProcessAccessUser):
 
             entity_type = EntityType.USER
-            entity_object = User.query.filter_by(
-                id=access_db_object.user_id).first()
+
+            user = User.query.filter_by(id=access_db_object.user_id).first()
+
+            entity_object = UserDto(user.id)
+            entity_object.username = user.username
+            entity_object.firstname = user.firstname
+            entity_object.lastname = user.lastname
+            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
@@ -366,8 +372,13 @@ class GroupEntityRights():
         elif isinstance(access_db_object, GroupAccessUser):
 
             entity_type = EntityType.USER
-            entity_object = User.query.filter_by(
-                id=access_db_object.user_id).first()
+
+            user = User.query.filter_by(id=access_db_object.user_id).first()
+            entity_object = UserDto(user.id)
+            entity_object.username = user.username
+            entity_object.firstname = user.firstname
+            entity_object.lastname = user.lastname
+            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
@@ -595,8 +606,13 @@ class StudyCaseEntityRights():
         elif isinstance(access_db_object, StudyCaseAccessUser):
 
             entity_type = EntityType.USER
-            entity_object = User.query.filter_by(
+            user = User.query.filter_by(
                 id=access_db_object.user_id).first()
+            entity_object = UserDto(user.id)
+            entity_object.username = user.username
+            entity_object.firstname = user.firstname
+            entity_object.lastname = user.lastname
+            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
