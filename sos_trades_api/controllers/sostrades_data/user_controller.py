@@ -69,19 +69,17 @@ def get_user_list() -> List[User]:
     return users_query
 
 
-def get_user_list_for_sharing(user: User) -> List[UserDto]:
+def get_user_list_for_sharing() -> List[UserDto]:
     """Ask database to retrieve all users information's
     """
     users_query = User.query.all()
     user_dto_list = []
 
     for user_from_database in users_query:
-        user_dto = UserDto(user.id)
+        user_dto = UserDto(user_from_database.id)
         user_dto.username = user_from_database.username
         user_dto.firstname = user_from_database.firstname
         user_dto.lastname = user_from_database.lastname
-        user_dto.department = user_from_database.department
-        user_dto.user_profile_id = user_from_database.user_profile_id
 
         user_dto_list.append(user_dto)
 

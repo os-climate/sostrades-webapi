@@ -17,7 +17,6 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class that represent a study case data transfert object with group information
 """
-from sos_trades_api.models.database_models import User
 
 
 class UserDto:
@@ -33,8 +32,6 @@ class UserDto:
         self.username = ""
         self.firstname = ""
         self.lastname = ""
-        self.department = ""
-        self.user_profile_id = ""
 
     def serialize(self):
         """ json serializer for dto purpose
@@ -44,6 +41,4 @@ class UserDto:
             'username': self.username,
             'firstname': self.firstname,
             'lastname': self.lastname,
-            'department': self.department,
-            'userprofile': self.user_profile_id
         }

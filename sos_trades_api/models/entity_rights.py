@@ -194,7 +194,6 @@ class ProcessEntityRights():
             entity_object.username = user.username
             entity_object.firstname = user.firstname
             entity_object.lastname = user.lastname
-            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
@@ -378,7 +377,6 @@ class GroupEntityRights():
             entity_object.username = user.username
             entity_object.firstname = user.firstname
             entity_object.lastname = user.lastname
-            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
@@ -612,7 +610,6 @@ class StudyCaseEntityRights():
             entity_object.username = user.username
             entity_object.firstname = user.firstname
             entity_object.lastname = user.lastname
-            entity_object.department = user.department
 
             if entity_object is None:
                 raise EntityRightsError(
