@@ -74,7 +74,6 @@ class LoadedStudyCase:
         self.n2_diagram = {}
 
         if treeview is not None:
-            self.study_case.execution_status = treeview.root.status
             self.treenode = treeview.to_dict()
         self.post_processings = {}
         self.plotly = {}
