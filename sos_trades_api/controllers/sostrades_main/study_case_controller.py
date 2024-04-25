@@ -142,7 +142,6 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
                 new_study_case_execution.requested_by = user.username
                 db.session.add(new_study_case_execution)
                 db.session.commit()
-
                 study_case.current_execution_id = new_study_case_execution.id
                 db.session.add(study_case)
                 db.session.commit()
@@ -217,7 +216,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
         # Modifying study case to add access right of creator (Manager)
         loaded_study_case.study_case.is_manager = True
 
-        if not loaded_study_case.study_case.execution_status or loaded_study_case.study_case.execution_status == ProxyDiscipline.STATUS_CONFIGURE:
+        if not status:
             loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
         else:
             loaded_study_case.study_case.execution_status = status
@@ -296,6 +295,14 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         study_manager, no_data, read_only, user_id)
     loading_duration = time.time() - start_time
 
+    #get execution status
+    study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_case is not None and study_case.current_execution_id is not None:
+        
+        study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+
+
     app.logger.info(f'load_study_case {study_id}, get cache: {cache_duration}')
     app.logger.info(f'load_study_case {study_id}, loading:{loading_duration} ')
 
@@ -362,7 +369,7 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
             execution_status = study_case_value.get("execution_status")
             # if the study status is DONE, the study must be opened in readonly
             # mode
-            if execution_status == ProxyDiscipline.STATUS_DONE:
+            if execution_status == ProxyDiscipline.STATUS_DONE or execution_status == StudyCaseExecution.FINISHED:
                 # launch the loading in background
                 study_manager = study_case_cache.get_study_case(study_id, False)
                 read_only = study_access_right == AccessRights.COMMENTER
@@ -724,6 +731,13 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         # Return logical treeview coming from execution engine
         loaded_study_case = LoadedStudyCase(
             study_manager, False, False, user_id)
+
+         #get execution status
+        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+        if study_case is not None and study_case.current_execution_id is not None:
+            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+            loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+
 
         return loaded_study_case
 

@@ -203,7 +203,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             # Update execution_status
             if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
                 study_execution = StudyCaseExecution.query.filter(
-                    StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
+                    StudyCaseExecution.id == studycase.current_execution_id).first()
                 if study_execution is not None:
                     study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
                     db.session.add(study_execution)
