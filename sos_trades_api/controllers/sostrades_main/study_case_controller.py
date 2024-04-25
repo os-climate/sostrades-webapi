@@ -540,15 +540,20 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.IMPORT_DATASET)
 
         # # Add change to database
-        # add_change_db(new_notification_id,
-        #               file_info[file.filename]['variable_id'],
-        #               StudyCaseChange.CSV_CHANGE,
-        #               None,
-        #               StudyCaseChange.CSV_CHANGE,
-        #               None,
-        #               None,
-        #               old_value_bytes,
-        #               datetime.now())
+        for param_chg in datasets_parameter_changes:
+            add_change_db(new_notification_id,
+                          param_chg.parameter_id,
+                          param_chg.variable_type,
+                          None,
+                          StudyCaseChange.CSV_CHANGE,
+                          param_chg.new_value, # todo: need to be stringified ?
+                          param_chg.old_value,
+                          None,     # old_value_blob can be retrieved ?
+                          param_chg.date,
+                          param_chg.connector_id,
+                          param_chg.dataset_id,
+                          param_chg.dataset_parameter_id
+                          )
 
         return loaded_study_case
 
@@ -641,7 +646,10 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               None,
                               None,
                               old_value_bytes,
-                              datetime.now())
+                              datetime.now(),
+                              None,
+                              None,
+                              None)
 
         values = {}
         for parameter in parameters_to_save:
@@ -762,7 +770,10 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
                                       None,
-                                      datetime.now())
+                                      datetime.now(),
+                                      None,
+                                      None,
+                                      None)
                     except Exception as error:
                         app.logger.exception(f'Study change database insertion error: {error}')
                 values[parameter['variableId']] = value
