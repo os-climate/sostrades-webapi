@@ -523,8 +523,8 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
             study_manager.clear_error() 
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
-             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, datasets_mapping_deserialized,
-                                                                          datasets_parameter_changes, False, False)
+             target=study_case_manager_update_from_dataset_mapping, args=(study_manager, user,
+                                                                          datasets_mapping_deserialized, False, False)
             ).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
@@ -535,25 +535,6 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
 
         # Return logical treeview coming from execution engine
         loaded_study_case = LoadedStudyCase(study_manager, False, False, user.id)
-
-        # Add notification to database
-        new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.IMPORT_DATASET)
-
-        # # Add change to database
-        for param_chg in datasets_parameter_changes:
-            add_change_db(new_notification_id,
-                          param_chg.parameter_id,
-                          param_chg.variable_type,
-                          None,
-                          StudyCaseChange.CSV_CHANGE,
-                          str(param_chg.new_value), # todo: need to be stringified ?
-                          str(param_chg.old_value),
-                          None,     # old_value_blob can be retrieved ?
-                          param_chg.date,
-                          param_chg.connector_id,
-                          param_chg.dataset_id,
-                          param_chg.dataset_parameter_id
-                          )
 
         return loaded_study_case
 

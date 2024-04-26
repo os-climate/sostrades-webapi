@@ -29,14 +29,15 @@ import traceback
 import sys
 from time import time
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
+from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution, StudyCaseChange
 from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
 from datetime import datetime, timezone
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from importlib import import_module
 from eventlet import sleep
-
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
+    CoeditionMessage
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""
@@ -235,7 +236,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             f'Error when updating in background {study_case_manager.study.name}')
 
 
-def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, param_changes,
+def study_case_manager_update_from_dataset_mapping(study_case_manager, user, datasets_mapping_deserialized,
                                                    no_data, read_only):
     """ Method that inject data into a study case manager from a datasets mapping
 
@@ -265,9 +266,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         # Update parameter into dictionary
-        dataset_param_changes = study_case_manager.load_data(
+        datasets_parameter_changes = study_case_manager.load_data(
             from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
-        param_changes.extend(dataset_param_changes)
 
         # Persist data using the current persistence strategy
         study_case_manager.save_study_case()
@@ -277,6 +277,26 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
         # Update modification date on database
         with app.app_context():
+            # Add changes notification to database
+            new_notification_id = add_notification_db(study_case_manager.study.id, user, UserCoeditionAction.SAVE,
+                                                      CoeditionMessage.IMPORT_DATASET)
+
+            # # Add change to database
+            for param_chg in datasets_parameter_changes:
+                add_change_db(new_notification_id,
+                              param_chg.parameter_id,
+                              param_chg.variable_type,
+                              None,
+                              StudyCaseChange.CSV_CHANGE,
+                              str(param_chg.new_value),  # todo: need to be stringified ?
+                              str(param_chg.old_value),
+                              None,  # old_value_blob can be retrieved ?
+                              param_chg.date,
+                              param_chg.connector_id,
+                              param_chg.dataset_id,
+                              param_chg.dataset_parameter_id
+                              )
+
             studycase = StudyCase.query.filter(
                 StudyCase.id.like(study_case_manager.study.id)).first()
             studycase.modification_date = modify_date
