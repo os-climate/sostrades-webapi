@@ -14,6 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from memory_profiler import profile
+import tracemalloc
+from sostrades_core.execution_engine.execution_engine import display_top
 
 from sos_trades_api.server.base_server import study_case_cache
 from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
@@ -29,7 +32,7 @@ class PostProcessingError(Exception):
     def __str__(self):
         return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
 
-
+@profile
 def load_post_processing(study_id, namespace, filters, discipline_module=''):
     """ load post processing regarding a namespace and a specific discipline inside this namespace
 
@@ -44,7 +47,10 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
 
     :return: tbd
     """
-
+    # -- prepare execution
+    study_manager.execution_engine.logger.info("\nSNAPSHOT BEFORE POSTPROC IN WEBAPI\n")
+    snapshot = tracemalloc.take_snapshot()
+    display_top(study_manager.execution_engine.logger, snapshot)
     study_manager = light_load_study_case(study_id)
 
     all_post_processing_data = []
@@ -80,7 +86,11 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
             study_manager.execution_engine, namespace, filters)
 
         all_post_processing_data.extend(post_processings)
-
+    
+    study_manager.execution_engine.logger.info("\nSNAPSHOT AFTER POSTPROC IN WEBAPI\n")
+    snapshot = tracemalloc.take_snapshot()
+    display_top(study_manager.execution_engine.logger, snapshot)
+    
     return all_post_processing_data
 
 

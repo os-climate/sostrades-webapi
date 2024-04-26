@@ -41,7 +41,8 @@ class ExecutionEngineSubprocess:
         with open(self.__log_file_path, 'wb') as log_file:
 
             process = subprocess.Popen(
-                f'python "{path}" --execute {self.__study_case_execution_id}',
+                #f'python "{path}" --execute {self.__study_case_execution_id}',
+                f'memray run --trace-python-allocators "{path}" --execute {self.__study_case_execution_id}',
                 shell=True, stdout=log_file,stderr=log_file)
 
         return process.pid

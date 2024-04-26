@@ -19,6 +19,8 @@ various function  regarding chart api
 """
 
 # pylint: disable=line-too-long
+import tracemalloc
+from sostrades_core.execution_engine.execution_engine import display_top
 
 from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 import time
@@ -35,6 +37,10 @@ def load_post_processing(exec_engine, with_charts):
 
     :return: dictionary with discipline id as key and ChartFilter list as value and a second dictionary depending of the 'with_chart' arguments with discipline id as key and Chart list as value
     """
+    logger = exec_engine.logger
+    logger.info("\nSNAPSHOT BEFORE LOAD POSTPROC IN WEBAPI\n")
+    snapshot = tracemalloc.take_snapshot()
+    display_top(logger, snapshot)
 
     all_post_processings = {}
 
@@ -45,10 +51,15 @@ def load_post_processing(exec_engine, with_charts):
 
         post_processing_factory = PostProcessingFactory()
 
+
         all_post_processings = post_processing_factory.get_all_post_processings(
             exec_engine, not with_charts)
 
         exec_engine.logger.info(
             f'End of post-processing generation ({time.time() - start_time} seconds)')
-
+    
+    logger.info("\nSNAPSHOT AFTER LOAD POSTPROC IN WEBAPI\n")
+    snapshot = tracemalloc.take_snapshot()
+    display_top(logger, snapshot)
+    
     return all_post_processings
