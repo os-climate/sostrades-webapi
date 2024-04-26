@@ -546,8 +546,8 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
                           param_chg.variable_type,
                           None,
                           StudyCaseChange.CSV_CHANGE,
-                          param_chg.new_value, # todo: need to be stringified ?
-                          param_chg.old_value,
+                          str(param_chg.new_value), # todo: need to be stringified ?
+                          str(param_chg.old_value),
                           None,     # old_value_blob can be retrieved ?
                           param_chg.date,
                           param_chg.connector_id,
