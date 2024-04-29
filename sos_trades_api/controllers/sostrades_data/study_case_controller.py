@@ -570,25 +570,7 @@ def get_user_shared_study_case(user_identifier: int):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
             
-            # check pod status if creation status id not DONE:
-            if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
-                allocation = get_study_case_allocation(user_study.id)
-                
-                # deal with error cases:
-                if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
-                    (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
-                    user_study.creation_status = StudyCase.CREATION_ERROR
-                    if allocation is not None:
-                        if allocation.pod_status == PodAllocation.OOMKILLED:
-                            user_study.error = "An error occured while creation, pod has been OOMKilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
-                        else:
-                            user_study.error = "An error occured while creation, please reload the study to finalize the creation"
-
-                elif allocation.pod_status == PodAllocation.PENDING:
-                    user_study.creation_status = StudyCase.CREATION_PENDING
-                    user_study.error = "Waiting for a study pod to end the creation of the study"
-                elif allocation.pod_status == PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_PENDING:
-                    user_study.error = "The pod is running, the creation of the study is pending, you may try to open the study again"
+            add_study_information_on_status(user_study)
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)
@@ -665,6 +647,77 @@ def get_user_shared_study_case(user_identifier: int):
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
     return result
+
+
+def get_user_study_case(user_identifier: int, study_identifier: int):
+    '''
+    get a single study case with updated status, ontology and execution
+    :param user_identifier: identifier of the user requesting the study
+    :type user_identifier:int
+    :param study_identifier: identifier of the study
+    :type study_identifier:int
+    :return: the user study
+    '''
+    study_case_access = StudyCaseAccess(user_identifier)
+
+    all_user_studies = study_case_access.user_study_cases
+
+    if len(all_user_studies) > 0:
+        # Sort study using creation date
+        all_user_studies = sorted(
+            all_user_studies, key=lambda res: res.creation_date, reverse=True
+        )
+        for user_study in all_user_studies:
+            if user_study.id == study_identifier:
+                add_study_information_on_status(user_study)
+
+                # load ontology
+                process_key = f'{user_study.repository}.{user_study.process}'
+                repository_key = user_study.repository
+                process_metadata = load_processes_metadata([process_key])
+                repository_metadata = load_repositories_metadata([repository_key])
+                # Update ontology display name
+                user_study.apply_ontology(process_metadata, repository_metadata)
+
+                # update study case execution status
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == user_study.current_execution_id
+                ).first()
+                if study_case_execution is None:
+                    user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+                else:
+                    current_execution = study_case_execution
+                    update_study_case_execution_status(current_execution)
+                    user_study.execution_status = current_execution.execution_status
+                    user_study.error = current_execution.message
+                return user_study
+    return None
+            
+
+
+
+
+
+def add_study_information_on_status(user_study: StudyCase):
+    # check pod status if creation status id not DONE:
+    if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
+        allocation = get_study_case_allocation(user_study.id)
+        
+        # deal with error cases:
+        if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
+            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
+            user_study.creation_status = StudyCase.CREATION_ERROR
+            if allocation is not None:
+                if allocation.pod_status == PodAllocation.OOMKILLED:
+                    user_study.error = "An error occured while creation, pod has been OOMKilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
+                else:
+                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+
+        elif allocation.pod_status == PodAllocation.PENDING:
+            user_study.creation_status = StudyCase.CREATION_PENDING
+            user_study.error = "Waiting for a study pod to end the creation of the study"
+        elif allocation.pod_status == PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_PENDING:
+            user_study.error = "The pod is running, the creation of the study is pending, you may try to open the study again"
 
 
 def get_change_file_stream(notification_identifier, parameter_key):
