@@ -23,14 +23,13 @@ from sos_trades_api.server import base_server
 app = base_server.app
 db = base_server.db
 
-from sos_trades_api.server.base_server import check_identity_provider_availability, \
-            launch_thread_update_pod_allocation_status
+from sos_trades_api.server.base_server import check_identity_provider_availability
 check_identity_provider_availability()
 
 config = base_server.config
-if config.execution_strategy == config.CONFIG_EXECUTION_STRATEGY_K8S or \
-    config.server_mode == config.CONFIG_SERVER_MODE_K8S:
-    launch_thread_update_pod_allocation_status()
+# if config.execution_strategy == config.CONFIG_EXECUTION_STRATEGY_K8S or \
+#     config.server_mode == config.CONFIG_SERVER_MODE_K8S:
+#     launch_thread_update_pod_allocation_status()
 
 # load & register APIs
 from sos_trades_api.routes.data import *

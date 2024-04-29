@@ -23,7 +23,6 @@ from kubernetes import client, config
 from sos_trades_api.server.base_server import app
 
 
-
 class ExecutionEngineKuberneteError(Exception):
     """Base StudyCase Exception"""
 
@@ -68,7 +67,7 @@ def kubernetes_create_pod(k8_conf):
         resp = api_instance.read_namespaced_pod(name=pod_name,
                                                 namespace=pod_namespace)
 
-        if resp.status.phase != 'Pending':
+        if resp.status.phase is not None:
             break
         time.sleep(1)
     elapsed_time = time.time() - start_time
@@ -261,17 +260,23 @@ def get_container_error_reason(pod):
     return status
 
 
+sos_kube_configured = False
 def kubernetes_load_kube_config():
-    # load k8 api rights config or incluster config
-    try:
-        config.load_kube_config()
-    except:
+    global sos_kube_configured
+
+    if not sos_kube_configured:
+        # load k8 api rights config or incluster config
         try:
-            config.load_incluster_config()  # How to set up the client from within a k8s pod
-        except config.config_exception.ConfigException as error:
-            message = f"Could not configure kubernetes python client : {error}"
-            app.logger.error(message)
-            raise ExecutionEngineKuberneteError(message)
+            config.load_kube_config()
+            sos_kube_configured = True
+        except:
+            try:
+                config.load_incluster_config()  # How to set up the client from within a k8s pod
+                sos_kube_configured = True
+            except config.config_exception.ConfigException as error:
+                message = f"Could not configure kubernetes python client : {error}"
+                app.logger.error(message)
+                raise ExecutionEngineKuberneteError(message)
 
 
 def kubernetes_get_pod_info(pod_name, pod_namespace):
@@ -342,10 +347,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if service_found:
         try:
             resp = core_api_instance.delete_namespaced_service(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the service named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"service {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
 
@@ -361,10 +363,6 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if deployement_found:
         try:
             resp = apps_api_instance.delete_namespaced_deployment(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the deployment named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"Deployment {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
-
