@@ -233,7 +233,8 @@ def get_generation_status_list(reference_list: list[ReferenceStudy]) -> dict[int
             # if the execution is at running (meaning it has already started) but the pod is not running anymore
             # it means it has failed : save failed status and save error msg
             if (reference.execution_status == ReferenceStudy.RUNNING \
-                    and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)):
+                    and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) or \
+                    (pod_allocation.pod_status == PodAllocation.IN_ERROR or pod_allocation.pod_status == PodAllocation.OOMKILLED):
                 # Generation running and pod not running -> ERROR
                 error_msg = ' - Regeneration status not coherent.'
                 if pod_allocation.message is not None and pod_allocation.message != '':
@@ -254,6 +255,7 @@ def get_generation_status_list(reference_list: list[ReferenceStudy]) -> dict[int
                 result_dict[reference.id].execution_status = ReferenceStudy.PENDING
                 result_dict[reference.id].generation_logs = '- Pod is loading'
             
+            
             db.session.add(pod_allocation)
             db.session.commit()
         
@@ -273,7 +275,7 @@ def stop_generation(reference_id):
 
             # try delete pod associated
             if pod_allocation is not None:
-                delete_pod_allocation(pod_allocation, is_kubernetes_execution)
+                delete_pod_allocation(pod_allocation, is_kubernetes_execution and pod_allocation.pod_status != PodAllocation.NOT_STARTED)
             
             if not is_kubernetes_execution and reference.execution_thread_id is not None and reference.execution_thread_id > 0:
                 try:
@@ -293,6 +295,7 @@ def stop_generation(reference_id):
             # Update execution before submitted process
             reference_study = ReferenceStudy.query.filter(ReferenceStudy.id == reference_id).first()
             reference_study.generation_logs = error
+            reference.execution_status = ReferenceStudy.STOPPED
             db.session.add(reference_study)
             db.session.commit()
 
@@ -446,7 +449,6 @@ def get_reference_allocation_and_status_list(reference_ids:list[int])-> dict[int
         else:
             most_recent_allocation = max(allocations, key=lambda x: x.creation_date)
             most_recent_allocation.pod_status, most_recent_allocation.message = get_allocation_status(most_recent_allocation)
-            app.logger.info("Retrieved status of pod of kubernetes from get_reference_allocation_and_status_list()")
             reference_allocations[reference_id] = most_recent_allocation
             
             if len(allocations) > 1:
