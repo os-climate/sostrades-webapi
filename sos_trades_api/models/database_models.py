@@ -653,6 +653,7 @@ class Notification(db.Model):
 class StudyCaseChange(db.Model):
     """StudyCaseChanges class"""
 
+    DATASET_MAPPING_CHANGE = 'dataset_mapping'
     CSV_CHANGE = 'csv'
     SCALAR_CHANGE = 'scalar'
 

@@ -731,6 +731,9 @@ def get_study_case_notifications(study_identifier):
                             new_change.old_value_blob = ch.old_value_blob
                             new_change.last_modified = ch.last_modified
                             new_change.deleted_columns = ch.deleted_columns
+                            new_change.dataset_connector_id = ch.dataset_connector_id
+                            new_change.dataset_id = ch.dataset_id
+                            new_change.dataset_parameter_id = ch.dataset_parameter_id
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes

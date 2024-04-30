@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import pandas
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -260,13 +261,12 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
     # todo: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
     try:
         sleep()
-        app.logger.info(
-            f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
+        app.logger.info(f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         # Update parameter into dictionary
-        datasets_parameter_changes = study_case_manager.load_data(
+        datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
             from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
 
         # Persist data using the current persistence strategy
@@ -277,25 +277,32 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
 
         # Update modification date on database
         with app.app_context():
-            # Add changes notification to database
-            new_notification_id = add_notification_db(study_case_manager.study.id, user, UserCoeditionAction.SAVE,
-                                                      CoeditionMessage.IMPORT_DATASET)
+            if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
+                # Add changes notification to database
+                new_notification_id = add_notification_db(study_case_manager.study.id, user, UserCoeditionAction.SAVE,
+                                                          CoeditionMessage.IMPORT_DATASET)
 
-            # # Add change to database
-            for param_chg in datasets_parameter_changes:
-                add_change_db(new_notification_id,
-                              param_chg.parameter_id,
-                              param_chg.variable_type,
-                              None,
-                              StudyCaseChange.CSV_CHANGE,
-                              str(param_chg.new_value),  # todo: need to be stringified ?
-                              str(param_chg.old_value),
-                              None,  # old_value_blob can be retrieved ?
-                              param_chg.date,
-                              param_chg.connector_id,
-                              param_chg.dataset_id,
-                              param_chg.dataset_parameter_id
-                              )
+                # # Add change to database
+                for param_chg in datasets_parameter_changes:
+                    study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+
+                    # Check if new value is a dataframe
+                    if isinstance(param_chg.new_value, pandas.DataFrame):
+                        study_case_change = StudyCaseChange.CSV_CHANGE
+
+                    add_change_db(new_notification_id,
+                                  param_chg.parameter_id,
+                                  param_chg.variable_type,
+                                  None,
+                                  study_case_change,
+                                  str(param_chg.new_value),
+                                  str(param_chg.old_value),
+                                  None,  # old_value_blob can be retrieved ?
+                                  param_chg.date,
+                                  param_chg.connector_id,
+                                  param_chg.dataset_id,
+                                  param_chg.dataset_parameter_id
+                                  )
 
             studycase = StudyCase.query.filter(
                 StudyCase.id.like(study_case_manager.study.id)).first()
