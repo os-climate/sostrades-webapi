@@ -447,6 +447,13 @@ def delete_calculation_entry(study_case_id, study_case_execution_id):
                 .filter(StudyCaseExecution.id == study_case_execution_id)\
                 .filter(StudyCaseExecution.study_case_id == study_case_id)\
                 .delete()
+            
+            #delete associated pod allocation
+            PodAllocation.query\
+                .filter(PodAllocation.identifier == study_case_execution_id)\
+                .filter(PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION)\
+                .delete()
+            
             db.session.commit()
         else:
             raise InvalidStudy(
