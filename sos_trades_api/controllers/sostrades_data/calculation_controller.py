@@ -231,7 +231,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
         if study_case_execution is not None:
             try:
                 
-                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter(
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_id,
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
                 app.logger.info(
