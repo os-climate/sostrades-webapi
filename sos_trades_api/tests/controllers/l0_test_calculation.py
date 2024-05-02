@@ -150,11 +150,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                           'Study case execution status not coherent')
             
             #check allocation creation:
-            allocation = PodAllocation.query.filter(PodAllocation.identifier == sc.current_execution_id).filter(
+            allocations = PodAllocation.query.filter(PodAllocation.identifier == sc.current_execution_id).filter(
                                                     PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
-                                                    ).first()
-            self.assertIsNotNone(allocation, 'Allocation not found')
-            self.assertEqual(allocation.pod_status, PodAllocation.RUNNING,'Allocation has not the Running status')
+                                                    ).all()
+            self.assertTrue(len(allocations) == 1, 'There is more than one allocation for this execution')
+            self.assertIsNotNone(allocations[0], 'Allocation not found')
+            self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,'Allocation has not the Running status')
 
     def test_02_calculation_status(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status

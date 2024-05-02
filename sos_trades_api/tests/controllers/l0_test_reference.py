@@ -20,6 +20,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for reference procedures
 """
 
+
 from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from builtins import classmethod
 
@@ -34,6 +35,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
     test_repository_name = 'sostrades_core.sos_processes.test'
     test_process_name = 'test_disc1_disc2_coupling'
     test_study_name = 'test_creation'
+    test_usecase_name = 'usecase_coupling_2_disc_test'
     test_study_id = None
     test_user_id = None
     test_user_group_id = None
@@ -47,7 +49,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
     def setUp(self):
         super().setUp()
-
+        
         from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, StudyCase
         from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
         from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
@@ -124,3 +126,51 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 references_list = get_all_references(self.test_user_id, None)
             except:
                 self.assertTrue(False, 'Error while retrieving all references')
+
+    def test_generate_reference(self):
+        import os
+        import time
+        from sos_trades_api.controllers.sostrades_data.reference_controller import generate_reference, get_generation_status
+        from sos_trades_api.models.database_models import ReferenceStudy, PodAllocation
+        
+        with DatabaseUnitTestConfiguration.app.app_context():
+            os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'
+            ref_id = generate_reference(self.test_repository_name, self.test_process_name, self.test_usecase_name, self.test_user_id)
+        
+            # check reference exists
+            references = ReferenceStudy.query.filter(ReferenceStudy.id == ref_id).all()
+            self.assertTrue(len(references) == 1)
+            reference = references[0]
+            self.assertTrue(reference.execution_status in [
+                    ReferenceStudy.RUNNING,
+                    ReferenceStudy.PENDING])
+            
+            # get allocation
+            pod_allocations = PodAllocation.query.filter(PodAllocation.identifier == ref_id, \
+                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE).all()
+            self.assertTrue(len(pod_allocations) == 1)
+            pod_allocation = pod_allocations[0]
+            self.assertEqual(pod_allocation.pod_status, PodAllocation.RUNNING)
+            
+            # wait end of generation
+            while reference.execution_status in [
+                    ReferenceStudy.RUNNING,
+                    ReferenceStudy.PENDING]:
+                time.sleep(10.0)
+                reference = ReferenceStudy.query.filter(ReferenceStudy.id == ref_id).first()
+                reference = get_generation_status(reference)
+            
+            self.assertTrue(reference.execution_status in [
+                    ReferenceStudy.FINISHED,
+                    ReferenceStudy.FAILED])
+            
+            # generate a 2nde time
+            ref_id_2 = generate_reference(self.test_repository_name, self.test_process_name, self.test_usecase_name, self.test_user_id)
+            self.assertEqual(ref_id, ref_id_2, "A new reference have been created")
+
+            # check only one allocation
+            pod_allocations = PodAllocation.query.filter(PodAllocation.identifier == ref_id, \
+                                                 PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE).all()
+            self.assertTrue(len(pod_allocations) == 1)
+        
+
