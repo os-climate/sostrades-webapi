@@ -18,8 +18,11 @@ from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecut
 from sos_trades_api.server.base_server import db
 
 
-def update_study_case_execution_status(study_case_execution: StudyCaseExecution):
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter( 
+def update_study_case_execution_status(study_case_id: int, study_case_execution: StudyCaseExecution):
+    '''
+        Update execution status by checking the pod allocation status
+    '''
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_id).filter( 
                                                 PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                 ).first()
         
