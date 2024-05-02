@@ -592,13 +592,13 @@ class Config:
         """
         if self.__kubernetes_flavor_for_study is None:
 
-            if not self.CONFIG_FLAVOR_KUBERNETES in self.__server_config_file:
-                raise KeyError(f"CONFIG_FLAVOR_KUBERNETES is not in configuration file")
+            if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
+                raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
             
             kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
 
-            if not "PodStudy" in kubernetes_flavor.keys():
-                raise KeyError(f"PodStudy is not in CONFIG_FLAVOR_KUBERNETES")
+            if "PodStudy" not in kubernetes_flavor.keys():
+                raise KeyError("PodStudy is not in CONFIG_FLAVOR_KUBERNETES")
 
             self.__validate_flavor(kubernetes_flavor["PodStudy"])
 
@@ -617,13 +617,13 @@ class Config:
         """
         if self.kubernetes_flavor_config_for_exec is None:
 
-            if not self.CONFIG_FLAVOR_KUBERNETES in self.__server_config_file:
-                raise KeyError(f"CONFIG_FLAVOR_KUBERNETES is not in configuration file")
+            if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
+                raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
             
             kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
 
-            if not "PodExec" in kubernetes_flavor.keys():
-                raise KeyError(f"PodExec is not in CONFIG_FLAVOR_KUBERNETES")
+            if "PodExec" not in kubernetes_flavor.keys():
+                raise KeyError("PodExec is not in CONFIG_FLAVOR_KUBERNETES")
 
             self.__validate_flavor(kubernetes_flavor["PodExec"])
 
@@ -631,7 +631,7 @@ class Config:
 
         return self.kubernetes_flavor_config_for_exec
     
-    def __validate_flavor(list_flavors:dict):
+    def __validate_flavor(self, list_flavors:dict):
         """Validate Kubernetes flavor configuration.
 
         :param config: Kubernetes flavor configuration.
