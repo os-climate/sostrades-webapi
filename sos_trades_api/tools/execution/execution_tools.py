@@ -37,7 +37,7 @@ def update_study_case_execution_status(study_case_execution: StudyCaseExecution)
             study_case_execution.execution_status = StudyCaseExecution.POD_ERROR
             if pod_allocation.message is not None and pod_allocation.message != '':
                 if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                    study_case_execution.message = f'Pod is OOMKilled, you may choose a bigger execution flavor'
+                    study_case_execution.message = f'Pod had not enough resources, you may choose a bigger pod size for the execution'
                 else:
                     study_case_execution.message = f'Pod is in error : {pod_allocation.message}'
             else:
