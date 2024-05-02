@@ -509,9 +509,14 @@ def delete_study_cases_and_allocation(studies):
                     study_list.append(sc)
                     db.session.delete(sc)
 
-                # delete allocations
-                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies)).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
+                # delete allocations of study pod
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
                 delete_study_server_services_and_deployments(pod_allocations)
+
+                # delete allocations of study executions
+                execution_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION).all()
+                for allocation in execution_allocations:
+                    db.session.delete(allocation)
                 # delete studies
                 db.session.commit()
                 app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
@@ -640,7 +645,7 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
                 current_execution = study_case_execution[0]
-                update_study_case_execution_status(current_execution)
+                update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
@@ -687,7 +692,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
                 else:
                     current_execution = study_case_execution
-                    update_study_case_execution_status(current_execution)
+                    update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
                 return user_study

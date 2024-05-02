@@ -23,7 +23,7 @@ from datetime import datetime
 import yaml
 
 from sos_trades_api.config import Config
-from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
+from sos_trades_api.models.database_models import PodAllocation, StudyCase
 from sos_trades_api.tools.kubernetes import kubernetes_service
 from sos_trades_api.server.base_server import app, db
 from pathlib import Path
@@ -51,9 +51,9 @@ def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, 
     :return: sos_trades_api.models.database_models.PodAllocation
     """
     # check that allocation already exists:
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == identifier).filter(
-                                                        PodAllocation.pod_type == allocation_type
-                                                        ).first()
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == identifier, 
+                                                PodAllocation.pod_type == allocation_type
+                                                ).first()
     if pod_allocation is None:
         pod_allocation = PodAllocation()
      
@@ -82,6 +82,14 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     '''
     # create kubernete pod
     config = Config()
+    identifier = pod_allocation.identifier
+    # in case of execution allocation, the identifier is the study because 
+    # we want to have only one execution allocation by study (the current execution id)
+    if pod_allocation.pod_type == PodAllocation.TYPE_EXECUTION:
+        study = StudyCase.query.filter(StudyCase.id == identifier).first()
+        if study is None:
+            raise Exception("Study not Found")
+        identifier = study.current_execution_id
     pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type)
     pod_allocation.kubernetes_pod_name = pod_name
 
@@ -102,7 +110,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
             pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            k8_conf = get_kubernetes_config_eeb(pod_name, pod_allocation.identifier, pod_allocation.pod_type, flavor, log_file_path)
+            k8_conf = get_kubernetes_config_eeb(pod_name, identifier, pod_allocation.pod_type, flavor, log_file_path)
             kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
             pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
@@ -171,12 +179,7 @@ def get_pod_name(identifier, pod_type):
         return f'sostrades-study-server-{identifier}'
     
     elif pod_type == PodAllocation.TYPE_EXECUTION:
-        execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == identifier).first()
-        if execution is not None:
-            # add the study case id in the name of the pod
-            return f'eeb-sc{execution.study_case_id}-e{identifier}-{uuid.uuid4()}'
-        else:
-            return f'eeb-e{identifier}-{uuid.uuid4()}'
+        return f'eeb-sc{identifier}-{uuid.uuid4()}'
 
     elif pod_type == PodAllocation.TYPE_REFERENCE:
         return f'generation-g{identifier}-{uuid.uuid4()}'
@@ -276,7 +279,7 @@ def update_all_pod_status():
         updated_allocation = []
         all_allocations = PodAllocation.query.all()
         for allocation in all_allocations:
-            if allocation.pod_status != PodAllocation.COMPLETED:
+            if allocation.pod_status in [PodAllocation.NOT_STARTED, PodAllocation.RUNNING, PodAllocation.PENDING]:
                 allocation.pod_status, allocation.message = get_allocation_status(allocation)
                 updated_allocation.append(allocation.kubernetes_pod_name)
                 db.session.add(allocation)

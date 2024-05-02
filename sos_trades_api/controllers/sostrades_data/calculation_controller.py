@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -127,7 +127,7 @@ def execute_calculation(study_id, username):
         
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_relative()
-        new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
+        new_pod_allocation = create_and_load_allocation(study_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
              
         
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
@@ -282,7 +282,7 @@ def calculation_status(study_id):
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
-                update_study_case_execution_status(study_case_execution)
+                update_study_case_execution_status(study_id, study_case_execution)
 
                 status = study_case_execution.execution_status
 
