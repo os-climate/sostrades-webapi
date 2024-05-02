@@ -104,6 +104,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
         else: 
             pod_allocation.flavor = ''
             pod_allocation.pod_status = PodAllocation.RUNNING
+            pod_allocation.message = ""
     except Exception as exp:
         pod_allocation.pod_status = PodAllocation.IN_ERROR
         pod_allocation.message = f'error while pod creation: {str(exp)}'
@@ -185,7 +186,9 @@ def get_allocation_status(pod_allocation:PodAllocation):
         if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
             try:
                 pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
-                if pod_status == "Running":
+                if reason == "OOMKilled":
+                    status = PodAllocation.OOMKILLED
+                elif pod_status == "Running":
                     status = PodAllocation.RUNNING
                 elif pod_status == "Pending":
                     status = PodAllocation.PENDING
@@ -193,8 +196,9 @@ def get_allocation_status(pod_allocation:PodAllocation):
                     status = PodAllocation.COMPLETED
                 elif pod_status == "Failed":
                     status = PodAllocation.IN_ERROR
-                elif pod_status == None:
+                elif pod_status is None:
                     status = PodAllocation.NOT_STARTED
+                    reason = "Pod not found"
                 else:
                     status = PodAllocation.IN_ERROR
             except Exception as ex:
@@ -205,6 +209,7 @@ def get_allocation_status(pod_allocation:PodAllocation):
             status = PodAllocation.NOT_STARTED
     else:
         status = PodAllocation.RUNNING
+        reason = ""
     
     return status, reason
 

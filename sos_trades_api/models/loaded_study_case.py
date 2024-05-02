@@ -1,6 +1,7 @@
 '''
 Copyright 2022 Airbus SAS
 
+Modifications on 29/04/2024 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -74,7 +75,6 @@ class LoadedStudyCase:
         self.n2_diagram = {}
 
         if treeview is not None:
-            self.study_case.execution_status = treeview.root.status
             self.treenode = treeview.to_dict()
         self.post_processings = {}
         self.plotly = {}

@@ -223,15 +223,28 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
 
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
     for pod in pod_list.items:
-        if pod.status is not None and pod.metadata is not None and pod.metadata.name is not None:
-            if pod.metadata.name == pod_or_service_name:
-                result = pod.status.phase
-                reason = get_container_error_reason(pod)
-                break
-            elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
-                result = pod.status.phase
-                reason = get_container_error_reason(pod)
-                break
+        if pod.status is not None and pod.metadata is not None and pod.metadata.name is not None and (pod.metadata.name == pod_or_service_name or \
+            (not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"))):
+            
+            result = pod.status.phase
+            reason = get_container_error_reason(pod)
+                
+            # Check case the pod has restarted with error or oomkilled
+            # (restart_count > 0 => it has a deployment)
+            if pod.status is not None and pod.status.container_statuses is not None and len(pod.status.container_statuses) > 0:
+                container_status = pod.status.container_statuses[0]
+                
+                if (container_status.restart_count > 0 and \
+                    container_status.last_state is not None and \
+                    container_status.last_state.terminated is not None):
+                    result = "Failed"
+                    reason = container_status.last_state.terminated.reason
+
+                    # delete the service and deployment in case of service name
+                    if not is_pod_name_complete:
+                        kubernetes_delete_deployment_and_service(pod_or_service_name, pod_namespace)
+            break
+
     return result, reason
 
 def get_container_error_reason(pod):
@@ -246,7 +259,6 @@ def get_container_error_reason(pod):
     # get the container status
     if pod.status is not None and pod.status.container_statuses is not None and len(pod.status.container_statuses) > 0:
         container_status = pod.status.container_statuses[0]
-        app.logger.debug(f'found container: {container_status}, restart_count:{container_status.restart_count}')
         # check status
         if container_status.ready is False:
             waiting_state = container_status.state.waiting

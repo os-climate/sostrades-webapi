@@ -264,7 +264,7 @@ class PodAllocation(db.Model):
     RUNNING = 'RUNNING'
     COMPLETED = 'COMPLETED'
     IN_ERROR = 'IN_ERROR'
-    OOMKILL = 'OOMKILL'
+    OOMKILLED = 'OOMKILLED'
 
     id = Column(Integer, primary_key=True)
     identifier = Column(Integer, index=False, unique=False, nullable=False)
