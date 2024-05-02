@@ -615,7 +615,7 @@ class Config:
         :rtype: dict
         :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found. If Kubernetes flavor configuration is not valid.
         """
-        if self.kubernetes_flavor_config_for_exec is None:
+        if self.kubernetes_flavor_for_exec is None:
 
             if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
                 raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
@@ -627,11 +627,12 @@ class Config:
 
             self.__validate_flavor(kubernetes_flavor["PodExec"])
 
-            self.kubernetes_flavor_config_for_exec = kubernetes_flavor["PodExec"]
+            self.kubernetes_flavor_for_exec = kubernetes_flavor["PodExec"]
 
         return self.kubernetes_flavor_config_for_exec
-    
-    def __validate_flavor(self, list_flavors:dict):
+
+    @staticmethod
+    def __validate_flavor(list_flavors:dict):
         """Validate Kubernetes flavor configuration.
 
         :param config: Kubernetes flavor configuration.
