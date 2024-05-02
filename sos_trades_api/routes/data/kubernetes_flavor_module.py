@@ -22,7 +22,7 @@ def get_flavors_config():
     """ 
     retrieve flavors from the configuration
     """
-    flavor_dict = Config().kubernetes_flavor_config
+    flavor_dict = Config().kubernetes_flavor_config_for_study
     all_flavor_names = []
     if flavor_dict is not None:
         all_flavor_names = list(flavor_dict.keys())
