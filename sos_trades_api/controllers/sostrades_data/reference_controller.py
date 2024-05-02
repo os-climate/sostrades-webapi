@@ -226,35 +226,8 @@ def get_generation_status_list(reference_list: list[ReferenceStudy]) -> dict[int
         pod_allocation = pod_allocations_dict[reference.id]
 
         if pod_allocation is not None:
-            error_msg = ''
-            pod_status = ''
-            if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                pod_status = f' - pod status:{pod_allocation.pod_status}'
-            # if the execution is at running (meaning it has already started) but the pod is not running anymore
-            # it means it has failed : save failed status and save error msg
-            if (reference.execution_status == ReferenceStudy.RUNNING \
-                    and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) or \
-                    (pod_allocation.pod_status == PodAllocation.IN_ERROR or pod_allocation.pod_status == PodAllocation.OOMKILLED):
-                # Generation running and pod not running -> ERROR
-                error_msg = ' - Regeneration status not coherent.'
-                if pod_allocation.message is not None and pod_allocation.message != '':
-                    if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                        error_msg = f' - pod error message:{pod_allocation.message}, you may need to choose a bigger flavor for this reference'
-                    else:
-                        error_msg = f' - pod error message:{pod_allocation.message}'
-            
-                # Update generation in db to FAILED
-                ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
-                    .update({'execution_status': ReferenceStudy.POD_ERROR,
-                            'generation_logs': pod_status + error_msg})
-                
-                result_dict[reference.id].execution_status = ReferenceStudy.POD_ERROR
-                result_dict[reference.id].generation_logs = pod_status + error_msg
-            # if pod is pending, execution too
-            elif pod_allocation.pod_status == PodAllocation.PENDING:
-                result_dict[reference.id].execution_status = ReferenceStudy.PENDING
-                result_dict[reference.id].generation_logs = '- Pod is loading'
-            
+            get_reference_status_from_allocation(reference, pod_allocation)
+            result_dict[reference.id] = reference
             
             db.session.add(pod_allocation)
             db.session.commit()
@@ -311,41 +284,42 @@ def get_generation_status(reference: ReferenceStudy):
     # Get pod allocation
     pod_allocation = get_reference_allocation_and_status(reference.id)
     if pod_allocation is not None:
-        error_msg = ''
-        pod_status = ''
-        if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-            pod_status = f' - pod status:{pod_allocation.pod_status}'
-        # if the execution is at running (meaning it has already started) but the pod is not running anymore
-        # it means it has failed : save failed status and save error msg
-        if (reference.execution_status == ReferenceStudy.RUNNING \
-                and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)):
-            # Generation running and pod not running -> ERROR
-            error_msg = ' - Regeneration status not coherent.'
-            if pod_allocation.message is not None and pod_allocation.message != '':
-                if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                    error_msg = f' - pod error message:{pod_allocation.message}, you may need to choose a bigger flavor for this reference'
-                else:
-                    error_msg = f' - pod error message:{pod_allocation.message}'
-            
-            reference_study = ReferenceStudy.query.filter(ReferenceStudy.id == reference.id).first()
-            reference_study.execution_status = ReferenceStudy.POD_ERROR
-            reference_study.generation_logs = pod_status + error_msg
-
-            db.session.add(reference_study)
-
-            result.execution_status = ReferenceStudy.POD_ERROR
-            result.generation_logs = pod_status + error_msg
-
-        # if pod is pending, execution too
-        elif pod_allocation.pod_status == PodAllocation.PENDING:
-            result.execution_status = ReferenceStudy.PENDING
-            result.generation_logs = '- Pod is loading'
+        get_reference_status_from_allocation(result, pod_allocation)
         
         db.session.add(pod_allocation)
         db.session.commit()
         
     return result
 
+def get_reference_status_from_allocation(reference, pod_allocation):
+    error_msg = ''
+    pod_status = ''
+    if Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+        pod_status = f' - pod status:{pod_allocation.pod_status}'
+    # if the execution is at running (meaning it has already started) but the pod is not running anymore
+    # it means it has failed : save failed status and save error msg
+    if (reference.execution_status == ReferenceStudy.RUNNING \
+            and not (pod_allocation.pod_status == PodAllocation.RUNNING or pod_allocation.pod_status == PodAllocation.COMPLETED)) or \
+            (pod_allocation.pod_status == PodAllocation.IN_ERROR or pod_allocation.pod_status == PodAllocation.OOMKILLED):
+        # Generation running and pod not running -> ERROR
+        error_msg = ' - Regeneration status not coherent.'
+        if pod_allocation.message is not None and pod_allocation.message != '':
+            if pod_allocation.pod_status == PodAllocation.OOMKILLED:
+                error_msg = f' - pod error message:{pod_allocation.message}, you may need to choose a bigger flavor for this reference'
+            else:
+                error_msg = f' - pod error message:{pod_allocation.message}'
+    
+        # Update generation in db to FAILED
+        ReferenceStudy.query.filter(ReferenceStudy.id == reference.id)\
+            .update({'execution_status': ReferenceStudy.POD_ERROR,
+                    'generation_logs': pod_status + error_msg})
+        
+        reference.execution_status = ReferenceStudy.POD_ERROR
+        reference.generation_logs = pod_status + error_msg
+    # if pod is pending, execution too
+    elif pod_allocation.pod_status == PodAllocation.PENDING:
+        reference.execution_status = ReferenceStudy.PENDING
+        reference.generation_logs = '- Pod is loading'
 
 
 def get_reference_generation_status_by_id(ref_gen_id):
