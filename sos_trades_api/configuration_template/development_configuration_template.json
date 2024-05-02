@@ -96,18 +96,81 @@
   //delay to desactivate inactive study pod
   "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR": 10,
   // define kubernetes flavors types you need to choose to load pod
-  "CONFIG_FLAVOR_KUBERNETES":{
-    "Medium": {
-      "requests": {
-        "memory":"1024Mi",
-        "cpu": "200m"
+  "CONFIG_FLAVOR_KUBERNETES": {
+    "PodStudy":{
+      "Small": {
+        "requests": {
+          "memory":"502Mi",
+          "cpu": "200m"
+        },
+        "limits": {
+          "memory":"502Mi",
+          "cpu": "1"
+        }
       },
-      "limits": {
-        "memory":"4Gi",
-        "cpu": "1"
+      "Medium": {
+        "requests": {
+          "memory":"1Gi",
+          "cpu": "200m"
+        },
+        "limits": {
+          "memory":"1Gi",
+          "cpu": "1"
+        }
+      },
+      "Large": {
+        "requests": {
+          "memory":"2Gi",
+          "cpu": "1"
+        },
+        "limits": {
+          "memory":"2Gi",
+          "cpu": "1"
+        }
+      }
+    },
+    "PodExec":{
+      "Small": {
+        "requests": {
+          "memory":"502Mi",
+          "cpu": "200m"
+        },
+        "limits": {
+          "memory":"502Mi",
+          "cpu": "1"
+        }
+      },
+      "Medium": {
+        "requests": {
+          "memory":"1Gi",
+          "cpu": "200m"
+        },
+        "limits": {
+          "memory":"1Gi",
+          "cpu": "1"
+        }
+      },
+      "Large": {
+        "requests": {
+          "memory":"2Gi",
+          "cpu": "1"
+        },
+        "limits": {
+          "memory":"2Gi",
+          "cpu": "1"
+        }
+      },
+      "XtraLarge": {
+        "requests": {
+          "memory":"12Gi",
+          "cpu": "2"
+        },
+        "limits": {
+          "memory":"12Gi",
+          "cpu": "2"
+        }
       }
     }
   }
-
 
 }
