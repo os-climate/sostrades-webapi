@@ -94,7 +94,13 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     pod_allocation.kubernetes_pod_name = pod_name
 
     # get selected flavor
-    flavors = config.kubernetes_flavor_config
+    if pod_allocation.pod_type == PodAllocation.TYPE_STUDY:
+        flavors = config.kubernetes_flavor_config_for_study()
+    elif pod_allocation.pod_type in [PodAllocation.TYPE_EXECUTION, PodAllocation.TYPE_REFERENCE]:
+        flavors = config.kubernetes_flavor_config_for_exec()
+    else:
+        raise ValueError("Invalid pod type: {}".format(pod_allocation.pod_type))
+    #Select default value of flavor in case of the value doesn't exist
     flavor = None
     if flavors is not None and len(flavors) > 0:
         if pod_allocation.flavor not in flavors:
