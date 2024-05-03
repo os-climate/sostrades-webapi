@@ -743,6 +743,29 @@ def get_study_case_notifications(study_identifier):
         return notification_list
 
 
+def get_last_study_case_changes(study_identifier):
+    """
+    Get study case parameter changes list
+
+    :param study_identifier: study identifier to look
+    :type study_identifier: int
+
+    :return: sos_trades_api.models.database_models.StudyCaseChanges[]
+    """
+    with app.app_context():
+        # Retrieve the last "save" notification
+        notification_query = (
+            Notification.query.filter(Notification.study_case_id == study_identifier)
+            .filter(Notification.type == UserCoeditionAction.SAVE)
+            .order_by(Notification.created.desc())
+            .first()
+        )
+        # Retrieve parameter changes from the last notification
+        study_case_change_query = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
+
+        return study_case_change_query
+
+
 def get_user_authorised_studies_for_process(
     user_identifier, process_name, repository_name
 ):
