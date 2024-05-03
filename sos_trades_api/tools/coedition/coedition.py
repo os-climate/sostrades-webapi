@@ -38,6 +38,14 @@ class UserCoeditionAction:
     DELETE = 'delete'
     VALIDATION_CHANGE = 'validation_change'
 
+    @classmethod
+    def get_attribute_for_value(cls, value):
+        """Get the attribute name for the given value in the UserCoeditionAction class."""
+        for attr_name, attr_value in cls.__dict__.items():
+            if attr_value == value:
+                return attr_name
+        return None
+
 
 class CoeditionMessage:
     JOIN_ROOM = 'User has entered the study case.'

@@ -940,6 +940,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                          'MVP0_datasets_connector|dataset_a|*']
                 }
             }
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data)
 
             #  wait until study was updated (thread behind)
@@ -959,7 +960,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
             parameter_changes = get_last_study_case_changes(study_case_copy.id)
-            self.assertIsNotNone(parameter_changes)
+            self.assertTrue(len(parameter_changes) == 0)
 
             # Update data from dataset_mapping without an error on the namespace_datasets_mapping
             files_data = {
@@ -969,6 +970,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                         ['MVP0_datasets_connector|dataset_a|*']
                 }
             }
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data)
 
             #  wait until study was updated (thread behind)
