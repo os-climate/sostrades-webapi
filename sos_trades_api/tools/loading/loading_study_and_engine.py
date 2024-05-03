@@ -237,8 +237,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             f'Error when updating in background {study_case_manager.study.name}')
 
 
-def study_case_manager_update_from_dataset_mapping(study_case_manager, user, datasets_mapping_deserialized,
-                                                   no_data, read_only):
+def study_case_manager_update_from_dataset_mapping(study_case_manager, user, datasets_mapping_deserialized, notification_id):
     """ Method that inject data into a study case manager from a datasets mapping
 
     :params: study_case_manager, study case manager instance to load
@@ -247,14 +246,6 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
     :params: datasets_mapping_deserialized, with namespace and parameter mapping to datasets connector and id
     :type: dictionary
 
-    :params: param_changes list of ParameterChange to append the dataset effective parameter changes to
-    :type: list[ParameterChange]
-
-    :params: no_data, if treeview has to be loaded empty
-    :type: boolean
-
-    :params: read_only, if treeview has to be tagged read only
-    :type: boolean
     """
     from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
@@ -277,10 +268,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
 
         # Update modification date on database
         with app.app_context():
+
             if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
-                # Add changes notification to database
-                new_notification_id = add_notification_db(study_case_manager.study.id, user, UserCoeditionAction.SAVE,
-                                                          CoeditionMessage.IMPORT_DATASET)
 
                 # # Add change to database
                 for param_chg in datasets_parameter_changes:
@@ -290,7 +279,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
                     if isinstance(param_chg.new_value, pandas.DataFrame):
                         study_case_change = StudyCaseChange.CSV_CHANGE
 
-                    add_change_db(new_notification_id,
+                    add_change_db(notification_id,
                                   param_chg.parameter_id,
                                   param_chg.variable_type,
                                   None,
@@ -320,8 +309,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
 
         study_case_manager.execution_engine.dm.treeview = None
 
-        study_case_manager.execution_engine.get_treeview(
-            no_data, read_only)
+        study_case_manager.execution_engine.get_treeview(None, None)
 
         clean_obsolete_data_validation_entries(study_case_manager)
 
@@ -341,7 +329,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
         study_case_manager.set_error(
             ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
-            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}')
+            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
+
 
 def study_case_manager_loading_from_reference(study_case_manager, no_data, read_only, reference_folder,
                                               reference_identifier):
