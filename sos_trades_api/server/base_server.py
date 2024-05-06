@@ -581,7 +581,7 @@ def update_all_pod_status_method():
 def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
         update_all_pod_status
-    interval = 15 #seconds
+    interval = 0 #seconds
     while True:
         try:
             update_all_pod_status()

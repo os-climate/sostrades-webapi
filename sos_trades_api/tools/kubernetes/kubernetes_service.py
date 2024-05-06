@@ -18,8 +18,9 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Execution engine kubernete
 """
+from functools import partial
 import time
-from kubernetes import client, config
+from kubernetes import client, config, watch
 from sos_trades_api.server.base_server import app
 
 
@@ -378,3 +379,48 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
             
         except Exception as api_exception:
             app.logger.error(api_exception)
+
+
+def watch_pod_events(logger):
+    # Create k8 api client object
+    kubernetes_load_kube_config()
+
+    core_api_instance = client.CoreV1Api(client.ApiClient())
+    w = watch.Watch()
+    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace="revision")):
+        if event['object']['metadata']['name'].startswith('eeb') or \
+            event['object']['metadata']['name'].startswith('sostrades-study-server') or\
+            event['object']['metadata']['name'].startswith('generation') :
+            
+            yield event
+
+    logger.info("Finished namespace stream.")
+
+def get_pod_name_from_event(event):
+    return event['object']['metadata']['name']
+
+def get_pod_status_and_reason_from_event(event):
+    status_phase = event['object']['status']['phase']
+    reason = ''
+    status = event['object']['status']
+    container_statuses = status.get('container_statuses')
+    if status is not None and container_statuses is not None and len(container_statuses) > 0:
+        container_status = container_statuses[0]
+        # check status
+        if container_status.get('ready') is False:
+            waiting_state = container_status.get('state').get('waiting')
+            terminated_state = container_status.get('state').get('terminated')
+            
+            # if status in error get the reason
+            if waiting_state is not None and waiting_state.get('reason') is not None:
+                reason = waiting_state['reason']
+            if terminated_state is not None and terminated_state.get('reason') is not None:
+                reason = terminated_state['reason']
+        
+        if (container_status.get('restart_count') > 0 and \
+            container_status.get('last_state') is not None and \
+            container_status.get('last_state').get('terminated') is not None):
+            status_phase = "Failed"
+            reason = container_status.get('last_state').get('terminated').get('reason')
+            
+    return status_phase, reason

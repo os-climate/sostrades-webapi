@@ -18,7 +18,7 @@ import threading
 import uuid
 
 from jinja2 import Template
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_create_deployment_and_service, kubernetes_create_pod
+from sos_trades_api.tools.kubernetes.kubernetes_service import get_pod_name_from_event, get_pod_status_and_reason_from_event, kubernetes_create_deployment_and_service, kubernetes_create_pod, watch_pod_events
 from datetime import datetime
 import yaml
 
@@ -113,13 +113,13 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
             k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
             kubernetes_create_deployment_and_service(k8_service, k8_deployment)
             pod_allocation.kubernetes_pod_namespace = k8_deployment['metadata']['namespace']
-            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+            #pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             k8_conf = get_kubernetes_config_eeb(pod_name, identifier, pod_allocation.pod_type, flavor, log_file_path)
             kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
-            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+            #pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
         else: 
             pod_allocation.flavor = ''
             pod_allocation.pod_status = PodAllocation.RUNNING
@@ -204,22 +204,12 @@ def get_allocation_status(pod_allocation:PodAllocation):
         (pod_allocation.pod_type != PodAllocation.TYPE_STUDY and Config().execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
         if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
             try:
-                pod_status, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
-                if reason == "OOMKilled":
-                    status = PodAllocation.OOMKILLED
-                elif pod_status == "Running":
-                    status = PodAllocation.RUNNING
-                elif pod_status == "Pending":
-                    status = PodAllocation.PENDING
-                elif pod_status == "Succeeded":
-                    status = PodAllocation.COMPLETED
-                elif pod_status == "Failed":
-                    status = PodAllocation.IN_ERROR
-                elif pod_status is None:
-                    status = PodAllocation.NOT_STARTED
-                    reason = "Pod not found"
-                else:
-                    status = PodAllocation.IN_ERROR
+                pod_phase, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
+                
+                status, reason = get_status_from_pod_phase(pod_phase, reason)
+
+                
+
             except Exception as ex:
                 status = PodAllocation.IN_ERROR
                 reason = f'Error while retrieving status: {str(ex)}'
@@ -231,6 +221,24 @@ def get_allocation_status(pod_allocation:PodAllocation):
         reason = ""
 
     return status, reason
+
+def get_status_from_pod_phase(pod_phase, reason):
+    status = PodAllocation.IN_ERROR
+    if reason == "OOMKilled":
+        status = PodAllocation.OOMKILLED
+    elif pod_phase == "Running":
+        status = PodAllocation.RUNNING
+    elif pod_phase == "Pending":
+        status = PodAllocation.PENDING
+    elif pod_phase == "Succeeded":
+        status = PodAllocation.COMPLETED
+    elif pod_phase == "Failed":
+        status = PodAllocation.IN_ERROR
+    elif pod_phase is None:
+        status = PodAllocation.NOT_STARTED
+        reason = "Pod not found"
+    return status, reason
+
 
 def delete_study_server_services_and_deployments(study_case_allocations:list[PodAllocation]):
     """
@@ -281,17 +289,61 @@ def update_all_pod_status():
     """
     For all allocations 
     """
-    with app.app_context():
-        updated_allocation = []
-        all_allocations = PodAllocation.query.all()
-        for allocation in all_allocations:
-            if allocation.pod_status in [PodAllocation.NOT_STARTED, PodAllocation.RUNNING, PodAllocation.PENDING]:
-                allocation.pod_status, allocation.message = get_allocation_status(allocation)
-                updated_allocation.append(allocation.kubernetes_pod_name)
-                db.session.add(allocation)
-        db.session.commit()
-        if len(updated_allocation) > 0:
-            app.logger.debug(f"Updated pod status: {', '.join(updated_allocation)}")
+    
+    for event in watch_pod_events(app.logger):
+        # get if pod name is in allocations
+        pod_name = get_pod_name_from_event(event)
+        if pod_name.startswith('sostrades-study-server'):
+            # retreive the service name by removing the uuid of the pod name
+            names = pod_name.split('-')[0:4]
+            pod_name = '-'.join(names)
+
+        with app.app_context():
+            allocations = PodAllocation.query.filter(PodAllocation.kubernetes_pod_name == pod_name).all()
+            allocation = None
+            updated = False
+            if allocations is not None and len(allocations) > 0:
+                if len(allocations) > 1:
+                    # get the oldest, delete others
+                    allocation = max(allocations, key=lambda x: x.creation_date)
+                    for alloc in allocations:
+                        if alloc != allocation:
+                            db.session.delete(alloc)
+                else:
+                    allocation = allocations[0]
+            if allocation is not None:
+                pod_phase, reason = get_pod_status_and_reason_from_event(event)
+                pod_status, reason = get_status_from_pod_phase(pod_phase, reason)
+
+                if pod_status != allocation.pod_status or reason != allocation.reason:
+                    # delete service and deployment in case of study oomkilled
+                    if pod_status == PodAllocation.OOMKILLED and allocation.pod_type == PodAllocation.TYPE_STUDY:
+                        kubernetes_service.kubernetes_delete_deployment_and_service(allocation.kubernetes_pod_name, allocation.kubernetes_pod_namespace)
+                    
+                     # update allocation status in db
+                    allocation.pod_status = pod_status
+                    allocation.reason = reason
+                    db.session.add(allocation)
+                    updated = True
+
+            db.session.commit()
+            if updated:
+                app.logger.info(f'updated pod_status {pod_name}: {allocation.pod_status}, {allocation.reason}')
+
+
+            
+
+    # with app.app_context():
+    #     updated_allocation = []
+    #     all_allocations = PodAllocation.query.all()
+    #     for allocation in all_allocations:
+    #         if allocation.pod_status in [PodAllocation.NOT_STARTED, PodAllocation.RUNNING, PodAllocation.PENDING]:
+    #             allocation.pod_status, allocation.message = get_allocation_status(allocation)
+    #             updated_allocation.append(allocation.kubernetes_pod_name)
+    #             db.session.add(allocation)
+    #     db.session.commit()
+    #     if len(updated_allocation) > 0:
+    #         app.logger.debug(f"Updated pod status: {', '.join(updated_allocation)}")
 
 
 def clean_all_allocations_type_study():
