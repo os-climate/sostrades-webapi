@@ -77,7 +77,7 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
     with app.app_context():
         is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
-        study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+        study_case = StudyCase.query.filter(StudyCase.id.like(study_case_identifier)).first()
         if not is_in_cache and (study_case_manager.study.creation_status != StudyCase.CREATION_DONE and study_case_manager.study.creation_status != ProxyDiscipline.STATUS_DONE):
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
@@ -96,8 +96,8 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
                 loaded_study = create_study_case(user_id, study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
         elif read_only_mode:
             isReadOnlyPossible = False
-            if study_case.current_execution_id is not None:
-                study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+            if study_case_manager.study.current_execution_id is not None:
+                study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
                 if study_execution is not None and study_execution.execution_status == StudyCaseExecution.FINISHED:
                     isReadOnlyPossible = True
             if isReadOnlyPossible:
