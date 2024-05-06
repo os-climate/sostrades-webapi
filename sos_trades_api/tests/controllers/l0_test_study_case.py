@@ -887,11 +887,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
             delete_study_cases(studies_id_list_to_delete)
 
     def test_study_case_update_parameter_from_dataset_mapping_import(self):
-        from sos_trades_api.models.database_models import StudyCase, User
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseChange
         from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, copy_study_case, update_study_parameters_from_datasets_mapping
         from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case, get_last_study_case_changes
+        from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case, get_last_study_case_changes, create_new_notification_after_update_parameter
 
         with DatabaseUnitTestConfiguration.app.app_context():
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
@@ -931,7 +932,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                             False, "test_study_for_dataset_mapping update study parameter from dataset mapping too long, check thread")
                     counter = counter + 1
                     sleep(1)
-            # Update data from dataset_mapping with an error on the namespace_datasets_mapping
+
             files_data = {
                 'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
                 'namespace_datasets_mapping': {
@@ -941,7 +942,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 }
             }
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
-            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data)
+            # Create new notification
+            notification_id = create_new_notification_after_update_parameter(study_case_copy_id, StudyCaseChange.DATASET_MAPPING_CHANGE, UserCoeditionAction.SAVE, user_test)
+
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            # Update data from dataset_mapping with an error on the namespace_datasets_mapping
+            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data, notification_id)
 
             #  wait until study was updated (thread behind)
             stop = False
@@ -962,7 +968,6 @@ class TestStudy(DatabaseUnitTestConfiguration):
             parameter_changes = get_last_study_case_changes(study_case_copy.id)
             self.assertTrue(len(parameter_changes) == 0)
 
-            # Update data from dataset_mapping without an error on the namespace_datasets_mapping
             files_data = {
                 'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
                 'namespace_datasets_mapping': {
@@ -971,7 +976,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 }
             }
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
-            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data)
+            # Create new notification
+            notification_id = create_new_notification_after_update_parameter(study_case_copy_id, StudyCaseChange.DATASET_MAPPING_CHANGE, UserCoeditionAction.SAVE, user_test)
+            # Update data from dataset_mapping without an error on the namespace_datasets_mapping
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data, notification_id)
 
             #  wait until study was updated (thread behind)
             stop = False

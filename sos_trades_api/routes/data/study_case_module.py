@@ -357,7 +357,7 @@ def study_case_notifications(study_id):
         return resp
 
 
-@app.route(f'/api/data/study-case/<int:study_id>/new_notification', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/notification', methods=['POST'])
 @auth_required
 def add_new_notification(study_id):
     if request.method == 'POST':
@@ -377,7 +377,7 @@ def add_new_notification(study_id):
 
             notification_id = create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user)
             # Proceeding after rights verification
-            resp = make_response(notification_id, 200)
+            resp = make_response(jsonify(notification_id), 200)
             return resp
         else:
             raise BadRequest('You do not have the necessary rights to retrieve this information about study case')
@@ -393,7 +393,7 @@ def study_case_changes(study_id, notification_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         results = []
         if study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
-            results = get_last_study_case_changes(study_id)
+            results = get_last_study_case_changes(notification_id)
 
         # Proceeding after rights verification
         resp = make_response(jsonify(results), 200)

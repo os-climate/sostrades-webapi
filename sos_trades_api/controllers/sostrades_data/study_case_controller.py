@@ -743,7 +743,7 @@ def get_study_case_notifications(study_identifier):
         return notification_list
 
 
-def create_new_notification_after_update_parameter(study_id, type, coedition_action, user):
+def create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user):
     """
     Create a new notification after updating a parameter in the study.
 
@@ -761,14 +761,17 @@ def create_new_notification_after_update_parameter(study_id, type, coedition_act
     action = UserCoeditionAction.get_attribute_for_value(coedition_action)
     # Check if the coedition action is valid
     if action is not None:
+
+        user_coedition_action = getattr(UserCoeditionAction, action)
+
         # Determine the coedition message based on the type
-        if type == StudyCaseChange.DATASET_MAPPING_CHANGE:
+        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE:
             coedition_message = CoeditionMessage.IMPORT_DATASET
         else:
             coedition_message = CoeditionMessage.SAVE
 
         # Add the notification to the database
-        notification_id = add_notification_db(study_id, user, action, coedition_message)
+        notification_id = add_notification_db(study_id, user, user_coedition_action, coedition_message)
 
         return notification_id
     else:
@@ -795,7 +798,7 @@ def get_last_study_case_changes(notification_id):
 
             if study_case_changes is None or len(study_case_changes) == 0:
                 # Remove the notification if there are any changes
-                db.session.remove(notification_query)
+                db.session.delete(notification_query)
                 db.session.commit()
 
         return study_case_changes
