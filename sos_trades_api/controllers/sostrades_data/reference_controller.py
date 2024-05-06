@@ -391,7 +391,7 @@ def get_reference_allocation_and_status(reference_id)-> PodAllocation:
     reference_allocation = None
     if len(pod_allocations) > 0:
         reference_allocation = pod_allocations[-1]
-        #reference_allocation.pod_status, reference_allocation.message = get_allocation_status(reference_allocation)
+        reference_allocation.pod_status, reference_allocation.message = get_allocation_status(reference_allocation)
         if len(pod_allocations) > 1:
             app.logger.warning(f"We have {len(pod_allocations)} pod allocations for the same reference (id {reference_id}) but only one will be updated, is this normal ?")
         
@@ -422,7 +422,7 @@ def get_reference_allocation_and_status_list(reference_ids:list[int])-> dict[int
             reference_allocations[reference_id] = None
         else:
             most_recent_allocation = max(allocations, key=lambda x: x.creation_date)
-            #most_recent_allocation.pod_status, most_recent_allocation.message = get_allocation_status(most_recent_allocation)
+            most_recent_allocation.pod_status, most_recent_allocation.message = get_allocation_status(most_recent_allocation)
             reference_allocations[reference_id] = most_recent_allocation
             
             if len(allocations) > 1:

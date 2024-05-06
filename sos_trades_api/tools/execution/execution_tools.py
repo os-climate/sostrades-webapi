@@ -26,8 +26,8 @@ def update_study_case_execution_status(study_case_id: int, study_case_execution:
                                                 PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                 ).first()
         
-    # if pod_allocation is not None:
-    #     pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+    if pod_allocation is not None:
+        pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
 
     if pod_allocation is not None and (study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING]):
         
