@@ -315,20 +315,20 @@ def update_all_pod_status():
                 pod_phase, reason = get_pod_status_and_reason_from_event(event)
                 pod_status, reason = get_status_from_pod_phase(pod_phase, reason)
 
-                if pod_status != allocation.pod_status or reason != allocation.reason:
+                if pod_status != allocation.pod_status or reason != allocation.message:
                     # delete service and deployment in case of study oomkilled
                     if pod_status == PodAllocation.OOMKILLED and allocation.pod_type == PodAllocation.TYPE_STUDY:
                         kubernetes_service.kubernetes_delete_deployment_and_service(allocation.kubernetes_pod_name, allocation.kubernetes_pod_namespace)
                     
                      # update allocation status in db
                     allocation.pod_status = pod_status
-                    allocation.reason = reason
+                    allocation.message = reason
                     db.session.add(allocation)
                     updated = True
 
             db.session.commit()
             if updated:
-                app.logger.info(f'updated pod_status {pod_name}: {allocation.pod_status}, {allocation.reason}')
+                app.logger.info(f'updated pod_status {pod_name}: {allocation.pod_status}, {allocation.message}')
 
 
             
