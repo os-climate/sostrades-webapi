@@ -64,6 +64,7 @@ class Config:
     CONFIG_STUDY_POD_DELAY = "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR"
     CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
+    CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
 
     def __init__(self):
         """Constructor
@@ -608,7 +609,7 @@ class Config:
 
         return self.__kubernetes_flavor_for_study
 
-
+    
     @property
     def kubernetes_flavor_config_for_exec(self):
         """Retrieve Kubernetes flavor configuration from server config.
@@ -632,7 +633,7 @@ class Config:
             self.__kubernetes_flavor_for_exec = kubernetes_flavor["PodExec"]
 
         return self.__kubernetes_flavor_for_exec
-    
+
     @staticmethod
     def __validate_flavor(list_flavors:dict):
         """Validate Kubernetes flavor configuration.
@@ -665,4 +666,6 @@ class Config:
             # Check if 'memory' and 'cpu' are defined under 'limits'
             if not isinstance(limits, dict) or 'memory' not in limits or 'cpu' not in limits:
                 raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
-
+    @property
+    def pod_watcher_activated(self):
+        return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)
