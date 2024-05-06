@@ -135,11 +135,13 @@ class Config:
         eeb_filepath = self.eeb_filepath
 
         manifest_folder_path = self.manifests_folder_path
-        deployment_study_server_filepath = self.deployment_study_server_filepath
-        service_study_server_filepath = self.service_study_server_filepath
-
-        kubernetes_flavor_config_for_study = self.kubernetes_flavor_config_for_study
-        kubernetes_flavor_config_for_exec = self.kubernetes_flavor_config_for_exec
+        
+        if self.server_mode == self.CONFIG_SERVER_MODE_K8S:
+            deployment_study_server_filepath = self.deployment_study_server_filepath
+            service_study_server_filepath = self.service_study_server_filepath
+            
+            kubernetes_flavor_config_for_study = self.kubernetes_flavor_config_for_study
+            kubernetes_flavor_config_for_exec = self.kubernetes_flavor_config_for_exec
         # pylint: enable=unused-variable
 
     @property
