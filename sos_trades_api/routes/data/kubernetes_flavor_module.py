@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.database_models import PodAllocation
+from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.server.base_server import app, Config, session, request
 from flask import jsonify, make_response
 
