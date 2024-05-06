@@ -18,7 +18,7 @@ from sos_trades_api.server.base_server import app, Config, session, request
 from flask import jsonify, make_response
 
 @app.route(f'/api/data/flavors/study', methods=['GET'])
-def get_flavors_config():
+def get_flavors_config_study():
     """ 
     retrieve flavors from the configuration
     """
@@ -29,7 +29,7 @@ def get_flavors_config():
     return make_response(jsonify(all_flavor_names), 200)
 
 @app.route(f'/api/data/flavors/exec', methods=['GET'])
-def get_flavors_config():
+def get_flavors_config_exec():
     """ 
     retrieve flavors from the configuration
     """
