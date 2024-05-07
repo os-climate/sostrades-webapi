@@ -581,14 +581,15 @@ def update_all_pod_status_method():
 def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
         update_all_pod_status
-    interval = 0 #seconds
+    interval = 15 #seconds 
     while True:
         try:
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
             app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
-        time.sleep(interval)
+        if not Config().pod_watcher_activated:
+            time.sleep(interval)
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
