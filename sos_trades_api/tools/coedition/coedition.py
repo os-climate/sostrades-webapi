@@ -40,6 +40,14 @@ class UserCoeditionAction:
     DELETE = 'delete'
     VALIDATION_CHANGE = 'validation_change'
 
+    @classmethod
+    def get_attribute_for_value(cls, value):
+        """Get the attribute name for the given value in the UserCoeditionAction class."""
+        for attr_name, attr_value in cls.__dict__.items():
+            if attr_value == value:
+                return attr_name
+        return None
+
 
 class CoeditionMessage:
     JOIN_ROOM = 'User has entered the study case.'
@@ -49,6 +57,7 @@ class CoeditionMessage:
     EXECUTION = 'Study case execution just started.'
     CLAIM = 'User just claimed the study case execution right.'
     RELOAD = 'User just reload the study case.'
+    IMPORT_DATASET = 'User just updated parameter from dataset'
 
 
 def add_user_to_room(user_id, study_case_id):
@@ -136,7 +145,7 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
-                  old_value, old_value_blob, last_modified):
+                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
     """ Add study change to database
     """
     new_change = StudyCaseChange()
@@ -150,7 +159,9 @@ def add_change_db(notification_id, variable_id, variable_type, deleted_columns, 
     new_change.old_value_blob = old_value_blob
     new_change.last_modified = last_modified
     new_change.deleted_columns = deleted_columns
-
+    new_change.dataset_connector_id = dataset_connector_id
+    new_change.dataset_id = dataset_id
+    new_change.dataset_parameter_id = dataset_parameter_id
 
     # Save change
     db.session.add(new_change)
