@@ -30,7 +30,8 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
 
-from sos_trades_api.tools.code_tools import isevaluatable, time_function
+from sostrades_core.tools.tree.deserialization import isevaluatable
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
