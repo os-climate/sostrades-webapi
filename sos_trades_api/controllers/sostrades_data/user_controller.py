@@ -265,6 +265,13 @@ def delete_user(user_id) -> str:
             if qcg[0] == 1:  # User alone in group
                 group_controller.delete_group(qcg[1])
 
+        # remove user id from authorized executions
+        study_cases = StudyCase.query.filter(StudyCase.user_id_execution_authorised == user_id).all()
+        for sc in study_cases:
+            sc.user_id_execution_authorised = None
+            db.session.add(sc)
+        
+
         # Removing user from db
         db.session.delete(user_to_delete)
         db.session.commit()
