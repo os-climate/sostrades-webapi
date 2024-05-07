@@ -593,7 +593,7 @@ class Config:
         :rtype: dict
         :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found. If Kubernetes flavor configuration is not valid.
         """
-        if self.__kubernetes_flavor_for_study is None:
+        if self.__kubernetes_flavor_for_study is None and self.server_mode == self.CONFIG_SERVER_MODE_K8S:
 
             if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
                 raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
@@ -618,8 +618,7 @@ class Config:
         :rtype: dict
         :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found. If Kubernetes flavor configuration is not valid.
         """
-        if self.__kubernetes_flavor_for_exec is None:
-
+        if self.__kubernetes_flavor_for_exec is None and self.execution_strategy == self.CONFIG_EXECUTION_STRATEGY_K8S:
             if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
                 raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
             
