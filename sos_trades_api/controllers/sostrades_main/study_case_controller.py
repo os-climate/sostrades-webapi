@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/23 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/05/07 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 
-from flask import jsonify
 from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
@@ -44,7 +42,7 @@ from werkzeug.utils import secure_filename
 import shutil
 from shutil import rmtree
 
-from sos_trades_api.tools.code_tools import isevaluatable
+from sostrades_core.tools.tree.deserialization import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.tools.tree.serializer import DataSerializer
