@@ -127,9 +127,9 @@ def main_load_study_case_by_id(study_id):
     abort(403)
 
 
-@app.route(f'/api/main/study-case/<int:study_id>/import-datasets-mapping', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/<int:notification_id>/import-datasets-mapping', methods=['POST'])
 @auth_required
-def update_study_from_datasets_mapping(study_id):
+def update_study_from_datasets_mapping(study_id, notification_id):
     if study_id is not None:
         user = session['user']
         # Verify user has study case authorisation to load study (Contributor)
@@ -151,7 +151,7 @@ def update_study_from_datasets_mapping(study_id):
             raise BadRequest('Missing mandatory datasets_mapping_file')
 
         resp = make_response(
-            jsonify(update_study_parameters_from_datasets_mapping(study_id, user, files_data)), 200)
+            jsonify(update_study_parameters_from_datasets_mapping(study_id, user, files_data, notification_id)), 200)
         return resp
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')

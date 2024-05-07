@@ -30,7 +30,7 @@ import traceback
 import sys
 from time import time
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution, StudyCaseChange
+from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution, StudyCaseChange, Notification
 from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
 from datetime import datetime, timezone
@@ -237,7 +237,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             f'Error when updating in background {study_case_manager.study.name}')
 
 
-def study_case_manager_update_from_dataset_mapping(study_case_manager, user, datasets_mapping_deserialized, notification_id):
+def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, notification_id):
     """ Method that inject data into a study case manager from a datasets mapping
 
     :params: study_case_manager, study case manager instance to load
@@ -260,16 +260,14 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
         datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
             from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
 
-        # Persist data using the current persistence strategy
-        study_case_manager.save_study_case()
-
-        # Get date
-        modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
-
-        # Update modification date on database
         with app.app_context():
 
             if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
+                # Persist data using the current persistence strategy
+                study_case_manager.save_study_case()
+
+                # Get date
+                modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
                 # # Add change to database
                 for param_chg in datasets_parameter_changes:
@@ -293,30 +291,31 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, user, dat
                                   param_chg.dataset_parameter_id
                                   )
 
-            studycase = StudyCase.query.filter(
-                StudyCase.id.like(study_case_manager.study.id)).first()
-            studycase.modification_date = modify_date
-            # Update execution_status
-            if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
-                study_execution = StudyCaseExecution.query.filter(
-                    StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
-                if study_execution is not None:
-                    study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
-                    db.session.add(study_execution)
+                study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
+                # Update modification date on database
+                study_case.modification_date = modify_date
+                # Update execution_status
+                if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
+                    study_execution = StudyCaseExecution.query.filter(
+                        StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
+                    if study_execution is not None:
+                        study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
+                        db.session.add(study_execution)
 
-            db.session.add(studycase)
-            db.session.commit()
+                db.session.add(study_case)
+                db.session.commit()
 
-        study_case_manager.execution_engine.dm.treeview = None
+                study_case_manager.execution_engine.dm.treeview = None
 
-        study_case_manager.execution_engine.get_treeview(None, None)
+                study_case_manager.execution_engine.get_treeview(None, None)
 
-        clean_obsolete_data_validation_entries(study_case_manager)
+                clean_obsolete_data_validation_entries(study_case_manager)
 
-        study_case_manager.n2_diagram = {}
-        # write loadedstudy into a json file to load the study in read only
-        # when loading
-        study_case_manager.save_study_read_only_mode_in_file()
+                study_case_manager.n2_diagram = {}
+                # write loadedstudy into a json file to load the study in read only
+                # when loading
+                study_case_manager.save_study_read_only_mode_in_file()
+
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
 

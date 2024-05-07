@@ -36,7 +36,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
     StudyCaseAccess,
 )
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
+from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, add_notification_db, CoeditionMessage
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
@@ -744,27 +744,65 @@ def get_study_case_notifications(study_identifier):
         return notification_list
 
 
-def get_last_study_case_changes(study_identifier):
+def create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user):
+    """
+    Create a new notification after updating a parameter in the study.
+
+    Args:
+        study_id (int): The ID of the study.
+        type (str): The type of change.
+        coedition_action (str): The coedition action performed.
+        user (User): The user who performed the action.
+
+    Returns:
+        int: The ID of the new notification.
+
+    """
+
+    action = UserCoeditionAction.get_attribute_for_value(coedition_action)
+    # Check if the coedition action is valid
+    if action is not None:
+
+        user_coedition_action = getattr(UserCoeditionAction, action)
+
+        # Determine the coedition message based on the type
+        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE:
+            coedition_message = CoeditionMessage.IMPORT_DATASET
+        else:
+            coedition_message = CoeditionMessage.SAVE
+
+        # Add the notification to the database
+        notification_id = add_notification_db(study_id, user, user_coedition_action, coedition_message)
+
+        return notification_id
+    else:
+        # Raise an exception if the coedition action is not valid
+        raise InvalidStudy(f"{coedition_action} is not a valid coedition action.")
+
+
+def get_last_study_case_changes(notification_id):
     """
     Get study case parameter changes list
 
-    :param study_identifier: study identifier to look
-    :type study_identifier: int
+    :param notification_id: notification identifier
+    :type notification_id: int
 
     :return: sos_trades_api.models.database_models.StudyCaseChanges[]
     """
+    study_case_changes = []
     with app.app_context():
         # Retrieve the last "save" notification
-        notification_query = (
-            Notification.query.filter(Notification.study_case_id == study_identifier)
-            .filter(Notification.type == UserCoeditionAction.SAVE)
-            .order_by(Notification.created.desc())
-            .first()
-        )
-        # Retrieve parameter changes from the last notification
-        study_case_change_query = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
+        notification_query = Notification.query.filter(Notification.id == notification_id).first()
+        if notification_query is not None:
+            # Retrieve parameter changes from the last notification
+            study_case_changes = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
 
-        return study_case_change_query
+            if study_case_changes is None or len(study_case_changes) == 0:
+                # Remove the notification if there are any changes
+                db.session.delete(notification_query)
+                db.session.commit()
+
+        return study_case_changes
 
 
 def get_user_authorised_studies_for_process(

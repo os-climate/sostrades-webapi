@@ -499,7 +499,7 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         return result
 
 
-def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mapping):
+def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mapping, notification_id):
     """
         Configure the study case in the data manager  from a dataset
         :param: study_id, id of the study
@@ -516,17 +516,13 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         # Deserialize mapping
         datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
 
-        # Add changes notification to database
-        new_notification_id = add_notification_db(study_manager.study.id, user, UserCoeditionAction.SAVE,
-                                                  CoeditionMessage.IMPORT_DATASET)
-
         # Launch load study-case with new parameters from dataset
         if study_manager.load_status != LoadStatus.IN_PROGESS:
             study_manager.clear_error() 
             study_manager.load_status = LoadStatus.IN_PROGESS
             threading.Thread(
                 target=study_case_manager_update_from_dataset_mapping,
-                args=(study_manager, user, datasets_mapping_deserialized, new_notification_id)
+                args=(study_manager, datasets_mapping_deserialized, notification_id)
             ).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
