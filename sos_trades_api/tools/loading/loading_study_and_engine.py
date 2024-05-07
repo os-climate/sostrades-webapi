@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+import pandas
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -30,14 +30,15 @@ import traceback
 import sys
 from time import time
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
+from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution, StudyCaseChange, Notification
 from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
 from datetime import datetime, timezone
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from importlib import import_module
 from eventlet import sleep
-
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
+    CoeditionMessage
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""
@@ -234,6 +235,100 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
             ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
             f'Error when updating in background {study_case_manager.study.name}')
+
+
+def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, notification_id):
+    """ Method that inject data into a study case manager from a datasets mapping
+
+    :params: study_case_manager, study case manager instance to load
+    :type: StudyCaseManager
+
+    :params: datasets_mapping_deserialized, with namespace and parameter mapping to datasets connector and id
+    :type: dictionary
+
+    """
+    from sos_trades_api.server.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
+    # todo: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
+    try:
+        sleep()
+        app.logger.info(f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
+
+        study_case_manager.load_status = LoadStatus.IN_PROGESS
+
+        # Update parameter into dictionary
+        datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
+            from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
+
+        with app.app_context():
+
+            if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
+                # Persist data using the current persistence strategy
+                study_case_manager.save_study_case()
+
+                # Get date
+                modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+
+                # # Add change to database
+                for param_chg in datasets_parameter_changes:
+                    study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+
+                    # Check if new value is a dataframe
+                    if isinstance(param_chg.new_value, pandas.DataFrame):
+                        study_case_change = StudyCaseChange.CSV_CHANGE
+
+                    add_change_db(notification_id,
+                                  param_chg.parameter_id,
+                                  param_chg.variable_type,
+                                  None,
+                                  study_case_change,
+                                  str(param_chg.new_value),
+                                  str(param_chg.old_value),
+                                  None,  # old_value_blob can be retrieved ?
+                                  param_chg.date,
+                                  param_chg.connector_id,
+                                  param_chg.dataset_id,
+                                  param_chg.dataset_parameter_id
+                                  )
+
+                study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
+                # Update modification date on database
+                study_case.modification_date = modify_date
+                # Update execution_status
+                if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
+                    study_execution = StudyCaseExecution.query.filter(
+                        StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
+                    if study_execution is not None:
+                        study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
+                        db.session.add(study_execution)
+
+                db.session.add(study_case)
+                db.session.commit()
+
+                study_case_manager.execution_engine.dm.treeview = None
+
+                study_case_manager.execution_engine.get_treeview(None, None)
+
+                clean_obsolete_data_validation_entries(study_case_manager)
+
+                study_case_manager.n2_diagram = {}
+                # write loadedstudy into a json file to load the study in read only
+                # when loading
+                study_case_manager.save_study_read_only_mode_in_file()
+
+        # set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
+        app.logger.info(
+            f'End background updating (from datasets mapping) {study_case_manager.study.name}')
+
+    except Exception as ex:
+        study_case_manager.load_status = LoadStatus.IN_ERROR
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        study_case_manager.set_error(
+            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        app.logger.exception(
+            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
 
 
 def study_case_manager_loading_from_reference(study_case_manager, no_data, read_only, reference_folder,

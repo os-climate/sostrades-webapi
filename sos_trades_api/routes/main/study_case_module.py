@@ -23,7 +23,7 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     check_study_case_is_Loaded, load_or_create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
-    update_study_parameters, get_study_data_stream, copy_study_case, get_study_data_file_path,
+    update_study_parameters, update_study_parameters_from_datasets_mapping, get_study_data_stream, copy_study_case, get_study_data_file_path,
     set_study_data_file, load_study_case_with_read_only_mode)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
@@ -125,6 +125,36 @@ def main_load_study_case_by_id(study_id):
         return resp
 
     abort(403)
+
+
+@app.route(f'/api/main/study-case/<int:study_id>/<int:notification_id>/import-datasets-mapping', methods=['POST'])
+@auth_required
+def update_study_from_datasets_mapping(study_id, notification_id):
+    if study_id is not None:
+        user = session['user']
+        # Verify user has study case authorisation to load study (Contributor)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                'You do not have the necessary rights to modify this study case')
+
+        # Proceeding after rights verification
+        files_data = None
+        if 'datasets_mapping_file' in request.files:
+            try:
+                file_content = request.files['datasets_mapping_file'].read().decode('utf-8')
+                files_data = json.loads(file_content)
+
+            except Exception as ex:
+                raise BadRequest(f'Invalid JSON format : {ex}')
+        else:
+            raise BadRequest('Missing mandatory datasets_mapping_file')
+
+        resp = make_response(
+            jsonify(update_study_parameters_from_datasets_mapping(study_id, user, files_data, notification_id)), 200)
+        return resp
+
+    raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
 @app.route(f'/api/main/study-case/<int:study_id>/copy', methods=['POST'])
