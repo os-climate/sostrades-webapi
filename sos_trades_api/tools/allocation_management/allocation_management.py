@@ -94,6 +94,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     pod_allocation.kubernetes_pod_name = pod_name
 
     # get selected flavor
+    flavors = None
     if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
         flavors = config.kubernetes_flavor_config_for_study
     elif pod_allocation.pod_type in [PodAllocation.TYPE_EXECUTION, PodAllocation.TYPE_REFERENCE] and \

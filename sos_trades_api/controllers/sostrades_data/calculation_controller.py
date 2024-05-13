@@ -181,14 +181,18 @@ def execute_calculation(study_id, username):
 
         calculation_semaphore.release()
 
-        # Update execution before submitted process
-        study_case_execution = StudyCaseExecution.query.filter(
-            and_(StudyCaseExecution.study_case_id == study_id, study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING])).first()
+        study_case = StudyCase.query.filter(
+            StudyCase.id.like(study_id)).first()
 
-        if study_case_execution is not None:
-            study_case_execution.execution_status = StudyCaseExecution.FAILED
-            db.session.add(study_case_execution)
-            db.session.commit()
+        if study_case.current_execution_id is not None:
+            # Retrieve execution object related to study to check status
+            study_case_execution = StudyCaseExecution.query\
+                .filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+
+            if study_case_execution is not None:
+                study_case_execution.execution_status = StudyCaseExecution.FAILED
+                db.session.add(study_case_execution)
+                db.session.commit()
 
         app.logger.exception(
             f'Start execution request: failed to submit study case {study_id} using {config.execution_strategy} strategy')
@@ -234,8 +238,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
                 pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_id,
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
-                app.logger.info(
-                    f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{pod_allocation.kubernetes_pod_name}')
+                
                 if pod_allocation is not None:
                     delete_pod_allocation(pod_allocation, study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S)
                 if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
