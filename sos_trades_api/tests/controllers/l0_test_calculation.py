@@ -150,7 +150,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                           'Study case execution status not coherent')
             
             #check allocation creation:
-            allocations = PodAllocation.query.filter(PodAllocation.identifier == sc.current_execution_id).filter(
+            allocations = PodAllocation.query.filter(PodAllocation.identifier == sc.id).filter(
                                                     PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                     ).all()
             self.assertTrue(len(allocations) == 1, 'There is more than one allocation for this execution')
