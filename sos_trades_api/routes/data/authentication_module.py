@@ -18,7 +18,7 @@ limitations under the License.
 Login/logout APIs
 """
 
-from flask import request, make_response, abort, session, redirect
+from flask import request, make_response, abort, session, redirect, url_for
 from flask.json import jsonify
 import os
 import requests
@@ -27,11 +27,12 @@ from sos_trades_api.server.base_server import app
 
 from sos_trades_api.controllers.sostrades_data.authentication_controller import \
     (authenticate_user_standard, deauthenticate_user, refresh_authentication, AuthenticationError,
-     authenticate_user_saml, authenticate_user_github)
+     authenticate_user_saml, authenticate_user_github, authenticate_user_keycloak)
 
 from sos_trades_api.tools.authentication.authentication import auth_required, auth_refresh_required, \
     get_authenticated_user
 from sos_trades_api.tools.authentication.github import GitHubSettings
+from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
 from urllib.parse import urlparse, urlencode
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
@@ -281,3 +282,47 @@ def github_oauth():
     app.logger.info(f'Github/OAuth authentication access granted to {user.email}')
 
     return redirect(url)
+
+
+@app.route('/api/data/keycloak/authenticate', methods=['GET'])
+def authenticate_with_keycloak():
+    # Get authorization URL
+    keycloak = KeycloakAuthenticator()
+    
+    auth_url = keycloak.auth_url("https://revision.gpp-sostrades.com/api/data/keycloak/callback")
+ 
+    return redirect(auth_url)
+
+
+@app.route('/api/data/keycloak/callback', methods=['GET'])
+def callback():
+    # Callback from Keycloak
+    if 'code' not in request.args:
+        return jsonify(error="404_no_code"), 404
+
+    keycloak = KeycloakAuthenticator()
+
+    code = request.args.get('code')
+    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    userinfo = keycloak.user_info(token['access_token'])
+
+    access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
+
+    query_parameters = {'token': f'{access_token}###{refresh_token}'}
+
+    url = f'{return_url}/saml?{urlencode(query_parameters)}'
+
+    app.logger.info(f'Github/OAuth authentication access granted to {user.email}')
+
+    return redirect(url)
+
+@app.route('/api/data/keycloak/logout', methods=['GET'])
+def logout():
+    keycloak = KeycloakAuthenticator()
+    code = request.args.get('code')
+    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    access_token = token['access_token']
+    keycloak.logout(access_token)
+
+    deauthenticate_user()
+    return redirect("https://revision.gpp-sostrades.com")

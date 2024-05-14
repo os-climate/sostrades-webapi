@@ -1,6 +1,7 @@
 '''
 Copyright 2022 Airbus SAS
 
+Modifications on 29/04/2024 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -22,8 +23,7 @@ from sos_trades_api.server import base_server
 app = base_server.app
 db = base_server.db
 
-from sos_trades_api.server.base_server import load_specific_study
-#load_specific_study(3)
+
 
 # load & register APIs
 from sos_trades_api.routes.main import *

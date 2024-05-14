@@ -77,15 +77,12 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
     with app.app_context():
         is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
-
-        if not is_in_cache and (study_case_manager.study.creation_status != StudyCase.CREATION_DONE and study_case_manager.study.creation_status != ProxyDiscipline.STATUS_DONE):
+        study_case = StudyCase.query.filter(StudyCase.id.like(study_case_identifier)).first()
+        if not is_in_cache and (study_case.creation_status != StudyCase.CREATION_DONE and study_case.creation_status != ProxyDiscipline.STATUS_DONE):
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
-            with app.app_context():
-                study_case = StudyCase.query.filter(
-                    StudyCase.id == study_case_identifier).first()
-                study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
-                db.session.add(study_case)
-                db.session.commit()
+            study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
+            db.session.add(study_case)
+            db.session.commit()
             if study_case_manager.study.from_type == StudyCase.FROM_STUDYCASE:
                 source_id = int(study_case_manager.study.reference)
                 source_study_case = StudyCase.query.filter( StudyCase.id == source_id).first()
@@ -98,7 +95,15 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
             else:
                 loaded_study = create_study_case(user_id, study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
         elif read_only_mode:
-            loaded_study = load_study_case_with_read_only_mode(study_case_identifier, study_access_right, user_id)
+            isReadOnlyPossible = False
+            if study_case.current_execution_id is not None:
+                study_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+                if study_execution is not None and study_execution.execution_status == StudyCaseExecution.FINISHED:
+                    isReadOnlyPossible = True
+            if isReadOnlyPossible:
+                loaded_study = load_study_case_with_read_only_mode(study_case_identifier, study_access_right, user_id)
+            else:
+                loaded_study = load_study_case(study_case_identifier, study_access_right, user_id)
         else:
             loaded_study = load_study_case(study_case_identifier, study_access_right, user_id)
     return loaded_study
@@ -142,7 +147,6 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
                 new_study_case_execution.requested_by = user.username
                 db.session.add(new_study_case_execution)
                 db.session.commit()
-
                 study_case.current_execution_id = new_study_case_execution.id
                 db.session.add(study_case)
                 db.session.commit()
@@ -217,7 +221,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
         # Modifying study case to add access right of creator (Manager)
         loaded_study_case.study_case.is_manager = True
 
-        if not loaded_study_case.study_case.execution_status or loaded_study_case.study_case.execution_status == ProxyDiscipline.STATUS_CONFIGURE:
+        if not status:
             loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
         else:
             loaded_study_case.study_case.execution_status = status
@@ -296,6 +300,14 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         study_manager, no_data, read_only, user_id)
     loading_duration = time.time() - start_time
 
+    #get execution status
+    study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_case is not None and study_case.current_execution_id is not None:
+        
+        study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+
+
     app.logger.info(f'load_study_case {study_id}, get cache: {cache_duration}')
     app.logger.info(f'load_study_case {study_id}, loading:{loading_duration} ')
 
@@ -359,30 +371,26 @@ def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
     if study_json is not None and study_json != 'null':
         study_case_value = study_json.get('study_case')
         if study_case_value is not None:
-            execution_status = study_case_value.get("execution_status")
-            # if the study status is DONE, the study must be opened in readonly
-            # mode
-            if execution_status == ProxyDiscipline.STATUS_DONE:
-                # launch the loading in background
-                study_manager = study_case_cache.get_study_case(study_id, False)
-                read_only = study_access_right == AccessRights.COMMENTER
-                no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
-                launch_load_study_in_background(
-                    study_manager,  no_data, read_only)
-                # set study access rights
-                if study_access_right == AccessRights.MANAGER:
-                    study_json['study_case']['is_manager'] = True
-                elif study_access_right == AccessRights.CONTRIBUTOR:
-                    study_json['study_case']['is_contributor'] = True
-                elif study_access_right == AccessRights.COMMENTER:
-                    study_json['study_case']['is_commenter'] = True
-                else:
-                    study_json['study_case']['is_restricted_viewer'] = True
+            # launch the loading in background
+            study_manager = study_case_cache.get_study_case(study_id, False)
+            read_only = study_access_right == AccessRights.COMMENTER
+            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+            launch_load_study_in_background(
+                study_manager,  no_data, read_only)
+            # set study access rights
+            if study_access_right == AccessRights.MANAGER:
+                study_json['study_case']['is_manager'] = True
+            elif study_access_right == AccessRights.CONTRIBUTOR:
+                study_json['study_case']['is_contributor'] = True
+            elif study_access_right == AccessRights.COMMENTER:
+                study_json['study_case']['is_commenter'] = True
+            else:
+                study_json['study_case']['is_restricted_viewer'] = True
 
-                # Add this study in last study opened in database
-                add_last_opened_study_case(study_id, user_id)
+            # Add this study in last study opened in database
+            add_last_opened_study_case(study_id, user_id)
 
-                return study_json
+            return study_json
 
     # If the study is not in read only mode, it is normally loaded
     loaded_study = load_study_case(study_id, study_access_right, user_id)
@@ -724,6 +732,13 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         # Return logical treeview coming from execution engine
         loaded_study_case = LoadedStudyCase(
             study_manager, False, False, user_id)
+
+         #get execution status
+        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+        if study_case is not None and study_case.current_execution_id is not None:
+            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+            loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+
 
         return loaded_study_case
 

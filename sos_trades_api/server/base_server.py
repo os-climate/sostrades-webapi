@@ -137,6 +137,7 @@ def database_process_setup():
     from sos_trades_api.tools.process_management.process_management import update_database_with_process
     from sos_trades_api.tools.reference_management.reference_management import update_database_with_references
     from sos_trades_api.controllers.sostrades_main.study_case_controller import clean_database_with_disabled_study_case
+    from sos_trades_api.tools.allocation_management.allocation_management import clean_all_allocations_type_reference
     """ Launch process setup in database
 
     :return boolean (success or not)
@@ -167,6 +168,11 @@ def database_process_setup():
 
             app.logger.info(
                 'Finished loading available processes and references')
+            
+            app.logger.info('Clean reference pod allocations')
+            clean_all_allocations_type_reference(app.logger)
+            app.logger.info('Finished cleaning pod allocation references')
+
             app.logger.info('Clean disabled study case')
             clean_database_with_disabled_study_case(app.logger)
             app.logger.info(
@@ -558,8 +564,8 @@ def database_list_api_key():
 
 def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
-        clean_all_allocations_services_and_deployments
-    clean_all_allocations_services_and_deployments()
+        clean_all_allocations_type_study
+    clean_all_allocations_type_study()
 
 def clean_inactive_study_pods():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import \
@@ -575,14 +581,15 @@ def update_all_pod_status_method():
 def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
         update_all_pod_status
-    interval = 15 #seconds
+    interval = 15 #seconds 
     while True:
         try:
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
             app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
-        time.sleep(interval)
+        if not Config().pod_watcher_activated:
+            time.sleep(interval)
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 

@@ -14,6 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.models.user_dto import UserDto
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tools methods to manage coedition features
@@ -96,14 +98,19 @@ def remove_user_from_all_rooms(user_id):
 def get_user_list_in_room(study_case_id):
     """ Get user list present in a room (room id = study_case_id)
     """
-
+    user_dto_list = []
     users_in_room = User.query.join(StudyCoeditionUser).join(StudyCase).filter(
         StudyCoeditionUser.study_case_id == study_case_id).filter(StudyCoeditionUser.user_id == User.id).all()
+    for user in users_in_room:
+        user_dto = UserDto(user.id)
+        user_dto.username = user.username
+        user_dto.lastname = user.lastname
+        user_dto.firstname = user.firstname
+        user_dto_list.append(user_dto)
 
-    result = [ur.serialize() for ur in users_in_room]
+    result = [ur.serialize() for ur in user_dto_list]
 
     return result
-
 
 def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction, message):
     """ Add coedition study notification to database

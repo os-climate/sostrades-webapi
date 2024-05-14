@@ -22,7 +22,7 @@ from sos_trades_api.models.database_models import AccessRights, StudyCase, UserS
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, study_case_logs,
+    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, get_user_study_case, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
@@ -39,6 +39,25 @@ def study_cases():
     if request.method == 'GET':
         # Transform object array to json convertible
         result = [sc.serialize() for sc in get_user_shared_study_case(user.id)]
+        resp = make_response(jsonify(result), 200)
+        return resp
+
+    raise MethodNotAllowed()
+
+@app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['GET'])
+@auth_required
+def get_study_case(study_case_identifier: int):
+    user = session['user']
+
+    if request.method == 'GET':
+        # Verify user has study case authorisation to load study (Restricted viewer)
+        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
+            raise BadRequest(
+                'You do not have the necessary rights to load this study case')
+
+        # Transform object array to json convertible
+        result = get_user_study_case(user.id, study_case_identifier)
         resp = make_response(jsonify(result), 200)
         return resp
 

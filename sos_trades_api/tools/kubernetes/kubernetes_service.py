@@ -18,8 +18,9 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Execution engine kubernete
 """
+from functools import partial
 import time
-from kubernetes import client, config
+from kubernetes import client, config, watch
 from sos_trades_api.server.base_server import app
 
 
@@ -223,15 +224,28 @@ def kubernetes_service_pod_status(pod_or_service_name:str, pod_namespace:str, is
 
     pod_list = api_instance.list_namespaced_pod(namespace=pod_namespace)
     for pod in pod_list.items:
-        if pod.status is not None and pod.metadata is not None and pod.metadata.name is not None:
-            if pod.metadata.name == pod_or_service_name:
-                result = pod.status.phase
-                reason = get_container_error_reason(pod)
-                break
-            elif not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"):
-                result = pod.status.phase
-                reason = get_container_error_reason(pod)
-                break
+        if pod.status is not None and pod.metadata is not None and pod.metadata.name is not None and (pod.metadata.name == pod_or_service_name or \
+            (not is_pod_name_complete and pod.metadata.name.startswith(f"{pod_or_service_name}-"))):
+            
+            result = pod.status.phase
+            reason = get_container_error_reason(pod)
+                
+            # Check case the pod has restarted with error or oomkilled
+            # (restart_count > 0 => it has a deployment)
+            if pod.status is not None and pod.status.container_statuses is not None and len(pod.status.container_statuses) > 0:
+                container_status = pod.status.container_statuses[0]
+                
+                if (container_status.restart_count > 0 and \
+                    container_status.last_state is not None and \
+                    container_status.last_state.terminated is not None):
+                    result = "Failed"
+                    reason = container_status.last_state.terminated.reason
+
+                    # delete the service and deployment in case of service name
+                    if not is_pod_name_complete:
+                        kubernetes_delete_deployment_and_service(pod_or_service_name, pod_namespace)
+            break
+
     return result, reason
 
 def get_container_error_reason(pod):
@@ -246,7 +260,6 @@ def get_container_error_reason(pod):
     # get the container status
     if pod.status is not None and pod.status.container_statuses is not None and len(pod.status.container_statuses) > 0:
         container_status = pod.status.container_statuses[0]
-        app.logger.debug(f'found container: {container_status}, restart_count:{container_status.restart_count}')
         # check status
         if container_status.ready is False:
             waiting_state = container_status.state.waiting
@@ -347,10 +360,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if service_found:
         try:
             resp = core_api_instance.delete_namespaced_service(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the service named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"service {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
 
@@ -366,9 +376,51 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     if deployement_found:
         try:
             resp = apps_api_instance.delete_namespaced_deployment(name=pod_name, namespace=pod_namespace)
-            if resp.status != "Success":
-                app.logger.error(f'The deletion of the deployment named {pod_name} has not succeeded: {resp.status}' )
-            else:
-                app.logger.info(f"Deployment {pod_name} has been successfully deleted")
+            
         except Exception as api_exception:
             app.logger.error(api_exception)
+
+
+def watch_pod_events(logger):
+    # Create k8 api client object
+    kubernetes_load_kube_config()
+
+    core_api_instance = client.CoreV1Api(client.ApiClient())
+    w = watch.Watch()
+    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace="revision")):
+        if event['object']['metadata']['name'].startswith('eeb') or \
+            event['object']['metadata']['name'].startswith('sostrades-study-server') or\
+            event['object']['metadata']['name'].startswith('generation') :
+            
+            yield event
+
+    logger.info("Finished namespace stream.")
+
+def get_pod_name_from_event(event):
+    return event['object']['metadata']['name']
+
+def get_pod_status_and_reason_from_event(event):
+    status_phase = event['object']['status']['phase']
+    reason = ''
+    status = event['object']['status']
+    container_statuses = status.get('container_statuses')
+    if status is not None and container_statuses is not None and len(container_statuses) > 0:
+        container_status = container_statuses[0]
+        # check status
+        if container_status.get('ready') is False:
+            waiting_state = container_status.get('state').get('waiting')
+            terminated_state = container_status.get('state').get('terminated')
+            
+            # if status in error get the reason
+            if waiting_state is not None and waiting_state.get('reason') is not None:
+                reason = waiting_state['reason']
+            if terminated_state is not None and terminated_state.get('reason') is not None:
+                reason = terminated_state['reason']
+        
+        if (container_status.get('restart_count') > 0 and \
+            container_status.get('last_state') is not None and \
+            container_status.get('last_state').get('terminated') is not None):
+            status_phase = "Failed"
+            reason = container_status.get('last_state').get('terminated').get('reason')
+            
+    return status_phase, reason
