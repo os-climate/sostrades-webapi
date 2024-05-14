@@ -9,6 +9,5 @@ sos_trades_api/app.db
 build/
 dist/
 sos_trades_api.egg-info/
-sos_trades_api/secret/adminPassword
-sos_trades_api/secret/standardUserPassword
+sos_trades_api/secret
 *.bat
