@@ -23,7 +23,7 @@ def upgrade():
     sa.Column('study_case_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.Text(), nullable=True),
     sa.Column('log_level_name', sa.String(length=64), nullable=True),
-    sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column('message', sa.Text(), nullable=True),
     sa.Column('exception', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['study_case_id'], ['study_case.id'], name='fk_study_case_log_study_case_id', ondelete='CASCADE'),

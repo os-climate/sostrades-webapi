@@ -24,7 +24,7 @@ def upgrade():
     sa.Column('label', sa.String(length=64), nullable=False),
     sa.Column('description', sa.String(length=300), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('last_modified', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('last_modified', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], name='fk_link_user_id'),
     sa.PrimaryKeyConstraint('id')
     )

@@ -11,3 +11,5 @@ dist/
 sos_trades_api.egg-info/
 sos_trades_api/secret
 *.bat
+sostrades-data.db
+sostrades-logs.db

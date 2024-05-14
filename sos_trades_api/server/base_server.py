@@ -72,15 +72,14 @@ try:
     app.logger.info('Importing dependencies')
     import sos_trades_api
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
+    from sos_trades_api.tools.logger.application_mysql_handler import ApplicationRequestFormatter
+    from sos_trades_api.tools.logger.application_sqlite_handler import ApplicationSQLiteHandler
     from sos_trades_api.models.database_models import User, Group, UserProfile
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 
     app.logger.info('Adding application logger handler')
-    app_mysql_handler = ApplicationMySQLHandler(
-        db=config.logging_database_data)
-    app_mysql_handler.setFormatter(ApplicationRequestFormatter(
-        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app_mysql_handler = ApplicationSQLiteHandler(db="C:/Users/ggoyon/Desktop/sos/sostrades-dev-tools/platform/sostrades-webapi/sostrades-logs.db")
+    app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
     os.environ['FLASK_ENV'] = app.config['ENVIRONMENT']

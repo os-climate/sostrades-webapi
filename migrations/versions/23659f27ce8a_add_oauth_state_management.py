@@ -23,7 +23,7 @@ def upgrade():
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('is_invalidated', sa.Boolean(), nullable=True),
     sa.Column('state', sa.String(length=64), nullable=False),
-    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column('check_date', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )

@@ -22,8 +22,8 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('message', sa.String(length=300), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('last_modification_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
+    sa.Column('last_modification_date', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], name='fk_news_user_id'),
     sa.PrimaryKeyConstraint('id')
     )

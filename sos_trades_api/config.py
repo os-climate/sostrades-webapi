@@ -454,13 +454,15 @@ class Config:
         :return string (sql alchemy full uri)
         :raise ValueError exception
         """
-
-        # Add charset to have unicode 7 support from mysql
-        uri_suffix = '?charset=utf8mb4'
         if len(self.__sql_alchemy_full_uri) == 0:
-            uri_suffix = f'{uri_suffix}&ssl=true' if self.sql_alchemy_database_ssl is True else ''
+            if "SQLITE_DATABASE" in self.__server_config_file["SQL_ALCHEMY_DATABASE"]:
+                self.__sql_alchemy_full_uri = f"sqlite:///{self.__server_config_file['SQL_ALCHEMY_DATABASE']['SQLITE_DATABASE']}"
+            else:
 
-            self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}'
+                # Add charset to have unicode 7 support from mysql
+                uri_suffix = '?charset=utf8mb4'
+                uri_suffix = f'{uri_suffix}&ssl=true' if self.sql_alchemy_database_ssl is True else ''
+                self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}'
         return self.__sql_alchemy_full_uri
 
     @property
@@ -567,7 +569,7 @@ class Config:
         # Set sql alchemy uri
         flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.sql_alchemy_full_uri})
         # Set logging database data
-        flask_config_dict.update({"LOGGING_DATABASE": self.logging_database_data})
+        #flask_config_dict.update({"LOGGING_DATABASE": self.logging_database_data})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 

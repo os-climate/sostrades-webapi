@@ -24,7 +24,7 @@ def upgrade():
     sa.Column('status', sa.String(length=64), server_default='', nullable=True),
     sa.Column('kubernetes_pod_name', sa.String(length=128), server_default='', nullable=True),
     sa.Column('message', sa.Text(), nullable=True),
-    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('creation_date', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(['study_case_id'], ['study_case.id'], name='fk_study_case_allocation_study_case_id', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('kubernetes_pod_name')
