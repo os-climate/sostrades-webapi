@@ -274,7 +274,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                     study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
 
                     # Check if new value is a dataframe
-                    if isinstance(param_chg.new_value, pandas.DataFrame):
+                    if isinstance(param_chg.new_value, pandas.DataFrame) or isinstance(param_chg.new_value, dict):
                         study_case_change = StudyCaseChange.CSV_CHANGE
 
                     add_change_db(notification_id,
