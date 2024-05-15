@@ -227,7 +227,8 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
         pod_status, message = get_allocation_status(study_case_allocation)
-        # if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
+        
+        #if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
         if pod_status != PodAllocation.NOT_STARTED or  (pod_status == PodAllocation.NOT_STARTED and \
             study_case_allocation.pod_status != PodAllocation.IN_ERROR and study_case_allocation.pod_status != PodAllocation.OOMKILLED):
             study_case_allocation.pod_status = pod_status
@@ -436,11 +437,12 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                 # we don't want the study to be reload in read only before the update is done
                 # so we remove the read_only_file if it exists, it will be updated at the end of the reload
-                try:
-                    study_case_manager.delete_loaded_study_case_in_json_file()
-                except BaseException as ex:
-                    app.logger.error(
-                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+                if update_study_name:
+                    try:
+                        study_case_manager.delete_loaded_study_case_in_json_file()
+                    except BaseException as ex:
+                        app.logger.error(
+                            f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
 
                 # If group has change then move file (can only be done after the study 'add')
                 if update_group_id:
@@ -509,9 +511,14 @@ def delete_study_cases_and_allocation(studies):
                     study_list.append(sc)
                     db.session.delete(sc)
 
-                # delete allocations
-                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies)).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
+                # delete allocations of study pod
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
                 delete_study_server_services_and_deployments(pod_allocations)
+
+                # delete allocations of study executions
+                execution_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION).all()
+                for allocation in execution_allocations:
+                    db.session.delete(allocation)
                 # delete studies
                 db.session.commit()
                 app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
@@ -640,7 +647,7 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
                 current_execution = study_case_execution[0]
-                update_study_case_execution_status(current_execution)
+                update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
@@ -687,7 +694,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
                 else:
                     current_execution = study_case_execution
-                    update_study_case_execution_status(current_execution)
+                    update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
                 return user_study
@@ -705,11 +712,11 @@ def add_study_information_on_status(user_study: StudyCase):
         
         # deal with error cases:
         if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
-            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
+            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
             user_study.creation_status = StudyCase.CREATION_ERROR
             if allocation is not None:
                 if allocation.pod_status == PodAllocation.OOMKILLED:
-                    user_study.error = "An error occured while creation, pod has been OOMKilled, you may need to change the pod size to a bigger flavor before reloading the study to finalize the creation"
+                    user_study.error = "An error occured while creation, pod had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
                 else:
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
 
