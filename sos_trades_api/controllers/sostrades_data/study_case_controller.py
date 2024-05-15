@@ -712,7 +712,7 @@ def add_study_information_on_status(user_study: StudyCase):
         
         # deal with error cases:
         if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
-            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
+            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
             user_study.creation_status = StudyCase.CREATION_ERROR
             if allocation is not None:
                 if allocation.pod_status == PodAllocation.OOMKILLED:
