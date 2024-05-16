@@ -460,44 +460,38 @@ def create_standard_user_account(username, email, firstname, lastname):
             db.session.commit()
 
 
-def database_create_user_test():
-    """Create a new user_test with all necessaries pre-requisite to be able to launch the test e2e
-        """
-
-    user_name = app.config['USER_TEST_E2E'].get('USERNAME', None)
-    password = app.config['USER_TEST_E2E'].get('PASSWORD', None)
-    email = app.config['USER_TEST_E2E'].get('EMAIL', None)
-
-    # Check if the values are present
-    if user_name is None:
-        raise Exception(f'Environment variable "USERNAME" not found')
-
-    if password is None:
-        raise Exception(f'Environment variable "PASSWORD" not found')
-
-    if email is None:
-        raise Exception(f'Environment variable "EMAIL" not found')
+def database_create_user_test(username, password):
+    """Create a new user_test
+    :param:username, the identification name of the user, must be unique in users database
+    :type: str
+    :param:password, password of the user count
+    :type: str
+    """
 
     # Set Profile
     study_user_profile = UserProfile.query.filter_by(name=UserProfile.STUDY_USER).first()
-
-    # Set Default group
-    all_user_group = Group.query.filter_by(name=Group.ALL_USERS_GROUP).first()
+    if study_user_profile is None:
+        raise Exception(f"{UserProfile.STUDY_USER} not found in database")
 
     # Retrieve member rights to set it at "all user" group
     member_right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
+    if member_right is None:
+        raise Exception(f"{AccessRights.MEMBER} not found in database")
 
     # Retrieve user_test to check if it already exists
-    user_test = User.query.filter_by(username=user_name).first()
+    user_test = User.query.filter_by(username=username).first()
 
-    if study_user_profile is not None and all_user_group is not None and member_right is not None and user_test is None:
+    # Create email
+    email = f"{username}@email.com"
+
+    if study_user_profile is not None and member_right is not None and user_test is None:
 
         try:
             user = User()
-            user.username = user_name
+            user.username = username
             user.email = email
-            user.firstname = user_name
-            user.lastname = user_name
+            user.firstname = username
+            user.lastname = username
             user.account_source = User.LOCAL_ACCOUNT
 
             user.user_profile_id = study_user_profile.id
@@ -506,26 +500,17 @@ def database_create_user_test():
             user.set_password(password)
 
             db.session.add(user)
-            db.session.flush()
-            set_user_access_group(all_user_group.id, user.id, member_right.id)
+            db.session.commit()
+
         except Exception as exe:
             db.session.rollback()
             raise exe
-
-        db.session.commit()
-    else:
-        if study_user_profile is None:
-            raise Exception(f"{UserProfile.STUDY_USER} not found in database")
-        if all_user_group is None:
-            raise Exception(f"{Group.ALL_USERS_GROUP} not found in database")
-        if member_right is None:
-            raise Exception(f"{AccessRights.MEMBER} not found in database")
 
     # Check if the group e2e_tests already exist
     group_e2e_tests = Group.query.filter_by(name="e2e_tests").first()
     if group_e2e_tests is not None:
         # Retrieve group_access_user for e2e_tests
-        user_test = User.query.filter_by(username=user_name).first()
+        user_test = User.query.filter_by(username=username).first()
         group_access_user = GroupAccessUser.query.filter_by(group_id=group_e2e_tests.id).filter_by(user_id=user_test.id)
         if group_access_user is not None:
             try:
@@ -539,12 +524,41 @@ def database_create_user_test():
                 new_group_access_user.right_id = owner_right.id
 
                 db.session.add(new_group_access_user)
-                db.session.flush()
+                db.session.commit()
             except Exception as exe:
                 db.session.rollback()
                 raise exe
 
+
+def database_set_user_access_group(group_list, username):
+    """Set right access from user to groups
+    :param:username, the identification name of the user, must be unique in users database
+    :type: str
+    :param:access_right, the level of right access
+    :type: str
+    :param:group_list, the list of group targeted
+    :type: list
+    """
+
+    # Retrieve user_test to check if it already exists
+    user = User.query.filter_by(username=username).first()
+
+    # Retrieve member rights to set it at "all user" group
+    right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
+    if right is None:
+        raise Exception(f"{right} not found in database")
+
+    # Check if groups are in databases
+    missing_groups = []
+    for group in group_list:
+        group_selected = Group.query.filter_by(name=group).first()
+        if group_selected is None:
+            missing_groups.append(group)
+        else:
+            set_user_access_group(group_selected.id, user.id, right.id)
             db.session.commit()
+    if missing_groups:
+        raise Exception(f"{missing_groups} not found in database")
 
 
 def reset_local_user_password_by_name(username):
