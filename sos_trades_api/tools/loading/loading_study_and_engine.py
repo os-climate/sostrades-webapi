@@ -16,6 +16,8 @@ limitations under the License.
 '''
 import pandas
 
+
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tools methods to manage behaviour around StudyCase
@@ -249,6 +251,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
     """
     from sos_trades_api.server.base_server import app
     from sos_trades_api.models.loaded_study_case import LoadStatus
+    from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import DatasetGenericException
     # todo: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
     try:
         sleep()
@@ -321,7 +324,11 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
         app.logger.info(
             f'End background updating (from datasets mapping) {study_case_manager.study.name}')
-
+    except DatasetGenericException as ex:
+        study_case_manager.load_status = LoadStatus.IN_ERROR
+        study_case_manager.set_error(ex)
+        app.logger.exception(
+            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
