@@ -19,7 +19,7 @@ from sos_trades_api.tools.active_study_management.active_study_management import
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
-from sostrades_core.datasets.dataset_mapping import DatasetsMapping
+from sostrades_core.datasets.dataset_mapping import DatasetsMappingException, DatasetsMapping
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -543,7 +543,13 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         loaded_study_case = LoadedStudyCase(study_manager, False, False, user.id)
 
         return loaded_study_case
-
+    except DatasetsMappingException as exception :
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+        study_manager.set_error(exception)
+        app.logger.exception(
+            f'Error when updating in background (from datasets mapping) {study_manager.study.name}: \n{exception}')
+        raise Exception(study_manager.error_message)
     except Exception as error:
         # Releasing study
         study_case_cache.release_study_case(study_id)
