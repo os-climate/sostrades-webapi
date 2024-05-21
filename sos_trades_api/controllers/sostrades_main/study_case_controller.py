@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2023/11/23 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/05/16 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -579,7 +579,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                     old_value_bytes = old_value_stream.getvalue()
 
                 # Add change to database
-                add_change_db(new_notification_id,
+                add_change_db(new_notification_id,  # pylint: disable=possibly-used-before-assignment
                               file_info[file.filename]['variable_id'],
                               StudyCaseChange.CSV_CHANGE,
                               column_to_delete_str,

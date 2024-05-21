@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2023/12/04 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/05/16 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -240,12 +240,11 @@ def database_check_study_case_state(with_deletion=False):
     from urllib3 import disable_warnings
     from sos_trades_api.models.database_models import StudyCase, Group
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
+    from shutil import rmtree
 
-    if with_deletion:
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
-        from shutil import rmtree
-        studies_to_delete = []
-        folders_to_delete = []
+    studies_to_delete = []
+    folders_to_delete = []
 
     disable_warnings(InsecureRequestWarning)
 
