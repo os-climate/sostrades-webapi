@@ -182,7 +182,7 @@ def database_process_setup():
 
             app.logger.info(
                 'Finished loading available processes and references')
-            
+
             app.logger.info('Clean reference pod allocations')
             clean_all_allocations_type_reference(app.logger)
             app.logger.info('Finished cleaning pod allocation references')
@@ -594,7 +594,7 @@ def update_all_pod_status_method():
 def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
         update_all_pod_status
-    interval = 15 #seconds 
+    interval = 15 #seconds
     while True:
         try:
             update_all_pod_status()
@@ -671,35 +671,75 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command('create_user_test')
+    @click.argument('username')
+    @click.argument('password')
     @with_appcontext
-    def create_user_test():
-        """ user_test creation associated to ALl_user group and to a process list
+    def create_user_test(username, password):
+        """ user_test creation
+        :param:username, the identification name of the user, must be unique in users database
+        :param:password, password of the user count
+        :param:profile, the user profile
         """
         from sos_trades_api.controllers.sostrades_data.user_controller import database_create_user_test
-        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
-
         # Create the user test
         try:
-            database_create_user_test()
+            database_create_user_test(username, password)
+            app.logger.info(f'{username} has been successfully created')
         except Exception as ex:
             app.logger.error(f'The following error occurs when trying to create user_test\n{ex} ')
             raise ex
 
-        # Set the necessary processes access at the user_test
-        try:
-            user_name = app.config['USER_TEST_E2E'].get('USERNAME', None)
-            # Check if the values are present
-            if user_name is None:
-                raise Exception(f'Environment variable "USERNAME" not found')
-            process_list = ['test_multi_driver_subprocess_1_3', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
-                            'test_architecture_standard']
+    # Add custom command on flask cli to execute database init data setup
+    @click.command('set_user_access_group')
+    @click.argument('username')
+    @click.argument('group_list_str')
+    @with_appcontext
+    def set_user_access_group(username, group_list_str):
+        """ Give user rights at groups
+            :param:username, the identification name of the user, must be unique in users database
+            :param:group_list_str, the list of group targeted
+        """
+        from sos_trades_api.controllers.sostrades_data.user_controller import database_set_user_access_group
 
+        # Transform the string to a list
+        group_list = group_list_str.split(",")
+        group_list = [group.strip() for group in group_list]
+        try:
+            database_set_user_access_group(group_list, username)
+            app.logger.info(f'The group_access_user for "{group_list_str}" has been successfully updated to "{username}"')
+
+        except Exception as ex:
+            app.logger.error(f'The following error occurs when trying to set access right to a group\n{ex}')
+            raise ex
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('set_process_access_user')
+    @click.argument('username')
+    @click.argument('process_list_str')
+    @with_appcontext
+    def set_process_access_user(username, process_list_str):
+        """
+        Set the necessary processes access at the user
+        :param:username, the identification name of the user, must be unique in users database
+        :param:process_list, the list of process targeted
+        """
+        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
+
+        # Transform the string to a list
+        process_list = process_list_str.split(",")
+        process_list = [process.strip() for process in process_list]
+
+        try:
             # retrieve the created user_test
-            user = User.query.filter(User.username == user_name).first()
+            user = User.query.filter(User.username == username).first()
             if user is not None:
                 set_processes_to_user(process_list, user.id, app.logger)
+                app.logger.info(
+                    f'The process_access_user for "{process_list_str}" has been successfully updated to "{username}"')
+
             else:
-                raise Exception(f'User {user_name} not found in database')
+                raise Exception(f'User {username} not found in database')
         except Exception as ex:
             app.logger.error(f'The following error occurs when trying to set process to test user\n{ex} ')
             raise ex
@@ -820,6 +860,8 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)
+    app.cli.add_command(set_user_access_group)
+    app.cli.add_command(set_process_access_user)
     app.cli.add_command(update_pod_allocations_status)
     app.cli.add_command(update_pod_allocations_status_loop)
 
