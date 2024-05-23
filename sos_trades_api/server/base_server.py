@@ -684,7 +684,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     def set_user_access_group(username, group_list_str):
         """ Give user rights at groups
             :param:username, the identification name of the user, must be unique in users database
-            :param:access_right, the level of right access
             :param:group_list_str, the list of group targeted
         """
         from sos_trades_api.controllers.sostrades_data.user_controller import database_set_user_access_group

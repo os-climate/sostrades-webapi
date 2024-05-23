@@ -473,10 +473,6 @@ def database_create_user_test(username, password):
     if study_user_profile is None:
         raise Exception(f"{UserProfile.STUDY_USER} not found in database")
 
-    # Retrieve member rights to set it at "all user" group
-    member_right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
-    if member_right is None:
-        raise Exception(f"{AccessRights.MEMBER} not found in database")
 
     # Retrieve user_test to check if it already exists
     user_test = User.query.filter_by(username=username).first()
@@ -484,7 +480,7 @@ def database_create_user_test(username, password):
     # Create email
     email = f"{username}@email.com"
 
-    if study_user_profile is not None and member_right is not None and user_test is None:
+    if study_user_profile is not None and user_test is None:
 
         try:
             user = User()
