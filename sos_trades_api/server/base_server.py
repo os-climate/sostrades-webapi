@@ -14,6 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from datetime import datetime
+import re
 import sys
 import traceback as tb
 import click
@@ -114,6 +116,18 @@ study_case_cache = StudyCaseCache(logger=app.logger)
 
 # Create authentication token (JWT) manager
 jwt = JWTManager(app)
+
+# in case of study server, save the active study file
+pod_name =os.environ.get('HOSTNAME', '')
+if pod_name.startswith('sostrades-study-server-'):
+    #retreive study id
+    match = re.search(r'(?<=sostrades-study-server-)\d+', pod_name)
+    if match:
+        #the number represents the study id
+        study_id = int(match.group(0))
+        
+        from sos_trades_api.tools.active_study_management.active_study_management import save_study_last_active_date
+        save_study_last_active_date(study_id, datetime.now())
 
 
 def load_specific_study(study_identifier):
