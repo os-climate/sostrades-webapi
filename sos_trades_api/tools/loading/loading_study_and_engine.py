@@ -258,77 +258,97 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
         app.logger.info(f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
-
-        # Update parameter into dictionary
-        datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
-            from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
-
+        study_case_manager.dataset_load_status = LoadStatus.IN_PROGESS
+        study_case_manager.dataset_load_error = None
+        try:
+            # Update parameter into dictionary
+            datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
+                from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
+        except DatasetGenericException as ex:
+            study_case_manager.dataset_load_status = LoadStatus.IN_ERROR
+            study_case_manager.dataset_load_error = f'Error while dataset import: {ex}'
+            
+            app.logger.exception(
+                f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
+            
+            # reload data from file to remove the potential changes and keep the study in coherent status
+            app.logger.debug(
+                f'Reloading study case to remove potential changes')
+            study_case_manager.load_study_case_from_source()
+            app.logger.debug(
+                f'Finished Reloading study case to remove potential changes')
+            
+        
         with app.app_context():
+            if study_case_manager.dataset_load_status != LoadStatus.IN_ERROR:
+                study_case_manager.dataset_load_status = LoadStatus.LOADED
+                if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
+                    # Persist data using the current persistence strategy
+                    study_case_manager.save_study_case()
 
-            if datasets_parameter_changes is not None and len(datasets_parameter_changes) > 0:
-                # Persist data using the current persistence strategy
-                study_case_manager.save_study_case()
+                    # Get date
+                    modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
-                # Get date
-                modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
+                    # # Add change to database
+                    for param_chg in datasets_parameter_changes:
+                        study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
 
-                # # Add change to database
-                for param_chg in datasets_parameter_changes:
-                    study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+                        # Check if new value is a dataframe
+                        if isinstance(param_chg.new_value, pandas.DataFrame) or isinstance(param_chg.new_value, dict):
+                            study_case_change = StudyCaseChange.CSV_CHANGE
 
-                    # Check if new value is a dataframe
-                    if isinstance(param_chg.new_value, pandas.DataFrame) or isinstance(param_chg.new_value, dict):
-                        study_case_change = StudyCaseChange.CSV_CHANGE
+                        add_change_db(notification_id,
+                                    param_chg.parameter_id,
+                                    param_chg.variable_type,
+                                    None,
+                                    study_case_change,
+                                    str(param_chg.new_value),
+                                    str(param_chg.old_value),
+                                    None,  # old_value_blob can be retrieved ?
+                                    param_chg.date,
+                                    param_chg.connector_id,
+                                    param_chg.dataset_id,
+                                    param_chg.dataset_parameter_id
+                                    )
 
-                    add_change_db(notification_id,
-                                  param_chg.parameter_id,
-                                  param_chg.variable_type,
-                                  None,
-                                  study_case_change,
-                                  str(param_chg.new_value),
-                                  str(param_chg.old_value),
-                                  None,  # old_value_blob can be retrieved ?
-                                  param_chg.date,
-                                  param_chg.connector_id,
-                                  param_chg.dataset_id,
-                                  param_chg.dataset_parameter_id
-                                  )
+                    study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
+                    # Update modification date on database
+                    study_case.modification_date = modify_date
+                    # Update execution_status
+                    if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
+                        study_execution = StudyCaseExecution.query.filter(
+                            StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
+                        if study_execution is not None:
+                            study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
+                            db.session.add(study_execution)
 
-                study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
-                # Update modification date on database
-                study_case.modification_date = modify_date
-                # Update execution_status
-                if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_CONFIGURE:
-                    study_execution = StudyCaseExecution.query.filter(
-                        StudyCaseExecution.id == study_case_manager.study.current_execution_id).first()
-                    if study_execution is not None:
-                        study_execution.execution_status = StudyCaseExecution.NOT_EXECUTED
-                        db.session.add(study_execution)
+                    db.session.add(study_case)
+                    db.session.commit()
 
-                db.session.add(study_case)
+                    study_case_manager.execution_engine.dm.treeview = None
+
+                    study_case_manager.execution_engine.get_treeview(None, None)
+
+                    clean_obsolete_data_validation_entries(study_case_manager)
+
+                    study_case_manager.n2_diagram = {}
+                    # write loadedstudy into a json file to load the study in read only
+                    # when loading
+                    study_case_manager.save_study_read_only_mode_in_file()                
+            else:
+                # change notification message to save the error
+                notification = Notification.query.filter(Notification.id.like(notification_id)).first()
+                # the notification message must start with Error to be considered as an error message
+                notification.message = f'Error while importing dataset mapping: {study_case_manager.dataset_load_error}'
+                db.session.add(notification)
                 db.session.commit()
 
-                study_case_manager.execution_engine.dm.treeview = None
+            # set the loadStatus to loaded to end the loading of a study
+            study_case_manager.load_status = LoadStatus.LOADED
 
-                study_case_manager.execution_engine.get_treeview(None, None)
-
-                clean_obsolete_data_validation_entries(study_case_manager)
-
-                study_case_manager.n2_diagram = {}
-                # write loadedstudy into a json file to load the study in read only
-                # when loading
-                study_case_manager.save_study_read_only_mode_in_file()
-
-        # set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
-
-        app.logger.info(
-            f'End background updating (from datasets mapping) {study_case_manager.study.name}')
-    except DatasetGenericException as ex:
-        study_case_manager.load_status = LoadStatus.IN_ERROR
-        study_case_manager.set_error(ex)
-        app.logger.exception(
-            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
+            app.logger.info(
+                f'End background updating (from datasets mapping) {study_case_manager.study.name}')
+    
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()

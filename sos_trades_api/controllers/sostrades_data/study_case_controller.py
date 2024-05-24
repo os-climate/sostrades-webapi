@@ -870,7 +870,7 @@ def get_last_study_case_changes(notification_id):
             # Retrieve parameter changes from the last notification
             study_case_changes = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
 
-            if study_case_changes is None or len(study_case_changes) == 0:
+            if (study_case_changes is None or len(study_case_changes) == 0) and not notification_query.message.startswith('Error'):
                 # Remove the notification if there are any changes
                 db.session.delete(notification_query)
                 db.session.commit()

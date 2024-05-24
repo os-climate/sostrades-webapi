@@ -164,6 +164,11 @@ class StudyCaseManager(BaseStudyManager):
         self.__study_database_logger = None
 
         self.load_status = LoadStatus.NONE
+
+        # loading status in case of dataset import
+        self.dataset_load_status = LoadStatus.NONE
+        self.dataset_load_error = None
+
         self.n2_diagram = {}
         self.__error_message = ""
 
