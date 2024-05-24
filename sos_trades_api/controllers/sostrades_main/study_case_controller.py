@@ -20,6 +20,7 @@ from sos_trades_api.tools.allocation_management.allocation_management import del
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
 from sostrades_core.datasets.dataset_mapping import DatasetsMappingException, DatasetsMapping
+from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import DatasetGenericException
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -204,6 +205,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         if study_case_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_case_manager.error_message)
+        
         loaded_study_case = LoadedStudyCase(
             study_case_manager, False, False, user_id)
 
@@ -258,16 +260,17 @@ def light_load_study_case(study_id, reload=False):
     study_manager.attach_logger()
     return study_manager
 
-def check_study_case_is_Loaded(study_id):
+def get_study_load_status(study_id):
     """
-    Check study case is in cache and its status is LOADED
+    Check study case is in cache and return its status
     """
     isLoaded = study_case_cache.is_study_case_cached(study_id)
+    status = LoadStatus.NONE
     if isLoaded:
         study_manager = study_case_cache.get_study_case(study_id, False, False)
-        isLoaded = study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_PROGESS
+        status = study_manager.load_status
 
-    return isLoaded
+    return status
 
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
@@ -297,7 +300,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     if study_manager.load_status == LoadStatus.IN_ERROR:
         raise Exception(study_manager.error_message)
-
+    
+    
     loaded_study_case = LoadedStudyCase(
         study_manager, no_data, read_only, user_id)
     loading_duration = time.time() - start_time
@@ -535,7 +539,8 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_manager.error_message)
-
+        
+        
         # Releasing study
         study_case_cache.release_study_case(study_id)
 
@@ -546,15 +551,22 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
     except DatasetsMappingException as exception :
         # Releasing study
         study_case_cache.release_study_case(study_id)
-        study_manager.set_error(exception)
         app.logger.exception(
-            f'Error when updating in background (from datasets mapping) {study_manager.study.name}: \n{exception}')
-        raise Exception(study_manager.error_message)
+            f'Error when updating in background (from datasets mapping) {study_manager.study.name}:{exception}')
+        raise exception
     except Exception as error:
         # Releasing study
         study_case_cache.release_study_case(study_id)
-
         raise StudyCaseError(error)
+    
+def get_dataset_import_error_message(study_id):
+    '''
+    Retrieve study manager dataset load error in cache
+    '''
+    # Retrieve study_manager
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    return study_manager.dataset_load_error
+
 
 
 def update_study_parameters(study_id, user, files_list, file_info, parameters_to_save, columns_to_delete):
