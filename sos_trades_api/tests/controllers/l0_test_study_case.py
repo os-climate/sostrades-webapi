@@ -885,3 +885,126 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
+
+    def test_study_case_update_parameter_from_dataset_mapping_import(self):
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseChange
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, copy_study_case, update_study_parameters_from_datasets_mapping
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case, get_last_study_case_changes, create_new_notification_after_update_parameter
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            self.assertIsNotNone(user_test)
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_csv_name).first()
+            self.assertIsNotNone(
+                study_test, 'Unable to retrieve study case created for test')
+            study_copy_name = "test_study_for_dataset_mapping"
+
+            new_study_case = create_empty_study_case(self.test_user_id,
+                                                     study_copy_name,
+                                                     study_test.repository,
+                                                     study_test.process,
+                                                     self.test_user_group_id,
+                                                     str(study_test.id),
+                                                     StudyCase.FROM_STUDYCASE,
+                                                     None,
+                                                     None
+                                                     )
+
+            study_case_copy = copy_study_case(
+                new_study_case.id, study_test.id, self.test_user_id)
+            study_case_copy_id = study_case_copy.id
+            # wait end of study case creation
+            study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_for_dataset_mapping update study parameter from dataset mapping too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+
+            files_data = {
+                'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
+                'namespace_datasets_mapping': {
+                    'v0|<study_ph>.test_disc1_disc2_coupling.Disc1|*':
+                        ['MVP0_datasets_connector|default_numerical_parameters|*',
+                         'MVP0_datasets_connector|dataset_a|*']
+                }
+            }
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            # Create new notification
+            notification_id = create_new_notification_after_update_parameter(study_case_copy_id, StudyCaseChange.DATASET_MAPPING_CHANGE, UserCoeditionAction.SAVE, user_test)
+
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            # Update data from dataset_mapping with an error on the namespace_datasets_mapping
+            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data, notification_id)
+
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_for_dataset_mapping update study parameter from dataset mapping too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+
+            # check if clear_error is performed in study_case_controller
+            self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
+            parameter_changes = get_last_study_case_changes(study_case_copy.id)
+            self.assertTrue(len(parameter_changes) == 0)
+
+            files_data = {
+                'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
+                'namespace_datasets_mapping': {
+                    'v0|<study_ph>.Disc1|*':
+                        ['MVP0_datasets_connector|dataset_a|*']
+                }
+            }
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            # Create new notification
+            notification_id = create_new_notification_after_update_parameter(study_case_copy_id, StudyCaseChange.DATASET_MAPPING_CHANGE, UserCoeditionAction.SAVE, user_test)
+            # Update data from dataset_mapping without an error on the namespace_datasets_mapping
+            user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
+            update_study_parameters_from_datasets_mapping(study_case_copy_id, user_test, files_data, notification_id)
+
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_for_dataset_mapping update study parameter from dataset mapping too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+
+            # check if clear_error is performed in study_case_controller
+            self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
+            parameter_changes = get_last_study_case_changes(study_case_copy.id)
+            for parameter in parameter_changes:
+                if parameter.variable_id == "test_study_for_dataset_mapping.test_disc1_disc2_coupling.Disc1.a":
+                    self.assertIsNotNone(parameter.datase_id)
+                    self.assertIsNotNone(parameter.datase_connector_id)
+                    self.assertEqual(parameter.old_value, 5)
+                    self.assertEqual(parameter.new_value, 15)
+
+            studies_id_list_to_delete = [study_case_copy_id]
+            delete_study_cases(studies_id_list_to_delete)

@@ -14,11 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import jsonify
+
 from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
 from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
+from sostrades_core.datasets.dataset_mapping import DatasetsMappingException, DatasetsMapping
+from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import DatasetGenericException
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -41,7 +43,7 @@ from werkzeug.utils import secure_filename
 import shutil
 from shutil import rmtree
 
-from sos_trades_api.tools.code_tools import isevaluatable
+from sostrades_core.tools.tree.deserialization import isevaluatable
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.tools.tree.serializer import DataSerializer
@@ -61,7 +63,8 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import load_p
     load_repositories_metadata
 import threading
 from sos_trades_api.tools.loading.loading_study_and_engine import study_case_manager_loading, \
-    study_case_manager_update, study_case_manager_loading_from_reference, \
+    study_case_manager_update, study_case_manager_update_from_dataset_mapping, \
+    study_case_manager_loading_from_reference, \
     study_case_manager_loading_from_usecase_data, \
     study_case_manager_loading_from_study
 from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
@@ -202,6 +205,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         if study_case_manager.load_status == LoadStatus.IN_ERROR:
             raise Exception(study_case_manager.error_message)
+        
         loaded_study_case = LoadedStudyCase(
             study_case_manager, False, False, user_id)
 
@@ -256,16 +260,17 @@ def light_load_study_case(study_id, reload=False):
     study_manager.attach_logger()
     return study_manager
 
-def check_study_case_is_Loaded(study_id):
+def get_study_load_status(study_id):
     """
-    Check study case is in cache and its status is LOADED
+    Check study case is in cache and return its status
     """
     isLoaded = study_case_cache.is_study_case_cached(study_id)
+    status = LoadStatus.NONE
     if isLoaded:
         study_manager = study_case_cache.get_study_case(study_id, False, False)
-        isLoaded = study_manager.load_status == LoadStatus.LOADED or study_manager.load_status == LoadStatus.IN_PROGESS
+        status = study_manager.load_status
 
-    return isLoaded
+    return status
 
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
@@ -295,7 +300,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     if study_manager.load_status == LoadStatus.IN_ERROR:
         raise Exception(study_manager.error_message)
-
+    
+    
     loaded_study_case = LoadedStudyCase(
         study_manager, no_data, read_only, user_id)
     loading_duration = time.time() - start_time
@@ -505,6 +511,64 @@ def copy_study_case(study_id, source_study_case_identifier, user_id):
         return result
 
 
+def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mapping, notification_id):
+    """
+        Configure the study case in the data manager  from a dataset
+        :param: study_id, id of the study
+        :type: integer
+        :param: user, user that did the modification of parameters
+        :type: integer
+        :param: datasets_mapping, namespace+parameter to connector_id+dataset_id+parameter mapping
+        :type: dict
+    """
+    try:
+        # Retrieve study_manager
+        study_manager = study_case_cache.get_study_case(study_id, True)
+
+        # Deserialize mapping
+        datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
+
+        # Launch load study-case with new parameters from dataset
+        if study_manager.load_status != LoadStatus.IN_PROGESS:
+            study_manager.clear_error() 
+            study_manager.load_status = LoadStatus.IN_PROGESS
+            threading.Thread(
+                target=study_case_manager_update_from_dataset_mapping,
+                args=(study_manager, datasets_mapping_deserialized, notification_id)
+            ).start()
+
+        if study_manager.load_status == LoadStatus.IN_ERROR:
+            raise Exception(study_manager.error_message)
+        
+        
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+
+        # Return logical treeview coming from execution engine
+        loaded_study_case = LoadedStudyCase(study_manager, False, False, user.id)
+
+        return loaded_study_case
+    except DatasetsMappingException as exception :
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+        app.logger.exception(
+            f'Error when updating in background (from datasets mapping) {study_manager.study.name}:{exception}')
+        raise exception
+    except Exception as error:
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+        raise StudyCaseError(error)
+    
+def get_dataset_import_error_message(study_id):
+    '''
+    Retrieve study manager dataset load error in cache
+    '''
+    # Retrieve study_manager
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    return study_manager.dataset_load_error
+
+
+
 def update_study_parameters(study_id, user, files_list, file_info, parameters_to_save, columns_to_delete):
     """
     Configure the study case in the data manager or dump the study case on disk from a parameters list
@@ -587,7 +651,10 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               None,
                               None,
                               old_value_bytes,
-                              datetime.now())
+                              datetime.now(),
+                              None,
+                              None,
+                              None)
 
         values = {}
         for parameter in parameters_to_save:
@@ -708,7 +775,10 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       str(parameter['newValue']),
                                       str(parameter['oldValue']),
                                       None,
-                                      datetime.now())
+                                      datetime.now(),
+                                      None,
+                                      None,
+                                      None)
                     except Exception as error:
                         app.logger.exception(f'Study change database insertion error: {error}')
                 values[parameter['variableId']] = value

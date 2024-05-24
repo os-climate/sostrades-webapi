@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/04/05 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/05/07 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,12 +30,13 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
 
-from sos_trades_api.tools.code_tools import isevaluatable, time_function
+from sostrades_core.tools.tree.deserialization import isevaluatable
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
+from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, add_notification_db, CoeditionMessage
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
@@ -804,6 +805,9 @@ def get_study_case_notifications(study_identifier):
                             new_change.old_value_blob = ch.old_value_blob
                             new_change.last_modified = ch.last_modified
                             new_change.deleted_columns = ch.deleted_columns
+                            new_change.dataset_connector_id = ch.dataset_connector_id
+                            new_change.dataset_id = ch.dataset_id
+                            new_change.dataset_parameter_id = ch.dataset_parameter_id
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes
@@ -811,6 +815,67 @@ def get_study_case_notifications(study_identifier):
                 notification_list.append(new_notif)
 
         return notification_list
+
+
+def create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user):
+    """
+    Create a new notification after updating a parameter in the study.
+
+    Args:
+        study_id (int): The ID of the study.
+        type (str): The type of change.
+        coedition_action (str): The coedition action performed.
+        user (User): The user who performed the action.
+
+    Returns:
+        int: The ID of the new notification.
+
+    """
+
+    action = UserCoeditionAction.get_attribute_for_value(coedition_action)
+    # Check if the coedition action is valid
+    if action is not None:
+
+        user_coedition_action = getattr(UserCoeditionAction, action)
+
+        # Determine the coedition message based on the type
+        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE:
+            coedition_message = CoeditionMessage.IMPORT_DATASET
+        else:
+            coedition_message = CoeditionMessage.SAVE
+
+        # Add the notification to the database
+        notification_id = add_notification_db(study_id, user, user_coedition_action, coedition_message)
+
+        return notification_id
+    else:
+        # Raise an exception if the coedition action is not valid
+        raise InvalidStudy(f"{coedition_action} is not a valid coedition action.")
+
+
+def get_last_study_case_changes(notification_id):
+    """
+    Get study case parameter changes list
+
+    :param notification_id: notification identifier
+    :type notification_id: int
+
+    :return: sos_trades_api.models.database_models.StudyCaseChanges[]
+    """
+    study_case_changes = []
+    with app.app_context():
+        # Retrieve the last "save" notification
+        notification_query = Notification.query.filter(Notification.id == notification_id).first()
+        if notification_query is not None:
+            # Retrieve parameter changes from the last notification
+            study_case_changes = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
+
+            if (study_case_changes is None or len(study_case_changes) == 0) and not notification_query.message.startswith('Error'):
+                # Remove the notification if there are any changes
+                db.session.delete(notification_query)
+                db.session.commit()
+
+        return study_case_changes
 
 
 def get_user_authorised_studies_for_process(
