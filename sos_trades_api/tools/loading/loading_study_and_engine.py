@@ -16,7 +16,8 @@ limitations under the License.
 '''
 import pandas
 
-
+from sos_trades_api.controllers.error_classes import InvalidFile
+from sostrades_core.tools.tree.serializer import DataSerializer
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -39,8 +40,7 @@ from datetime import datetime, timezone
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from importlib import import_module
 from eventlet import sleep
-from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
-    CoeditionMessage
+from sos_trades_api.tools.coedition.coedition import add_change_db
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""
@@ -260,7 +260,13 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
         study_case_manager.load_status = LoadStatus.IN_PROGESS
         study_case_manager.dataset_load_status = LoadStatus.IN_PROGESS
         study_case_manager.dataset_load_error = None
+        datasets_parameter_changes = []
+        study_manager_before_update = study_case_manager.execution_engine.dm
+
         try:
+            uuid_param = study_case_manager.execution_engine.dm.data_id_map.get('jioihuig.AgricultureMix.Forest.deforestation_investment')
+            x = study_case_manager.execution_engine.dm.data_dict[uuid_param]['value']
+
             # Update parameter into dictionary
             datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
                 from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
@@ -277,8 +283,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
             study_case_manager.load_study_case_from_source()
             app.logger.debug(
                 f'Finished Reloading study case to remove potential changes')
-            
-        
+
         with app.app_context():
             if study_case_manager.dataset_load_status != LoadStatus.IN_ERROR:
                 study_case_manager.dataset_load_status = LoadStatus.LOADED
@@ -289,27 +294,42 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                     # Get date
                     modify_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
-                    # # Add change to database
+                    # Add change to database
                     for param_chg in datasets_parameter_changes:
                         study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+                        new_value = str(param_chg.new_value)
+                        old_value = str(param_chg.old_value)
+                        old_value_bytes = None
 
-                        # Check if new value is a dataframe
-                        if isinstance(param_chg.new_value, pandas.DataFrame) or isinstance(param_chg.new_value, dict):
+                        # Check if new value is a dataframe or dict
+                        if isinstance(param_chg.new_value, (pandas.DataFrame, dict)):
                             study_case_change = StudyCaseChange.CSV_CHANGE
 
-                        add_change_db(notification_id,
-                                    param_chg.parameter_id,
-                                    param_chg.variable_type,
-                                    None,
-                                    study_case_change,
-                                    str(param_chg.new_value),
-                                    str(param_chg.old_value),
-                                    None,  # old_value_blob can be retrieved ?
-                                    param_chg.date,
-                                    param_chg.connector_id,
-                                    param_chg.dataset_id,
-                                    param_chg.dataset_parameter_id
-                                    )
+                            try:
+                                # Conversion old_value to byte in order to store it in database
+                                serializer = DataSerializer()
+                                old_value_stream = serializer.convert_to_dataframe_and_bytes_io(param_chg.old_value, param_chg.parameter_id)
+                                old_value_bytes = old_value_stream.getvalue()
+                                old_value = None
+                                new_value = None
+                            except Exception as error:
+                                raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+
+                        # Add change into database
+                        add_change_db(
+                            notification_id,
+                            param_chg.parameter_id,
+                            param_chg.variable_type,
+                            None,
+                            study_case_change,
+                            new_value,
+                            old_value,
+                            old_value_bytes,
+                            param_chg.date,
+                            param_chg.connector_id,
+                            param_chg.dataset_id,
+                            param_chg.dataset_parameter_id
+                        )
 
                     study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
                     # Update modification date on database
