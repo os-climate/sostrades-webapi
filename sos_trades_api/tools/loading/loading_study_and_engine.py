@@ -264,9 +264,6 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
         study_manager_before_update = study_case_manager.execution_engine.dm
 
         try:
-            uuid_param = study_case_manager.execution_engine.dm.data_id_map.get('jioihuig.AgricultureMix.Forest.deforestation_investment')
-            x = study_case_manager.execution_engine.dm.data_dict[uuid_param]['value']
-
             # Update parameter into dictionary
             datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
                 from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
