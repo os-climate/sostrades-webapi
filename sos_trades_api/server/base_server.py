@@ -119,7 +119,6 @@ jwt = JWTManager(app)
 
 # in case of study server, save the active study file
 pod_name =os.environ.get('HOSTNAME', '')
-pod_name = 'sostrades-study-server-12'
 if pod_name.startswith('sostrades-study-server-'):
     #retreive study id
     match = re.search(r'(?<=sostrades-study-server-)\d+', pod_name)
