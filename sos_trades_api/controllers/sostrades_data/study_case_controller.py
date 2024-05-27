@@ -713,7 +713,7 @@ def add_study_information_on_status(user_study: StudyCase):
         
         # deal with error cases:
         if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
-            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.RUNNING):
+            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
             user_study.creation_status = StudyCase.CREATION_ERROR
             if allocation is not None:
                 if allocation.pod_status == PodAllocation.OOMKILLED:
@@ -870,7 +870,7 @@ def get_last_study_case_changes(notification_id):
             # Retrieve parameter changes from the last notification
             study_case_changes = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
 
-            if (study_case_changes is None or len(study_case_changes) == 0) and not notification_query.message.startswith('Error'):
+            if (study_case_changes is None or len(study_case_changes) == 0):
                 # Remove the notification if there are any changes
                 db.session.delete(notification_query)
                 db.session.commit()

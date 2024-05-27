@@ -1,5 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
+Modifications on 2024/05/16 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,11 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-methods to define access rights for a process
-"""
-
 from sos_trades_api.models.database_models import (
     Process,
     ProcessAccessUser,
@@ -191,6 +187,7 @@ class ProcessAccess(ResourceAccess):
         ):
 
             right_entity_number = 0
+            current_process = None
 
             # retrieve process id
             if process_name is not None and repository_name is not None:

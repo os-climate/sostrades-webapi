@@ -24,8 +24,8 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_import_error_message, get_study_load_status, load_or_create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
-    update_study_parameters, update_study_parameters_from_datasets_mapping, get_study_data_stream, copy_study_case, get_study_data_file_path,
-    set_study_data_file, load_study_case_with_read_only_mode)
+    update_study_parameters, update_study_parameters_from_datasets_mapping, get_study_data_stream, get_study_data_file_path,
+    set_study_data_file)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 import time
