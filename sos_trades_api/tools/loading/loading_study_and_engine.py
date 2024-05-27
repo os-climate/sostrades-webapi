@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import pandas
-
+from numpy import ndarray
 from sos_trades_api.controllers.error_classes import InvalidFile
 from sostrades_core.tools.tree.serializer import DataSerializer
 
@@ -264,9 +264,6 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
         study_manager_before_update = study_case_manager.execution_engine.dm
 
         try:
-            uuid_param = study_case_manager.execution_engine.dm.data_id_map.get('jioihuig.AgricultureMix.Forest.deforestation_investment')
-            x = study_case_manager.execution_engine.dm.data_dict[uuid_param]['value']
-
             # Update parameter into dictionary
             datasets_parameter_changes = study_case_manager.update_data_from_dataset_mapping(
                 from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
@@ -302,7 +299,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                         old_value_bytes = None
 
                         # Check if new value is a dataframe or dict
-                        if isinstance(param_chg.new_value, (pandas.DataFrame, dict)):
+                        if isinstance(param_chg.new_value, (pandas.DataFrame, dict, ndarray)):
                             study_case_change = StudyCaseChange.CSV_CHANGE
 
                             try:
