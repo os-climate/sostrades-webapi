@@ -126,8 +126,13 @@ if pod_name.startswith('sostrades-study-server-'):
         #the number represents the study id
         study_id = int(match.group(0))
         
-        from sos_trades_api.tools.active_study_management.active_study_management import save_study_last_active_date
-        save_study_last_active_date(study_id, datetime.now())
+        from sos_trades_api.tools.active_study_management.active_study_management import save_study_last_active_date, ACTIVE_STUDY_FILE_NAME
+        # create the active study file if it doesn't exist
+        local_path = Config().local_folder_path
+        if local_path != "" and os.path.exists(local_path):
+            file_path = os.path.join(local_path, f'{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
+            if not os.path.exists(file_path):
+                save_study_last_active_date(study_id, datetime.now())
 
 
 def load_specific_study(study_identifier):

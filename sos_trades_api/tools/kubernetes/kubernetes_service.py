@@ -381,13 +381,13 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
             app.logger.error(api_exception)
 
 
-def watch_pod_events(logger):
+def watch_pod_events(logger, namespace):
     # Create k8 api client object
     kubernetes_load_kube_config()
 
     core_api_instance = client.CoreV1Api(client.ApiClient())
     w = watch.Watch()
-    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace="revision")):
+    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace)):
         if event['object']['metadata']['name'].startswith('eeb') or \
             event['object']['metadata']['name'].startswith('sostrades-study-server') or\
             event['object']['metadata']['name'].startswith('generation') :
@@ -403,7 +403,7 @@ def get_pod_status_and_reason_from_event(event):
     status_phase = event['object']['status']['phase']
     reason = ''
     status = event['object']['status']
-    container_statuses = status.get('container_statuses')
+    container_statuses = status.get('containerStatuses')
     if status is not None and container_statuses is not None and len(container_statuses) > 0:
         container_status = container_statuses[0]
         # check status
@@ -417,10 +417,10 @@ def get_pod_status_and_reason_from_event(event):
             if terminated_state is not None and terminated_state.get('reason') is not None:
                 reason = terminated_state['reason']
         
-        if (container_status.get('restart_count') > 0 and \
-            container_status.get('last_state') is not None and \
-            container_status.get('last_state').get('terminated') is not None):
+        if (container_status.get('restartCount') > 0 and \
+            container_status.get('lastState') is not None and \
+            container_status.get('lastState').get('terminated') is not None):
             status_phase = "Failed"
-            reason = container_status.get('last_state').get('terminated').get('reason')
+            reason = container_status.get('lastState').get('terminated').get('reason')
             
     return status_phase, reason

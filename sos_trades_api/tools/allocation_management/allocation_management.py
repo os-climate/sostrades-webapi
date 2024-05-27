@@ -294,8 +294,19 @@ def update_all_pod_status():
     """
     For all allocations 
     """
-    if Config().pod_watcher_activated:
-        for event in watch_pod_events(app.logger):
+    config = Config()
+    if config.pod_watcher_activated:
+
+        # retreive namespace
+        namespace = None
+        if config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
+            k8_deployment = get_kubernetes_jinja_config("pod_name", config.deployment_study_server_filepath, None)
+            namespace = k8_deployment['metadata']['namespace']
+        elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+            k8_conf = get_kubernetes_config_eeb("pod_name", 1, PodAllocation.TYPE_EXECUTION, None, "log_file_path")
+            namespace = k8_conf['metadata']['namespace']
+
+        for event in watch_pod_events(app.logger, namespace):
 
             # get if pod name is in allocations
             pod_name = get_pod_name_from_event(event)
@@ -303,7 +314,7 @@ def update_all_pod_status():
                 # retreive the service name by removing the uuid of the pod name
                 names = pod_name.split('-')[0:4]
                 pod_name = '-'.join(names)
-
+            
             with app.app_context():
                 allocations = PodAllocation.query.filter(PodAllocation.kubernetes_pod_name == pod_name).all()
                 allocation = None
