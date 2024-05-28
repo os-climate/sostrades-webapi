@@ -269,7 +269,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                 from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
         except DatasetGenericException as ex:
             study_case_manager.dataset_load_status = LoadStatus.IN_ERROR
-            study_case_manager.dataset_load_error = f'Error while dataset import: {ex}'
+            study_case_manager.dataset_load_error = f'{ex}'
             
             app.logger.exception(
                 f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
@@ -293,10 +293,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
                     # Add change to database
                     for param_chg in datasets_parameter_changes:
-                        study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
-                        new_value = str(param_chg.new_value)
-                        old_value = str(param_chg.old_value)
-                        old_value_bytes = None
+                        
 
                         # Check if new value is a dataframe or dict
                         if isinstance(param_chg.new_value, (pandas.DataFrame, dict, ndarray)):
@@ -311,6 +308,11 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                                 new_value = None
                             except Exception as error:
                                 raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                        else:
+                            study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+                            new_value = str(param_chg.new_value)
+                            old_value = str(param_chg.old_value)
+                            old_value_bytes = None
 
                         # Add change into database
                         add_change_db(
@@ -342,23 +344,14 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                     db.session.add(study_case)
                     db.session.commit()
 
-                    study_case_manager.execution_engine.dm.treeview = None
+            study_case_manager.execution_engine.dm.treeview = None
 
-                    study_case_manager.execution_engine.get_treeview(None, None)
+            study_case_manager.execution_engine.get_treeview(None, None)
 
-                    clean_obsolete_data_validation_entries(study_case_manager)
+            clean_obsolete_data_validation_entries(study_case_manager)
 
-                    study_case_manager.n2_diagram = {}
-                    # write loadedstudy into a json file to load the study in read only
-                    # when loading
-                    study_case_manager.save_study_read_only_mode_in_file()                
-            else:
-                # change notification message to save the error
-                notification = Notification.query.filter(Notification.id.like(notification_id)).first()
-                # the notification message must start with Error to be considered as an error message
-                notification.message = f'Error while importing dataset mapping: {study_case_manager.dataset_load_error}'
-                db.session.add(notification)
-                db.session.commit()
+            study_case_manager.n2_diagram = {}
+                                  
 
             # set the loadStatus to loaded to end the loading of a study
             study_case_manager.load_status = LoadStatus.LOADED
