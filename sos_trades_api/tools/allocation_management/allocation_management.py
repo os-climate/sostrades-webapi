@@ -90,7 +90,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
         if study is None:
             raise Exception("Study not Found")
         identifier = study.current_execution_id
-    pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type)
+    pod_name = get_pod_name(pod_allocation.identifier, pod_allocation.pod_type, execution_identifier=identifier)
     pod_allocation.kubernetes_pod_name = pod_name
 
     # get selected flavor
@@ -174,19 +174,23 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
         k8_conf = yaml.safe_load(k8_tplt)
     return k8_conf
    
-def get_pod_name(identifier, pod_type):
+def get_pod_name(identifier, pod_type, execution_identifier):
     '''
     build pod name depending on type
     :param identifier: id of the study in case of type STUDY, id of referenceStudy in case of REFERENCE, or StudyCaseExecutionId in case of EXECUTION
     :type identifier: int
     :param pod_type: type of the pod allocation: STUDY, REFERENCE or EXECUTION
     :type pod_type: str
+    :param identifier: id of the execution in case of type EXECUTION, id of referenceStudy in case of REFERENCE, or StudyCaseExecutionId in case of EXECUTION
+    :type identifier: int
     '''
     if pod_type == PodAllocation.TYPE_STUDY:
         return f'sostrades-study-server-{identifier}'
     
     elif pod_type == PodAllocation.TYPE_EXECUTION:
-        return f'eeb-sc{identifier}-{uuid.uuid4()}'
+        # retrieve execution id
+
+        return f'eeb-sc{identifier}-e{execution_identifier}-{uuid.uuid4()}'
 
     elif pod_type == PodAllocation.TYPE_REFERENCE:
         return f'generation-g{identifier}-{uuid.uuid4()}'
