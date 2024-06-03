@@ -22,6 +22,7 @@ from functools import partial
 import time
 from kubernetes import client, config, watch
 from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.allocation_management.allocation_management import update_all_pod_status
 
 
 class ExecutionEngineKuberneteError(Exception):
@@ -92,6 +93,7 @@ def kubernetes_create_deployment_and_service(k8_service_conf, k8_deployment_conf
     
     kubernetes_service_create(k8_service_conf, core_api_instance)   
     kubernetes_deployment_create(k8_deployment_conf, apps_api_instance)
+    update_all_pod_status()
 
 
 def kubernetes_service_create(k8_service_conf, core_api_instance):
