@@ -83,6 +83,8 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     # create kubernete pod
     config = Config()
     identifier = pod_allocation.identifier
+    save_identifier = pod_allocation.identifier
+    save_pod_type = pod_allocation.pod_type
     # in case of execution allocation, the identifier is the study because 
     # we want to have only one execution allocation by study (the current execution id)
     if pod_allocation.pod_type == PodAllocation.TYPE_EXECUTION:
@@ -112,15 +114,24 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
         if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
             k8_service = get_kubernetes_jinja_config(pod_name, config.service_study_server_filepath, flavor)
             k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
-            kubernetes_create_deployment_and_service(k8_service, k8_deployment)
             pod_allocation.kubernetes_pod_namespace = k8_deployment['metadata']['namespace']
-            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+            db.session.add(pod_allocation)
+            db.session.commit()
+            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier, 
+                                                PodAllocation.pod_type == save_pod_type
+                                                ).first()
+            kubernetes_create_deployment_and_service(k8_service, k8_deployment)
         
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             k8_conf = get_kubernetes_config_eeb(pod_name, identifier, pod_allocation.pod_type, flavor, log_file_path)
-            kubernetes_create_pod(k8_conf)
             pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
-            pod_allocation.pod_status, pod_allocation.message = get_allocation_status(pod_allocation)
+            db.session.add(pod_allocation)
+            db.session.commit()
+            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier, 
+                                                PodAllocation.pod_type == save_pod_type
+                                                ).first()
+
+            kubernetes_create_pod(k8_conf)
         else: 
             pod_allocation.flavor = ''
             pod_allocation.pod_status = PodAllocation.RUNNING
