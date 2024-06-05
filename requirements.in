@@ -43,9 +43,3 @@ pytest==7.4.3
 pytest-cov==4.1.0
 pytest-xdist==3.4.0
 pytest-durations==1.2.0
-
-# Unused old requirements
-# Flask-Cors==3.0.8
-# passlib==1.7.2
-# requests-toolbelt==0.9.1
-# pycryptodome==3.9.9 # dans sostrades-core
