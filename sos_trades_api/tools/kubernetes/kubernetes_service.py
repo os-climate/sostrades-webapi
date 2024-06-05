@@ -383,19 +383,40 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
 
 def watch_pod_events(logger, namespace):
     # Create k8 api client object
-    kubernetes_load_kube_config()
-    logger.info(f"Starting watcher for namespace: {namespace}")
-    core_api_instance = client.CoreV1Api(client.ApiClient())
-    w = watch.Watch()
-    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace)):
-        if event['object']['metadata']['name'].startswith('eeb') or \
-            event['object']['metadata']['name'].startswith('sostrades-study-server') or\
-            event['object']['metadata']['name'].startswith('generation') :
+    while True:
+        try:    
+            kubernetes_load_kube_config()
+            logger.info(f"Starting watcher for namespace: {namespace}")
+            core_api_instance = client.CoreV1Api(client.ApiClient())
+            w = watch.Watch()
+            for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace)):
+                if event['object']['metadata']['name'].startswith('eeb') or \
+                    event['object']['metadata']['name'].startswith('sostrades-study-server') or\
+                    event['object']['metadata']['name'].startswith('generation') :
+                    logger.info("yield event")
+                    yield event
+            logger.info("Finished namespace stream.")
+        except Exception as e:
+            logger.error(f"Exception in watch_pod_events: {e}")
+            logger.info(f"Retrying in 3 seconds...")
+            time.sleep(3)
 
-            logger.info("yield event")
-            yield event
-
-    logger.info("Finished namespace stream.")
+        try:
+            kubernetes_load_kube_config()
+            logger.info(f"Starting watcher for namespace: {namespace}")
+            core_api_instance = client.CoreV1Api(client.ApiClient())
+            w = watch.Watch()
+            for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace)):
+                if event['object']['metadata']['name'].startswith('eeb') or \
+                   event['object']['metadata']['name'].startswith('sostrades-study-server') or \
+                   event['object']['metadata']['name'].startswith('generation'):
+                    logger.info("yield event")
+                    yield event
+            logger.info("Finished namespace stream.")
+        except Exception as e:
+            logger.error(f"Exception in watch_pod_events: {e}")
+            logger.info(f"Retrying in {retry_interval} seconds...")
+            time.sleep(retry_interval)
 
 def get_pod_name_from_event(event):
     return event['object']['metadata']['name']
