@@ -18,12 +18,12 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Flask and database configuration variable
 """
+import importlib
 import os
 from copy import deepcopy
 from os.path import join, dirname, abspath
 from pathlib import Path
 from builtins import property
-import yaml
 import json
 
 BASEDIR = abspath(dirname(__file__))
@@ -95,7 +95,7 @@ class Config:
         self.__rsa_private_key = ''
 
         self.__logging_database_data = {}
-        self.__logging_database_name = ''
+        self.__logging_database_engine = None
         self.__main_database_data = {}
         self.__sql_alchemy_database_name = ''
         self.__sql_alchemy_database_ssl = None
@@ -460,14 +460,16 @@ class Config:
         :raise ValueError exception
         """
         if len(self.__sql_alchemy_full_uri) == 0:
-            if "SQLITE_DATABASE" in self.__server_config_file["SQL_ALCHEMY_DATABASE"]:
+            database_type = self.__server_config_file["SQL_ALCHEMY_DATABASE"]["TYPE"]
+            if database_type == "SQLITE":
                 self.__sql_alchemy_full_uri = f"sqlite:///{self.__server_config_file['SQL_ALCHEMY_DATABASE']['SQLITE_DATABASE']}"
-            else:
-
+            elif database_type == "MYSQL":
                 # Add charset to have unicode 7 support from mysql
                 uri_suffix = '?charset=utf8mb4'
                 uri_suffix = f'{uri_suffix}&ssl=true' if self.sql_alchemy_database_ssl is True else ''
                 self.__sql_alchemy_full_uri = f'{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}'
+            else:
+                raise ValueError(f"Unexpected database type {database_type}")
         return self.__sql_alchemy_full_uri
 
     @property
@@ -512,42 +514,32 @@ class Config:
         :raise ValueError exception
         """
         if len(self.__logging_database_data.items()) == 0:
-            error_env_msgs = []
+            LoggingHandlerClass = self.logging_database_engine
 
-            logging_database_user = os.environ.get(self.__server_config_file['LOGGING_DATABASE']['USER_ENV_VAR'])
-            if logging_database_user is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['LOGGING_DATABASE']['USER_ENV_VAR']} not provided")
 
-            logging_database_password = os.environ.get(self.__server_config_file['LOGGING_DATABASE']['PASSWORD_ENV_VAR'])
-            if logging_database_password is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['LOGGING_DATABASE']['PASSWORD_ENV_VAR']} not provided")
-
-            if len(error_env_msgs) > 0:
-                raise ValueError("\n".join(error_env_msgs))
-
-            # Deepcopy
-            self.__logging_database_data = deepcopy(self.__server_config_file['LOGGING_DATABASE'])
-            # Set user and password keys
-            self.__logging_database_data['USER'] = logging_database_user
-            self.__logging_database_data['PASSWORD'] = logging_database_password
-            # Removing construction keys
-            del self.__logging_database_data['USER_ENV_VAR']
-            del self.__logging_database_data['PASSWORD_ENV_VAR']
+            self.__logging_database_data = LoggingHandlerClass.validate_config_dict(self.__server_config_file['LOGGING_DATABASE'])
 
         return self.__logging_database_data
 
     @property
-    def logging_database_name(self):
-        """logging database name, key property get
+    def logging_database_engine(self):
+        """logging database engine, key property get
 
-        :return string (logging database name)
+        :return Class (logging database engine)
         :raise ValueError exception
         """
-        if len(self.__logging_database_name) == 0:
-            self.__logging_database_name = self.logging_database_data['DATABASE_NAME']
-        return self.__logging_database_name
+        if self.__logging_database_engine is None:
+            engine_name = self.__server_config_file['LOGGING_DATABASE']['ENGINE']
+            # Split the string to get module and class names
+            module_name, class_name = engine_name.rsplit('.', 1)
+
+            # Import the module
+            module = importlib.import_module(module_name)
+
+            # Get the class
+            LoggingHandlerClass = getattr(module, class_name)
+            self.__logging_database_engine = LoggingHandlerClass
+        return self.__logging_database_engine
 
     @property
     def secret_key(self):
@@ -573,8 +565,6 @@ class Config:
 
         # Set sql alchemy uri
         flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.sql_alchemy_full_uri})
-        # Set logging database data
-        #flask_config_dict.update({"LOGGING_DATABASE": self.logging_database_data})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 

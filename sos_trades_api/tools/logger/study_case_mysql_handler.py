@@ -72,8 +72,7 @@ class StudyCaseMySQLHandler(Handler):
         database_server_uri = f'{self.__sql_alchemy_server_uri}?charset=utf8'
 
         # Create server connection
-        engine = create_engine(
-            database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
+        engine = create_engine(database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
 
         use_database_sql_request = f'USE `{self.__sql_alchemy_database_name}`;'
 
@@ -219,5 +218,3 @@ class StudyCaseMySQLHandler(Handler):
         """
 
         record.dbtime = strftime(TIME_FMT, localtime(record.created))
-
-

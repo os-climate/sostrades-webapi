@@ -13,55 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
 import MySQLdb
 
 from time import strftime, localtime
 from logging import Handler, _defaultFormatter
 from re import findall, escape
 from flask import has_request_context, request
-import logging
-from sos_trades_api.tools.authentication.authentication import get_authenticated_user
 from MySQLdb._mysql import escape_string
 from MySQLdb._exceptions import MySQLError
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'
-
-
-class ApplicationRequestFormatter(logging.Formatter):
-    def format(self, record):
-
-        record.user = ''
-        record.remoteaddr = ''
-        record.remoteport = ''
-        record.useragent = ''
-
-        if has_request_context():
-
-            try:
-                user = get_authenticated_user()
-                record.user = user.email
-            except:
-                pass
-
-            # DEBUG LINES TO CHECK HEADERS CONTENT
-#             print('HEADERS')
-#             for key in request.headers:
-#                 print(f'{key} => {request.headers.get(key)}')
-#
-#             print('ENVIRON')
-#             for key in request.environ:
-#                 print(f'{key} => {request.environ.get(key)}')
-
-            if 'X-Forwarded-Host' in request.headers:
-                # A proxy is used, so get the origin client address
-                record.remoteaddr = request.headers.get('X-Forwarded-Host')
-            else:
-                # Retrieve standard remote address from request
-                record.remoteaddr = request.environ.get('REMOTE_ADDR')
-
-            record.useragent = request.environ.get('HTTP_USER_AGENT')
-
-        return super().format(record)
 
 
 class ApplicationMySQLHandler(Handler):
@@ -273,3 +235,29 @@ class ApplicationMySQLHandler(Handler):
             finally:
                 cur.close()
                 conn.close()
+
+    @classmethod
+    def validate_config_dict(cls, config_dict) -> dict:
+        """
+        Validate configuration dictionary and returns the config dict expected
+        """
+        error_env_msgs = []
+        logging_database_user = os.environ.get(config_dict['USER_ENV_VAR'])
+        if logging_database_user is None:
+            error_env_msgs.append(f"Environment variable '{config_dict['USER_ENV_VAR']} not provided")
+
+        logging_database_password = os.environ.get(config_dict['PASSWORD_ENV_VAR'])
+        if logging_database_password is None:
+            error_env_msgs.append(f"Environment variable '{config_dict['PASSWORD_ENV_VAR']} not provided")
+
+        if len(error_env_msgs) > 0:
+            raise ValueError("\n".join(error_env_msgs))
+
+        return {
+            "HOST": config_dict.get("HOST"),
+            "PORT": config_dict.get("PORT"),
+            "USER": logging_database_user,
+            "PASSWORD": logging_database_password,
+            "DATABASE_NAME": config_dict.get("DATABASE_NAME"),
+            "SSL": config_dict.get("SSL")
+        }
