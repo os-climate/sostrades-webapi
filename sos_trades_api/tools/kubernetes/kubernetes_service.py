@@ -21,6 +21,7 @@ Execution engine kubernete
 from functools import partial
 import time
 from kubernetes import client, config, watch
+import urllib3
 from sos_trades_api.server.base_server import app
 
 
@@ -387,13 +388,17 @@ def watch_pod_events(logger, namespace):
     logger.info(f"Starting watcher for namespace: {namespace}")
     core_api_instance = client.CoreV1Api(client.ApiClient())
     w = watch.Watch()
-    for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace), timeout_seconds=600, _request_timeout=60):
-        if event['object']['metadata']['name'].startswith('eeb') or \
-            event['object']['metadata']['name'].startswith('sostrades-study-server') or\
-            event['object']['metadata']['name'].startswith('generation') :
-            logger.info("yield event")
-            yield event
-    logger.info("Finished namespace stream.")
+    try:
+        for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace, timeout_seconds=600, _request_timeout=60)):
+            if event['object']['metadata']['name'].startswith('eeb') or \
+                event['object']['metadata']['name'].startswith('sostrades-study-server') or\
+                event['object']['metadata']['name'].startswith('generation') :
+                logger.info("yield event")
+                yield event
+        logger.info("Finished namespace stream.")
+    except urllib3.exceptions.ReadTimeoutError as exception:
+        logger.info("time out error, the watcher needs to be restarted")
+
         
 
 def get_pod_name_from_event(event):
