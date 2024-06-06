@@ -1,6 +1,7 @@
 '''
 Copyright 2022 Airbus SAS
 
+Modifications on 29/04/2024 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,8 +24,8 @@ from sos_trades_api.tools.authentication.authentication import auth_required, ge
     study_manager_profile
 from sos_trades_api.controllers.sostrades_data.user_controller import add_user, update_user as update_user_controller, \
     get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, \
-    change_user_password, set_user_default_group
-from sos_trades_api.tools.right_management.access_right import has_access_to
+    change_user_password, set_user_default_group, get_user_list_for_sharing
+from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_STUDY_MANAGER
 from sos_trades_api.tools.right_management import access_right
 from sos_trades_api.models.user_application_right import UserApplicationRight
 
@@ -32,7 +33,20 @@ from sos_trades_api.models.user_application_right import UserApplicationRight
 @app.route(f'/api/data/user', methods=['GET'])
 @auth_required
 def users():
-    resp = make_response(jsonify(get_user_list()), 200)
+    user = session['user']
+    if has_access_to(user.user_profile_id, APP_MODULE_STUDY_MANAGER):
+        resp = make_response(jsonify(get_user_list()), 200)
+        return resp
+    else:
+        app.logger.error(f'User id "{user.id}" wants to have access to the list of users but he is not a study_manager')
+        raise BadRequest('You do not have the necessary rights to access to the list of users')
+
+
+@app.route(f'/api/data/user/share', methods=['GET'])
+@auth_required
+def users_for_sharing():
+
+    resp = make_response(jsonify(get_user_list_for_sharing()), 200)
     return resp
 
 

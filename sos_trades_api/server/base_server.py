@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2023/12/04 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/05/16 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from datetime import datetime
+import re
 import sys
 import traceback as tb
 import click
@@ -114,6 +116,23 @@ study_case_cache = StudyCaseCache(logger=app.logger)
 # Create authentication token (JWT) manager
 jwt = JWTManager(app)
 
+# in case of study server, save the active study file
+pod_name =os.environ.get('HOSTNAME', '')
+if pod_name.startswith('sostrades-study-server-'):
+    #retreive study id
+    match = re.search(r'(?<=sostrades-study-server-)\d+', pod_name)
+    if match:
+        #the number represents the study id
+        study_id = int(match.group(0))
+        
+        from sos_trades_api.tools.active_study_management.active_study_management import save_study_last_active_date, ACTIVE_STUDY_FILE_NAME
+        # create the active study file if it doesn't exist
+        local_path = Config().local_folder_path
+        if local_path != "" and os.path.exists(local_path):
+            file_path = os.path.join(local_path, f'{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
+            if not os.path.exists(file_path):
+                save_study_last_active_date(study_id, datetime.now())
+
 
 def load_specific_study(study_identifier):
     """
@@ -136,6 +155,7 @@ def database_process_setup():
     from sos_trades_api.tools.process_management.process_management import update_database_with_process
     from sos_trades_api.tools.reference_management.reference_management import update_database_with_references
     from sos_trades_api.controllers.sostrades_main.study_case_controller import clean_database_with_disabled_study_case
+    from sos_trades_api.tools.allocation_management.allocation_management import clean_all_allocations_type_reference
     """ Launch process setup in database
 
     :return boolean (success or not)
@@ -166,6 +186,11 @@ def database_process_setup():
 
             app.logger.info(
                 'Finished loading available processes and references')
+
+            app.logger.info('Clean reference pod allocations')
+            clean_all_allocations_type_reference(app.logger)
+            app.logger.info('Finished cleaning pod allocation references')
+
             app.logger.info('Clean disabled study case')
             clean_database_with_disabled_study_case(app.logger)
             app.logger.info(
@@ -233,12 +258,11 @@ def database_check_study_case_state(with_deletion=False):
     from urllib3 import disable_warnings
     from sos_trades_api.models.database_models import StudyCase, Group
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
+    from shutil import rmtree
 
-    if with_deletion:
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
-        from shutil import rmtree
-        studies_to_delete = []
-        folders_to_delete = []
+    studies_to_delete = []
+    folders_to_delete = []
 
     disable_warnings(InsecureRequestWarning)
 
@@ -557,8 +581,8 @@ def database_list_api_key():
 
 def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import \
-        clean_all_allocations_services_and_deployments
-    clean_all_allocations_services_and_deployments()
+        clean_all_allocations_type_study
+    clean_all_allocations_type_study()
 
 def clean_inactive_study_pods():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import \
@@ -581,7 +605,8 @@ def update_all_pod_status_loop_method():
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
             app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
-        time.sleep(interval)
+        if not Config().pod_watcher_activated:
+            time.sleep(interval)
 
 if app.config['ENVIRONMENT'] != UNIT_TEST:
 
@@ -650,35 +675,75 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command('create_user_test')
+    @click.argument('username')
+    @click.argument('password')
     @with_appcontext
-    def create_user_test():
-        """ user_test creation associated to ALl_user group and to a process list
+    def create_user_test(username, password):
+        """ user_test creation
+        :param:username, the identification name of the user, must be unique in users database
+        :param:password, password of the user count
+        :param:profile, the user profile
         """
         from sos_trades_api.controllers.sostrades_data.user_controller import database_create_user_test
-        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
-
         # Create the user test
         try:
-            database_create_user_test()
+            database_create_user_test(username, password)
+            app.logger.info(f'{username} has been successfully created')
         except Exception as ex:
             app.logger.error(f'The following error occurs when trying to create user_test\n{ex} ')
             raise ex
 
-        # Set the necessary processes access at the user_test
-        try:
-            user_name = app.config['USER_TEST_E2E'].get('USERNAME', None)
-            # Check if the values are present
-            if user_name is None:
-                raise Exception(f'Environment variable "USERNAME" not found')
-            process_list = ['test_multi_driver_subprocess_1_3', 'test_sellar_opt_w_func_manager', 'test_disc1_disc2_coupling',
-                            'test_architecture_standard']
+    # Add custom command on flask cli to execute database init data setup
+    @click.command('set_user_access_group')
+    @click.argument('username')
+    @click.argument('group_list_str')
+    @with_appcontext
+    def set_user_access_group(username, group_list_str):
+        """ Give user rights at groups
+            :param:username, the identification name of the user, must be unique in users database
+            :param:group_list_str, the list of group targeted
+        """
+        from sos_trades_api.controllers.sostrades_data.user_controller import database_set_user_access_group
 
+        # Transform the string to a list
+        group_list = group_list_str.split(",")
+        group_list = [group.strip() for group in group_list]
+        try:
+            database_set_user_access_group(group_list, username)
+            app.logger.info(f'The group_access_user for "{group_list_str}" has been successfully updated to "{username}"')
+
+        except Exception as ex:
+            app.logger.error(f'The following error occurs when trying to set access right to a group\n{ex}')
+            raise ex
+
+    # Add custom command on flask cli to execute database init data setup
+    # (mainly for manage gunicorn launch and avoid all worker to execute the command)
+    @click.command('set_process_access_user')
+    @click.argument('username')
+    @click.argument('process_list_str')
+    @with_appcontext
+    def set_process_access_user(username, process_list_str):
+        """
+        Set the necessary processes access at the user
+        :param:username, the identification name of the user, must be unique in users database
+        :param:process_list, the list of process targeted
+        """
+        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
+
+        # Transform the string to a list
+        process_list = process_list_str.split(",")
+        process_list = [process.strip() for process in process_list]
+
+        try:
             # retrieve the created user_test
-            user = User.query.filter(User.username == user_name).first()
+            user = User.query.filter(User.username == username).first()
             if user is not None:
                 set_processes_to_user(process_list, user.id, app.logger)
+                app.logger.info(
+                    f'The process_access_user for "{process_list_str}" has been successfully updated to "{username}"')
+
             else:
-                raise Exception(f'User {user_name} not found in database')
+                raise Exception(f'User {username} not found in database')
         except Exception as ex:
             app.logger.error(f'The following error occurs when trying to set process to test user\n{ex} ')
             raise ex
@@ -799,6 +864,8 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)
+    app.cli.add_command(set_user_access_group)
+    app.cli.add_command(set_process_access_user)
     app.cli.add_command(update_pod_allocations_status)
     app.cli.add_command(update_pod_allocations_status_loop)
 

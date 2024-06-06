@@ -14,6 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.models.user_dto import UserDto
+
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tools methods to manage coedition features
@@ -38,6 +40,14 @@ class UserCoeditionAction:
     DELETE = 'delete'
     VALIDATION_CHANGE = 'validation_change'
 
+    @classmethod
+    def get_attribute_for_value(cls, value):
+        """Get the attribute name for the given value in the UserCoeditionAction class."""
+        for attr_name, attr_value in cls.__dict__.items():
+            if attr_value == value:
+                return attr_name
+        return None
+
 
 class CoeditionMessage:
     JOIN_ROOM = 'User has entered the study case.'
@@ -47,6 +57,7 @@ class CoeditionMessage:
     EXECUTION = 'Study case execution just started.'
     CLAIM = 'User just claimed the study case execution right.'
     RELOAD = 'User just reload the study case.'
+    IMPORT_DATASET = 'User just updated parameter from dataset'
 
 
 def add_user_to_room(user_id, study_case_id):
@@ -96,14 +107,19 @@ def remove_user_from_all_rooms(user_id):
 def get_user_list_in_room(study_case_id):
     """ Get user list present in a room (room id = study_case_id)
     """
-
+    user_dto_list = []
     users_in_room = User.query.join(StudyCoeditionUser).join(StudyCase).filter(
         StudyCoeditionUser.study_case_id == study_case_id).filter(StudyCoeditionUser.user_id == User.id).all()
+    for user in users_in_room:
+        user_dto = UserDto(user.id)
+        user_dto.username = user.username
+        user_dto.lastname = user.lastname
+        user_dto.firstname = user.firstname
+        user_dto_list.append(user_dto)
 
-    result = [ur.serialize() for ur in users_in_room]
+    result = [ur.serialize() for ur in user_dto_list]
 
     return result
-
 
 def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction, message):
     """ Add coedition study notification to database
@@ -129,7 +145,7 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
-                  old_value, old_value_blob, last_modified):
+                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
     """ Add study change to database
     """
     new_change = StudyCaseChange()
@@ -143,7 +159,9 @@ def add_change_db(notification_id, variable_id, variable_type, deleted_columns, 
     new_change.old_value_blob = old_value_blob
     new_change.last_modified = last_modified
     new_change.deleted_columns = deleted_columns
-
+    new_change.dataset_connector_id = dataset_connector_id
+    new_change.dataset_id = dataset_id
+    new_change.dataset_parameter_id = dataset_parameter_id
 
     # Save change
     db.session.add(new_change)

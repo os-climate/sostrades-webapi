@@ -60,7 +60,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `mysqlclient (2.2.0) <https://mysqlclient.readthedocs.io/>`_
     GNU General Public License v2 (GPLv2)
 
-`numpy (1.24.3) <https://numpy.org>`_
+`numpy (1.24.4) <https://numpy.org>`_
     BSD License
 
 `pandas (1.3.0) <https://pandas.pydata.org>`_
@@ -99,7 +99,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
     BSD License
 
-`gitpython (3.1.31) <https://github.com/gitpython-developers/GitPython>`_
+`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
     BSD
 
 `nose2 (0.9.1) <https://docs.nose2.io/>`_

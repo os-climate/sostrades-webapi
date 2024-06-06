@@ -22,11 +22,13 @@ from sos_trades_api.models.database_models import AccessRights, StudyCase, UserS
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, study_case_logs,
+    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, get_user_study_case, study_case_logs,
     get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
     save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
     add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
-    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study)
+    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study,
+    get_last_study_case_changes, create_new_notification_after_update_parameter)
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, CoeditionMessage
 from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
@@ -39,6 +41,25 @@ def study_cases():
     if request.method == 'GET':
         # Transform object array to json convertible
         result = [sc.serialize() for sc in get_user_shared_study_case(user.id)]
+        resp = make_response(jsonify(result), 200)
+        return resp
+
+    raise MethodNotAllowed()
+
+@app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['GET'])
+@auth_required
+def get_study_case(study_case_identifier: int):
+    user = session['user']
+
+    if request.method == 'GET':
+        # Verify user has study case authorisation to load study (Restricted viewer)
+        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
+            raise BadRequest(
+                'You do not have the necessary rights to load this study case')
+
+        # Transform object array to json convertible
+        result = get_user_study_case(user.id, study_case_identifier)
         resp = make_response(jsonify(result), 200)
         return resp
 
@@ -345,6 +366,52 @@ def study_case_notifications(study_id):
         results = []
         if study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
             results = get_study_case_notifications(study_id)
+        else:
+            raise BadRequest(
+                'You do not have the necessary rights to retrieve this information about study case')
+
+        # Proceeding after rights verification
+        resp = make_response(jsonify(results), 200)
+        return resp
+
+
+@app.route(f'/api/data/study-case/<int:study_id>/notification', methods=['POST'])
+@auth_required
+def add_new_notification(study_id):
+    if request.method == 'POST':
+        # Checking if user can access study data
+        user = session['user']
+        # Verify user has study case authorisation to get study notifications
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            # Proceeding after rights verification
+            coedition_action = request.json.get('coedition_action', None)
+            change_type = request.json.get('change_type', None)
+
+            if coedition_action is None:
+                raise BadRequest('Missing mandatory parameter: coedition_action')
+            if type is None:
+                raise BadRequest('Missing mandatory parameter: type')
+
+            notification_id = create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user)
+            # Proceeding after rights verification
+            resp = make_response(jsonify(notification_id), 200)
+            return resp
+        else:
+            raise BadRequest('You do not have the necessary rights to retrieve this information about study case')
+
+
+@app.route(f'/api/data/study-case/<int:study_id>/<int:notification_id>/parameter-changes', methods=['GET'])
+@auth_required
+def study_case_changes(study_id, notification_id):
+    if request.method == 'GET':
+        # Checking if user can access study data
+        user = session['user']
+        # Verify user has study case authorisation to get study notifications
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        results = []
+        if study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            results = get_last_study_case_changes(notification_id)
 
         # Proceeding after rights verification
         resp = make_response(jsonify(results), 200)

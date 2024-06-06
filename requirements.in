@@ -21,8 +21,8 @@ jinja2==3.0.1
 PyJWT==1.7.1
 kubernetes==11.0.0
 mysqlclient==2.2.0
-numpy==1.24.3
-pandas==2.2.1
+numpy==1.24.4
+pandas==2.2.2
 plotly==5.3.0
 psutil==5.9.5
 python-ldap==3.4.0; platform_system!='Windows'
@@ -35,16 +35,11 @@ simplejson==3.19.2
 SQLAlchemy==1.4.52
 urllib3==2.1.0
 werkzeug==2.0.3
-gitpython==3.1.31
+gitpython==3.1.43
+python-keycloak==4.0.0
 
 # Development requirements
 pytest==7.4.3
 pytest-cov==4.1.0
 pytest-xdist==3.4.0
 pytest-durations==1.2.0
-
-# Unused old requirements
-# Flask-Cors==3.0.8
-# passlib==1.7.2
-# requests-toolbelt==0.9.1
-# pycryptodome==3.9.9 # dans sostrades-core

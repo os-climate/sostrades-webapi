@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/04/05 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/05/07 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,12 +30,13 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case Functions
 """
 
-from sos_trades_api.tools.code_tools import isevaluatable, time_function
+from sostrades_core.tools.tree.deserialization import isevaluatable
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
+from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, add_notification_db, CoeditionMessage
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.database_models import (
     Notification,
@@ -226,10 +227,18 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
-        study_case_allocation.pod_status, study_case_allocation.message = get_allocation_status(study_case_allocation)
+        pod_status, message = get_allocation_status(study_case_allocation)
+        
+        #if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
+        if pod_status != PodAllocation.NOT_STARTED or  (pod_status == PodAllocation.NOT_STARTED and \
+            study_case_allocation.pod_status != PodAllocation.IN_ERROR and study_case_allocation.pod_status != PodAllocation.OOMKILLED):
+            study_case_allocation.pod_status = pod_status
+            study_case_allocation.message = message
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
         
+        
+
     return study_case_allocation
 
 def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
@@ -429,11 +438,12 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                 # we don't want the study to be reload in read only before the update is done
                 # so we remove the read_only_file if it exists, it will be updated at the end of the reload
-                try:
-                    study_case_manager.delete_loaded_study_case_in_json_file()
-                except BaseException as ex:
-                    app.logger.error(
-                        f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+                if update_study_name:
+                    try:
+                        study_case_manager.delete_loaded_study_case_in_json_file()
+                    except BaseException as ex:
+                        app.logger.error(
+                            f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
 
                 # If group has change then move file (can only be done after the study 'add')
                 if update_group_id:
@@ -502,9 +512,14 @@ def delete_study_cases_and_allocation(studies):
                     study_list.append(sc)
                     db.session.delete(sc)
 
-                # delete allocations
-                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies)).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
+                # delete allocations of study pod
+                pod_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_STUDY).all()
                 delete_study_server_services_and_deployments(pod_allocations)
+
+                # delete allocations of study executions
+                execution_allocations = PodAllocation.query.filter(PodAllocation.identifier.in_(studies), PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION).all()
+                for allocation in execution_allocations:
+                    db.session.delete(allocation)
                 # delete studies
                 db.session.commit()
                 app.logger.info(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been successfully commited")
@@ -563,20 +578,7 @@ def get_user_shared_study_case(user_identifier: int):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
             
-            # check pod status if creation status id not DONE:
-            if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
-                allocation = get_study_case_allocation(user_study.id)
-                app.logger.info("Retrieved status of pod of kubernetes from get_user_shared_study_case() L569")
-
-                # deal with error cases:
-                if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
-                    user_study.creation_status = StudyCase.CREATION_ERROR
-                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
-                elif allocation.pod_status == PodAllocation.PENDING:
-                    user_study.creation_status = StudyCase.CREATION_PENDING
-                    user_study.error = "Waiting for a study pod to end the creation of the study"
-                elif allocation.pod_status == PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_PENDING:
-                    user_study.error = "The pod is running, the creation of the study is pending, you may try to open the study again"
+            add_study_information_on_status(user_study)
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)
@@ -646,13 +648,84 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
                 current_execution = study_case_execution[0]
-                update_study_case_execution_status(current_execution)
+                update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
     return result
+
+
+def get_user_study_case(user_identifier: int, study_identifier: int):
+    '''
+    get a single study case with updated status, ontology and execution
+    :param user_identifier: identifier of the user requesting the study
+    :type user_identifier:int
+    :param study_identifier: identifier of the study
+    :type study_identifier:int
+    :return: the user study
+    '''
+    study_case_access = StudyCaseAccess(user_identifier)
+
+    all_user_studies = study_case_access.user_study_cases
+
+    if len(all_user_studies) > 0:
+        # Sort study using creation date
+        all_user_studies = sorted(
+            all_user_studies, key=lambda res: res.creation_date, reverse=True
+        )
+        for user_study in all_user_studies:
+            if user_study.id == study_identifier:
+                add_study_information_on_status(user_study)
+
+                # load ontology
+                process_key = f'{user_study.repository}.{user_study.process}'
+                repository_key = user_study.repository
+                process_metadata = load_processes_metadata([process_key])
+                repository_metadata = load_repositories_metadata([repository_key])
+                # Update ontology display name
+                user_study.apply_ontology(process_metadata, repository_metadata)
+
+                # update study case execution status
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == user_study.current_execution_id
+                ).first()
+                if study_case_execution is None:
+                    user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
+                else:
+                    current_execution = study_case_execution
+                    update_study_case_execution_status(user_study.id, current_execution)
+                    user_study.execution_status = current_execution.execution_status
+                    user_study.error = current_execution.message
+                return user_study
+    return None
+            
+
+
+
+
+
+def add_study_information_on_status(user_study: StudyCase):
+    # check pod status if creation status id not DONE:
+    if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
+        allocation = get_study_case_allocation(user_study.id)
+        
+        # deal with error cases:
+        if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
+            (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
+            user_study.creation_status = StudyCase.CREATION_ERROR
+            if allocation is not None:
+                if allocation.pod_status == PodAllocation.OOMKILLED:
+                    user_study.error = "An error occured while creation, pod had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
+                else:
+                    user_study.error = "An error occured while creation, please reload the study to finalize the creation"
+
+        elif allocation.pod_status == PodAllocation.PENDING:
+            user_study.creation_status = StudyCase.CREATION_PENDING
+            user_study.error = "Waiting for a study pod to end the creation of the study"
+        elif allocation.pod_status == PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_PENDING:
+            user_study.error = "The pod is running, the creation of the study is pending, you may try to open the study again"
 
 
 def get_change_file_stream(notification_identifier, parameter_key):
@@ -732,6 +805,9 @@ def get_study_case_notifications(study_identifier):
                             new_change.old_value_blob = ch.old_value_blob
                             new_change.last_modified = ch.last_modified
                             new_change.deleted_columns = ch.deleted_columns
+                            new_change.dataset_connector_id = ch.dataset_connector_id
+                            new_change.dataset_id = ch.dataset_id
+                            new_change.dataset_parameter_id = ch.dataset_parameter_id
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes
@@ -739,6 +815,67 @@ def get_study_case_notifications(study_identifier):
                 notification_list.append(new_notif)
 
         return notification_list
+
+
+def create_new_notification_after_update_parameter(study_id, change_type, coedition_action, user):
+    """
+    Create a new notification after updating a parameter in the study.
+
+    Args:
+        study_id (int): The ID of the study.
+        type (str): The type of change.
+        coedition_action (str): The coedition action performed.
+        user (User): The user who performed the action.
+
+    Returns:
+        int: The ID of the new notification.
+
+    """
+
+    action = UserCoeditionAction.get_attribute_for_value(coedition_action)
+    # Check if the coedition action is valid
+    if action is not None:
+
+        user_coedition_action = getattr(UserCoeditionAction, action)
+
+        # Determine the coedition message based on the type
+        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE:
+            coedition_message = CoeditionMessage.IMPORT_DATASET
+        else:
+            coedition_message = CoeditionMessage.SAVE
+
+        # Add the notification to the database
+        notification_id = add_notification_db(study_id, user, user_coedition_action, coedition_message)
+
+        return notification_id
+    else:
+        # Raise an exception if the coedition action is not valid
+        raise InvalidStudy(f"{coedition_action} is not a valid coedition action.")
+
+
+def get_last_study_case_changes(notification_id):
+    """
+    Get study case parameter changes list
+
+    :param notification_id: notification identifier
+    :type notification_id: int
+
+    :return: sos_trades_api.models.database_models.StudyCaseChanges[]
+    """
+    study_case_changes = []
+    with app.app_context():
+        # Retrieve the last "save" notification
+        notification_query = Notification.query.filter(Notification.id == notification_id).first()
+        if notification_query is not None:
+            # Retrieve parameter changes from the last notification
+            study_case_changes = StudyCaseChange.query.filter(StudyCaseChange.notification_id == notification_query.id).all()
+
+            if (study_case_changes is None or len(study_case_changes) == 0):
+                # Remove the notification if there are any changes
+                db.session.delete(notification_query)
+                db.session.commit()
+
+        return study_case_changes
 
 
 def get_user_authorised_studies_for_process(

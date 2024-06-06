@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation, get_allocation_status
+from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
 from sos_trades_api.tools.code_tools import file_tail
 
@@ -127,7 +127,7 @@ def execute_calculation(study_id, username):
         
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_relative()
-        new_pod_allocation = create_and_load_allocation(current_execution_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
+        new_pod_allocation = create_and_load_allocation(study_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
              
         
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
@@ -181,14 +181,18 @@ def execute_calculation(study_id, username):
 
         calculation_semaphore.release()
 
-        # Update execution before submitted process
-        study_case_execution = StudyCaseExecution.query.filter(
-            and_(StudyCaseExecution.study_case_id == study_id, study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING])).first()
+        study_case = StudyCase.query.filter(
+            StudyCase.id.like(study_id)).first()
 
-        if study_case_execution is not None:
-            study_case_execution.execution_status = StudyCaseExecution.FAILED
-            db.session.add(study_case_execution)
-            db.session.commit()
+        if study_case.current_execution_id is not None:
+            # Retrieve execution object related to study to check status
+            study_case_execution = StudyCaseExecution.query\
+                .filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+
+            if study_case_execution is not None:
+                study_case_execution.execution_status = StudyCaseExecution.FAILED
+                db.session.add(study_case_execution)
+                db.session.commit()
 
         app.logger.exception(
             f'Start execution request: failed to submit study case {study_id} using {config.execution_strategy} strategy')
@@ -231,11 +235,10 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
         if study_case_execution is not None:
             try:
                 
-                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.id).filter(
+                pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_id,
                                                             PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
                                                             ).first()
-                app.logger.info(
-                    f'study_case_execution found with info:\n{study_case_execution.execution_type}\n{pod_allocation.kubernetes_pod_name}')
+                
                 if pod_allocation is not None:
                     delete_pod_allocation(pod_allocation, study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S)
                 if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
@@ -282,7 +285,7 @@ def calculation_status(study_id):
                 cpu_usage = study_case_execution.cpu_usage
                 memory_usage = study_case_execution.memory_usage
 
-                update_study_case_execution_status(study_case_execution)
+                update_study_case_execution_status(study_id, study_case_execution)
 
                 status = study_case_execution.execution_status
 
@@ -447,6 +450,13 @@ def delete_calculation_entry(study_case_id, study_case_execution_id):
                 .filter(StudyCaseExecution.id == study_case_execution_id)\
                 .filter(StudyCaseExecution.study_case_id == study_case_id)\
                 .delete()
+            
+            #delete associated pod allocation
+            PodAllocation.query\
+                .filter(PodAllocation.identifier == study_case_execution_id)\
+                .filter(PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION)\
+                .delete()
+            
             db.session.commit()
         else:
             raise InvalidStudy(

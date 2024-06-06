@@ -10,15 +10,17 @@ autograd==1.6.2
     # via pymoo
 bidict==0.23.1
     # via python-socketio
-black==22.3.0
+black==22.12.0
     # via -r ./sostrades-core/requirements.in
 cachetools==5.3.3
     # via google-auth
-certifi==2024.2.2
+certifi==2024.6.2
     # via
     #   kubernetes
     #   requests
-chaospy==4.3.7
+cffi==1.16.0
+    # via cryptography
+chaospy==4.3.15
     # via -r ./sostrades-core/requirements.in
 charset-normalizer==3.3.2
     # via requests
@@ -31,8 +33,10 @@ cma==2.7.0
     # via
     #   -r ./sostrades-core/requirements.in
     #   pymoo
-coverage[toml]==7.4.4
+coverage[toml]==7.5.3
     # via pytest-cov
+cryptography==42.0.8
+    # via jwcrypto
 custom-inherit==2.4.0
     # via -r ./gemseo/requirements.txt
 cvxpy==1.1.18
@@ -43,6 +47,8 @@ decorator==5.1.1
     # via networkx
 defusedxml==0.7.1
     # via python3-saml
+deprecation==2.1.0
+    # via python-keycloak
 dill==0.3.8
     # via openturns
 dnspython==2.2.1
@@ -55,9 +61,9 @@ et-xmlfile==1.1.0
     # via openpyxl
 eventlet==0.33.3
     # via -r ./sostrades-webapi/requirements.in
-exceptiongroup==1.2.0
+exceptiongroup==1.2.1
     # via pytest
-execnet==2.0.2
+execnet==2.1.1
     # via pytest-xdist
 fastjsonschema==2.15.1 ; python_version >= "3"
     # via -r ./gemseo/requirements.txt
@@ -91,7 +97,7 @@ genson==1.2.2
     # via -r ./gemseo/requirements.txt
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.31
+gitpython==3.1.43
     # via -r ./sostrades-webapi/requirements.in
 google-auth==2.29.0
     # via kubernetes
@@ -103,10 +109,11 @@ greenlet==3.0.3
     # via eventlet
 h5py==3.2.1
     # via -r ./gemseo/requirements.txt
-idna==3.6
+idna==3.7
     # via requests
 importlib-metadata==7.1.0
     # via
+    #   chaospy
     #   numpoly
     #   python-arango
 iniconfig==2.0.0
@@ -122,15 +129,17 @@ jinja2==3.0.1
     #   -r ./gemseo/requirements.txt
     #   -r ./sostrades-webapi/requirements.in
     #   flask
-joblib==1.3.2
+joblib==1.4.2
     # via scikit-learn
+jwcrypto==1.5.6
+    # via python-keycloak
 kiwisolver==1.4.5
     # via matplotlib
 kubernetes==11.0.0
     # via -r ./sostrades-webapi/requirements.in
-lxml==5.1.0
+lxml==5.2.2
     # via xmlsec
-mako==1.3.2
+mako==1.3.5
     # via alembic
 markupsafe==2.1.5
     # via
@@ -154,9 +163,9 @@ networkx==2.5
     # via -r ./gemseo/requirements.txt
 nlopt==2.7.0 ; python_version >= "3"
     # via -r ./gemseo/requirements.txt
-numpoly==1.2.11
+numpoly==1.2.12
     # via chaospy
-numpy==1.24.3
+numpy==1.24.4
     # via
     #   -r ./GreenProductPortfolio/requirements.in
     #   -r ./gemseo/requirements.txt
@@ -193,13 +202,14 @@ openturns==1.18
     #   -r ./sostrades-core/requirements.in
 orderedmultidict==1.0.1
     # via furl
-osqp==0.6.5
+osqp==0.6.7
     # via cvxpy
 packaging==21.3
     # via
     #   -r ./gemseo/requirements.txt
+    #   deprecation
     #   pytest
-pandas==2.2.1
+pandas==2.2.2
     # via
     #   -r ./GreenProductPortfolio/requirements.in
     #   -r ./gemseo/requirements.txt
@@ -213,9 +223,9 @@ pathspec==0.12.1
     # via black
 pdfo==1.0 ; python_version >= "3"
     # via -r ./gemseo/requirements.txt
-pillow==10.2.0
+pillow==10.3.0
     # via matplotlib
-platformdirs==4.2.0
+platformdirs==4.2.2
     # via black
 plotly==5.3.0
     # via
@@ -224,22 +234,24 @@ plotly==5.3.0
     #   -r ./sostrades-webapi/requirements.in
     #   -r ./witness-core/requirements.in
     #   -r ./witness-energy/requirements.in
-pluggy==1.4.0
+pluggy==1.5.0
     # via pytest
 psutil==5.9.5
     # via
     #   -r ./sostrades-webapi/requirements.in
     #   openturns
-pyasn1==0.5.1
+pyasn1==0.6.0
     # via
     #   pyasn1-modules
     #   python-ldap
     #   rsa
-pyasn1-modules==0.3.0
+pyasn1-modules==0.4.0
     # via
     #   google-auth
     #   python-ldap
-pycryptodome==3.19.0
+pycparser==2.22
+    # via cffi
+pycryptodome==3.19.1
     # via -r ./sostrades-core/requirements.in
 pydoe2==1.3.0 ; python_version >= "3"
     # via -r ./gemseo/requirements.txt
@@ -306,7 +318,9 @@ python-engineio==4.5.1
     # via
     #   -r ./sostrades-webapi/requirements.in
     #   python-socketio
-python-ldap==3.3.0 ; platform_system != "Windows"
+python-keycloak==4.0.0
+    # via -r ./sostrades-webapi/requirements.in
+python-ldap==3.4.0 ; platform_system != "Windows"
     # via -r ./sostrades-webapi/requirements.in
 python-socketio==5.8.0
     # via
@@ -325,7 +339,7 @@ pyyaml==6.0.1
     #   -r ./sostrades-core/requirements.in
     #   -r ./sostrades-webapi/requirements.in
     #   kubernetes
-qdldl==0.1.7.post0
+qdldl==0.1.7.post2
     # via osqp
 requests==2.31.0
     # via
@@ -334,12 +348,15 @@ requests==2.31.0
     #   -r ./sostrades-webapi/requirements.in
     #   kubernetes
     #   python-arango
+    #   python-keycloak
     #   requests-oauthlib
     #   requests-toolbelt
-requests-oauthlib==1.4.0
+requests-oauthlib==2.0.0
     # via kubernetes
 requests-toolbelt==1.0.0
-    # via python-arango
+    # via
+    #   python-arango
+    #   python-keycloak
 rsa==4.9
     # via google-auth
 scikit-learn==1.0.1
@@ -361,7 +378,7 @@ scipy==1.10.1
     #   scikit-learn
     #   scs
     #   seaborn
-scs==3.2.4.post1
+scs==3.2.4.post2
     # via cvxpy
 seaborn==0.9.0
     # via -r ./witness-core/requirements.in
@@ -385,7 +402,6 @@ smmap==5.0.1
     # via gitdb
 sqlalchemy==1.3.13
     # via
-    #   -r ./sostrades-core/requirements.in
     #   -r ./sostrades-webapi/requirements.in
     #   alembic
     #   flask-sqlalchemy
@@ -393,9 +409,9 @@ sympy==1.4
     # via
     #   -r ./gemseo/requirements.txt
     #   -r ./sostrades-core/requirements.in
-tenacity==8.2.3
+tenacity==8.3.0
     # via plotly
-threadpoolctl==3.4.0
+threadpoolctl==3.5.0
     # via scikit-learn
 tomli==2.0.1
     # via
@@ -407,10 +423,11 @@ tqdm==4.61.0
     #   -r ./gemseo/requirements.txt
     #   -r ./sostrades-core/requirements.in
     #   -r ./witness-core/requirements.in
-typing-extensions==4.10.0
+typing-extensions==4.12.1
     # via
     #   alembic
     #   black
+    #   jwcrypto
 tzdata==2024.1
     # via pandas
 urllib3==2.1.0
@@ -419,7 +436,7 @@ urllib3==2.1.0
     #   kubernetes
     #   python-arango
     #   requests
-websocket-client==1.7.0
+websocket-client==1.8.0
     # via kubernetes
 werkzeug==2.0.3
     # via
@@ -428,9 +445,9 @@ werkzeug==2.0.3
     #   flask-jwt-extended
 xdsmjs==1.0.1
     # via -r ./gemseo/requirements.txt
-xmlsec==1.3.13
+xmlsec==1.3.14
     # via python3-saml
-zipp==3.18.1
+zipp==3.19.2
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

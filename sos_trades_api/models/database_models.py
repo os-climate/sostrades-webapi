@@ -264,7 +264,7 @@ class PodAllocation(db.Model):
     RUNNING = 'RUNNING'
     COMPLETED = 'COMPLETED'
     IN_ERROR = 'IN_ERROR'
-    OOMKILL = 'OOMKILL'
+    OOMKILLED = 'OOMKILLED'
 
     id = Column(Integer, primary_key=True)
     identifier = Column(Integer, index=False, unique=False, nullable=False)
@@ -653,6 +653,7 @@ class Notification(db.Model):
 class StudyCaseChange(db.Model):
     """StudyCaseChanges class"""
 
+    DATASET_MAPPING_CHANGE = 'dataset_mapping'
     CSV_CHANGE = 'csv'
     SCALAR_CHANGE = 'scalar'
 
@@ -671,6 +672,10 @@ class StudyCaseChange(db.Model):
     last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     deleted_columns = Column(TEXT, index=False, unique=False)
 
+    dataset_connector_id = Column(TEXT, index=False, unique=False)
+    dataset_id = Column(TEXT, index=False, unique=False)
+    dataset_parameter_id = Column(TEXT, index=False, unique=False)
+
     def serialize(self):
         """ json serializer for dto purpose
         """
@@ -685,9 +690,11 @@ class StudyCaseChange(db.Model):
             'old_value': self.old_value,
             'old_value_blob': True if self.old_value_blob is not None else False,
             'last_modified': self.last_modified,
-            'deleted_columns': self.deleted_columns
+            'deleted_columns': self.deleted_columns,
+            'dataset_connector_id': self.dataset_connector_id,
+            'dataset_id': self.dataset_id,
+            'dataset_parameter_id': self.dataset_parameter_id
         }
-
 
 class StudyCoeditionUser(db.Model):
     id = Column(Integer, primary_key=True)

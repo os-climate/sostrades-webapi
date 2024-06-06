@@ -64,6 +64,7 @@ class Config:
     CONFIG_STUDY_POD_DELAY = "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR"
     CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
+    CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
 
     def __init__(self):
         """Constructor
@@ -104,7 +105,8 @@ class Config:
 
         self.__study_pod_delay = None
         self.__local_folder_path = ''
-        self.__kubernetes_flavor = None
+        self.__kubernetes_flavor_for_study = None
+        self.__kubernetes_flavor_for_exec = None
 
         if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is not None:
             with open(os.environ['SOS_TRADES_SERVER_CONFIGURATION']) as server_conf_file:
@@ -134,10 +136,13 @@ class Config:
         eeb_filepath = self.eeb_filepath
 
         manifest_folder_path = self.manifests_folder_path
-        deployment_study_server_filepath = self.deployment_study_server_filepath
-        service_study_server_filepath = self.service_study_server_filepath
-
-        kubernetes_flavor_config = self.kubernetes_flavor_config
+        
+        if self.server_mode == self.CONFIG_SERVER_MODE_K8S:
+            deployment_study_server_filepath = self.deployment_study_server_filepath
+            service_study_server_filepath = self.service_study_server_filepath
+            
+            kubernetes_flavor_config_for_study = self.kubernetes_flavor_config_for_study
+            kubernetes_flavor_config_for_exec = self.kubernetes_flavor_config_for_exec
         # pylint: enable=unused-variable
 
     @property
@@ -583,44 +588,85 @@ class Config:
         return flask_config_dict
     
     @property
-    def kubernetes_flavor_config(self):
+    def kubernetes_flavor_config_for_study(self):
         """Retrieve Kubernetes flavor configuration from server config.
-
+        
         :return: A dictionary containing Kubernetes flavor configuration.
         :rtype: dict
-        :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found.
-        :raises ValueError: If Kubernetes flavor configuration is not valid.
-
+        :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found. If Kubernetes flavor configuration is not valid.
         """
-        if self.__kubernetes_flavor is None and self.CONFIG_FLAVOR_KUBERNETES in self.__server_config_file:
-            self.__kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
+        if self.__kubernetes_flavor_for_study is None and self.server_mode == self.CONFIG_SERVER_MODE_K8S:
 
-            if not isinstance(self.__kubernetes_flavor, dict):
-                raise ValueError("Kubernetes flavor configuration must be a dictionary")
+            if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
+                raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
+            
+            kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
 
-            # Iterate through each flavor
-            for flavor, config in self.__kubernetes_flavor.items():
-                if not isinstance(config, dict):
-                    raise ValueError(f"Configuration for flavor '{flavor}' must be a dictionary")
+            if "PodStudy" not in kubernetes_flavor.keys():
+                raise KeyError("PodStudy is not in CONFIG_FLAVOR_KUBERNETES")
 
-                # Check if 'requests' and 'limits' are defined
-                if 'requests' not in config or 'limits' not in config:
-                    raise ValueError(f"'requests' and 'limits' must be defined for flavor '{flavor}'")
+            self.__validate_flavor(kubernetes_flavor["PodStudy"])
 
-                requests = config['requests']
-                limits = config['limits']
+            self.__kubernetes_flavor_for_study = kubernetes_flavor["PodStudy"]
 
-                # Check if 'memory' and 'cpu' are defined under 'requests'
-                if not isinstance(requests, dict) or 'memory' not in requests or 'cpu' not in requests:
-                    raise ValueError(f"'memory' and 'cpu' must be defined under 'requests' for flavor '{flavor}'")
+        return self.__kubernetes_flavor_for_study
 
-                # Check if 'memory' and 'cpu' are defined under 'limits'
-                if not isinstance(limits, dict) or 'memory' not in limits or 'cpu' not in limits:
-                    raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
     
-        elif self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file and \
-            (self.server_mode == Config.CONFIG_SERVER_MODE_K8S or self.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S):
-                raise KeyError("CONFIG_FLAVOR_KUBERNETES key not found in server config")
+    @property
+    def kubernetes_flavor_config_for_exec(self):
+        """Retrieve Kubernetes flavor configuration from server config.
+        
+        :return: A dictionary containing Kubernetes flavor configuration.
+        :rtype: dict
+        :raises KeyError: If CONFIG_FLAVOR_KUBERNETES key is not found. If Kubernetes flavor configuration is not valid.
+        """
+        if self.__kubernetes_flavor_for_exec is None and self.execution_strategy == self.CONFIG_EXECUTION_STRATEGY_K8S:
+            if self.CONFIG_FLAVOR_KUBERNETES not in self.__server_config_file:
+                raise KeyError("CONFIG_FLAVOR_KUBERNETES is not in configuration file")
+            
+            kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
 
-        return self.__kubernetes_flavor
+            if "PodExec" not in kubernetes_flavor.keys():
+                raise KeyError("PodExec is not in CONFIG_FLAVOR_KUBERNETES")
 
+            self.__validate_flavor(kubernetes_flavor["PodExec"])
+
+            self.__kubernetes_flavor_for_exec = kubernetes_flavor["PodExec"]
+
+        return self.__kubernetes_flavor_for_exec
+
+    @staticmethod
+    def __validate_flavor(list_flavors:dict):
+        """Validate Kubernetes flavor configuration.
+
+        :param config: Kubernetes flavor configuration.
+        :type config: dict
+        :raises ValueError: If Kubernetes flavor configuration is not valid.
+        """
+        
+        if not isinstance(list_flavors, dict):
+            raise ValueError("Kubernetes flavor configuration must be a dictionary")
+
+
+        # Iterate through each flavor
+        for flavor, config in list_flavors.items():
+            if not isinstance(config, dict):
+                raise ValueError(f"Configuration for flavor '{flavor}' must be a dictionary")
+
+            # Check if 'requests' and 'limits' are defined
+            if 'requests' not in config or 'limits' not in config:
+                raise ValueError(f"'requests' and 'limits' must be defined for flavor '{flavor}'")
+
+            requests = config['requests']
+            limits = config['limits']
+
+            # Check if 'memory' and 'cpu' are defined under 'requests'
+            if not isinstance(requests, dict) or 'memory' not in requests or 'cpu' not in requests:
+                raise ValueError(f"'memory' and 'cpu' must be defined under 'requests' for flavor '{flavor}'")
+
+            # Check if 'memory' and 'cpu' are defined under 'limits'
+            if not isinstance(limits, dict) or 'memory' not in limits or 'cpu' not in limits:
+                raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
+    @property
+    def pod_watcher_activated(self):
+        return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)
