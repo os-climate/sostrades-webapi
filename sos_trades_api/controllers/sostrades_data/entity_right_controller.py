@@ -13,19 +13,35 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
-from sos_trades_api.models.database_models import \
-    ProcessAccessUser, ProcessAccessGroup, AccessRights, GroupAccessUser, GroupAccessGroup, User, StudyCaseAccessUser, \
-    StudyCaseAccessGroup
-
-from sos_trades_api.server.base_server import db, app
-from sos_trades_api.models.entity_rights import \
-    ProcessEntityRights, ResourceType, EntityRightsError, apply_entity_rights_changes, \
-    GroupEntityRights, StudyCaseEntityRights
-from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    GroupAccessGroup,
+    GroupAccessUser,
+    ProcessAccessGroup,
+    ProcessAccessUser,
+    StudyCaseAccessGroup,
+    StudyCaseAccessUser,
+)
+from sos_trades_api.models.entity_rights import (
+    EntityRightsError,
+    GroupEntityRights,
+    ProcessEntityRights,
+    ResourceType,
+    StudyCaseEntityRights,
+    apply_entity_rights_changes,
+)
+from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.right_management import access_right
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.tools.right_management.functional.group_access_right import (
+    GroupAccess,
+)
+from sos_trades_api.tools.right_management.functional.process_access_right import (
+    ProcessAccess,
+)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
 def apply_entities_changes(user_id, user_profile_id, entity_rights):

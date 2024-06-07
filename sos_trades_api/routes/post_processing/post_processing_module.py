@@ -13,19 +13,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response
+from flask import jsonify, make_response, request
+from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from werkzeug.exceptions import BadRequest
 
+from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import (
+    load_post_processing,
+    load_post_processing_graph_filters,
+)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import load_post_processing,\
-    load_post_processing_graph_filters
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
-@app.route(f'/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])
+@app.route('/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])
 @auth_required
 def get_post_processing(study_id):
 
@@ -74,7 +81,7 @@ def get_post_processing(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route(f'/api/post-processing/study-case/<int:study_id>/filter/by/discipline', methods=['POST'])
+@app.route('/api/post-processing/study-case/<int:study_id>/filter/by/discipline', methods=['POST'])
 @auth_required
 def get_post_processing_filter(study_id):
 

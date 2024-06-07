@@ -8,7 +8,6 @@ Create Date: 2021-10-05 17:55:07.102252
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import db
 
-
 # revision identifiers, used by Alembic.
 revision = '039eba317a4e'
 down_revision = 'e87facea6cda'

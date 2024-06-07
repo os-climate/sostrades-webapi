@@ -15,11 +15,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask_socketio import emit, join_room, leave_room
+
 from sos_trades_api.server.message_server import socketio
-from sos_trades_api.tools.authentication.authentication import auth_refresh_required, get_authenticated_user
-from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, CoeditionMessage, \
-    add_user_to_room, get_user_list_in_room, remove_user_from_room, remove_user_from_all_rooms, \
-    add_notification_db
+from sos_trades_api.tools.authentication.authentication import (
+    auth_refresh_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.coedition.coedition import (
+    CoeditionMessage,
+    UserCoeditionAction,
+    add_notification_db,
+    add_user_to_room,
+    get_user_list_in_room,
+    remove_user_from_all_rooms,
+    remove_user_from_room,
+)
 
 
 @socketio.on('connect')

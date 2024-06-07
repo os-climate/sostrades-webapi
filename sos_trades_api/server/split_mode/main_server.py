@@ -15,6 +15,7 @@ limitations under the License.
 '''
 # Set server name
 import os
+
 os.environ['SERVER_NAME'] = 'MAIN_SERVER'
 
 from sos_trades_api.server import base_server

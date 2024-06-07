@@ -18,9 +18,11 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for processes procedures
 """
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from builtins import classmethod
 
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -81,7 +83,9 @@ class TestProcess(DatabaseUnitTestConfiguration):
             standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
 
-            from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user
+            from sos_trades_api.controllers.sostrades_data.process_controller import (
+                api_get_processes_for_user,
+            )
             standard_account_process = api_get_processes_for_user(
                 standard_account)
 

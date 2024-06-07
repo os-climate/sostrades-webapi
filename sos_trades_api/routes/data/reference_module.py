@@ -14,17 +14,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response, send_file
-from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_EXECUTION
-
+from flask import jsonify, make_response, request, send_file
 from werkzeug.exceptions import BadRequest
-from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
+
 from sos_trades_api.controllers.sostrades_data.reference_controller import (
-    get_all_references, get_logs, get_reference_flavor, get_reference_generation_status_by_id, generate_reference, stop_generation, update_reference_flavor)
+    generate_reference,
+    get_all_references,
+    get_logs,
+    get_reference_flavor,
+    get_reference_generation_status_by_id,
+    stop_generation,
+    update_reference_flavor,
+)
+from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.right_management.access_right import (
+    APP_MODULE_EXECUTION,
+    has_access_to,
+)
 
 
-@app.route(f'/api/data/reference', methods=['GET', 'POST'])
+@app.route('/api/data/reference', methods=['GET', 'POST'])
 @auth_required
 def study_case_references():
     if request.method == 'GET':
@@ -36,7 +49,7 @@ def study_case_references():
         user = get_authenticated_user()
         if (not has_access_to(user.user_profile_id, APP_MODULE_EXECUTION)):
             app.logger.warning(
-                f'Start generation request, user not allowed to generate a reference')
+                'Start generation request, user not allowed to generate a reference')
             raise BadRequest(
                 'You do not have the necessary rights to generate this reference')
 
@@ -54,7 +67,7 @@ def study_case_references():
             jsonify(generate_reference(repository_name, process_name, usecase_name, user.id)), 200)
         return resp
 
-@app.route(f'/api/data/reference/<int:ref_gen_id>/update-flavor', methods=['POST'])
+@app.route('/api/data/reference/<int:ref_gen_id>/update-flavor', methods=['POST'])
 @auth_required
 def reference_update_flavor(ref_gen_id):
     if ref_gen_id is None:
@@ -65,7 +78,7 @@ def reference_update_flavor(ref_gen_id):
             jsonify(update_reference_flavor(ref_gen_id, flavor)), 200)
         return resp
     
-@app.route(f'/api/data/reference/<int:ref_gen_id>/get-flavor', methods=['GET'])
+@app.route('/api/data/reference/<int:ref_gen_id>/get-flavor', methods=['GET'])
 @auth_required
 def reference_get_flavor(ref_gen_id):
     if ref_gen_id is None:
@@ -77,7 +90,7 @@ def reference_get_flavor(ref_gen_id):
         return resp
 
 
-@app.route(f'/api/data/reference/<int:ref_gen_id>/status', methods=['GET'])
+@app.route('/api/data/reference/<int:ref_gen_id>/status', methods=['GET'])
 @auth_required
 def reference_generation_status(ref_gen_id):
     if ref_gen_id is None:
@@ -88,7 +101,7 @@ def reference_generation_status(ref_gen_id):
         return resp
 
 
-@app.route(f'/api/data/reference/stop/<int:reference_id>', methods=['POST'])
+@app.route('/api/data/reference/stop/<int:reference_id>', methods=['POST'])
 @auth_required
 def reference_stop(reference_id):
     if reference_id is not None:
@@ -111,7 +124,7 @@ def reference_stop(reference_id):
 
 
 
-@app.route(f'/api/data/reference/logs/download/', methods=['POST'])
+@app.route('/api/data/reference/logs/download/', methods=['POST'])
 @auth_required
 def get_reference_generation_logs():
 

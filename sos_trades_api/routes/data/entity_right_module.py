@@ -13,16 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response, session
+from flask import jsonify, make_response, request, session
 from werkzeug.exceptions import BadRequest
 
+from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+    apply_entities_changes,
+    get_group_entities_rights,
+    get_process_entities_rights,
+    get_study_case_entities_rights,
+)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.entity_right_controller import apply_entities_changes, \
-    get_process_entities_rights, get_group_entities_rights, get_study_case_entities_rights
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
 
 
-@app.route(f'/api/data/entity-right', methods=['POST'])
+@app.route('/api/data/entity-right', methods=['POST'])
 @auth_required
 def change_entities_rights():
 
@@ -39,7 +46,7 @@ def change_entities_rights():
     return resp
 
 
-@app.route(f'/api/data/entity-right/study-case/<int:study_id>', methods=['GET'])
+@app.route('/api/data/entity-right/study-case/<int:study_id>', methods=['GET'])
 @auth_required
 def study_case_entities_rights(study_id):
 
@@ -51,7 +58,7 @@ def study_case_entities_rights(study_id):
     return resp
 
 
-@app.route(f'/api/data/entity-right/process/<int:process_id>', methods=['GET'])
+@app.route('/api/data/entity-right/process/<int:process_id>', methods=['GET'])
 @auth_required
 def process_entities_rights(process_id):
 
@@ -63,7 +70,7 @@ def process_entities_rights(process_id):
     return resp
 
 
-@app.route(f'/api/data/entity-right/group/<int:group_id>', methods=['GET'])
+@app.route('/api/data/entity-right/group/<int:group_id>', methods=['GET'])
 @auth_required
 def group_entities_rights(group_id):
 
