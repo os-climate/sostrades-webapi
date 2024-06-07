@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-from sos_trades_api.models.database_models import AccessRights
-from sos_trades_api.server.base_server import db
-
 """Default Access rights
 
 Revision ID: 039eba317a4e
@@ -24,6 +21,8 @@ Revises: e87facea6cda
 Create Date: 2021-10-05 17:55:07.102252
 
 """
+from sos_trades_api.models.database_models import AccessRights
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '039eba317a4e'

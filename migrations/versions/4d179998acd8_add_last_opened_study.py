@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """Add last opened study
 
 Revision ID: 4d179998acd8
@@ -24,6 +21,8 @@ Revises: fb0a1fde7fe0
 Create Date: 2022-12-07 14:34:47.294663
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '4d179998acd8'

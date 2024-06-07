@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """add link model
 
 Revision ID: 9dce152cd92c
@@ -24,6 +21,8 @@ Revises: aede0731db6b
 Create Date: 2022-03-03 12:17:18.079065
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '9dce152cd92c'

@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-from sos_trades_api.models.database_models import UserProfile
-from sos_trades_api.server.base_server import db
-
 """Default user profiles
 
 Revision ID: e87facea6cda
@@ -24,6 +21,8 @@ Revises: 40ca717b5c0a
 Create Date: 2021-10-05 17:52:36.266661
 
 """
+from sos_trades_api.models.database_models import UserProfile
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = 'e87facea6cda'

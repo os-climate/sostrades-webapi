@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """Add news table
 
 Revision ID: bcc99700bfe4
@@ -24,6 +21,8 @@ Revises: cbf661e68ff3
 Create Date: 2022-09-07 10:39:39.317998
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'bcc99700bfe4'

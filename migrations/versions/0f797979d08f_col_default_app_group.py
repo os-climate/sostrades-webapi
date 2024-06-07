@@ -14,12 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
-from sos_trades_api.models.database_models import Group
-from sos_trades_api.server.base_server import db
-
 """col_default_app_group
 
 Revision ID: 0f797979d08f
@@ -27,6 +21,11 @@ Revises: 89b66a62d3a7
 Create Date: 2022-02-14 16:53:50.917357
 
 """
+import sqlalchemy as sa
+from alembic import op
+
+from sos_trades_api.models.database_models import Group
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '0f797979d08f'

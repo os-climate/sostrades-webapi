@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """User default group
 
 Revision ID: 26c265508f79
@@ -24,6 +21,8 @@ Revises: 9dce152cd92c
 Create Date: 2022-04-05 15:20:23.117422
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '26c265508f79'

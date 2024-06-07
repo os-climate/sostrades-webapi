@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """Add study case allocation table
 
 Revision ID: cbf661e68ff3
@@ -24,6 +21,8 @@ Revises: d341b6f43c5b
 Create Date: 2022-08-12 10:34:00.497218
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'cbf661e68ff3'

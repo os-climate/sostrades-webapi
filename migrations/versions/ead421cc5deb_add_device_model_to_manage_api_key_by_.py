@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-import sqlalchemy as sa
-from alembic import op
-
 """Add device model to manage api-key by group
 
 Revision ID: ead421cc5deb
@@ -24,6 +21,8 @@ Revises: 23659f27ce8a
 Create Date: 2022-05-18 16:34:06.326494
 
 """
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'ead421cc5deb'
