@@ -389,7 +389,7 @@ def watch_pod_events(logger, namespace):
     core_api_instance = client.CoreV1Api(client.ApiClient())
     w = watch.Watch()
     try:
-        for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace, timeout_seconds=3600, _request_timeout=1800)):
+        for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace, timeout_seconds=3600, _request_timeout=60)):
             if event['object']['metadata']['name'].startswith('eeb') or \
                 event['object']['metadata']['name'].startswith('sostrades-study-server') or\
                 event['object']['metadata']['name'].startswith('generation') :
@@ -397,10 +397,7 @@ def watch_pod_events(logger, namespace):
                 yield event
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
-        logger.info("time out error, the watcher will be restarted")
-    except ConnectionResetError as exception:
-        logger.info("connection error, the connection with kubernetes has been lost, the watcher will be restarted")
-
+        logger.info("time out, the watcher will be restarted")
 
         
 
