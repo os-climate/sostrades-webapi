@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from datetime import datetime, timedelta
 import glob
-from sos_trades_api.config import Config
 import os
 import re
+from datetime import datetime, timedelta
+
+from sos_trades_api.config import Config
 
 ACTIVE_STUDY_FILE_NAME = "active_study_"
 LOG_FILE_NAME = "logs_"
@@ -60,7 +61,7 @@ def check_studies_last_active_date( delay_hr, logger):
                 
 
             # check if the date is past the delay of inactivity
-            if last_active_date != None:
+            if last_active_date is not None:
                 delta_time = datetime.now() - timedelta(hours=delay_hr)
                 is_inactive = last_active_date < delta_time
             

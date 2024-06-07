@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,20 +12,24 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
 
-from flask import request, jsonify, make_response, session
+from flask import jsonify, make_response, request, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.models.database_models import UserProfile
+from sos_trades_api.controllers.sostrades_data.news_controller import (
+    create_news,
+    delete_news,
+    get_news,
+    update_news,
+)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.controllers.sostrades_data.news_controller import get_news, create_news, \
-    update_news, delete_news
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.tools.right_management.access_right import check_user_is_manager
 
 
-@app.route(f'/api/data/news', methods=['GET'])
+@app.route('/api/data/news', methods=['GET'])
 @auth_required
 def get_all_news():
     """
@@ -38,7 +42,7 @@ def get_all_news():
     return resp
 
 
-@app.route(f'/api/data/news', methods=['POST'])
+@app.route('/api/data/news', methods=['POST'])
 @auth_required
 def create_new_news():
     """
@@ -62,7 +66,7 @@ def create_new_news():
         raise BadRequest('You do not have the necessary rights to create a news')
 
 
-@app.route(f'/api/data/news/<int:news_identifier>', methods=['POST'])
+@app.route('/api/data/news/<int:news_identifier>', methods=['POST'])
 @auth_required
 def update_message_by_id(news_identifier):
     """
@@ -74,7 +78,7 @@ def update_message_by_id(news_identifier):
 
     if news_identifier is None or news_identifier <= 0:
         raise BadRequest(
-            f'Invalid argument value for news_identifier.')
+            'Invalid argument value for news_identifier.')
 
     message = request.json.get('message', None)
 
@@ -90,7 +94,7 @@ def update_message_by_id(news_identifier):
         raise BadRequest('You do not have the necessary rights to update a news')
 
 
-@app.route(f'/api/data/news/<int:news_identifier>', methods=['DELETE'])
+@app.route('/api/data/news/<int:news_identifier>', methods=['DELETE'])
 @auth_required
 def delete_message_by_id(news_identifier):
     """
@@ -101,7 +105,7 @@ def delete_message_by_id(news_identifier):
 
     if news_identifier is None or news_identifier <= 0:
         raise BadRequest(
-            f'Invalid argument value for news_identifier.')
+            'Invalid argument value for news_identifier.')
 
     # Check if user profile is manager
     is_manager = check_user_is_manager(user.user_profile_id)

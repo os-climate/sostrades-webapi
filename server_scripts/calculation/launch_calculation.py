@@ -15,18 +15,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 # coding: utf-8
-import os
-import time
 import argparse
 import logging
-import yaml
-import git
+import os
 import re
-from os import environ, pathsep
-from os.path import join, dirname, isdir
+import time
 from datetime import datetime, timezone
-from dotenv import load_dotenv
 from logging import DEBUG
+from os import environ, pathsep
+from os.path import dirname, isdir, join
+
+import git
+import yaml
+from dotenv import load_dotenv
 
 BRANCH = 'branch'
 COMMIT = 'commit'
@@ -325,17 +326,20 @@ if __name__ == '__main__':
 
     # Import server module after a basic configuration in order to set
     # correctly server  executing environment
-    from sos_trades_api.server.split_mode import main_server
-    from sos_trades_api.config import Config
-    from sos_trades_api.tools.logger.reference_mysql_handler import (
-        ReferenceMySQLHandler,
-    )
-    from sos_trades_api.models.database_models import ReferenceStudy, StudyCaseExecution
-    from sos_trades_api.models.database_models import PodAllocation
     from importlib import import_module
-    from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+
+    from sos_trades_api.config import Config
+    from sos_trades_api.models.database_models import (
+        ReferenceStudy,
+        StudyCaseExecution,
+    )
+    from sos_trades_api.server.split_mode import main_server
     from sos_trades_api.tools.execution.execution_engine_thread import (
         ExecutionEngineThread,
+    )
+    from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+    from sos_trades_api.tools.logger.reference_mysql_handler import (
+        ReferenceMySQLHandler,
     )
 
     if args['execute'] is not None:

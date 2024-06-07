@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,16 +12,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-various function  regarding chart api
-"""
 
 # pylint: disable=line-too-long
 
-from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 import time
+
+from sostrades_core.tools.post_processing.post_processing_factory import (
+    PostProcessingFactory,
+)
 
 
 def load_post_processing(exec_engine, with_charts):

@@ -14,43 +14,39 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 import logging
-import time
-
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
-from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
-"""
-
-from sostrades_core.study_manager.base_study_manager import BaseStudyManager
-from sostrades_core.tools.tree.serializer import DataSerializer
-from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
-from sos_trades_api.models.database_models import (
-    StudyCase,
-    StudyCaseAccessGroup,
-    Group,
-    AccessRights,
-)
-from sos_trades_api.server.base_server import db, app
-from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
-from sos_trades_api.config import Config
-from os.path import join
-
-
 import os
-
-from eventlet import sleep
-from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
+from os.path import join
 from pathlib import Path
 from shutil import copy
-import json
+
+from eventlet import sleep
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
+from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
+from sostrades_core.tools.tree.serializer import DataSerializer
+
+from sos_trades_api.config import Config
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
 from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    StudyCase,
+    StudyCaseAccessGroup,
+)
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.file_tools import (
+    read_object_in_json_file,
+    write_object_in_json_file,
+)
+from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
 
 
 class StudyCaseError(Exception):
@@ -520,7 +516,7 @@ class StudyCaseManager(BaseStudyManager):
         backup_files = list(root_folder.rglob(f'*{self.BACKUP_FILE_NAME}.*'))
         if len(backup_files) == 0:
             # get all files in directory
-            files = list(root_folder.glob(f'*.*'))
+            files = list(root_folder.glob('*.*'))
 
             for file in files:
                 # create backup file name

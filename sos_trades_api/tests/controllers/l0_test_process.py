@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2023/10/13-2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,15 +12,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for processes procedures
-"""
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
+'''
+
 from builtins import classmethod
 
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -81,7 +80,9 @@ class TestProcess(DatabaseUnitTestConfiguration):
             standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
 
-            from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user
+            from sos_trades_api.controllers.sostrades_data.process_controller import (
+                api_get_processes_for_user,
+            )
             standard_account_process = api_get_processes_for_user(
                 standard_account)
 

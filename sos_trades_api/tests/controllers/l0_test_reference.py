@@ -15,15 +15,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for reference procedures
-"""
-
-
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from builtins import classmethod
 
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -50,9 +46,20 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
         
-        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            create_study_case,
+        )
+        from sos_trades_api.models.database_models import (
+            AccessRights,
+            Group,
+            Process,
+            ProcessAccessUser,
+            StudyCase,
+            User,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -120,7 +127,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             DatabaseUnitTestConfiguration.db.session.commit()
 
     def test_get_all_references(self):
-        from sos_trades_api.controllers.sostrades_data.reference_controller import get_all_references
+        from sos_trades_api.controllers.sostrades_data.reference_controller import (
+            get_all_references,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             try:
                 references_list = get_all_references(self.test_user_id, None)
@@ -130,8 +139,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def test_generate_reference(self):
         import os
         import time
-        from sos_trades_api.controllers.sostrades_data.reference_controller import generate_reference, get_generation_status
-        from sos_trades_api.models.database_models import ReferenceStudy, PodAllocation
+
+        from sos_trades_api.controllers.sostrades_data.reference_controller import (
+            generate_reference,
+            get_generation_status,
+        )
+        from sos_trades_api.models.database_models import PodAllocation, ReferenceStudy
         
         with DatabaseUnitTestConfiguration.app.app_context():
             os.environ['SOS_TRADES_EXECUTION_STRATEGY'] = 'thread'

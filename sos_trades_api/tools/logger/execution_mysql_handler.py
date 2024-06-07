@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,21 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import MySQLdb
-from MySQLdb._mysql import escape_string
-from MySQLdb._exceptions import MySQLError
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sos_trades_api.config import Config
-from re import findall, escape
 
-from time import strftime, localtime
-from logging import Handler, _defaultFormatter
-from sos_trades_api.models.database_models import StudyCaseExecutionLog
-from sos_trades_api.server.base_server import app, db
+'''
 import time
 from contextlib import contextmanager
+from logging import Handler, _defaultFormatter
+from time import localtime, strftime
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from sos_trades_api.models.database_models import StudyCaseExecutionLog
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'
 

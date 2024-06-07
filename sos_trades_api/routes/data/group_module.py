@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,19 +12,30 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
-from flask import request, jsonify, make_response, session
-from werkzeug.exceptions import BadRequest, Unauthorized
+from flask import jsonify, make_response, request, session
+from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.group_controller import create_group, get_group_list, \
-    get_all_groups, delete_group, edit_group
-from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
+from sos_trades_api.controllers.sostrades_data.group_controller import (
+    create_group,
+    delete_group,
+    edit_group,
+    get_all_groups,
+    get_group_list,
+)
 from sos_trades_api.models.database_models import AccessRights
+from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.right_management.functional.group_access_right import (
+    GroupAccess,
+)
 
 
-@app.route(f'/api/data/group', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/data/group', methods=['GET', 'POST', 'DELETE'])
 @auth_required
 def groups():
     if request.method == 'GET':
@@ -74,7 +85,7 @@ def groups():
         return resp
 
 
-@app.route(f'/api/data/group/user', methods=['GET'])
+@app.route('/api/data/group/user', methods=['GET'])
 @auth_required
 def group():
     if request.method == 'GET':
@@ -84,7 +95,7 @@ def group():
         return resp
 
 
-@app.route(f'/api/data/group/<int:group_id>', methods=['POST'])
+@app.route('/api/data/group/<int:group_id>', methods=['POST'])
 @auth_required
 def update_group(group_id):
 

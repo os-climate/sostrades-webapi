@@ -17,22 +17,39 @@ limitations under the License.
 # -*- coding: utf-8 -*-
 
 import time
-from flask import request, make_response, abort, jsonify, send_file, session
-from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.server.base_server import app, study_case_cache
-from sos_trades_api.models.database_models import AccessRights, StudyCaseChange, StudyCase
-from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case, load_study_case, \
-    update_study_parameters, get_file_stream, copy_study_case
-from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs, create_empty_study_case
+from flask import abort, jsonify, make_response, request, send_file, session
+
+from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+    create_empty_study_case,
+    get_raw_logs,
+)
+from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+    copy_study_case,
+    get_file_stream,
+    light_load_study_case,
+    load_study_case,
+    update_study_parameters,
+)
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    StudyCase,
+    StudyCaseChange,
+)
 from sos_trades_api.models.loaded_study_case import LoadStatus
+from sos_trades_api.server.base_server import app, study_case_cache
+from sos_trades_api.tools.authentication.authentication import (
+    api_key_required,
+    has_user_access_right,
+)
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
-from sos_trades_api.tools.authentication.authentication import has_user_access_right, api_key_required
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>', methods=['GET'])
-@app.route(f'/api/v0/study-case/<int:study_id>/<int:timeout>', methods=['GET'])
+@app.route('/api/v0/study-case/<int:study_id>', methods=['GET'])
+@app.route('/api/v0/study-case/<int:study_id>/<int:timeout>', methods=['GET'])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
@@ -89,7 +106,7 @@ def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/copy', methods=['POST'])
+@app.route('/api/v0/study-case/<int:study_id>/copy', methods=['POST'])
 @api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def copy_study_case_by_id(study_id):
@@ -128,7 +145,7 @@ def copy_study_case_by_id(study_id):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/parameters', methods=['POST'])
+@app.route('/api/v0/study-case/<int:study_id>/parameters', methods=['POST'])
 @api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def update_study_parameters_by_study_case_id(study_id: int):
@@ -196,7 +213,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
+@app.route('/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
 @api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_parameter_file_by_study_case_id(study_id: int):
@@ -218,7 +235,7 @@ def get_study_parameter_file_by_study_case_id(study_id: int):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/url', methods=['GET'])
+@app.route('/api/v0/study-case/<int:study_id>/url', methods=['GET'])
 @api_key_required
 def get_study_case_url(study_id: int):
     """
@@ -238,7 +255,7 @@ def get_study_case_url(study_id: int):
         abort(400, str(e))
 
 
-@app.route(f'/api/v0/study-case/<int:study_id>/logs', methods=['GET'])
+@app.route('/api/v0/study-case/<int:study_id>/logs', methods=['GET'])
 @api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_case_raw_logs(study_id):

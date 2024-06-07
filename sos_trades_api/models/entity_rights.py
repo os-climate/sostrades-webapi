@@ -14,20 +14,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.user_dto import UserDto
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class that represent entities : User or Group with associated rights (relative to a Resource)
-"""
-import abc
-from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
-from sos_trades_api.models.database_models import StudyCaseAccessGroup, \
-    StudyCaseAccessUser, Group, User, ProcessAccessGroup, ProcessAccessUser, \
-    AccessRights, GroupAccessGroup, GroupAccessUser
 from sqlalchemy import or_
-from sos_trades_api.server.base_server import db
-from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
+
+from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    GroupAccessGroup,
+    GroupAccessUser,
+    ProcessAccessGroup,
+    ProcessAccessUser,
+    StudyCaseAccessGroup,
+    StudyCaseAccessUser,
+    User,
+)
+from sos_trades_api.models.user_dto import UserDto
+from sos_trades_api.tools.right_management.functional.tools_access_right import (
+    ResourceAccess,
+)
 
 
 class EntityRightsError(Exception):
@@ -537,10 +541,10 @@ class GroupEntityRights():
         if owner_query is not None:
             if update_object.right_id == owner_query.id:
                 raise EntityRightsError(
-                    f'Owner right cannot be changed.')
+                    'Owner right cannot be changed.')
         else:
             raise EntityRightsError(
-                f'Owner right cannot be found in database.')
+                'Owner right cannot be found in database.')
 
     @staticmethod
     def check_not_current_user(update_object, user_id):
@@ -754,10 +758,10 @@ class StudyCaseEntityRights():
         if owner_query is not None:
             if update_object.right_id == owner_query.id:
                 raise EntityRightsError(
-                    f'Owner right cannot be changed.')
+                    'Owner right cannot be changed.')
         else:
             raise EntityRightsError(
-                f'Owner right cannot be found in database.')
+                'Owner right cannot be found in database.')
 
     @staticmethod
     def check_not_current_user(update_object, user_id):

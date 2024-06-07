@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,14 +12,12 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for group management procedures
-"""
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
-
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -51,14 +49,18 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
         super().tearDown()
 
     def test_01_get_all_groups(self):
-        from sos_trades_api.controllers.sostrades_data.group_controller import get_all_groups
+        from sos_trades_api.controllers.sostrades_data.group_controller import (
+            get_all_groups,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             all_groups = get_all_groups()
             self.assertIsNotNone(all_groups,
                                  'No group returned by get_all_groups().')
 
     def test_02_create_group(self):
-        from sos_trades_api.controllers.sostrades_data.group_controller import create_group
+        from sos_trades_api.controllers.sostrades_data.group_controller import (
+            create_group,
+        )
         from sos_trades_api.models.database_models import Group
         with DatabaseUnitTestConfiguration.app.app_context():
             create_group(self.test_user_id, self.group_name,
@@ -69,7 +71,9 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
                                  'Created group not present in database.')
 
     def test_03_get_group_list(self):
-        from sos_trades_api.controllers.sostrades_data.group_controller import get_group_list
+        from sos_trades_api.controllers.sostrades_data.group_controller import (
+            get_group_list,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             group_list = get_group_list(self.test_user_id)
             created_group_present = False
@@ -80,7 +84,9 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
                             'Test group owned by test user not retrieved while looking for group list of test user')
 
     def test_04_delete_group(self):
-        from sos_trades_api.controllers.sostrades_data.group_controller import delete_group
+        from sos_trades_api.controllers.sostrades_data.group_controller import (
+            delete_group,
+        )
         from sos_trades_api.models.database_models import Group
         with DatabaseUnitTestConfiguration.app.app_context():
             test_group = Group.query.filter(Group.name == self.group_name).first()

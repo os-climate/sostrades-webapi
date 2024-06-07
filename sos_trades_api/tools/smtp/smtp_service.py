@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,16 +12,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-SMTP service
-"""
 
 # pylint: disable=line-too-long
 import smtplib
-from smtplib import SMTPException
 from email.message import EmailMessage
+from smtplib import SMTPException
+
 from sos_trades_api.server.base_server import app
 
 
@@ -84,7 +82,7 @@ def send_right_update_mail(user, profilename):
     """
 
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades authorization rights updated'
+    message['Subject'] = 'SoSTrades authorization rights updated'
     message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
     message['To'] = user.email
     message.set_content(
@@ -124,7 +122,7 @@ def send_password_reset_mail(user, reset_link):
     """
 
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades password reset request'
+    message['Subject'] = 'SoSTrades password reset request'
     message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
     message['To'] = user.email
     message.set_content(f'''\

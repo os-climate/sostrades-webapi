@@ -20,7 +20,8 @@
         "flaskenv",
         "info",
         "ini",
-        "coveragerc"
+        "coveragerc",
+        "toml"
     ],
     "files_to_ignore": [
         "migrations/versions/6fde15c1f0d5_default_group_v3.py",

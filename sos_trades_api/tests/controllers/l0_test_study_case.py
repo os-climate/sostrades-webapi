@@ -14,18 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for study procedures
-"""
+import os
 import os.path
-
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from builtins import classmethod
 from time import sleep
-import os
 
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -58,9 +54,20 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
 
-        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            create_study_case,
+        )
+        from sos_trades_api.models.database_models import (
+            AccessRights,
+            Group,
+            Process,
+            ProcessAccessUser,
+            StudyCase,
+            User,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -180,7 +187,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Created study case repository does not match, test set up repository name used')
 
     def test_get_user_shared_study_case(self):
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import get_user_shared_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            get_user_shared_study_case,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             user_shared_study_cases = get_user_shared_study_case(
                 self.test_user_id)
@@ -211,10 +220,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'User study case list does not match, study case list created and shared in test')
 
     def test_load_study_case(self):
-        from sos_trades_api.models.database_models import StudyCase, AccessRights
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            load_study_case,
+        )
+        from sos_trades_api.models.database_models import AccessRights, StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -249,9 +260,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Created study case repository does not match, test set up repository name used')
 
     def test_study_case_log(self):
-        from sos_trades_api.models.database_models import StudyCase, AccessRights, StudyCaseLog
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import load_study_case
-        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.models.database_models import (
+            StudyCase,
+            StudyCaseLog,
+        )
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -265,9 +277,13 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                     .all()), 0)
 
     def test_copy_study_case(self):
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            copy_study_case,
+        )
         from sos_trades_api.models.database_models import StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import copy_study_case
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -297,10 +313,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Copied study case repository does not match, test set up repository name used')
 
     def test_update_study_parameters(self):
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            update_study_parameters,
+        )
         from sos_trades_api.models.database_models import StudyCase, User
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -360,15 +378,19 @@ class TestStudy(DatabaseUnitTestConfiguration):
             #                    'Modification date cannot be the same as the one at creation')
 
     def test_update_study_parameters_csv_data(self):
-        from sos_trades_api.models.database_models import StudyCase, User
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.server.base_server import study_case_cache
-        from werkzeug.datastructures import FileStorage
-        from os.path import join, dirname
+        from os.path import dirname, join
+
         import numpy as np
         import pandas as pd
-        from sos_trades_api.tests import data
+        from werkzeug.datastructures import FileStorage
+
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            update_study_parameters,
+        )
+        from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.tests import data
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_csv_test = StudyCase.query.filter(
@@ -507,8 +529,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
             dict_as_dict_dataframe_file.close()
 
     def test_delete_study_cases(self):
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            delete_study_cases,
+        )
         from sos_trades_api.models.database_models import StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
         from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -527,8 +551,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Error study case folder not deleted')
 
     def test_get_study_data_stream(self):
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            get_study_data_stream,
+        )
         from sos_trades_api.models.database_models import StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_data_stream
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -537,11 +563,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(study_zip)
 
     def _test_get_study_case_notifications(self):
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            get_study_case_notifications,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            update_study_parameters,
+        )
         from sos_trades_api.models.database_models import StudyCase, User
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_notifications
-        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -594,8 +624,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertEqual(change.old_value, 5)
 
     def test_get_user_authorised_studies_for_process(self):
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            get_user_authorised_studies_for_process,
+        )
         from sos_trades_api.models.database_models import StudyCase
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import get_user_authorised_studies_for_process
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -611,11 +643,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              'Copied study case repository does not match, test set up repository name used')
 
     def test_get_user_study_case_preference(self):
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import save_study_case_preference, \
-            load_study_case_preference
-        from sqlalchemy.sql.expression import and_
-        from sos_trades_api.models.database_models import UserStudyPreference
         import json
+
+        from sqlalchemy.sql.expression import and_
+
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            load_study_case_preference,
+            save_study_case_preference,
+        )
+        from sos_trades_api.models.database_models import UserStudyPreference
 
         # Load preference (will be empty)
         preference = load_study_case_preference(
@@ -656,14 +692,18 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                  'Controller read preference is not the same a the save one')
 
     def _test_clear_error_in_study_case_controller(self):
-        from sos_trades_api.models.database_models import StudyCase, User
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import update_study_parameters
-        from sos_trades_api.server.base_server import study_case_cache
-        from os.path import join, dirname
-        from sos_trades_api.tests import data
-        from werkzeug.datastructures import FileStorage
+        from os.path import dirname, join
+
         from numpy import array
+        from werkzeug.datastructures import FileStorage
+
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            update_study_parameters,
+        )
+        from sos_trades_api.models.database_models import StudyCase, User
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.tests import data
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_clear_error_test = StudyCase.query.filter(
@@ -828,13 +868,17 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
 
     def test_study_case_read_only_mode(self):
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            copy_study_case,
+            delete_study_cases,
+            get_study_in_read_only_mode,
+        )
         from sos_trades_api.models.database_models import StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import get_study_in_read_only_mode, \
-            delete_study_cases, copy_study_case, get_file_stream
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
-        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -881,18 +925,30 @@ class TestStudy(DatabaseUnitTestConfiguration):
             # check that the json contains the data
             self.assertTrue(
                 'test_study_copy_read_only.dataframe_mix_types' in str(study_json),
-                f'the parameter is not in the read only file')
+                'the parameter is not in the read only file')
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
 
     def test_study_case_update_parameter_from_dataset_mapping_import(self):
-        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseChange
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases, copy_study_case, update_study_parameters_from_datasets_mapping
-        from sos_trades_api.server.base_server import study_case_cache
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+            create_new_notification_after_update_parameter,
+            get_last_study_case_changes,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            copy_study_case,
+            delete_study_cases,
+            update_study_parameters_from_datasets_mapping,
+        )
+        from sos_trades_api.models.database_models import (
+            StudyCase,
+            StudyCaseChange,
+            User,
+        )
         from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
         from sos_trades_api.tools.coedition.coedition import UserCoeditionAction
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case, get_last_study_case_changes, create_new_notification_after_update_parameter
 
         with DatabaseUnitTestConfiguration.app.app_context():
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()

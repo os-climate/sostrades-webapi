@@ -15,16 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.models.database_models import (
-    Process,
-    ProcessAccessUser,
-    ProcessAccessGroup,
     AccessRights,
-)
-from sos_trades_api.tools.right_management.functional.tools_access_right import (
-    ResourceAccess,
+    Process,
+    ProcessAccessGroup,
+    ProcessAccessUser,
 )
 from sos_trades_api.models.loaded_process import LoadedProcess
 from sos_trades_api.server.base_server import db
+from sos_trades_api.tools.right_management.functional.tools_access_right import (
+    ResourceAccess,
+)
 
 
 class ProcessAccess(ResourceAccess):
