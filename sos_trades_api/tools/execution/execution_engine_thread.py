@@ -14,18 +14,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Execution engine threadns
-"""
 import threading
 import time
-from datetime import datetime, timezone, timedelta
-from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, StudyCaseExecution
-from sos_trades_api.server.base_server import db, app
-from sos_trades_api.tools.execution.execution_engine_observer import ExecutionEngineObserver
-from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
+from datetime import datetime, timedelta, timezone
+
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+
+from sos_trades_api.models.database_models import (
+    StudyCase,
+    StudyCaseDisciplineStatus,
+    StudyCaseExecution,
+)
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.execution.execution_engine_observer import (
+    ExecutionEngineObserver,
+)
+from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
 
 
 class ExecutionEngineThread(threading.Thread):
@@ -170,7 +174,7 @@ class ExecutionEngineThread(threading.Thread):
                         # Update study case execution status
 
                         self.__execution_logger.debug(
-                            f'Updating study case with finished status')
+                            'Updating study case with finished status')
                         study_case = StudyCase.query.filter(
                             StudyCase.id.like(self.__study_case_id)).first()
 

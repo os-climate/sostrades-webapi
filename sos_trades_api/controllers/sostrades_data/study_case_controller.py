@@ -14,57 +14,65 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 import os
 import shutil
+from datetime import datetime, timedelta, timezone
+from io import BytesIO
 from shutil import rmtree
-from datetime import datetime, timezone, timedelta
-
-from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
-
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, load_allocation, \
-    delete_study_server_services_and_deployments
-from sostrades_core.tools.tree.serializer import DataSerializer
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Study case Functions
-"""
 
 from sostrades_core.tools.tree.deserialization import isevaluatable
-from sos_trades_api.tools.code_tools import time_function
-from sos_trades_api.tools.right_management.functional.study_case_access_right import (
-    StudyCaseAccess,
+from sostrades_core.tools.tree.serializer import DataSerializer
+from sqlalchemy.sql.expression import and_, desc
+
+from sos_trades_api.controllers.error_classes import (
+    InvalidFile,
+    InvalidStudy,
+    InvalidStudyExecution,
 )
-from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.coedition.coedition import UserCoeditionAction, add_notification_db, CoeditionMessage
-from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.models.database_models import (
-    Notification,
-    PodAllocation,
-    StudyCaseChange,
-    UserStudyPreference,
-    StudyCase,
-    UserStudyFavorite,
-    StudyCaseExecution,
-    StudyCaseLog,
-    StudyCaseAccessGroup,
-    StudyCaseAccessUser,
-    Group,
-    GroupAccessUser,
-    AccessRights,
-    User,
-    UserLastOpenedStudy
-)
-from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
     load_processes_metadata,
     load_repositories_metadata,
 )
-from sqlalchemy.sql.expression import and_, desc
-import json
-from sos_trades_api.controllers.error_classes import InvalidFile, InvalidStudy, InvalidStudyExecution
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    GroupAccessUser,
+    Notification,
+    PodAllocation,
+    StudyCase,
+    StudyCaseAccessGroup,
+    StudyCaseAccessUser,
+    StudyCaseChange,
+    StudyCaseExecution,
+    StudyCaseLog,
+    User,
+    UserLastOpenedStudy,
+    UserStudyFavorite,
+    UserStudyPreference,
+)
+from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.models.study_notification import StudyNotification
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    create_and_load_allocation,
+    delete_study_server_services_and_deployments,
+    get_allocation_status,
+    load_allocation,
+)
+from sos_trades_api.tools.code_tools import time_function
+from sos_trades_api.tools.coedition.coedition import (
+    CoeditionMessage,
+    UserCoeditionAction,
+    add_notification_db,
+)
+from sos_trades_api.tools.execution.execution_tools import (
+    update_study_case_execution_status,
+)
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from io import BytesIO
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
 def create_empty_study_case(
@@ -536,8 +544,8 @@ def delete_study_cases_and_allocation(studies):
 
             return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
-            raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
-                               f'please refresh your study cases list')
+            raise InvalidStudy('Unable to find all the study cases to delete in the database, '
+                               'please refresh your study cases list')
 
 
 def get_user_shared_study_case(user_identifier: int):
@@ -1131,7 +1139,7 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
             db.session.rollback()
             raise ex
     else:
-        raise InvalidStudy(f'You cannot remove a study that is not in your favorite study')
+        raise InvalidStudy('You cannot remove a study that is not in your favorite study')
 
     return f'The study, {study_case.name}, has been removed from favorite study.'
 

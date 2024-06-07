@@ -14,26 +14,37 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Authentication tooling function
-"""
-from datetime import datetime
-import pytz
-from flask_jwt_extended import get_jwt_identity
-from functools import wraps
-from flask import abort, session, request
-from flask_jwt_extended import verify_jwt_in_request,verify_jwt_refresh_token_in_request
-from jwt.exceptions import InvalidSignatureError
 import base64
-from sos_trades_api.server.base_server import db, app
-from sos_trades_api.models.database_models import User, Group, AccessRights, GroupAccessUser, UserProfile, Device
-from sos_trades_api.tools.right_management.access_right import has_access_to
+from datetime import datetime
+from functools import wraps
+
+import pytz
+from flask import abort, request, session
+from flask_jwt_extended import (
+    get_jwt_identity,
+    verify_jwt_in_request,
+    verify_jwt_refresh_token_in_request,
+)
+from jwt.exceptions import InvalidSignatureError
+from werkzeug.exceptions import Unauthorized
+
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Device,
+    Group,
+    GroupAccessUser,
+    User,
+    UserProfile,
+)
+from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.right_management import access_right
-from sos_trades_api.tools.right_management.functional.group_access_right import GroupAccess
-from werkzeug.exceptions import BadRequest, Unauthorized
+from sos_trades_api.tools.right_management.access_right import has_access_to
+from sos_trades_api.tools.right_management.functional.group_access_right import (
+    GroupAccess,
+)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
 class AuthenticationError(Exception):

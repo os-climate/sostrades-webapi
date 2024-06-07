@@ -15,10 +15,12 @@ limitations under the License.
 '''
 # Set server name
 import os
+
 os.environ['SERVER_NAME'] = 'MESSAGE_SERVER'
 
-from sos_trades_api.server.base_server import app
 from flask_socketio import SocketIO
+
+from sos_trades_api.server.base_server import app
 
 # Initialize socket for messaging system
 socketio = SocketIO()

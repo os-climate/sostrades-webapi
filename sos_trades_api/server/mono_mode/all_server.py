@@ -16,6 +16,7 @@ limitations under the License.
 '''
 # Set server name
 import os
+
 os.environ['SERVER_NAME'] = 'MAIN_SERVER'
 
 from sos_trades_api.server import base_server
@@ -24,6 +25,7 @@ app = base_server.app
 db = base_server.db
 
 from sos_trades_api.server.base_server import check_identity_provider_availability
+
 check_identity_provider_availability()
 
 config = base_server.config

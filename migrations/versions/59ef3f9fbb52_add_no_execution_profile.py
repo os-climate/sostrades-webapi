@@ -5,9 +5,8 @@ Revises: 6fde15c1f0d5
 Create Date: 2023-12-01 16:43:23.266590
 
 """
-from sos_trades_api.server.base_server import db
 from sos_trades_api.models.database_models import UserProfile
-
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '59ef3f9fbb52'

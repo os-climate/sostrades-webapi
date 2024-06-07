@@ -14,11 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class that represent a study case data transfert object with group information
-"""
-from sos_trades_api.models.database_models import Group, StudyCaseAccessGroup, AccessRights
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    StudyCaseAccessGroup,
+)
 
 
 class StudyCaseDto:

@@ -5,11 +5,11 @@ Revises: 59ef3f9fbb52
 Create Date: 2024-03-04 09:30:37.433245
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sos_trades_api.server.base_server import db
-from sos_trades_api.models.database_models import StudyCase
+from alembic import op
 
+from sos_trades_api.models.database_models import StudyCase
+from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
 revision = '5acd0bb7bad9'

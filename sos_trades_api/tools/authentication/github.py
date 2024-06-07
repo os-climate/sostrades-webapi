@@ -13,18 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-GitHub integration to authenticate user using OAuth
-"""
 
-from sos_trades_api.tools.authentication.password_generator import generate_password
-from os import environ, path
-from datetime import datetime
 import json
+from datetime import datetime
+from os import environ, path
 
-from sos_trades_api.models.database_models import User, OAuthState
+from sos_trades_api.models.database_models import OAuthState, User
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.authentication.password_generator import generate_password
 
 # GITHUB API KEYS
 GITHUB_LOGIN_KEY = 'login'

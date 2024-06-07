@@ -14,12 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for user management procedures
-"""
-
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -62,7 +59,9 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
     def test_01_get_user_list(self):
         # Database only got two users admin and test user
         # ensure the method get_user_list return one user and he is test user
-        from sos_trades_api.controllers.sostrades_data.user_controller import get_user_list
+        from sos_trades_api.controllers.sostrades_data.user_controller import (
+            get_user_list,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             user_list = get_user_list()
             self.assertEqual(
@@ -90,7 +89,9 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
                 pass
 
     def test_03_update_user(self):
-        from sos_trades_api.controllers.sostrades_data.user_controller import update_user
+        from sos_trades_api.controllers.sostrades_data.user_controller import (
+            update_user,
+        )
         from sos_trades_api.models.database_models import User
         with DatabaseUnitTestConfiguration.app.app_context():
             user = User.query.filter(User.username == self.username).first()
@@ -110,7 +111,9 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
                 pass
 
     def test_04_delete_user(self):
-        from sos_trades_api.controllers.sostrades_data.user_controller import delete_user
+        from sos_trades_api.controllers.sostrades_data.user_controller import (
+            delete_user,
+        )
         from sos_trades_api.models.database_models import User
         with DatabaseUnitTestConfiguration.app.app_context():
             user = User.query.filter(User.username == self.username).first()
@@ -122,7 +125,9 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
                               'User has not been deleted successfully')
 
     def test_05_get_user_profile_list(self):
-        from sos_trades_api.controllers.sostrades_data.user_controller import get_user_profile_list
+        from sos_trades_api.controllers.sostrades_data.user_controller import (
+            get_user_profile_list,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             user_profile_list = get_user_profile_list()
             # Ensure the first one retrieved is not Admin profile and length is

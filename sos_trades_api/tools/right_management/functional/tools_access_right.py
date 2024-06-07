@@ -15,13 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from sos_trades_api.models.database_models import (
+    AccessRights,
     Group,
     GroupAccessGroup,
     GroupAccessUser,
-    AccessRights,
 )
-from sos_trades_api.server.base_server import db
 from sos_trades_api.models.loaded_group import LoadedGroup
+from sos_trades_api.server.base_server import db
 
 
 class ResourceAccess:
@@ -138,7 +138,7 @@ class ResourceAccess:
         ResourceAccess.get_children_group_id_recurse(group_member_id, group_members_ids)
 
         # create a string of ids from the set
-        str_group_members_ids = f'.'
+        str_group_members_ids = '.'
         for sub_id in group_members_ids:
             str_group_members_ids = f'{str_group_members_ids}{sub_id}.'
 

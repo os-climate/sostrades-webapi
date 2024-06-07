@@ -13,16 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Execution metric thread
-"""
 import threading
-import psutil
 import time
 
+import psutil
+
 from sos_trades_api.models.database_models import StudyCaseExecution
-from sos_trades_api.server.base_server import db, app
+from sos_trades_api.server.base_server import app, db
 
 
 class ExecutionMetrics():

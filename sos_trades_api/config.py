@@ -14,17 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Flask and database configuration variable
-"""
-import os
-from copy import deepcopy
-from os.path import join, dirname, abspath
-from pathlib import Path
-from builtins import property
-import yaml
 import json
+import os
+from builtins import property
+from copy import deepcopy
+from os.path import abspath, dirname, join
+from pathlib import Path
 
 BASEDIR = abspath(dirname(__file__))
 
@@ -113,7 +108,7 @@ class Config:
                 self.__server_config_file = json.load(server_conf_file)
         else:
             raise Exception(
-                f'Environment variable "SOS_TRADES_SERVER_CONFIGURATION" not found')
+                'Environment variable "SOS_TRADES_SERVER_CONFIGURATION" not found')
 
     def check(self):
         """ Make a check on mandatory parameter to make sure configuration is correct

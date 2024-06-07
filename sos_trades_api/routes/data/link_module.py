@@ -13,22 +13,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response, session
-from werkzeug.exceptions import BadRequest, Unauthorized
+from flask import jsonify, make_response, request, session
+from werkzeug.exceptions import BadRequest
 
+from sos_trades_api.controllers.sostrades_data.link_controller import (
+    create_link,
+    delete_link,
+    get_link,
+    get_links,
+    update_link,
+)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.link_controller import get_links, get_link, create_link, update_link, delete_link
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+)
 
 
-@app.route(f'/api/data/link', methods=['GET'])
+@app.route('/api/data/link', methods=['GET'])
 @auth_required
 def index():
     resp = make_response(jsonify(get_links()), 200)
     return resp
 
 
-@app.route(f'/api/data/link/<int:link_identifier>', methods=['GET'])
+@app.route('/api/data/link/<int:link_identifier>', methods=['GET'])
 @auth_required
 def get_link_by_id(link_identifier):
     """
@@ -43,7 +51,7 @@ def get_link_by_id(link_identifier):
     return resp
 
 
-@app.route(f'/api/data/link', methods=['POST'])
+@app.route('/api/data/link', methods=['POST'])
 @auth_required
 def create():
     """
@@ -72,7 +80,7 @@ def create():
     return resp
 
 
-@app.route(f'/api/data/link/<int:link_identifier>', methods=['POST'])
+@app.route('/api/data/link/<int:link_identifier>', methods=['POST'])
 @auth_required
 def update_link_by_id(link_identifier):
     """
@@ -111,7 +119,7 @@ def update_link_by_id(link_identifier):
     return resp
 
 
-@app.route(f'/api/data/link/<int:link_identifier>', methods=['DELETE'])
+@app.route('/api/data/link/<int:link_identifier>', methods=['DELETE'])
 @auth_required
 def delete_link_by_id(link_identifier):
 

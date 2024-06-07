@@ -13,21 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.loaded_process import LoadedProcess
 
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Ontology Functions
-"""
-
-from sos_trades_api.server.base_server import app
-import requests
 import json
-from requests.exceptions import ConnectionError
-from functools import wraps
 from datetime import datetime, timedelta
+from functools import wraps
+
+import requests
+from requests.exceptions import ConnectionError
+
 from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.models.model_status import ModelStatus
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.visualisation.couplings_force_graph import (
     get_couplings_force_graph,
 )
