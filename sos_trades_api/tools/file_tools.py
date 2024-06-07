@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,6 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
 import json
 import os
@@ -34,7 +35,7 @@ def write_object_in_json_file(object_to_write, file_path):
     saved = False
     if object_to_write is not None:
 
-        with open(file_path, 'w+') as json_file:
+        with open(file_path, "w+") as json_file:
             json.dump(object_to_write, json_file, cls=CustomJsonEncoder)
             saved = True
 
@@ -46,7 +47,7 @@ def read_object_in_json_file(file_path):
     """
     result = None
     if os.path.exists(file_path):
-        with open(file_path, 'r') as json_file:
+        with open(file_path) as json_file:
             result = json.load(json_file)
 
     return result

@@ -13,27 +13,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-GitHub integration to authenticate user using OAuth
-"""
 
 
 import os
+
 from keycloak import KeycloakOpenID
 
 from sos_trades_api.models.database_models import User
 from sos_trades_api.server.base_server import app
 
+"""
+Keycloak integration to authenticate user using OAuth
+"""
+
+
 def get_keycloak_openid():
     KEYCLOAK_SERVER_URL = os.getenv(
-        "KEYCLOAK_SERVER_URL", "https://keycloak.gpp-sostrades.com/"
+        "KEYCLOAK_SERVER_URL", "https://keycloak.gpp-sostrades.com/",
     )
     KEYCLOAK_REALM_NAME = os.getenv("KEYCLOAK_REALM_NAME", "osc")
     # client
     KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "revision")
     KEYCLOAK_CLIENT_SECRET_KEY = os.getenv(
-        "KEYCLOAK_CLIENT_SECRET_KEY", "Gu9PnXeWu9A3j3hf8vhrfmePBjkUbBpC"
+        "KEYCLOAK_CLIENT_SECRET_KEY", "Gu9PnXeWu9A3j3hf8vhrfmePBjkUbBpC",
     )
 
     keycloak_openid = KeycloakOpenID(
@@ -41,19 +43,19 @@ def get_keycloak_openid():
         realm_name = KEYCLOAK_REALM_NAME,
         client_id = KEYCLOAK_CLIENT_ID,
         client_secret_key = KEYCLOAK_CLIENT_SECRET_KEY,
-        verify=False
+        verify=False,
     )
     return keycloak_openid
 
 
 class KeycloakAuthenticator:
     keycloak_openid = get_keycloak_openid()
-        
+
     def auth_url(self, redirect_uri):
         return KeycloakAuthenticator.keycloak_openid.auth_url(redirect_uri)
 
     def token(self, redirect_uri, code):
-        return KeycloakAuthenticator.keycloak_openid.token(redirect_uri=redirect_uri, code=code, grant_type='authorization_code', scope='openid')
+        return KeycloakAuthenticator.keycloak_openid.token(redirect_uri=redirect_uri, code=code, grant_type="authorization_code", scope="openid")
 
     def user_info(self, token):
         return KeycloakAuthenticator.keycloak_openid.userinfo(token)
@@ -63,7 +65,7 @@ class KeycloakAuthenticator:
 
     def logout(self, token):
         return KeycloakAuthenticator.keycloak_openid.logout(token)
-    
+
     @staticmethod
     def create_user_from_userinfo(userinfo:dict):
         """
@@ -72,25 +74,24 @@ class KeycloakAuthenticator:
         :type userinfo: dict
         :return: tuple User, str
         """
-
         # Here we can assume that the user is authenticated regarding GitHub/OAuth
         # and can access to the application
         created_user = User()
-        created_user.username = userinfo.get('preferred_username')
-        created_user.email = userinfo.get('email')
+        created_user.username = userinfo.get("preferred_username")
+        created_user.email = userinfo.get("email")
 
         created_user.account_source = User.IDP_ACCOUNT
 
         # User first name and lastname are not provided separately on github
-        created_user.firstname = userinfo.get('given_name')
-        created_user.lastname = userinfo.get('family_name')
+        created_user.firstname = userinfo.get("given_name")
+        created_user.lastname = userinfo.get("family_name")
 
         # If user has not set its profile information, then set username as firstname to avoid missing value
         if created_user.firstname is None or len(created_user.firstname) == 0:
             created_user.firstname = created_user.username
 
-        created_user.company = ''
-        created_user.department = ''
+        created_user.company = ""
+        created_user.department = ""
 
-        return_url = app.config['SOS_TRADES_FRONT_END_DNS']
+        return_url = app.config["SOS_TRADES_FRONT_END_DNS"]
         return created_user, return_url
