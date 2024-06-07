@@ -15,7 +15,8 @@ limitations under the License.
 '''
 # coding: utf-8
 import os
-from os.path import join, dirname
+from os.path import dirname, join
+
 from dotenv import load_dotenv
 
 if __name__ == '__main__':

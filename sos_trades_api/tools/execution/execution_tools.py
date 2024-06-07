@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-from sos_trades_api.tools.allocation_management.allocation_management import get_allocation_status
 from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
 from sos_trades_api.server.base_server import db
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    get_allocation_status,
+)
 
 
 def update_study_case_execution_status(study_case_id: int, study_case_execution: StudyCaseExecution):
@@ -40,14 +42,14 @@ def update_study_case_execution_status(study_case_id: int, study_case_execution:
             study_case_execution.execution_status = StudyCaseExecution.POD_ERROR
             if pod_allocation.message is not None and pod_allocation.message != '':
                 if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                    study_case_execution.message = f'Pod had not enough resources, choose a bigger execution pod size'
+                    study_case_execution.message = 'Pod had not enough resources, choose a bigger execution pod size'
                 else:
                     study_case_execution.message = f'Pod is in error : {pod_allocation.message}'
                     # the message of study case execution has 64 lenght
                     if len(study_case_execution.message) > 60:
                         study_case_execution.message = study_case_execution.message[0:61] + '...'
             else:
-                study_case_execution.message = f'Pod is in error : unknown error'
+                study_case_execution.message = 'Pod is in error : unknown error'
 
         # if the pod is pending, get the reason in message 
         # (the execution status will be set at running by the execution pod once it is loaded)
@@ -59,7 +61,7 @@ def update_study_case_execution_status(study_case_id: int, study_case_execution:
                 if len(study_case_execution.message) > 60:
                     study_case_execution.message = study_case_execution.message[0:61] + '...'
             else:
-                study_case_execution.message = f'Pod is loading'
+                study_case_execution.message = 'Pod is loading'
         elif pod_allocation.pod_status == PodAllocation.RUNNING and study_case_execution.execution_status == StudyCaseExecution.POD_PENDING:
             study_case_execution.message = 'Pod is up, computation should start soon'
             study_case_execution.execution_status = StudyCaseExecution.PENDING

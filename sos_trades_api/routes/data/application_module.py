@@ -22,11 +22,12 @@ Application module
 
 from flask import make_response
 from flask.json import jsonify
+
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.api_version import application_version
 
 
-@app.route(f'/api/data/application/infos', methods=['GET'])
+@app.route('/api/data/application/infos', methods=['GET'])
 def application_info():
     """
     application info
@@ -38,7 +39,7 @@ def application_info():
     return resp
 
 
-@app.route(f'/api/data/application/support', methods=['GET'])
+@app.route('/api/data/application/support', methods=['GET'])
 @auth_required
 def application_support():
     """

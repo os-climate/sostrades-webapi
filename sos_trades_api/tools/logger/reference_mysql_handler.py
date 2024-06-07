@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from time import strftime, localtime
 from logging import Handler, _defaultFormatter
+from time import localtime, strftime
+
 from sos_trades_api.models.database_models import ReferenceStudyExecutionLog
 from sos_trades_api.server.base_server import app, db
-from threading import Timer
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'
 

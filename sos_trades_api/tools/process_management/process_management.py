@@ -18,11 +18,19 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Process management
 """
-from sos_trades_api.server.base_server import db
-from sqlalchemy import and_
 from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
-from sos_trades_api.models.database_models import Process, AccessRights, \
-    ProcessAccessUser, ProcessAccessGroup, StudyCase, User, Group
+from sqlalchemy import and_
+
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    Process,
+    ProcessAccessGroup,
+    ProcessAccessUser,
+    StudyCase,
+    User,
+)
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.right_management.functional import process_access_right
 
 
@@ -203,7 +211,9 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
 
     disabled_process = Process.query.filter(Process.disabled == True).all()
     if len(disabled_process) > 0:
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            delete_study_cases,
+        )
         logger.info(f'{len(disabled_process)} disabled processes found.')
 
         # Removing for each disabled process, related studycase
@@ -359,7 +369,7 @@ def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
         if user_id is not None:
             user = User.query.filter(User.id == user_id).first()
             if user is None:
-                raise Exception(f'User not found in database')
+                raise Exception('User not found in database')
 
             if manager_right is not None:
                 try:

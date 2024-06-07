@@ -17,21 +17,35 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Reference Functions
 """
-from tempfile import gettempdir
 import io
 import os
 import signal
+from tempfile import gettempdir
 from typing import Optional
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, get_allocation_status, delete_pod_allocation
-from sos_trades_api.server.base_server import db, app
 
-from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-
-from sos_trades_api.models.database_models import PodAllocation, ReferenceStudy, ReferenceStudyExecutionLog
-from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, load_repositories_metadata
 from sos_trades_api.config import Config
-from sos_trades_api.tools.reference_management.reference_generation_subprocess import ReferenceGenerationSubprocess
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
+from sos_trades_api.models.database_models import (
+    PodAllocation,
+    ReferenceStudy,
+    ReferenceStudyExecutionLog,
+)
+from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    create_and_load_allocation,
+    delete_pod_allocation,
+    get_allocation_status,
+)
+from sos_trades_api.tools.reference_management.reference_generation_subprocess import (
+    ReferenceGenerationSubprocess,
+)
+from sos_trades_api.tools.right_management.functional.process_access_right import (
+    ProcessAccess,
+)
 
 
 def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int):
@@ -305,7 +319,7 @@ def get_reference_status_from_allocation(reference, pod_allocation):
         error_msg = ' - Regeneration status not coherent.'
         if pod_allocation.message is not None and pod_allocation.message != '':
             if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                error_msg = f' - pod error message: The pod had not enough resources, you may need to choose a bigger pod size for this reference'
+                error_msg = ' - pod error message: The pod had not enough resources, you may need to choose a bigger pod size for this reference'
             else:
                 error_msg = f' - pod error message: {pod_allocation.message}'
     

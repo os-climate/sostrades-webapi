@@ -18,17 +18,19 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class that represent a study case with its logical treeview loaded
 """
-import os
-from sos_trades_api.tools.chart_tools import load_post_processing
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 import json
-from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
+
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sqlalchemy import and_
 
-from sos_trades_api.server.base_server import db, app
-
-import time
+from sos_trades_api.models.database_models import (
+    StudyCase,
+    StudyCoeditionUser,
+    UserStudyPreference,
+)
 from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.chart_tools import load_post_processing
 
 
 class LoadStatus:

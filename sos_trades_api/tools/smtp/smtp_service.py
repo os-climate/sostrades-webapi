@@ -20,8 +20,9 @@ SMTP service
 
 # pylint: disable=line-too-long
 import smtplib
-from smtplib import SMTPException
 from email.message import EmailMessage
+from smtplib import SMTPException
+
 from sos_trades_api.server.base_server import app
 
 
@@ -84,7 +85,7 @@ def send_right_update_mail(user, profilename):
     """
 
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades authorization rights updated'
+    message['Subject'] = 'SoSTrades authorization rights updated'
     message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
     message['To'] = user.email
     message.set_content(
@@ -124,7 +125,7 @@ def send_password_reset_mail(user, reset_link):
     """
 
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades password reset request'
+    message['Subject'] = 'SoSTrades password reset request'
     message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
     message['To'] = user.email
     message.set_content(f'''\

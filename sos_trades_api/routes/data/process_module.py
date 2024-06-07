@@ -15,12 +15,20 @@ limitations under the License.
 '''
 # coding: utf-8
 from flask import jsonify, make_response, session
+
+from sos_trades_api.controllers.sostrades_data.process_controller import (
+    ProcessError,
+    api_get_processes_for_dashboard,
+    api_get_processes_for_user,
+)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
-from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user, ProcessError, api_get_processes_for_dashboard
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    study_manager_profile,
+)
 
 
-@app.route(f'/api/data/resources/process', methods=['GET'])
+@app.route('/api/data/resources/process', methods=['GET'])
 @auth_required
 def get_processes_for_user():
 
@@ -38,7 +46,7 @@ def get_processes_for_user():
     return resp
 
 
-@app.route(f'/api/data/resources/process/dashboard', methods=['GET'])
+@app.route('/api/data/resources/process/dashboard', methods=['GET'])
 @auth_required
 @study_manager_profile
 def get_processes_for_dashboard():

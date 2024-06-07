@@ -19,6 +19,7 @@ User Functions
 """
 import traceback
 from datetime import datetime, timezone
+
 from sos_trades_api.models.database_models import News
 from sos_trades_api.server.base_server import db
 
@@ -91,7 +92,7 @@ def update_news(new_message, news_identifier):
     existing_message = News.query.filter(News.id == news_identifier).first()
 
     if existing_message is None:
-        raise InvalidNews(f'News to update not found.')
+        raise InvalidNews('News to update not found.')
 
     if len(new_message) <= 300:
         existing_message.message = new_message
@@ -115,7 +116,7 @@ def delete_news(news_identifier):
     existing_message = News.query.filter(News.id == news_identifier).first()
 
     if existing_message is None:
-        raise InvalidNews(f'News to delete not found.')
+        raise InvalidNews('News to delete not found.')
 
     db.session.delete(existing_message)
     db.session.commit()

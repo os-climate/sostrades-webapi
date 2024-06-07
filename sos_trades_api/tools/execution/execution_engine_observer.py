@@ -17,15 +17,15 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Execution engine observerExecution engine threadns
 """
-import threading
 import queue
+import threading
 import time
-
-from sqlalchemy import and_
-from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
-from sos_trades_api.server.base_server import db, app
-from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
 from copy import deepcopy
+
+from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
+
+from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
+from sos_trades_api.server.base_server import app, db
 
 
 class ExecutionEngineObserver():

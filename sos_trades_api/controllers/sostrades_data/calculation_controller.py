@@ -14,33 +14,51 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    create_and_load_allocation,
+    delete_pod_allocation,
+)
 from sos_trades_api.tools.code_tools import file_tail
+from sos_trades_api.tools.execution.execution_tools import (
+    update_study_case_execution_status,
+)
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Calculation case Functions
 """
 import logging
-from datetime import datetime, timezone
 import os
 import signal
 import threading
-from sos_trades_api.models.calculation_dashboard import CalculationDashboard
-from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, \
-    StudyCaseExecutionLog, StudyCaseExecution, Process, StudyCaseLog
-from sos_trades_api.controllers.error_classes import InvalidStudy
-from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
-from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
-from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
+from datetime import datetime, timezone
+
 from sos_trades_api.config import Config
-from sos_trades_api.server.base_server import db, app
+from sos_trades_api.controllers.error_classes import InvalidStudy
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
+from sos_trades_api.models.calculation_dashboard import CalculationDashboard
+from sos_trades_api.models.database_models import (
+    PodAllocation,
+    Process,
+    StudyCase,
+    StudyCaseDisciplineStatus,
+    StudyCaseExecution,
+    StudyCaseExecutionLog,
+    StudyCaseLog,
+)
+from sos_trades_api.models.loaded_study_case_execution_status import (
+    LoadedStudyCaseExecutionStatus,
+)
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.execution.execution_engine_subprocess import (
+    ExecutionEngineSubprocess,
+)
+from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sqlalchemy.sql.expression import and_
 
 calculation_semaphore = threading.Semaphore()
 

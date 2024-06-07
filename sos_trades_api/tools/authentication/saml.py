@@ -18,16 +18,13 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 SAML integration to authenticate user on Airbus corp network with SSO
 """
 import os
-import sos_trades_api
+from urllib.parse import urlparse
 
-from sos_trades_api.server.base_server import app
-
-from sos_trades_api.models.database_models import User
-
-from urllib.parse import urlparse, urlencode
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
+from sos_trades_api.models.database_models import User
+from sos_trades_api.server.base_server import app
 
 SSO_FIRST_NAME = 'firstName'
 SSO_LAST_NAME = 'lastname'

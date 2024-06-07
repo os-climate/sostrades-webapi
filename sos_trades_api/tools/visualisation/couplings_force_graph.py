@@ -124,7 +124,7 @@ def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hier
             p['inLinks'] = inLinks
             p['outLinks'] = outLinks
     else:
-        logger.info(f'Coupling Matrix is empty')
+        logger.info('Coupling Matrix is empty')
 
     # adding the list of parameters linked to each children for each node
     for node in treeNodes:

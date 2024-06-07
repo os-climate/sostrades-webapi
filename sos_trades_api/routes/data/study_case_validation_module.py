@@ -14,18 +14,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import request, jsonify, make_response
-
+from flask import jsonify, make_response, request
 from werkzeug.exceptions import BadRequest
+
+from sos_trades_api.controllers.sostrades_data.study_case_validation_controller import (
+    add_study_case_validation,
+    get_study_case_validation_list,
+)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_data.study_case_validation_controller import get_study_case_validation_list,\
-    add_study_case_validation
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
-@app.route(f'/api/data/study-case-validation/<int:study_id>', methods=['GET', 'POST'])
+@app.route('/api/data/study-case-validation/<int:study_id>', methods=['GET', 'POST'])
 @auth_required
 def study_case_validation(study_id):
 

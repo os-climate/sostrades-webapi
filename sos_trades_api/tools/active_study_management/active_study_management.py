@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from datetime import datetime, timedelta
 import glob
-from sos_trades_api.config import Config
 import os
 import re
+from datetime import datetime, timedelta
+
+from sos_trades_api.config import Config
 
 ACTIVE_STUDY_FILE_NAME = "active_study_"
 LOG_FILE_NAME = "logs_"
