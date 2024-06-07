@@ -14,11 +14,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+tooling to generate D3 js data structure for N2 matrix purpose
+"""
 
-import logging
 import time
-
 from graphviz import Digraph
+import logging
+
+#from sostrades_core.execution_engine.scatter_data import SoSScatterData
 
 
 class SoSExecutionWorkflow:

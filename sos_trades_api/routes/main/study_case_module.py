@@ -14,37 +14,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
-import time
-
-from flask import abort, jsonify, make_response, request, send_file, session
-from werkzeug.exceptions import BadRequest, MethodNotAllowed
-
-from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    copy_study_discipline_data,
-    delete_study_cases,
-    get_dataset_import_error_message,
-    get_file_stream,
-    get_study_data_file_path,
-    get_study_data_stream,
-    get_study_load_status,
-    load_or_create_study_case,
-    load_study_case,
-    save_study_is_active,
-    set_study_data_file,
-    update_study_parameters,
-    update_study_parameters_from_datasets_mapping,
-)
-from sos_trades_api.models.database_models import AccessRights
+from flask import request, abort, jsonify, make_response, send_file, session
 from sos_trades_api.models.loaded_study_case import LoadStatus
+
+from werkzeug.exceptions import BadRequest, MethodNotAllowed
+import json
+from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from sos_trades_api.tools.right_management.functional.study_case_access_right import (
-    StudyCaseAccess,
-)
+from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+    get_dataset_import_error_message, get_study_load_status, load_or_create_study_case, load_study_case, delete_study_cases, copy_study_discipline_data, get_file_stream, save_study_is_active,
+    update_study_parameters, update_study_parameters_from_datasets_mapping, get_study_data_stream, get_study_data_file_path,
+    set_study_data_file)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+
+import time
 
 
-@app.route('/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
+@app.route(f'/api/main/study-case/<int:study_id>', methods=['POST', 'DELETE'])
 @auth_required
 def study_cases(study_id):
     if request.method == 'POST':
@@ -96,7 +83,7 @@ def study_cases(study_id):
         raise MethodNotAllowed()
 
 
-@app.route('/api/main/study-case/<int:study_id>', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>', methods=['GET'])
 @auth_required
 def main_load_study_case_by_id(study_id):
 
@@ -141,7 +128,7 @@ def main_load_study_case_by_id(study_id):
     abort(403)
 
 
-@app.route('/api/main/study-case/<int:study_id>/<int:notification_id>/import-datasets-mapping', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/<int:notification_id>/import-datasets-mapping', methods=['POST'])
 @auth_required
 def update_study_from_datasets_mapping(study_id, notification_id):
     if study_id is not None:
@@ -170,7 +157,7 @@ def update_study_from_datasets_mapping(study_id, notification_id):
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
-@app.route('/api/main/study-case/<int:study_id>/import-datasets-error-message', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/import-datasets-error-message', methods=['GET'])
 @auth_required
 def get_datasets_import_error_message(study_id):
     if study_id is not None:
@@ -188,7 +175,7 @@ def get_datasets_import_error_message(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/copy', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/copy', methods=['POST'])
 @auth_required
 def copy_study_case_by_id(study_id):
 
@@ -221,7 +208,7 @@ def copy_study_case_by_id(study_id):
     abort(403)
 
 
-@app.route('/api/main/study-case/<int:study_id>/parameters', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/parameters', methods=['POST'])
 @auth_required
 def update_study_parameters_by_study_case_id(study_id):
 
@@ -268,7 +255,7 @@ def update_study_parameters_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/parameter/download', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/parameter/download', methods=['POST'])
 @auth_required
 def get_study_parameter_file_by_study_case_id(study_id):
     if study_id is not None:
@@ -293,7 +280,7 @@ def get_study_parameter_file_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/download', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/download', methods=['POST'])
 @auth_required
 def get_study_data_file_by_study_case_id(study_id):
     if study_id is not None:
@@ -310,7 +297,7 @@ def get_study_data_file_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/download/raw', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/download/raw', methods=['POST'])
 @auth_required
 def get_study_data_raw_file_by_study_case_id(study_id):
     if study_id is not None:
@@ -327,7 +314,7 @@ def get_study_data_raw_file_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/upload/raw', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/upload/raw', methods=['POST'])
 @auth_required
 def set_study_data_raw_file_by_study_case_id(study_id):
 
@@ -347,7 +334,7 @@ def set_study_data_raw_file_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/copy/discipline-input-data', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/copy/discipline-input-data', methods=['POST'])
 @auth_required
 def copy_study_discipline_data_by_study_case_id(study_id):
 
@@ -381,7 +368,7 @@ def copy_study_discipline_data_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/reload', methods=['Get'])
+@app.route(f'/api/main/study-case/<int:study_id>/reload', methods=['Get'])
 @auth_required
 def reload_study_discipline_data_by_study_case_id(study_id):
     if study_id is not None:
@@ -408,7 +395,7 @@ def reload_study_discipline_data_by_study_case_id(study_id):
     abort(403)
 
 
-@app.route('/api/main/study-case/<int:study_id>/read-only-mode', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/read-only-mode', methods=['GET'])
 @auth_required
 def load_study_data_in_read_only_mode_or_not(study_id):
     """
@@ -430,7 +417,7 @@ def load_study_data_in_read_only_mode_or_not(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/is-active', methods=['POST'])
+@app.route(f'/api/main/study-case/<int:study_id>/is-active', methods=['POST'])
 @auth_required
 def store_study_last_active_date(study_id):
     """
@@ -452,7 +439,7 @@ def store_study_last_active_date(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/is-up-and-loaded', methods=['Get'])
+@app.route(f'/api/main/study-case/<int:study_id>/is-up-and-loaded', methods=['Get'])
 @auth_required
 def check_study_is_loaded(study_id):
     """

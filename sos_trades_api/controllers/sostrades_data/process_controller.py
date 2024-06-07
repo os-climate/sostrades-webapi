@@ -15,22 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import traceback
-from typing import List
-
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    load_ontology_processes,
-)
-from sos_trades_api.models.database_models import (
-    Process,
-    ReferenceStudy,
-    StudyCase,
-    User,
-)
-from sos_trades_api.models.loaded_process import LoadedProcess
+from sos_trades_api.models.database_models import ReferenceStudy, StudyCase, User, Process
+from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
+    load_repositories_metadata, load_ontology_processes
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.tools.right_management.functional.process_access_right import (
-    ProcessAccess,
-)
+from sos_trades_api.models.loaded_process import LoadedProcess
+from typing import List
 
 
 class ProcessError(Exception):

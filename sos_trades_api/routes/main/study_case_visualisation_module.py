@@ -16,20 +16,20 @@ limitations under the License.
 from flask import jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.controllers.sostrades_main.visualisation_controller import (
-    get_execution_sequence_graph_data,
-    get_interface_diagram_data,
-    get_n2_diagram_graph_data,
-)
-from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
+from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+from sos_trades_api.controllers.sostrades_main.visualisation_controller import (
+    get_execution_sequence_graph_data,
+    get_n2_diagram_graph_data,
+    get_interface_diagram_data
+)
 
 
-@app.route('/api/main/study-case/<int:study_id>/execution-sequence', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/execution-sequence', methods=['GET'])
 @auth_required
 def execution_sequence_graph_data(study_id):
     if study_id is not None:
@@ -52,7 +52,7 @@ def execution_sequence_graph_data(study_id):
 
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
-@app.route('/api/main/study-case/<int:study_id>/interface-diagram', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/interface-diagram', methods=['GET'])
 @auth_required
 def interface_diagram_data(study_id):
     if study_id is not None:
@@ -76,7 +76,7 @@ def interface_diagram_data(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/main/study-case/<int:study_id>/n2-diagram', methods=['GET'])
+@app.route(f'/api/main/study-case/<int:study_id>/n2-diagram', methods=['GET'])
 @auth_required
 def n2_diagram_graph_data(study_id):
 

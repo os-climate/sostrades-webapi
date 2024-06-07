@@ -14,24 +14,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import threading
 import uuid
-from datetime import datetime
-from pathlib import Path
 
-import yaml
 from jinja2 import Template
+from sos_trades_api.tools.kubernetes.kubernetes_service import get_pod_name_from_event, get_pod_status_and_reason_from_event, kubernetes_create_deployment_and_service, kubernetes_create_pod, watch_pod_events
+from datetime import datetime
+import yaml
 
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import PodAllocation, StudyCase
-from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.kubernetes import kubernetes_service
-from sos_trades_api.tools.kubernetes.kubernetes_service import (
-    get_pod_name_from_event,
-    get_pod_status_and_reason_from_event,
-    kubernetes_create_deployment_and_service,
-    kubernetes_create_pod,
-    watch_pod_events,
-)
+from sos_trades_api.server.base_server import app, db
+from pathlib import Path
+
 
 
 def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, log_file_path:str=None)->PodAllocation:
@@ -158,7 +154,7 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
     eeb_k8_filepath = Config().eeb_filepath
 
     if Path(eeb_k8_filepath).exists():
-        app.logger.debug('pod configuration file found')
+        app.logger.debug(f'pod configuration file found')
         with open(eeb_k8_filepath) as f:
             k8_conf = yaml.safe_load(f)
 

@@ -13,14 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+various function  regarding chart api
+"""
 
 # pylint: disable=line-too-long
 
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 import time
-
-from sostrades_core.tools.post_processing.post_processing_factory import (
-    PostProcessingFactory,
-)
 
 
 def load_post_processing(exec_engine, with_charts):

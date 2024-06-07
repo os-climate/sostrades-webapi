@@ -14,15 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import time
-from contextlib import contextmanager
-from logging import Handler, _defaultFormatter
-from time import localtime, strftime
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+from time import strftime, localtime
+from logging import Handler, _defaultFormatter
 from sos_trades_api.models.database_models import StudyCaseLog
+import time
+from contextlib import contextmanager
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'
 

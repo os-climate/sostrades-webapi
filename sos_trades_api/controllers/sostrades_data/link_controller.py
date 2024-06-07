@@ -13,8 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+User Functions
+"""
 import traceback
-
 from sos_trades_api.models.database_models import Link
 from sos_trades_api.server.base_server import db
 
@@ -110,7 +113,7 @@ def update_link(link_identifier, url, label, description, user_identifier):
     existing_link = Link.query.filter(Link.id == link_identifier).first()
 
     if existing_link is None:
-        raise InvalidLink('Link not found.')
+        raise InvalidLink(f'Link not found.')
 
     existing_link.url = url
     existing_link.label = label
@@ -133,7 +136,7 @@ def delete_link(link_identifier):
     existing_link = Link.query.filter(Link.id == link_identifier).first()
 
     if existing_link is None:
-        raise InvalidLink('Link not found.')
+        raise InvalidLink(f'Link not found.')
 
     db.session.delete(existing_link)
     db.session.commit()

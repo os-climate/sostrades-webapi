@@ -5,9 +5,8 @@ Revises: b4c65e383551
 Create Date: 2021-12-01 15:35:13.637919
 
 """
-import sqlalchemy as sa
 from alembic import op
-
+import sqlalchemy as sa
 from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.

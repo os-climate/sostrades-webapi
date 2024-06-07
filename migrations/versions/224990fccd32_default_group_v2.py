@@ -5,8 +5,10 @@ Revises: 5e995cf0ba49
 Create Date: 2023-10-12 11:01:12.168086
 
 """
+from alembic import op
+import sqlalchemy as sa
 
-from sos_trades_api.models.database_models import Group
+from sos_trades_api.models.database_models import Group, GroupAccessUser
 from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.

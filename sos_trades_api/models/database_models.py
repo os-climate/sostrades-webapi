@@ -14,27 +14,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import uuid
-from datetime import datetime
-
-import pytz
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Database models
+"""
+from enum import Enum
 from flask_login import UserMixin
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    LargeBinary,
-    String,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.dialects.mysql.types import LONGBLOB, TEXT
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, UniqueConstraint, LargeBinary
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
-from werkzeug.security import check_password_hash, generate_password_hash
-
+from sqlalchemy.dialects.mysql.types import TEXT, LONGBLOB
 from sos_trades_api.server.base_server import db
+from datetime import datetime
+import pytz
+import uuid
 
 
 class UserProfile(db.Model):

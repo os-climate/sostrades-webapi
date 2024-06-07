@@ -14,11 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import time
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Execution engine kubernete
+"""
 from functools import partial
-
+import time
 from kubernetes import client, config, watch
-
 from sos_trades_api.server.base_server import app
 
 
@@ -41,8 +43,8 @@ def kubernetes_create_pod(k8_conf):
     pod_name = k8_conf['metadata']['name']
     pod_namespace = k8_conf['metadata']['namespace']
 
-    app.logger.debug('--------------------')
-    app.logger.debug('pod settings : ')
+    app.logger.debug(f'--------------------')
+    app.logger.debug(f'pod settings : ')
     app.logger.debug(f'name : {pod_name}')
     app.logger.debug(
         f'target image : {k8_conf["spec"]["containers"][0]["image"]}')
@@ -353,7 +355,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
         service_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print('Not found')
+            print(f'Not found')
     # delete service
     if service_found:
         try:
@@ -369,7 +371,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
         deployement_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
-            print('Not found')
+            print(f'Not found')
     # delete deployment
     if deployement_found:
         try:

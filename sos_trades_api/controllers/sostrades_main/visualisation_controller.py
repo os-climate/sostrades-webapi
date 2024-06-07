@@ -14,16 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    generate_n2_matrix,
-)
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Visualisation Functions
+"""
 from sos_trades_api.server.base_server import study_case_cache
-from sos_trades_api.tools.visualisation.execution_workflow_graph import (
-    SoSExecutionWorkflow,
-)
-from sos_trades_api.tools.visualisation.interface_diagram import (
-    InterfaceDiagramGenerator,
-)
+from sos_trades_api.tools.visualisation.execution_workflow_graph import SoSExecutionWorkflow
+from sos_trades_api.controllers.sostrades_data.ontology_controller import generate_n2_matrix
+from sos_trades_api.tools.visualisation.interface_diagram import InterfaceDiagramGenerator
 
 
 class VisualisationError(Exception):

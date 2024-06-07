@@ -14,17 +14,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from datetime import datetime
-
-from sos_trades_api.models.database_models import (
-    Notification,
-    StudyCase,
-    StudyCaseChange,
-    StudyCoeditionUser,
-    User,
-)
 from sos_trades_api.models.user_dto import UserDto
-from sos_trades_api.server.base_server import db
+
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+tools methods to manage coedition features
+"""
+
+from sos_trades_api.server.base_server import app, db
+from datetime import datetime, timezone
+
+from sos_trades_api.models.database_models import StudyCoeditionUser, User, StudyCase, Notification, \
+    StudyCaseChange
 
 
 class UserCoeditionAction:

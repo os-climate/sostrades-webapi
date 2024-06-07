@@ -14,14 +14,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from datetime import datetime, timezone
-from importlib import import_module
-from os import listdir, stat
-from os.path import dirname, isdir, join
-
-from sos_trades_api.config import Config
-from sos_trades_api.models.database_models import Process, ReferenceStudy
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Reference management
+"""
 from sos_trades_api.server.base_server import db
+from sos_trades_api.config import Config
+from importlib import import_module
+from os.path import isdir, join, dirname
+from os import listdir, stat
+from datetime import datetime, timezone
+from sos_trades_api.models.database_models import Process, ReferenceStudy
 
 
 def update_database_with_references(logger=None):

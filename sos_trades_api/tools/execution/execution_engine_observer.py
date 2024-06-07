@@ -13,15 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import queue
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Execution engine observerExecution engine threadns
+"""
 import threading
+import queue
 import time
-from copy import deepcopy
 
-from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
-
+from sqlalchemy import and_
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
-from sos_trades_api.server.base_server import app, db
+from sos_trades_api.server.base_server import db, app
+from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
+from copy import deepcopy
 
 
 class ExecutionEngineObserver():

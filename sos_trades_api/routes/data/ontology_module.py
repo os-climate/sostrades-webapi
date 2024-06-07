@@ -13,30 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import jsonify, make_response, request, session
+from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    load_markdown_documentation_metadata,
-    load_models,
-    load_models_status_filtered,
-    load_ontology_general_information,
-    load_ontology_processes,
-    load_ontology_usages,
-    load_parameter_label_list,
-    load_parameters,
-)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import (
-    auth_required,
-    get_authenticated_user,
-)
-from sos_trades_api.tools.right_management.functional.process_access_right import (
-    ProcessAccess,
-)
+from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
+from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
+from sos_trades_api.controllers.sostrades_data.ontology_controller import ( load_parameters, load_parameter_label_list,
+    load_markdown_documentation_metadata, load_ontology_processes, load_ontology_usages,
+    load_ontology_general_information, load_models, load_models_status_filtered)
 
 
-@app.route('/api/data/ontology/ontology-usages', methods=['POST'])
+@app.route(f'/api/data/ontology/ontology-usages', methods=['POST'])
 @auth_required
 def load_ontology_request_usages():
     """
@@ -110,7 +98,7 @@ def load_ontology_request_usages():
     return resp
 
 
-@app.route('/api/data/ontology/models/status', methods=['GET'])
+@app.route(f'/api/data/ontology/models/status', methods=['GET'])
 @auth_required
 def load_ontology_models_status():
     """
@@ -135,7 +123,7 @@ def load_ontology_models_status():
     return resp
 
 
-@app.route('/api/data/ontology/full_models_list', methods=['GET'])
+@app.route(f'/api/data/ontology/full_models_list', methods=['GET'])
 @auth_required
 def load_ontology_full_model_list():
     """Method that return a list of all ontology disciplines and their related information
@@ -175,7 +163,7 @@ def load_ontology_full_model_list():
     return resp
 
 
-@app.route('/api/data/ontology/full_parameter_list', methods=['GET'])
+@app.route(f'/api/data/ontology/full_parameter_list', methods=['GET'])
 @auth_required
 def load_ontology_parameters():
     """
@@ -197,7 +185,7 @@ def load_ontology_parameters():
     return resp
 
 
-@app.route('/api/data/ontology/full_parameter_label_list', methods=['GET'])
+@app.route(f'/api/data/ontology/full_parameter_label_list', methods=['GET'])
 @auth_required
 def load_ontology_parameter_labels():
     """
@@ -219,7 +207,7 @@ def load_ontology_parameter_labels():
     return resp
 
 
-@app.route('/api/data/ontology/<string:identifier>/markdown_documentation', methods=['GET'])
+@app.route(f'/api/data/ontology/<string:identifier>/markdown_documentation', methods=['GET'])
 @auth_required
 def load_markdown_documentation(identifier):
     """
@@ -241,7 +229,7 @@ def load_markdown_documentation(identifier):
     return resp
 
 
-@app.route('/api/data/ontology/full_process_list', methods=['GET'])
+@app.route(f'/api/data/ontology/full_process_list', methods=['GET'])
 @auth_required
 def load_full_process_list():
     """
@@ -270,7 +258,7 @@ def load_full_process_list():
     return resp
 
 
-@app.route('/api/data/ontology/general_information', methods=['GET'])
+@app.route(f'/api/data/ontology/general_information', methods=['GET'])
 @auth_required
 def load_general_information():
     """ Methods returning generic information concerning the current ontology

@@ -14,39 +14,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import jsonify, make_response, request, session
+from flask import request, jsonify, make_response, session
 from werkzeug.exceptions import BadRequest, Unauthorized
 
-from sos_trades_api.controllers.sostrades_data.user_controller import (
-    add_user,
-    change_user_password,
-    get_user_list,
-    get_user_list_for_sharing,
-    get_user_profile_list,
-    reset_user_password,
-    set_user_default_group,
-)
-from sos_trades_api.controllers.sostrades_data.user_controller import (
-    delete_user as delete_user_controller,
-)
-from sos_trades_api.controllers.sostrades_data.user_controller import (
-    update_user as update_user_controller,
-)
-from sos_trades_api.models.user_application_right import UserApplicationRight
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import (
-    auth_required,
-    study_manager_profile,
-)
+from sos_trades_api.models.database_models import Group, User
 from sos_trades_api.tools.authentication.password_generator import generate_password
+from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user, \
+    study_manager_profile
+from sos_trades_api.controllers.sostrades_data.user_controller import add_user, update_user as update_user_controller, \
+    get_user_list, get_user_profile_list, delete_user as delete_user_controller, reset_user_password, \
+    change_user_password, set_user_default_group, get_user_list_for_sharing
+from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_STUDY_MANAGER
 from sos_trades_api.tools.right_management import access_right
-from sos_trades_api.tools.right_management.access_right import (
-    APP_MODULE_STUDY_MANAGER,
-    has_access_to,
-)
+from sos_trades_api.models.user_application_right import UserApplicationRight
 
 
-@app.route('/api/data/user', methods=['GET'])
+@app.route(f'/api/data/user', methods=['GET'])
 @auth_required
 def users():
     user = session['user']
@@ -58,7 +42,7 @@ def users():
         raise BadRequest('You do not have the necessary rights to access to the list of users')
 
 
-@app.route('/api/data/user/share', methods=['GET'])
+@app.route(f'/api/data/user/share', methods=['GET'])
 @auth_required
 def users_for_sharing():
 
@@ -66,7 +50,7 @@ def users_for_sharing():
     return resp
 
 
-@app.route('/api/data/user', methods=['POST'])
+@app.route(f'/api/data/user', methods=['POST'])
 @auth_required
 @study_manager_profile
 def create_user():
@@ -105,7 +89,7 @@ def create_user():
     return resp
 
 
-@app.route('/api/data/user/<int:user_identifier>', methods=['POST'])
+@app.route(f'/api/data/user/<int:user_identifier>', methods=['POST'])
 @auth_required
 @study_manager_profile
 def update_user(user_identifier):
@@ -153,7 +137,7 @@ def update_user(user_identifier):
     return resp
 
 
-@app.route('/api/data/user', methods=['DELETE'])
+@app.route(f'/api/data/user', methods=['DELETE'])
 @auth_required
 @study_manager_profile
 def delete_user():
@@ -168,14 +152,14 @@ def delete_user():
     return resp
 
 
-@app.route('/api/data/user/profile', methods=['GET'])
+@app.route(f'/api/data/user/profile', methods=['GET'])
 @auth_required
 def user_profiles():
     resp = make_response(jsonify(get_user_profile_list()), 200)
     return resp
 
 
-@app.route('/api/data/user/current-user', methods=['GET'])
+@app.route(f'/api/data/user/current-user', methods=['GET'])
 @auth_required
 def current_user():
     """
@@ -188,7 +172,7 @@ def current_user():
     return make_response(jsonify(user_dto), 200)
 
 
-@app.route('/api/data/user/reset-password', methods=['POST'])
+@app.route(f'/api/data/user/reset-password', methods=['POST'])
 @auth_required
 def reset_password():
     """
@@ -221,7 +205,7 @@ def reset_password():
     return make_response(jsonify(reset_link), 200)
 
 
-@app.route('/api/data/user/change-password', methods=['POST'])
+@app.route(f'/api/data/user/change-password', methods=['POST'])
 def change_password():
     """
     change password of a user account
@@ -247,7 +231,7 @@ def change_password():
     return make_response(jsonify(''), 200)
 
 
-@app.route('/api/data/user/default-group/<int:group_id>', methods=['POST'])
+@app.route(f'/api/data/user/default-group/<int:group_id>', methods=['POST'])
 @auth_required
 def change_default_group(group_id):
     user = session['user']

@@ -14,9 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tests.controllers.unit_test_basic_config import (
-    DatabaseUnitTestConfiguration,
-)
+from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -46,8 +44,8 @@ class TestNews(DatabaseUnitTestConfiguration):
 
     def setUp(self):
         super().setUp()
-        from sos_trades_api.controllers.sostrades_data.user_controller import add_user
         from sos_trades_api.models.database_models import User
+        from sos_trades_api.controllers.sostrades_data.user_controller import add_user
 
         with DatabaseUnitTestConfiguration.app.app_context():
             test_user = User.query \
@@ -92,10 +90,8 @@ class TestNews(DatabaseUnitTestConfiguration):
             self.assertLessEqual(len(test_news.message), 300, 'The length of the message is greater than 300 characters')
 
     def test_update_news(self):
-        from sos_trades_api.controllers.sostrades_data.news_controller import (
-            update_news,
-        )
         from sos_trades_api.models.database_models import News
+        from sos_trades_api.controllers.sostrades_data.news_controller import update_news
         with DatabaseUnitTestConfiguration.app.app_context():
             # Create news
             news_created = self.creation_news()
@@ -110,9 +106,7 @@ class TestNews(DatabaseUnitTestConfiguration):
             self.assertLessEqual(len(new_message), 300, 'The length of the message is greater than 300 characters')
 
     def test_delete_news(self):
-        from sos_trades_api.controllers.sostrades_data.news_controller import (
-            delete_news,
-        )
+        from sos_trades_api.controllers.sostrades_data.news_controller import delete_news
         from sos_trades_api.models.database_models import News
         with DatabaseUnitTestConfiguration.app.app_context():
             # Create news
@@ -131,9 +125,7 @@ class TestNews(DatabaseUnitTestConfiguration):
                 news_deleted, 'Error news deleted has be found in database')
 
     def creation_news(self):
-        from sos_trades_api.controllers.sostrades_data.news_controller import (
-            create_news,
-        )
+        from sos_trades_api.controllers.sostrades_data.news_controller import create_news
         # Create test news
         news = create_news(self.test_message, self.test_user_id)
         self.test_news_id = news.id

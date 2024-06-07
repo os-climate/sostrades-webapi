@@ -15,24 +15,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+from flask import request, jsonify, make_response, abort, render_template
 import plotly.graph_objects as go
-from flask import abort, jsonify, make_response, render_template
-from sostrades_core.tools.post_processing.post_processing_factory import (
-    PostProcessingFactory,
-)
 
-from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    light_load_study_case,
-)
+from sos_trades_api.controllers.sostrades_main.study_case_controller import light_load_study_case
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import (
-    api_key_required,
-    has_user_access_right,
-)
+from sos_trades_api.tools.authentication.authentication import api_key_required, has_user_access_right
+from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 
 
-@app.route('/api/v0/post-processing/<int:study_id>', methods=['GET'])
+@app.route(f'/api/v0/post-processing/<int:study_id>', methods=['GET'])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def get_post_processing(study_id: int, ):
@@ -66,7 +59,7 @@ def get_post_processing(study_id: int, ):
         abort(400, str(e))
 
 
-@app.route('/api/v0/post-processing/<int:study_id>/html', methods=['GET'])
+@app.route(f'/api/v0/post-processing/<int:study_id>/html', methods=['GET'])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def get_post_processing_html(study_id: int):

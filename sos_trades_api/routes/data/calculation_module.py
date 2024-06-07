@@ -15,33 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import jsonify, make_response, send_file, session
+from sos_trades_api.tools.right_management.access_right import APP_MODULE_EXECUTION, has_access_to
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-    calculation_logs,
-    calculation_raw_logs,
-    calculation_status,
-    delete_calculation_entry,
-    execute_calculation,
-    get_calculation_dashboard,
-    stop_calculation,
-)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import (
-    auth_required,
-    study_manager_profile,
-)
-from sos_trades_api.tools.right_management.access_right import (
-    APP_MODULE_EXECUTION,
-    has_access_to,
-)
-from sos_trades_api.tools.right_management.functional.study_case_access_right import (
-    StudyCaseAccess,
-)
+from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
+from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status, \
+    calculation_logs, calculation_raw_logs, get_calculation_dashboard, execute_calculation, stop_calculation, delete_calculation_entry
+from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 
-@app.route('/api/data/calculation/execute/<int:study_id>', methods=['POST'])
+@app.route(f'/api/data/calculation/execute/<int:study_id>', methods=['POST'])
 @auth_required
 def study_case_execution(study_id):
     if study_id is not None:
@@ -68,7 +53,7 @@ def study_case_execution(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/calculation/stop/<int:study_id>', methods=['POST'])
+@app.route(f'/api/data/calculation/stop/<int:study_id>', methods=['POST'])
 @auth_required
 def study_case_stop(study_id):
     if study_id is not None:
@@ -95,7 +80,7 @@ def study_case_stop(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/calculation/stop/<int:study_case_id>/<int:study_case_execution_id>', methods=['POST'])
+@app.route(f'/api/data/calculation/stop/<int:study_case_id>/<int:study_case_execution_id>', methods=['POST'])
 @auth_required
 @study_manager_profile
 def study_case_execution_stop(study_case_id, study_case_execution_id):
@@ -117,7 +102,7 @@ def study_case_execution_stop(study_case_id, study_case_execution_id):
     return resp
 
 
-@app.route('/api/data/calculation/status/<int:study_id>', methods=['GET'])
+@app.route(f'/api/data/calculation/status/<int:study_id>', methods=['GET'])
 @auth_required
 def study_case_execution_status(study_id):
     if study_id is not None:
@@ -137,7 +122,7 @@ def study_case_execution_status(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/calculation/logs/<int:study_case_id>', methods=['GET'])
+@app.route(f'/api/data/calculation/logs/<int:study_case_id>', methods=['GET'])
 @auth_required
 def study_case_logs(study_case_id):
     if study_case_id is not None:
@@ -158,7 +143,7 @@ def study_case_logs(study_case_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/calculation/logs/<int:study_case_id>/<int:study_case_execution_id>', methods=['GET'])
+@app.route(f'/api/data/calculation/logs/<int:study_case_id>/<int:study_case_execution_id>', methods=['GET'])
 @auth_required
 @study_manager_profile
 def study_case_execution_logs(study_case_id, study_case_execution_id):
@@ -170,7 +155,7 @@ def study_case_execution_logs(study_case_id, study_case_execution_id):
     return resp
 
 
-@app.route('/api/data/calculation/raw-logs/<int:study_case_id>/<int:study_case_execution_id>', methods=['GET'])
+@app.route(f'/api/data/calculation/raw-logs/<int:study_case_id>/<int:study_case_execution_id>', methods=['GET'])
 @auth_required
 @study_manager_profile
 def study_case_execution_raw_logs(study_case_id, study_case_execution_id):
@@ -191,7 +176,7 @@ def study_case_execution_raw_logs(study_case_id, study_case_execution_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/calculation/dashboard', methods=['GET'])
+@app.route(f'/api/data/calculation/dashboard', methods=['GET'])
 @auth_required
 @study_manager_profile
 def dashboard_calculation():
@@ -199,7 +184,7 @@ def dashboard_calculation():
     return make_response(jsonify(get_calculation_dashboard()), 200)
 
 
-@app.route('/api/data/calculation/delete/<int:study_case_id>/<int:study_case_execution_id>', methods=['DELETE'])
+@app.route(f'/api/data/calculation/delete/<int:study_case_id>/<int:study_case_execution_id>', methods=['DELETE'])
 @auth_required
 @study_manager_profile
 def study_case_execution_delete(study_case_id, study_case_execution_id):

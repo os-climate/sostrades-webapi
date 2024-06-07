@@ -14,13 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import logging
-import threading
 from datetime import datetime, timedelta
+import threading
+import logging
 
-from sos_trades_api.tools.loading.loading_study_and_engine import (
-    study_need_to_be_updated,
-)
+from sos_trades_api.models.loaded_study_case import LoadStatus
+from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
