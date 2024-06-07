@@ -393,11 +393,11 @@ def watch_pod_events(logger, namespace):
             if event['object']['metadata']['name'].startswith('eeb') or \
                 event['object']['metadata']['name'].startswith('sostrades-study-server') or\
                 event['object']['metadata']['name'].startswith('generation') :
-                logger.info("yield event")
                 yield event
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
-        logger.info("time out, the watcher will be restarted")
+        #time out, the watcher will be restarted
+        pass
 
         
 
