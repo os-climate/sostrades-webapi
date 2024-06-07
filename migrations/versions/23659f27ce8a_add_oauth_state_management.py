@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+import sqlalchemy as sa
+from alembic import op
+
 """add oauth state management
 
 Revision ID: 23659f27ce8a
@@ -21,8 +24,6 @@ Revises: 26c265508f79
 Create Date: 2022-05-17 10:29:40.233373
 
 """
-import sqlalchemy as sa
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '23659f27ce8a'

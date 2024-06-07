@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import mysql
+
 """Remove displine and type in studycaseValidationModel
 
 Revision ID: 89b66a62d3a7
@@ -21,9 +25,6 @@ Revises: 35ba4ee9fc53
 Create Date: 2022-02-02 10:45:32.800916
 
 """
-import sqlalchemy as sa
-from alembic import op
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = '89b66a62d3a7'

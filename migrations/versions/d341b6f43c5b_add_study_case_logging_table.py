@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+import sqlalchemy as sa
+from alembic import op
+
 """Add study case logging table
 
 Revision ID: d341b6f43c5b
@@ -21,8 +24,6 @@ Revises: ead421cc5deb
 Create Date: 2022-07-26 11:07:28.253405
 
 """
-import sqlalchemy as sa
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'd341b6f43c5b'
