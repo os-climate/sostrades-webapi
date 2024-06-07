@@ -389,7 +389,7 @@ def watch_pod_events(logger, namespace):
     core_api_instance = client.CoreV1Api(client.ApiClient())
     w = watch.Watch()
     try:
-        for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace, timeout_seconds=600, _request_timeout=60)):
+        for event in w.stream(partial(core_api_instance.list_namespaced_pod, namespace=namespace, timeout_seconds=3600, _request_timeout=1800)):
             if event['object']['metadata']['name'].startswith('eeb') or \
                 event['object']['metadata']['name'].startswith('sostrades-study-server') or\
                 event['object']['metadata']['name'].startswith('generation') :
