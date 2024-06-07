@@ -9,4 +9,4 @@ ignore  = ["E722", "F841", "E501"]
 
 [lint.per-file-ignores]
 "sos_trades_api/server/*" = ["E402", "F403"]
-"server_scripts/calculation/launch_calculation.py" = ["ALL"]
+"server_scripts/calculation/launch_calculation.py" = ["I001"]
