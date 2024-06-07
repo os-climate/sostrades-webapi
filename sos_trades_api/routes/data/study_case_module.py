@@ -14,50 +14,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import abort, jsonify, make_response, request, send_file, session
+from flask import request, abort, jsonify, make_response, send_file, session
+
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
-from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    add_favorite_study_case,
-    copy_study,
-    create_empty_study_case,
-    create_new_notification_after_update_parameter,
-    create_study_case_allocation,
-    delete_study_cases_and_allocation,
-    edit_study,
-    edit_study_execution_flavor,
-    get_change_file_stream,
-    get_last_study_case_changes,
-    get_raw_logs,
-    get_study_case_allocation,
-    get_study_case_notifications,
-    get_study_execution_flavor,
-    get_user_authorised_studies_for_process,
-    get_user_shared_study_case,
-    get_user_study_case,
-    load_study_case_allocation,
-    load_study_case_preference,
-    remove_favorite_study_case,
-    save_study_case_preference,
-    set_user_authorized_execution,
-    study_case_logs,
-)
-from sos_trades_api.models.database_models import (
-    AccessRights,
-    StudyCase,
-    UserStudyFavorite,
-)
+from sos_trades_api.models.database_models import AccessRights, StudyCase, UserStudyFavorite
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from sos_trades_api.tools.right_management.functional.process_access_right import (
-    ProcessAccess,
-)
-from sos_trades_api.tools.right_management.functional.study_case_access_right import (
-    StudyCaseAccess,
-)
+from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+    edit_study_execution_flavor, get_change_file_stream, get_study_execution_flavor, get_user_shared_study_case, get_raw_logs, get_user_study_case, study_case_logs,
+    get_study_case_notifications, get_user_authorised_studies_for_process, load_study_case_preference,
+    save_study_case_preference, set_user_authorized_execution, create_empty_study_case,
+    add_favorite_study_case, remove_favorite_study_case, create_study_case_allocation, load_study_case_allocation,
+    get_study_case_allocation, delete_study_cases_and_allocation, edit_study, copy_study,
+    get_last_study_case_changes, create_new_notification_after_update_parameter)
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, CoeditionMessage
+from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
+from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
 
 
-@app.route('/api/data/study-case', methods=['GET'])
+@app.route(f'/api/data/study-case', methods=['GET'])
 @auth_required
 def study_cases():
     user = session['user']
@@ -70,7 +46,7 @@ def study_cases():
 
     raise MethodNotAllowed()
 
-@app.route('/api/data/study-case/<int:study_case_identifier>', methods=['GET'])
+@app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['GET'])
 @auth_required
 def get_study_case(study_case_identifier: int):
     user = session['user']
@@ -90,7 +66,7 @@ def get_study_case(study_case_identifier: int):
     raise MethodNotAllowed()
 
 
-@app.route('/api/data/study-case', methods=['POST'])
+@app.route(f'/api/data/study-case', methods=['POST'])
 @auth_required
 def allocation_for_new_study_case():
     user = session['user']
@@ -137,7 +113,7 @@ def allocation_for_new_study_case():
     raise MethodNotAllowed()
 
 
-@app.route('/api/data/study-case/<int:study_case_identifier>', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_case_identifier>', methods=['POST'])
 @auth_required
 def allocation_for_existing_study_case(study_case_identifier: int):
     user = session['user']
@@ -158,7 +134,7 @@ def allocation_for_existing_study_case(study_case_identifier: int):
         raise MethodNotAllowed()
 
 
-@app.route('/api/data/study-case/<int:study_case_identifier>/by/copy', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_case_identifier>/by/copy', methods=['POST'])
 @auth_required
 def allocation_for_copying_study_case(study_case_identifier: int):
     user = session['user']
@@ -200,7 +176,7 @@ def allocation_for_copying_study_case(study_case_identifier: int):
         raise MethodNotAllowed()
 
 
-@app.route('/api/data/study-case/<int:study_id>/status', methods=['GET'])
+@app.route(f'/api/data/study-case/<int:study_id>/status', methods=['GET'])
 @auth_required
 def study_case_allocation_status(study_id):
 
@@ -227,7 +203,7 @@ def study_case_allocation_status(study_id):
     abort(403)
 
 
-@app.route('/api/data/study-case/<int:study_id>/copy', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/copy', methods=['POST'])
 @auth_required
 def copy_study_case(study_id):
 
@@ -260,7 +236,7 @@ def copy_study_case(study_id):
         raise BadRequest('Missing mandatory parameter: study_id in url')
 
 
-@app.route('/api/data/study-case/<int:study_id>/update-execution-flavor', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/update-execution-flavor', methods=['POST'])
 @auth_required
 def update_study_case_execution_flavor(study_id):
     if study_id is not None:
@@ -280,7 +256,7 @@ def update_study_case_execution_flavor(study_id):
         raise BadRequest('Missing mandatory parameter: study_id in url')
 
 
-@app.route('/api/data/study-case/<int:study_id>/get-execution-flavor', methods=['GET'])
+@app.route(f'/api/data/study-case/<int:study_id>/get-execution-flavor', methods=['GET'])
 @auth_required
 def get_study_case_execution_flavor(study_id):
     if study_id is not None:
@@ -300,7 +276,7 @@ def get_study_case_execution_flavor(study_id):
 
 
 
-@app.route('/api/data/study-case/<int:study_id>/edit', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/edit', methods=['POST'])
 @auth_required
 def update_study_cases(study_id):
 
@@ -324,7 +300,7 @@ def update_study_cases(study_id):
         raise BadRequest('Missing mandatory parameter: study_id in url')
 
 
-@app.route('/api/data/study-case/delete', methods=['DELETE'])
+@app.route(f'/api/data/study-case/delete', methods=['DELETE'])
 @auth_required
 def delete_study_cases():
     user = session['user']
@@ -349,7 +325,7 @@ def delete_study_cases():
         'Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/study-case/<int:study_id>/parameter/change', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/parameter/change', methods=['POST'])
 @auth_required
 def get_study_parameter_change_file_by_study_case_id(study_id):
     if study_id is not None:
@@ -378,7 +354,7 @@ def get_study_parameter_change_file_by_study_case_id(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/study-case/<int:study_id>/notifications', methods=['GET'])
+@app.route(f'/api/data/study-case/<int:study_id>/notifications', methods=['GET'])
 @auth_required
 def study_case_notifications(study_id):
     if request.method == 'GET':
@@ -399,7 +375,7 @@ def study_case_notifications(study_id):
         return resp
 
 
-@app.route('/api/data/study-case/<int:study_id>/notification', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/notification', methods=['POST'])
 @auth_required
 def add_new_notification(study_id):
     if request.method == 'POST':
@@ -425,7 +401,7 @@ def add_new_notification(study_id):
             raise BadRequest('You do not have the necessary rights to retrieve this information about study case')
 
 
-@app.route('/api/data/study-case/<int:study_id>/<int:notification_id>/parameter-changes', methods=['GET'])
+@app.route(f'/api/data/study-case/<int:study_id>/<int:notification_id>/parameter-changes', methods=['GET'])
 @auth_required
 def study_case_changes(study_id, notification_id):
     if request.method == 'GET':
@@ -442,7 +418,7 @@ def study_case_changes(study_id, notification_id):
         return resp
 
 
-@app.route('/api/data/study-case/process', methods=['POST'])
+@app.route(f'/api/data/study-case/process', methods=['POST'])
 @auth_required
 def get_user_authorized_process_studies():
     # Checking if user can access study data
@@ -460,7 +436,7 @@ def get_user_authorized_process_studies():
     return resp
 
 
-@app.route('/api/data/study-case/logs/<int:study_case_id>', methods=['GET'])
+@app.route(f'/api/data/study-case/logs/<int:study_case_id>', methods=['GET'])
 @auth_required
 def get_study_case_logs(study_case_id):
     if study_case_id is not None:
@@ -481,7 +457,7 @@ def get_study_case_logs(study_case_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/study-case/raw-logs/download', methods=['POST'])
+@app.route(f'/api/data/study-case/raw-logs/download', methods=['POST'])
 @auth_required
 def get_study_case_raw_logs_download():
     study_id = request.json.get('studyid', None)
@@ -497,7 +473,7 @@ def get_study_case_raw_logs_download():
         return resp
 
 
-@app.route('/api/data/study-case/<int:study_id>/preference', methods=['GET', 'POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/preference', methods=['GET', 'POST'])
 @auth_required
 def load_study_case_preference_by_id(study_id):
     if study_id is not None:
@@ -540,7 +516,7 @@ def load_study_case_preference_by_id(study_id):
     abort(403)
 
 
-@app.route('/api/data/study-case/<int:study_id>/user/execution', methods=['POST'])
+@app.route(f'/api/data/study-case/<int:study_id>/user/execution', methods=['POST'])
 @auth_required
 def update_user_authorized_for_execution(study_id):
     if study_id is not None:
@@ -558,7 +534,7 @@ def update_user_authorized_for_execution(study_id):
     raise BadRequest('Missing mandatory parameter: study identifier in url')
 
 
-@app.route('/api/data/study-case/favorite', methods=['POST'])
+@app.route(f'/api/data/study-case/favorite', methods=['POST'])
 @auth_required
 def favorite_study():
     # Checking if user can access study data
@@ -581,7 +557,7 @@ def favorite_study():
     return resp
 
 
-@app.route('/api/data/study-case/<int:study_id>/favorite', methods=['DELETE'])
+@app.route(f'/api/data/study-case/<int:study_id>/favorite', methods=['DELETE'])
 @auth_required
 def delete_favorite_study(study_id):
     # Checking if user can access study data

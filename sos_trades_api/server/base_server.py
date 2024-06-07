@@ -14,24 +14,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import logging
-import os
+from datetime import datetime
 import re
 import sys
-import time
 import traceback as tb
-from datetime import datetime
-from os.path import join
-
 import click
-from flask import Flask, jsonify, make_response, request, session
-from flask.cli import with_appcontext
-from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
+
 from werkzeug.exceptions import HTTPException
+from flask import jsonify, session, make_response
+from flask import Flask, request
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
+from flask_sqlalchemy import SQLAlchemy
+from flask.cli import with_appcontext
 
 from sos_trades_api.config import Config
+
+import logging
+import os
+from os.path import join
+import time
 
 START_TIME = 'start_time'
 first_line_time = time.time()
@@ -70,13 +72,11 @@ try:
     # sos_trades_api dependencies
 
     app.logger.info('Importing dependencies')
-    from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
-    from sos_trades_api.models.database_models import Group, User, UserProfile
+    import sos_trades_api
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import (
-        ApplicationMySQLHandler,
-        ApplicationRequestFormatter,
-    )
+    from sos_trades_api.tools.logger.application_mysql_handler import ApplicationMySQLHandler, ApplicationRequestFormatter
+    from sos_trades_api.models.database_models import User, Group, UserProfile
+    from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 
     app.logger.info('Adding application logger handler')
     app_mysql_handler = ApplicationMySQLHandler(
@@ -126,10 +126,7 @@ if pod_name.startswith('sostrades-study-server-'):
         #the number represents the study id
         study_id = int(match.group(0))
         
-        from sos_trades_api.tools.active_study_management.active_study_management import (
-            ACTIVE_STUDY_FILE_NAME,
-            save_study_last_active_date,
-        )
+        from sos_trades_api.tools.active_study_management.active_study_management import save_study_last_active_date, ACTIVE_STUDY_FILE_NAME
         # create the active study file if it doesn't exist
         local_path = Config().local_folder_path
         if local_path != "" and os.path.exists(local_path):
@@ -146,9 +143,7 @@ def load_specific_study(study_identifier):
     :type study_identifier: integer
 
     """
-    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-        study_case_manager_loading,
-    )
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import study_case_manager_loading
 
     with app.app_context():
         study_manager = study_case_cache.get_study_case(study_identifier, False)
@@ -158,18 +153,10 @@ def load_specific_study(study_identifier):
 
 
 def database_process_setup():
-    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-        clean_database_with_disabled_study_case,
-    )
-    from sos_trades_api.tools.allocation_management.allocation_management import (
-        clean_all_allocations_type_reference,
-    )
-    from sos_trades_api.tools.process_management.process_management import (
-        update_database_with_process,
-    )
-    from sos_trades_api.tools.reference_management.reference_management import (
-        update_database_with_references,
-    )
+    from sos_trades_api.tools.process_management.process_management import update_database_with_process
+    from sos_trades_api.tools.reference_management.reference_management import update_database_with_references
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import clean_database_with_disabled_study_case
+    from sos_trades_api.tools.allocation_management.allocation_management import clean_all_allocations_type_reference
     """ Launch process setup in database
 
     :return boolean (success or not)
@@ -266,18 +253,14 @@ def database_check_study_case_state(with_deletion=False):
     :param with_deletion: delete every failed or unreferenced study
     :type with_deletion: boolean
     """
-    from datetime import datetime, timezone
     from os import listdir, path
-    from shutil import rmtree
-
-    from urllib3 import disable_warnings
+    from datetime import datetime, timezone
     from urllib3.exceptions import InsecureRequestWarning
-
-    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-        delete_study_cases,
-    )
-    from sos_trades_api.models.database_models import Group, StudyCase
+    from urllib3 import disable_warnings
+    from sos_trades_api.models.database_models import StudyCase, Group
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
+    from shutil import rmtree
 
     studies_to_delete = []
     folders_to_delete = []
@@ -296,7 +279,7 @@ def database_check_study_case_state(with_deletion=False):
         all_study_case = StudyCase.query.all()
         all_group = Group.query.all()
 
-        print('\nCheck file system regarding available data\'s')
+        print(f'\nCheck file system regarding available data\'s')
         base_path = StudyCaseManager.get_root_study_data_folder()
 
         # Get all sub elements inside root data folder (looking for group
@@ -395,9 +378,7 @@ def database_create_standard_user(username, email, firstname, lastname):
     create test_user account and set password
     create default group ALL_users
     """
-    from sos_trades_api.controllers.sostrades_data.user_controller import (
-        create_standard_user_account,
-    )
+    from sos_trades_api.controllers.sostrades_data.user_controller import create_standard_user_account
     create_standard_user_account(username, email, firstname, lastname)
 
 
@@ -407,9 +388,7 @@ def database_reset_user_password(username):
 
     :param:username, username of the user
     """
-    from sos_trades_api.controllers.sostrades_data.user_controller import (
-        reset_local_user_password_by_name,
-    )
+    from sos_trades_api.controllers.sostrades_data.user_controller import reset_local_user_password_by_name
 
     reset_local_user_password_by_name(username)
 
@@ -418,9 +397,7 @@ def database_rename_applicative_group(new_group_name):
     """
     Rename a group from old_group_name to new_group_name
     """
-    from sos_trades_api.controllers.sostrades_data.group_controller import (
-        rename_applicative_group,
-    )
+    from sos_trades_api.controllers.sostrades_data.group_controller import rename_applicative_group
 
     rename_applicative_group(new_group_name)
 
@@ -467,7 +444,7 @@ def database_change_user_profile(username, new_profile=None):
                 app.logger.info(
                     f'User {username} profile changed from {old_user_profile_name} to {new_profile}')
             else:
-                app.logger.info('Profile already up-to-date')
+                app.logger.info(f'Profile already up-to-date')
 
         except:
             app.logger.exception(
@@ -485,12 +462,7 @@ def database_create_api_key(group_name, api_key_name):
     :type api_key_name: str
     """
 
-    from sos_trades_api.models.database_models import (
-        AccessRights,
-        Device,
-        Group,
-        GroupAccessUser,
-    )
+    from sos_trades_api.models.database_models import Group, Device, GroupAccessUser, AccessRights
 
     with app.app_context():
         # First check that group has an owner
@@ -535,7 +507,7 @@ def database_renew_api_key(group_name):
     :type group_name: str
     """
 
-    from sos_trades_api.models.database_models import Device, Group
+    from sos_trades_api.models.database_models import Group, Device
 
     with app.app_context():
         # First check that group has an owner
@@ -568,7 +540,7 @@ def database_revoke_api_key(group_name):
     :type group_name: str
     """
 
-    from sos_trades_api.models.database_models import Device, Group
+    from sos_trades_api.models.database_models import Group, Device
 
     with app.app_context():
         # First check that group has an owner
@@ -609,28 +581,24 @@ def database_list_api_key():
 
 
 def clean_all_allocations_method():
-    from sos_trades_api.tools.allocation_management.allocation_management import (
-        clean_all_allocations_type_study,
-    )
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+        clean_all_allocations_type_study
     clean_all_allocations_type_study()
 
 def clean_inactive_study_pods():
-    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-        check_study_is_still_active_or_kill_pod,
-    )
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import \
+        check_study_is_still_active_or_kill_pod
 
     check_study_is_still_active_or_kill_pod()
 
 def update_all_pod_status_method():
-    from sos_trades_api.tools.allocation_management.allocation_management import (
-        update_all_pod_status,
-    )
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+        update_all_pod_status
     update_all_pod_status()
 
 def update_all_pod_status_loop_method():
-    from sos_trades_api.tools.allocation_management.allocation_management import (
-        update_all_pod_status,
-    )
+    from sos_trades_api.tools.allocation_management.allocation_management import \
+        update_all_pod_status
     interval = 15 #seconds
     while True:
         try:
@@ -717,9 +685,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         :param:password, password of the user count
         :param:profile, the user profile
         """
-        from sos_trades_api.controllers.sostrades_data.user_controller import (
-            database_create_user_test,
-        )
+        from sos_trades_api.controllers.sostrades_data.user_controller import database_create_user_test
         # Create the user test
         try:
             database_create_user_test(username, password)
@@ -738,9 +704,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             :param:username, the identification name of the user, must be unique in users database
             :param:group_list_str, the list of group targeted
         """
-        from sos_trades_api.controllers.sostrades_data.user_controller import (
-            database_set_user_access_group,
-        )
+        from sos_trades_api.controllers.sostrades_data.user_controller import database_set_user_access_group
 
         # Transform the string to a list
         group_list = group_list_str.split(",")
@@ -765,9 +729,7 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         :param:username, the identification name of the user, must be unique in users database
         :param:process_list, the list of process targeted
         """
-        from sos_trades_api.tools.process_management.process_management import (
-            set_processes_to_user,
-        )
+        from sos_trades_api.tools.process_management.process_management import set_processes_to_user
 
         # Transform the string to a list
         process_list = process_list_str.split(",")

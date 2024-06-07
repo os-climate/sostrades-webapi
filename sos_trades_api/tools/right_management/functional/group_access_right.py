@@ -18,11 +18,10 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 methods to define access rights for a group
 """
 
-from sos_trades_api.models.database_models import AccessRights
+from sos_trades_api.models.database_models import Group, User,\
+    AccessRights, GroupAccessGroup, GroupAccessUser
+from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.right_management.functional.tools_access_right import (
-    ResourceAccess,
-)
 
 
 class GroupAccess(ResourceAccess):

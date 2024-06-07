@@ -15,22 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from sostrades_core.datasets.dataset_mapping import (
-    DatasetsMapping,
-    DatasetsMappingException,
-)
+from sos_trades_api.tools.active_study_management.active_study_management import check_studies_last_active_date, delete_study_last_active_file, save_study_last_active_date
+from sos_trades_api.tools.allocation_management.allocation_management import delete_study_server_services_and_deployments
 
-from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    add_last_opened_study_case,
-)
-from sos_trades_api.tools.active_study_management.active_study_management import (
-    check_studies_last_active_date,
-    delete_study_last_active_file,
-    save_study_last_active_date,
-)
-from sos_trades_api.tools.allocation_management.allocation_management import (
-    delete_study_server_services_and_deployments,
-)
+from sos_trades_api.controllers.sostrades_data.study_case_controller import add_last_opened_study_case
+from sostrades_core.datasets.dataset_mapping import DatasetsMappingException, DatasetsMapping
+from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import DatasetGenericException
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
@@ -38,74 +28,49 @@ Study case Functions
 """
 
 import os
-import shutil
-import sys
-import threading
 import time
-import traceback
-from datetime import datetime, timezone
-from os import remove
-from os.path import join
-from shutil import rmtree
-from tempfile import gettempdir
 
-import pandas as pd
-from numpy import array
-from sostrades_core.execution_engine.data_manager import DataManager
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
-from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
-    ProcessBuilderParameterType,
-)
-from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-from sostrades_core.tools.tree.deserialization import isevaluatable
-from sostrades_core.tools.tree.serializer import DataSerializer
 from sqlalchemy import desc
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+import traceback
+import sys
+import pandas as pd
+from os.path import join
+from tempfile import gettempdir
+from os import remove
+from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
+import shutil
+from shutil import rmtree
 
+from sostrades_core.tools.tree.deserialization import isevaluatable
+from sos_trades_api.tools.data_graph_validation.data_graph_validation import invalidate_namespace_after_save
+from sostrades_core.execution_engine.data_manager import DataManager
+from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.proc_builder.process_builder_parameter_type import ProcessBuilderParameterType
 from sos_trades_api.config import Config
-from sos_trades_api.controllers.error_classes import (
-    InvalidFile,
-    InvalidStudy,
-    StudyCaseError,
-)
-from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-    calculation_status,
-)
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    load_processes_metadata,
-    load_repositories_metadata,
-)
-from sos_trades_api.models.database_models import (
-    AccessRights,
-    PodAllocation,
-    ReferenceStudy,
-    StudyCase,
-    StudyCaseChange,
-    StudyCaseExecution,
-    User,
-)
-from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
-from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.server.base_server import app, db, study_case_cache
-from sos_trades_api.tools.coedition.coedition import (
-    CoeditionMessage,
-    UserCoeditionAction,
-    add_change_db,
-    add_notification_db,
-)
-from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
-    invalidate_namespace_after_save,
-)
-from sos_trades_api.tools.loading.loading_study_and_engine import (
-    study_case_manager_loading,
-    study_case_manager_loading_from_reference,
-    study_case_manager_loading_from_study,
-    study_case_manager_loading_from_usecase_data,
-    study_case_manager_update,
-    study_case_manager_update_from_dataset_mapping,
-)
-from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.server.base_server import db, app, study_case_cache
 
+from sos_trades_api.tools.coedition.coedition import add_notification_db, UserCoeditionAction, add_change_db, \
+    CoeditionMessage
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseChange, AccessRights, StudyCaseExecution, User, \
+    ReferenceStudy
+from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
+from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
+from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
+    load_repositories_metadata
+import threading
+from sos_trades_api.tools.loading.loading_study_and_engine import study_case_manager_loading, \
+    study_case_manager_update, study_case_manager_update_from_dataset_mapping, \
+    study_case_manager_loading_from_reference, \
+    study_case_manager_loading_from_usecase_data, \
+    study_case_manager_loading_from_study
+from sos_trades_api.controllers.error_classes import StudyCaseError, InvalidStudy, InvalidFile
+from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.models.loaded_study_case import LoadStatus
+from numpy import array
 
 def load_or_create_study_case(user_id, study_case_identifier, study_access_right=None, read_only_mode=False):
     """
@@ -886,8 +851,8 @@ def delete_study_cases(studies):
 
             return f'All the studies (identifier(s) {studies}) have been deleted in the database'
         else:
-            raise InvalidStudy('Unable to find all the study cases to delete in the database, '
-                               'please refresh your study cases list')
+            raise InvalidStudy(f'Unable to find all the study cases to delete in the database, '
+                               f'please refresh your study cases list')
 
 
 def get_file_stream(study_id, parameter_key):
@@ -1142,7 +1107,7 @@ def check_study_is_still_active_or_kill_pod():
     """
     with app.app_context():
         config = Config()
-        app.logger.info('Start check on active study pod')
+        app.logger.info(f'Start check on active study pod')
         last_hours = config.study_pod_delay
         app.logger.info(f'Start check on active study pod since {last_hours} hour(s)')
         app.logger.info(f'Server mode: {config.server_mode}')
@@ -1151,7 +1116,7 @@ def check_study_is_still_active_or_kill_pod():
             #delete allocation in db
         
             inactive_studies = []
-            app.logger.info('Start check studies')
+            app.logger.info(f'Start check studies')
             try:
                 inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
             except Exception as ex:

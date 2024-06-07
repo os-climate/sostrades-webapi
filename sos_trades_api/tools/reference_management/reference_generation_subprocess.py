@@ -19,8 +19,7 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Reference generation subprocess launch
 """
 import subprocess
-from os.path import dirname, join
-
+from os.path import join, dirname
 import sos_trades_api
 
 

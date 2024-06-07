@@ -17,10 +17,9 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Study case validation Functions
 """
-from datetime import datetime, timezone
-
-from sos_trades_api.models.database_models import StudyCaseValidation
 from sos_trades_api.server.base_server import db
+from datetime import datetime, timezone
+from sos_trades_api.models.database_models import StudyCaseValidation
 
 
 def get_study_case_validation_list(study_case_id):

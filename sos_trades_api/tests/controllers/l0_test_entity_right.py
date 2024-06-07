@@ -20,9 +20,8 @@ Test class for entity right procedures
 """
 
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import (
-    DatabaseUnitTestConfiguration,
-)
+from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
+
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -66,20 +65,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
     def setUp(self):
         super().setUp()
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-            create_empty_study_case,
-        )
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            create_study_case,
-        )
-        from sos_trades_api.models.database_models import (
-            AccessRights,
-            Group,
-            Process,
-            ProcessAccessUser,
-            StudyCase,
-            User,
-        )
+        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, \
+            StudyCase
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -156,14 +145,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
         super().tearDown()
 
     def test_01_apply_entities_changes(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            apply_entities_changes,
-        )
-        from sos_trades_api.controllers.sostrades_data.group_controller import (
-            create_group,
-        )
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import apply_entities_changes
+        from sos_trades_api.models.database_models import GroupAccessUser, AccessRights
         from sos_trades_api.controllers.sostrades_data.user_controller import add_user
-        from sos_trades_api.models.database_models import AccessRights, GroupAccessUser
+        from sos_trades_api.controllers.sostrades_data.group_controller import create_group
         with DatabaseUnitTestConfiguration.app.app_context():
             # Create user and group
             created_group = create_group(
@@ -195,9 +180,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                              'Right not coherent')
 
     def test_02_get_study_case_entities_rights(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            get_study_case_entities_rights,
-        )
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_study_case_entities_rights
         from sos_trades_api.models.entity_rights import EntityType
         with DatabaseUnitTestConfiguration.app.app_context():
             study_case_entities_right = get_study_case_entities_rights(
@@ -211,9 +194,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      'Group right for study case created not coherent, other group than default group has access right to the study')
 
     def test_03_get_process_entities_rights(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            get_process_entities_rights,
-        )
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_process_entities_rights
         from sos_trades_api.models.entity_rights import EntityType
         with DatabaseUnitTestConfiguration.app.app_context():
             process_entities_right = get_process_entities_rights(
@@ -231,11 +212,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     def test_04_get_group_entities_rights(self):
         # Created group should have 2 entity right, one for test _user, one for
         # created user
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            get_group_entities_rights,
-        )
-        from sos_trades_api.models.database_models import AccessRights, Group, User
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_group_entities_rights
+        from sos_trades_api.models.database_models import AccessRights
         from sos_trades_api.models.entity_rights import EntityType
+        from sos_trades_api.models.database_models import Group, User
         with DatabaseUnitTestConfiguration.app.app_context():
             member_rights = AccessRights.query.filter(
                 AccessRights.access_right == AccessRights.MEMBER).first()
@@ -262,14 +242,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                     'Group right for created group created not coherent, no group should have access to this group')
 
     def test_05_verify_user_authorised_for_resource(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            verify_user_authorised_for_resource,
-        )
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import \
+            verify_user_authorised_for_resource
         from sos_trades_api.models.database_models import Group, User, UserProfile
-        from sos_trades_api.tools.right_management.access_right import (
-            APP_MODULE_EXECUTION,
-            has_access_to,
-        )
+        from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_EXECUTION
         with DatabaseUnitTestConfiguration.app.app_context():
             group_id = (Group.query
                         .filter(Group.name == self.group_name).first()).id
@@ -324,15 +300,8 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
 
     def test_06_change_process_source_rights(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
-            apply_entities_changes,
-        )
-        from sos_trades_api.models.database_models import (
-            AccessRights,
-            Group,
-            ProcessAccessUser,
-            User,
-        )
+        from sos_trades_api.models.database_models import ProcessAccessUser, User, Group, AccessRights
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import apply_entities_changes
         with DatabaseUnitTestConfiguration.app.app_context():
             group_id = (Group.query
                         .filter(Group.name == self.group_name).first()).id

@@ -18,12 +18,9 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for authentication procedures
 """
 
-from os.path import dirname, join
-
+from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from sos_trades_api import __file__ as sos_trades_api_file
-from sos_trades_api.tests.controllers.unit_test_basic_config import (
-    DatabaseUnitTestConfiguration,
-)
+from os.path import dirname, join
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -51,12 +48,9 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
         As the account cannot be one declared into LDAP directory, the test is done using a local test account attached to the application
         """
 
-        from flask_jwt_extended import decode_token
-
-        from sos_trades_api.controllers.sostrades_data.authentication_controller import (
-            authenticate_user_standard,
-        )
+        from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
         from sos_trades_api.models.database_models import User
+        from flask_jwt_extended import decode_token
 
         with DatabaseUnitTestConfiguration.app.app_context():
 
@@ -73,13 +67,9 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
         """ Using invalid pair of credential, check that authentication process is failing
         """
 
-        from sos_trades_api.controllers.sostrades_data.authentication_controller import (
-            authenticate_user_standard,
-        )
+        from sos_trades_api.controllers.sostrades_data.authentication_controller import authenticate_user_standard
+        from sos_trades_api.tools.authentication.authentication import InvalidCredentials
         from sos_trades_api.models.database_models import User
-        from sos_trades_api.tools.authentication.authentication import (
-            InvalidCredentials,
-        )
 
         with DatabaseUnitTestConfiguration.app.app_context():
 

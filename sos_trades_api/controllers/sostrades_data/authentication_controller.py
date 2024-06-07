@@ -19,25 +19,19 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Authentication Functions
 """
 
-from flask_jwt_extended import create_access_token, create_refresh_token
-
-from sos_trades_api.models.database_models import User
-from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.authentication.authentication import (
-    AuthenticationError,
-    InvalidCredentials,
-    PasswordResetRequested,
-    get_authenticated_user,
-    manage_user,
+from flask_jwt_extended import (
+    create_access_token, create_refresh_token
 )
+from sos_trades_api.server.base_server import db, app
+from sos_trades_api.models.database_models import User
+from sos_trades_api.tools.authentication.authentication import PasswordResetRequested
+from sos_trades_api.tools.authentication.ldap import check_credentials, LDAPException
+from sos_trades_api.tools.authentication.saml import manage_saml_assertion, SamlAuthenticationError
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
-from sos_trades_api.tools.authentication.ldap import LDAPException, check_credentials
-from sos_trades_api.tools.authentication.saml import (
-    SamlAuthenticationError,
-    manage_saml_assertion,
-)
 from sos_trades_api.tools.smtp.smtp_service import send_new_user_mail
+from sos_trades_api.tools.authentication.authentication import InvalidCredentials, AuthenticationError, \
+    get_authenticated_user, manage_user
 
 
 def authenticate_user_standard(username, password):

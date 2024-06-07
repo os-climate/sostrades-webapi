@@ -18,13 +18,11 @@ mode: python; py-indent-offset: 4; tab-width: 8; coding:utf-8
 '''
 
 
-import json
-import os
-import pprint
-import unittest
-
 from sostrades_core.tools.check_headers import HeaderTools
-
+import unittest
+import pprint
+import os
+import json
 
 class Testheader(unittest.TestCase):
     """

@@ -18,11 +18,9 @@ limitations under the License.
 
 import sys
 from importlib import import_module
-
-from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import ReferenceStudy
-from sos_trades_api.server.base_server import app, db
-
+from sos_trades_api.server.base_server import db, app
+from sos_trades_api.config import Config
 with app.app_context():
 
     ref_model_id = int(sys.argv[2])

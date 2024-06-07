@@ -5,9 +5,8 @@ Revises: 89b66a62d3a7
 Create Date: 2022-02-14 16:53:50.917357
 
 """
-import sqlalchemy as sa
 from alembic import op
-
+import sqlalchemy as sa
 from sos_trades_api.models.database_models import Group
 from sos_trades_api.server.base_server import db
 

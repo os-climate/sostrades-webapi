@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 import os
-import uuid
-from os.path import dirname, join
-from tempfile import gettempdir
-
+from os.path import join, dirname
 from dotenv import load_dotenv
-
 from sos_trades_api import __file__ as root_file
+from tempfile import gettempdir
+import uuid
+import json
+
 
 # -----------------------------------------------------------------------------
 # Modify configuration file for test purpose
@@ -71,12 +70,11 @@ print(f'Database used for test: {test_database_name}')
 print(f'Database used for test log: {test_log_database_name}')
 
 import unittest
-from builtins import classmethod
-
 import sqlalchemy
 from flask_migrate import Migrate, upgrade
-
+from builtins import classmethod
 from sos_trades_api.config import Config
+
 
 config = Config()
 
@@ -125,7 +123,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
             connection.execute(use_database_sql_request)
 
         # Now initialize database using SQLAlchemy ORM
-        from sos_trades_api.server.base_server import app, db
+        from sos_trades_api.server.base_server import db, app
 
         DatabaseUnitTestConfiguration.app = app
         DatabaseUnitTestConfiguration.db = db
@@ -140,9 +138,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
                 os.path.dirname(root_file)), 'migrations')
             upgrade(directory=migration_folder)
 
-            from sos_trades_api.controllers.sostrades_data.user_controller import (
-                create_test_user_account,
-            )
+            from sos_trades_api.controllers.sostrades_data.user_controller import create_test_user_account
             create_test_user_account()
 
     @classmethod

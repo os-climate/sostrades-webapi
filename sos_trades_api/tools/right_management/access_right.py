@@ -19,9 +19,8 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tools methods to check user access right on API resources
 """
 
-from typing import List
-
 from sos_trades_api.models.database_models import UserProfile
+from typing import List
 
 APP_MODULE_STUDY = 'STUDY'
 APP_MODULE_EXECUTION = 'EXECUTION'

@@ -16,6 +16,7 @@ limitations under the License.
 '''
 import pandas
 from numpy import ndarray
+from sos_trades_api.controllers.error_classes import InvalidFile
 from sostrades_core.tools.tree.serializer import DataSerializer
 
 """
@@ -28,27 +29,18 @@ tools methods to manage behaviour around StudyCase
 import cProfile
 import io
 import pstats
-import sys
 import traceback
-from datetime import datetime, timezone
-from importlib import import_module
+import sys
 from time import time
-
-from eventlet import sleep
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
-
-from sos_trades_api.models.database_models import (
-    StudyCase,
-    StudyCaseChange,
-    StudyCaseExecution,
-)
+from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution, StudyCaseChange, Notification
 from sos_trades_api.server.base_server import db
+from sos_trades_api.tools.data_graph_validation.data_graph_validation import clean_obsolete_data_validation_entries
+from datetime import datetime, timezone
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from importlib import import_module
+from eventlet import sleep
 from sos_trades_api.tools.coedition.coedition import add_change_db
-from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
-    clean_obsolete_data_validation_entries,
-)
-
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""
@@ -112,8 +104,8 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
     :params: profile_loading, if run & print profiling of the function
     :type: boolean
     """
-    from sos_trades_api.models.loaded_study_case import LoadStatus
     from sos_trades_api.server.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
     if profile_loading:
         profiler = cProfile.Profile()
         profiler.enable()
@@ -143,7 +135,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
 
         app.logger.info(
             f'End background loading {study_case_manager.study.name}')
-        app.logger.info('Elapsed time synthesis:')
+        app.logger.info(f'Elapsed time synthesis:')
         app.logger.info(
             f'{"Data load":<25} {load_study_case_time - start_time:<5} seconds')
         app.logger.info(
@@ -186,8 +178,8 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
     :params: read_only, if treeview has to be tagged read only
     :type: boolean
     """
-    from sos_trades_api.models.loaded_study_case import LoadStatus
     from sos_trades_api.server.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
 
     try:
         sleep()
@@ -257,12 +249,9 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
     :type: dictionary
 
     """
-    from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import (
-        DatasetGenericException,
-    )
-
-    from sos_trades_api.models.loaded_study_case import LoadStatus
     from sos_trades_api.server.base_server import app
+    from sos_trades_api.models.loaded_study_case import LoadStatus
+    from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import DatasetGenericException
     # todo: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
     try:
         sleep()
@@ -287,10 +276,10 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
             
             # reload data from file to remove the potential changes and keep the study in coherent status
             app.logger.debug(
-                'Reloading study case to remove potential changes')
+                f'Reloading study case to remove potential changes')
             study_case_manager.load_study_case_from_source()
             app.logger.debug(
-                'Finished Reloading study case to remove potential changes')
+                f'Finished Reloading study case to remove potential changes')
 
         with app.app_context():
             if study_case_manager.dataset_load_status != LoadStatus.IN_ERROR:
@@ -404,8 +393,8 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
 
     try:
         sleep()
-        from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading reference in background {study_name}')
 
@@ -486,8 +475,8 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
     """
     try:
         sleep()
-        from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading usecase data in background {study_case_manager.study.name}')
 
@@ -562,8 +551,8 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
     """
     try:
         sleep()
-        from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
+        from sos_trades_api.models.loaded_study_case import LoadStatus
         app.logger.info(
             f'Loading from study in background {study_case_manager.study.name}')
 

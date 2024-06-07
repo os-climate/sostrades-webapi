@@ -13,20 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.models.database_models import Group, GroupAccessUser, AccessRights, StudyCase, User
+from sos_trades_api.server.base_server import db, app
+from sos_trades_api.tools.right_management.functional.tools_access_right import ResourceAccess
 from shutil import rmtree
 
-from sos_trades_api.models.database_models import (
-    AccessRights,
-    Group,
-    GroupAccessUser,
-    StudyCase,
-    User,
-)
-from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sos_trades_api.tools.right_management.functional.tools_access_right import (
-    ResourceAccess,
-)
 
 
 class GroupError(Exception):
@@ -113,7 +105,7 @@ def create_group(user_id, name, description, confidential):
             return group
 
         raise InvalidGroup(
-            'Error creating group : Owner right not found in database.')
+            f'Error creating group : Owner right not found in database.')
     except Exception as error:
         raise InvalidGroup(
             f'Group creation raise the following error : {error}')
@@ -210,7 +202,7 @@ def edit_group(group_id, name, description,user_id):
             raise ex
 
     else:
-        raise InvalidGroup('Group cannot be found in the database')
+        raise InvalidGroup(f'Group cannot be found in the database')
 
     return group
 

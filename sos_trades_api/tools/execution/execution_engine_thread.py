@@ -20,20 +20,12 @@ Execution engine threadns
 """
 import threading
 import time
-from datetime import datetime, timedelta, timezone
-
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
-
-from sos_trades_api.models.database_models import (
-    StudyCase,
-    StudyCaseDisciplineStatus,
-    StudyCaseExecution,
-)
-from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.execution.execution_engine_observer import (
-    ExecutionEngineObserver,
-)
+from datetime import datetime, timezone, timedelta
+from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, StudyCaseExecution
+from sos_trades_api.server.base_server import db, app
+from sos_trades_api.tools.execution.execution_engine_observer import ExecutionEngineObserver
 from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 
 
 class ExecutionEngineThread(threading.Thread):
@@ -178,7 +170,7 @@ class ExecutionEngineThread(threading.Thread):
                         # Update study case execution status
 
                         self.__execution_logger.debug(
-                            'Updating study case with finished status')
+                            f'Updating study case with finished status')
                         study_case = StudyCase.query.filter(
                             StudyCase.id.like(self.__study_case_id)).first()
 

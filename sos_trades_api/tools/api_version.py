@@ -20,10 +20,9 @@ api version methods
 
 # pylint: disable=line-too-long
 
-from datetime import datetime
 from os import environ
-from os.path import dirname, exists, join
-
+from os.path import join, dirname, exists
+from datetime import datetime
 import sos_trades_api
 from sos_trades_api.server.base_server import app
 

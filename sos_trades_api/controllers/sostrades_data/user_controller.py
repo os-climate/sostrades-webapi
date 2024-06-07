@@ -16,41 +16,28 @@ limitations under the License.
 '''
 from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
 from sos_trades_api.models.user_dto import UserDto
+from sos_trades_api.tools.right_management import access_right
+from sos_trades_api.tools.right_management.access_right import has_access_to
 
 """
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 User Functions
 """
-import errno
 import traceback
-import uuid
 from datetime import datetime, timezone
-from os import makedirs
-from os.path import dirname, exists, join
-from typing import List
-
-from sqlalchemy import and_, func, or_
-
-from sos_trades_api import __file__ as sos_trades_api_file
+from sos_trades_api.models.database_models import User, UserProfile, Group, GroupAccessUser, StudyCase, AccessRights
+from sos_trades_api.tools.smtp.smtp_service import send_right_update_mail, send_password_reset_mail
+from sos_trades_api.tools.authentication.password_generator import check_password, InvalidPassword
+from sos_trades_api.tools.authentication.password_generator import generate_password
+from os.path import dirname, join, exists
+from sqlalchemy import or_, and_, func
+from sos_trades_api.server.base_server import db, app
 from sos_trades_api.controllers.sostrades_data import group_controller
-from sos_trades_api.models.database_models import (
-    AccessRights,
-    Group,
-    GroupAccessUser,
-    StudyCase,
-    User,
-    UserProfile,
-)
-from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.authentication.password_generator import (
-    InvalidPassword,
-    check_password,
-    generate_password,
-)
-from sos_trades_api.tools.smtp.smtp_service import (
-    send_password_reset_mail,
-    send_right_update_mail,
-)
+import uuid
+from sos_trades_api import __file__ as sos_trades_api_file
+from os import makedirs
+import errno
+from typing import List
 
 
 class UserError(Exception):
@@ -99,7 +86,7 @@ def get_user_list_for_sharing() -> List[UserDto]:
     if len(users_query) == len(user_dto_list):
         return user_dto_list
     else:
-        raise UserError('User list not coherent')
+        raise UserError(f'User list not coherent')
 
 
 def add_user(firstname, lastname, username, password, email, user_profile_id) -> User:
@@ -138,7 +125,7 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
         app.logger.error(
             f'Failed to add a user with duplicated database entries username {username} or email {email}')
         raise InvalidUser(
-            'A user with the same username or email already exist in database')
+            f'A user with the same username or email already exist in database')
 
     new_user = User()
     new_user.firstname = firstname
@@ -204,7 +191,7 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id) 
             app.logger.error(
                 f'Trying to update a user with duplicated database entries username {username} or email {email}')
             raise InvalidUser(
-                'A user with the same username or email already exist in database')
+                f'A user with the same username or email already exist in database')
 
         user_to_update.firstname = firstname
         user_to_update.lastname = lastname
@@ -242,7 +229,7 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id) 
 
     app.logger.error(f'User not found in database, requested id {user_id}')
     raise InvalidUser(
-        'User not found in database')
+        f'User not found in database')
 
 
 def delete_user(user_id) -> str:
@@ -295,7 +282,7 @@ def delete_user(user_id) -> str:
 
     app.logger.error(f'User not found in database, requested id {user_id}')
     raise InvalidUser(
-        'User cannot be found in the database')
+        f'User cannot be found in the database')
 
 
 def get_user_profile_list() -> List[UserProfile]:
@@ -337,7 +324,7 @@ def reset_user_password(user_id):
 
     app.logger.error(f'User not found in database, requested id {user_id}')
     raise InvalidUser(
-        'User cannot be found in the database')
+        f'User cannot be found in the database')
 
 
 def change_user_password(token, password):
@@ -372,7 +359,7 @@ def change_user_password(token, password):
             raise ex
     else:
         app.logger.error(f'Reset token not found in database, token value {token}')
-        raise InvalidUser('User cannot be found in the database')
+        raise InvalidUser(f'User cannot be found in the database')
 
 
 def create_test_user_account():
@@ -652,10 +639,10 @@ def set_user_default_group(group_id, user_id):
                 raise ex
 
         else:
-            raise InvalidGroup('Group cannot be found in the database')
+            raise InvalidGroup(f'Group cannot be found in the database')
 
     else:
-        raise InvalidUser('User cannot be found in the database')
+        raise InvalidUser(f'User cannot be found in the database')
 
 
 def set_user_access_group(group_id, user_id, right_id):

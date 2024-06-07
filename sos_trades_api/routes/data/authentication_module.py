@@ -18,32 +18,23 @@ limitations under the License.
 Login/logout APIs
 """
 
-import os
-from urllib.parse import urlencode, urlparse
-
-import requests
-from flask import abort, make_response, redirect, request, session
+from flask import request, make_response, abort, session, redirect, url_for
 from flask.json import jsonify
+import os
+import requests
 from furl import furl
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-
-from sos_trades_api.controllers.sostrades_data.authentication_controller import (
-    AuthenticationError,
-    authenticate_user_github,
-    authenticate_user_keycloak,
-    authenticate_user_saml,
-    authenticate_user_standard,
-    deauthenticate_user,
-    refresh_authentication,
-)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import (
-    auth_refresh_required,
-    auth_required,
-    get_authenticated_user,
-)
+
+from sos_trades_api.controllers.sostrades_data.authentication_controller import \
+    (authenticate_user_standard, deauthenticate_user, refresh_authentication, AuthenticationError,
+     authenticate_user_saml, authenticate_user_github, authenticate_user_keycloak)
+
+from sos_trades_api.tools.authentication.authentication import auth_required, auth_refresh_required, \
+    get_authenticated_user
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
+from urllib.parse import urlparse, urlencode
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
 
 def init_saml_auth(req):
@@ -80,12 +71,12 @@ def prepare_flask_request(request):
     }
 
 
-@app.route('/api/data/saml/acs', methods=['POST'])
+@app.route(f'/api/data/saml/acs', methods=['POST'])
 def saml_acs():
     """ one login assertion consumer service based on SAML V2 protocol
     """
 
-    app.logger.info('SAML authentication requested')
+    app.logger.info(f'SAML authentication requested')
     access_token, refresh_token, return_url, user = authenticate_user_saml(
         request)
 
@@ -102,7 +93,7 @@ def saml_acs():
         return redirect(url)
 
 
-@app.route('/api/data/saml/sso', methods=['GET'])
+@app.route(f'/api/data/saml/sso', methods=['GET'])
 def saml_sso():
     """ sso redirection for user login
     """
@@ -129,7 +120,7 @@ def saml_sso():
     return make_response(jsonify(sso_built_url), 200)
 
 
-@app.route('/api/data/saml/metadata/', methods=['GET'])
+@app.route(f'/api/data/saml/metadata/', methods=['GET'])
 def saml_metadata():
     req = prepare_flask_request(request)
     auth = init_saml_auth(req)
@@ -145,7 +136,7 @@ def saml_metadata():
     return resp
 
 
-@app.route('/api/data/auth/login', methods=['POST'])
+@app.route(f'/api/data/auth/login', methods=['POST'])
 def login_api():
     """
     Login user
@@ -174,35 +165,35 @@ def login_api():
         abort(403, str(error))
 
 
-@app.route('/api/data/auth/logout', methods=['POST'])
+@app.route(f'/api/data/auth/logout', methods=['POST'])
 @auth_refresh_required
 def logout_api():
     """
     Log user out
     """
-    app.logger.info('User session logout')
+    app.logger.info(f'User session logout')
     deauthenticate_user()
     return make_response()
 
 
-@app.route('/api/data/auth/refresh', methods=['POST'])
+@app.route(f'/api/data/auth/refresh', methods=['POST'])
 @auth_refresh_required
 def refresh_api():
     """
     Get a fresh access token from a valid refresh token
     """
     try:
-        app.logger.info('JWT access token refresh requested')
+        app.logger.info(f'JWT access token refresh requested')
         access_token = refresh_authentication()
         return make_response(jsonify({
             'accessToken': access_token
         }))
     except AuthenticationError as error:
-        app.logger.exception('JWT access token refresh request failed')
+        app.logger.exception(f'JWT access token refresh request failed')
         abort(403, str(error))
 
 
-@app.route('/api/data/auth/info', methods=['GET'])
+@app.route(f'/api/data/auth/info', methods=['GET'])
 @auth_required
 def login_info_api():
     """
@@ -216,14 +207,14 @@ def login_info_api():
         abort(403)
 
 
-@app.route('/api/data/github/oauth/available', methods=['GET'])
+@app.route(f'/api/data/github/oauth/available', methods=['GET'])
 def github_oauth_is_available():
     github_settings = GitHubSettings()
 
     return make_response(jsonify(github_settings.is_available), 200)
 
 
-@app.route('/api/data/github/oauth/authorize', methods=['GET'])
+@app.route(f'/api/data/github/oauth/authorize', methods=['GET'])
 def github_oauth_authorize():
 
     github_settings = GitHubSettings()
@@ -243,7 +234,7 @@ def github_oauth_authorize():
     return make_response(jsonify(github_oauth_url), 200)
 
 
-@app.route('/api/data/github/oauth/callback', methods=['GET'])
+@app.route(f'/api/data/github/oauth/callback', methods=['GET'])
 def github_oauth():
 
     if 'code' not in request.args:
@@ -280,7 +271,7 @@ def github_oauth():
     github_api_user_email_response = r.json()
     print(github_api_user_email_response)
 
-    app.logger.info('GitHub/OAuth authentication requested')
+    app.logger.info(f'GitHub/OAuth authentication requested')
     access_token, refresh_token, return_url, user = authenticate_user_github(github_api_user_response,
                                                                              github_api_user_email_response)
 

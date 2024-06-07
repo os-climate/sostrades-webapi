@@ -20,11 +20,8 @@ Test class for authentication procedures
 """
 
 
+from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
 from importlib import import_module
-
-from sos_trades_api.tests.controllers.unit_test_basic_config import (
-    DatabaseUnitTestConfiguration,
-)
 
 # pylint: disable=no-member
 # pylint: disable=line-too-long
@@ -51,13 +48,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
 
-        from sos_trades_api.models.database_models import (
-            AccessRights,
-            Group,
-            Process,
-            ProcessAccessUser,
-            User,
-        )
+        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights
 
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
@@ -103,23 +94,11 @@ class TestCalculation(DatabaseUnitTestConfiguration):
     def test_01_execute_calculation(self):
         import os
         import time
-
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+        from sos_trades_api.controllers.sostrades_data.calculation_controller import execute_calculation
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseExecution, PodAllocation
         from sos_trades_api.config import Config
-        from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-            execute_calculation,
-        )
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-            create_empty_study_case,
-        )
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            create_study_case,
-        )
-        from sos_trades_api.models.database_models import (
-            PodAllocation,
-            StudyCase,
-            StudyCaseExecution,
-            User,
-        )
         with DatabaseUnitTestConfiguration.app.app_context():
             reference_basepath = Config().reference_root_dir
             imported_module = import_module(
@@ -180,9 +159,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,'Allocation has not the Running status')
 
     def test_02_calculation_status(self):
-        from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-            calculation_status,
-        )
+        from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(
@@ -197,18 +174,11 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                              'Study case execution status not coherent')
 
     def test_03_get_calculation_dashboard(self):
+        from sos_trades_api.controllers.sostrades_data.calculation_controller import get_calculation_dashboard,\
+            execute_calculation
+        from sos_trades_api.models.database_models import StudyCase, User, StudyCaseExecution
         import os
         import time
-
-        from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-            execute_calculation,
-            get_calculation_dashboard,
-        )
-        from sos_trades_api.models.database_models import (
-            StudyCase,
-            StudyCaseExecution,
-            User,
-        )
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
@@ -225,10 +195,9 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             time.sleep(50.0)
 
     def test_04_stop_calculation(self):
-        from sos_trades_api.controllers.sostrades_data.calculation_controller import (
-            calculation_status,
-            stop_calculation,
-        )
+        from sos_trades_api.controllers.sostrades_data.calculation_controller import calculation_status,\
+            stop_calculation
+
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(
