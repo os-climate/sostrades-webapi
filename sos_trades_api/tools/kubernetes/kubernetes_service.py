@@ -397,7 +397,10 @@ def watch_pod_events(logger, namespace):
                 yield event
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
-        logger.info("time out error, the watcher needs to be restarted")
+        logger.info("time out error, the watcher will be restarted")
+    except ConnectionResetError as exception:
+        logger.info("connection error, the connection with kubernetes has been lost, the watcher will be restarted")
+
 
         
 
