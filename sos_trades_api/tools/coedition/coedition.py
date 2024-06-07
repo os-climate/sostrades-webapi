@@ -32,16 +32,16 @@ tools methods to manage coedition features
 
 
 class UserCoeditionAction:
-    JOIN_ROOM = 'connection'
-    LEAVE_ROOM = 'disconnection'
-    SAVE = 'save'
-    SUBMISSION = 'submission'
-    EXECUTION = 'execution'
-    CLAIM = 'claim'
-    RELOAD = 'reload'
-    EDIT = 'edit'
-    DELETE = 'delete'
-    VALIDATION_CHANGE = 'validation_change'
+    JOIN_ROOM = "connection"
+    LEAVE_ROOM = "disconnection"
+    SAVE = "save"
+    SUBMISSION = "submission"
+    EXECUTION = "execution"
+    CLAIM = "claim"
+    RELOAD = "reload"
+    EDIT = "edit"
+    DELETE = "delete"
+    VALIDATION_CHANGE = "validation_change"
 
     @classmethod
     def get_attribute_for_value(cls, value):
@@ -53,20 +53,20 @@ class UserCoeditionAction:
 
 
 class CoeditionMessage:
-    JOIN_ROOM = 'User has entered the study case.'
-    LEAVE_ROOM = 'User just left the study case.'
-    SAVE = 'User just saved the study case.'
-    SUBMISSION = 'User just submitted to execution the study case.'
-    EXECUTION = 'Study case execution just started.'
-    CLAIM = 'User just claimed the study case execution right.'
-    RELOAD = 'User just reload the study case.'
-    IMPORT_DATASET = 'User just updated parameter from dataset'
+    JOIN_ROOM = "User has entered the study case."
+    LEAVE_ROOM = "User just left the study case."
+    SAVE = "User just saved the study case."
+    SUBMISSION = "User just submitted to execution the study case."
+    EXECUTION = "Study case execution just started."
+    CLAIM = "User just claimed the study case execution right."
+    RELOAD = "User just reload the study case."
+    IMPORT_DATASET = "User just updated parameter from dataset"
 
 
 def add_user_to_room(user_id, study_case_id):
-    """ Add user to a room (room id = study_case_id)
     """
-
+    Add user to a room (room id = study_case_id)
+    """
     # Check if user is already in room
     user_study_exist = StudyCoeditionUser.query.filter(
         StudyCoeditionUser.user_id == user_id).filter(
@@ -82,9 +82,9 @@ def add_user_to_room(user_id, study_case_id):
 
 
 def remove_user_from_room(user_id, study_case_id):
-    """ Remove user from a room (room id = study_id)
     """
-
+    Remove user from a room (room id = study_id)
+    """
     user_removed_room = StudyCoeditionUser.query.filter(
         StudyCoeditionUser.user_id == user_id).filter(
             StudyCoeditionUser.study_case_id == study_case_id).first()
@@ -95,9 +95,9 @@ def remove_user_from_room(user_id, study_case_id):
 
 
 def remove_user_from_all_rooms(user_id):
-    """ Remove user from all rooms
     """
-
+    Remove user from all rooms
+    """
     user_to_delete = StudyCoeditionUser.query.filter(
         StudyCoeditionUser.user_id == user_id).all()
 
@@ -108,7 +108,8 @@ def remove_user_from_all_rooms(user_id):
 
 
 def get_user_list_in_room(study_case_id):
-    """ Get user list present in a room (room id = study_case_id)
+    """
+    Get user list present in a room (room id = study_case_id)
     """
     user_dto_list = []
     users_in_room = User.query.join(StudyCoeditionUser).join(StudyCase).filter(
@@ -125,7 +126,8 @@ def get_user_list_in_room(study_case_id):
     return result
 
 def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction, message):
-    """ Add coedition study notification to database
+    """
+    Add coedition study notification to database
     """
     # Check if coedition_type is a UserCoeditionAction and if user is an instance of the User class
     if coedition_type not in vars(UserCoeditionAction).values():
@@ -134,7 +136,7 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
         raise ValueError("user must be an instance of the User class.")
 
     new_notification = Notification()
-    new_notification.author = f'{user.firstname} {user.lastname}'
+    new_notification.author = f"{user.firstname} {user.lastname}"
     new_notification.study_case_id = study_case_id
     new_notification.created = datetime.now()
     new_notification.type = coedition_type
@@ -149,7 +151,8 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
                   old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
-    """ Add study change to database
+    """
+    Add study change to database
     """
     new_change = StudyCaseChange()
 

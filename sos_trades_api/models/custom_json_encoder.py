@@ -83,71 +83,19 @@ class CustomJsonEncoder(JSONEncoder):
 
     def default(self, o):  # pylint: disable=E0202
 
-        if isinstance(o, LoadedStudyCase):
-            return o.serialize()
-        elif isinstance(o, StudyNotification):
-            return o.serialize()
-        elif isinstance(o, AccessRightsSelectable):
-            return o.serialize()
-        elif isinstance(o, ModelStatus):
-            return o.serialize()
-        elif isinstance(o, ReferenceStudy):
-            return o.serialize()
-        elif isinstance(o, EntityRights):
-            return o.serialize()
-        elif isinstance(o, StudyCaseLog):
-            return o.serialize()
-        elif isinstance(o, EntityRight):
-            return o.serialize()
-        elif isinstance(o, LoadedProcess):
-            return o.serialize()
-        elif isinstance(o, StudyCaseChange):
-            return o.serialize()
-        elif isinstance(o, StudyCaseValidation):
-            return o.serialize()
-        elif isinstance(o, UserApplicationRight):
-            return o.serialize()
-        elif isinstance(o, CalculationDashboard):
-            return o.serialize()
-        elif isinstance(o, LoadedGroup):
-            return o.serialize()
-        elif isinstance(o, GroupAccessUser):
-            return o.serialize()
-        elif isinstance(o, User):
-            return o.serialize()
-        elif isinstance(o, UserDto):
-            return o.serialize()
-        elif isinstance(o, UserProfile):
-            return o.serialize()
-        elif isinstance(o, Group):
-            return o.serialize()
-        elif isinstance(o, StudyCase):
-            return o.serialize()
-        elif isinstance(o, LoadedStudyCaseExecutionStatus):
-            return o.serialize()
-        elif isinstance(o, Link):
-            return o.serialize()
-        elif isinstance(o, PodAllocation):
-            return o.serialize()
-        elif isinstance(o, News):
+        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile)):
             return o.serialize()
         elif isinstance(o, DataFrame):
-            return '://dataframe'
+            return "://dataframe"
         elif isinstance(o, Index):
-            return '://index'
+            return "://index"
         elif isinstance(o, np.ndarray):
-            return '://ndarray'
+            return "://ndarray"
         elif isinstance(o, Series):
             return list(o)
         elif isinstance(o, type):
             return str(o).lower()
-        elif isinstance(o, TwoAxesInstanciatedChart):
-            return o.to_dict()
-        elif isinstance(o, InstanciatedTable):
-            return o.to_dict()
-        elif isinstance(o, TableStyles):
-            return o.to_dict()
-        elif isinstance(o, ChartFilter):
+        elif isinstance(o, (ChartFilter, InstanciatedTable, TableStyles, TwoAxesInstanciatedChart)):
             return o.to_dict()
         elif isinstance(o, np.integer):
             return int(o)
@@ -155,23 +103,13 @@ class CustomJsonEncoder(JSONEncoder):
             return float(o)
         elif isinstance(o, complex):
             return o.real
-        elif isinstance(o, datetime):
-            return str(o)
-        elif isinstance(o, np.dtype):
+        elif isinstance(o, (datetime, np.dtype)):
             return str(o)
         elif isinstance(o, StudyCaseExecutionLog):
             return o.serialize()
         elif isinstance(o, Namespace):
             return o.to_dict()
-        elif isinstance(o, StudyCaseDto):
-            return o.serialize()
-        elif isinstance(o, AccessRights):
-            return o.serialize()
-        elif isinstance(o, StudyCaseEntityRights):
-            return o.serialize()
-        elif isinstance(o, ProcessEntityRights):
-            return o.serialize()
-        elif isinstance(o, GroupEntityRights):
+        elif isinstance(o, (AccessRights, GroupEntityRights, ProcessEntityRights, StudyCaseDto, StudyCaseEntityRights)):
             return o.serialize()
         elif isinstance(o, PostProcessingBundle):
             return o.to_dict()

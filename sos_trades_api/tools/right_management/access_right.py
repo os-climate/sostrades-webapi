@@ -23,20 +23,20 @@ from sos_trades_api.models.database_models import UserProfile
 tools methods to check user access right on API resources
 """
 
-APP_MODULE_STUDY = 'STUDY'
-APP_MODULE_EXECUTION = 'EXECUTION'
-APP_MODULE_STUDY_MANAGER = 'STUDY_MANAGER'
+APP_MODULE_STUDY = "STUDY"
+APP_MODULE_EXECUTION = "EXECUTION"
+APP_MODULE_STUDY_MANAGER = "STUDY_MANAGER"
 
 
 def get_applicative_module(user_profile_id: int) -> List[str]:
-    """Method that check applicative module access regarding profile id
+    """
+    Method that check applicative module access regarding profile id
 
     Return the profile application module list
 
     :param user_profile_id: profile identifier to check
     :type user_profile_id: int
     """
-
     profile = UserProfile.query.filter(
         UserProfile.id == user_profile_id).first()
 
@@ -54,7 +54,8 @@ def get_applicative_module(user_profile_id: int) -> List[str]:
 
 
 def has_access_to(user_profile_id, applicative_module) -> bool:
-    """ Method that check applicative module access regarding profile id
+    """
+    Method that check applicative module access regarding profile id
 
     :param user_profile_id: profile identifier to check
     :type user_profile_id: int
@@ -62,7 +63,6 @@ def has_access_to(user_profile_id, applicative_module) -> bool:
     :param applicative_module: applicative to check regarding the user profile
     :type applicative_module: str
     """
-
     profile = UserProfile.query.filter(
         UserProfile.id == user_profile_id).first()
 
@@ -80,14 +80,14 @@ def has_access_to(user_profile_id, applicative_module) -> bool:
 
 
 def check_user_is_manager(user_profile_id):
-    """ Method that check if user is manager regarding his profile id
+    """
+    Method that check if user is manager regarding his profile id
 
-       :param user_profile_id: profile identifier to check
-       :type user_profile_id: int
+    :param user_profile_id: profile identifier to check
+    :type user_profile_id: int
 
-       :return boolean
-       """
-
+    :return boolean
+    """
     result = False
     profile = UserProfile.query.filter(UserProfile.id == user_profile_id).first()
     if profile is not None:

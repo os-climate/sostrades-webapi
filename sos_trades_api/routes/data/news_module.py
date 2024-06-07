@@ -29,31 +29,29 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.tools.right_management.access_right import check_user_is_manager
 
 
-@app.route('/api/data/news', methods=['GET'])
+@app.route("/api/data/news", methods=["GET"])
 @auth_required
 def get_all_news():
     """
     Retrieve all news information about application
     :return: all new_information[]
     """
-
     news = get_news()
     resp = make_response(jsonify(news), 200)
     return resp
 
 
-@app.route('/api/data/news', methods=['POST'])
+@app.route("/api/data/news", methods=["POST"])
 @auth_required
 def create_new_news():
     """
     Create a news in database
     """
-
-    user = session['user']
-    message = request.json.get('message', None)
+    user = session["user"]
+    message = request.json.get("message", None)
 
     if message is None:
-        raise BadRequest('Missing mandatory parameter: message')
+        raise BadRequest("Missing mandatory parameter: message")
 
     # Check if user profile is manager
     is_manager = check_user_is_manager(user.user_profile_id)
@@ -63,27 +61,26 @@ def create_new_news():
         return resp
 
     else:
-        raise BadRequest('You do not have the necessary rights to create a news')
+        raise BadRequest("You do not have the necessary rights to create a news")
 
 
-@app.route('/api/data/news/<int:news_identifier>', methods=['POST'])
+@app.route("/api/data/news/<int:news_identifier>", methods=["POST"])
 @auth_required
 def update_message_by_id(news_identifier):
     """
     Update a specific news in database
     :param news_identifier: news identifier to retrieve
     """
-
-    user = session['user']
+    user = session["user"]
 
     if news_identifier is None or news_identifier <= 0:
         raise BadRequest(
-            'Invalid argument value for news_identifier.')
+            "Invalid argument value for news_identifier.")
 
-    message = request.json.get('message', None)
+    message = request.json.get("message", None)
 
     if message is None:
-        raise BadRequest('Missing mandatory parameter: message')
+        raise BadRequest("Missing mandatory parameter: message")
 
     # Check if user profile is manager
     is_manager = check_user_is_manager(user.user_profile_id)
@@ -91,21 +88,21 @@ def update_message_by_id(news_identifier):
         resp = make_response(jsonify(update_news(message, news_identifier)), 200)
         return resp
     else:
-        raise BadRequest('You do not have the necessary rights to update a news')
+        raise BadRequest("You do not have the necessary rights to update a news")
 
 
-@app.route('/api/data/news/<int:news_identifier>', methods=['DELETE'])
+@app.route("/api/data/news/<int:news_identifier>", methods=["DELETE"])
 @auth_required
 def delete_message_by_id(news_identifier):
     """
-       Delete a specific message in database
-       :param news_identifier: message identifier to retrieve
-       """
-    user = session['user']
+    Delete a specific message in database
+    :param news_identifier: message identifier to retrieve
+    """
+    user = session["user"]
 
     if news_identifier is None or news_identifier <= 0:
         raise BadRequest(
-            'Invalid argument value for news_identifier.')
+            "Invalid argument value for news_identifier.")
 
     # Check if user profile is manager
     is_manager = check_user_is_manager(user.user_profile_id)
@@ -116,7 +113,7 @@ def delete_message_by_id(news_identifier):
         return resp
 
     else:
-        raise BadRequest('You do not have the necessary rights to delete a news')
+        raise BadRequest("You do not have the necessary rights to delete a news")
 
 
 

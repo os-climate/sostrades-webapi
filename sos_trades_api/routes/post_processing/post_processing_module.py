@@ -33,7 +33,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 
 
-@app.route('/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])
+@app.route("/api/post-processing/study-case/<int:study_id>/post-processing", methods=["POST"])
 @auth_required
 def get_post_processing(study_id):
 
@@ -45,27 +45,27 @@ def get_post_processing(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to retrieve this study case post processing')
+                "You do not have the necessary rights to retrieve this study case post processing")
 
         # Proceeding after rights verification
-        if request.method == 'POST':
+        if request.method == "POST":
 
             # filters is not a mandatory parameter
-            filters = request.json.get('filters', None)
+            filters = request.json.get("filters", None)
 
             # Discipline key is a mandatory parameter
-            discipline_key = request.json.get('discipline_key', None)
+            discipline_key = request.json.get("discipline_key", None)
 
             # Module key is not a mandatory parameter
-            module_name = request.json.get('module_name', '')
+            module_name = request.json.get("module_name", "")
 
             missing_parameter = []
             if discipline_key is None:
                 missing_parameter.append(
-                    'Missing mandatory parameter: discipline_key')
+                    "Missing mandatory parameter: discipline_key")
 
             if len(missing_parameter) > 0:
-                return BadRequest('\n'.join(missing_parameter))
+                return BadRequest("\n".join(missing_parameter))
 
             object_filters = None
 
@@ -79,22 +79,22 @@ def get_post_processing(study_id):
                 jsonify(load_post_processing(study_id, discipline_key, object_filters, module_name)), 200)
             return resp
 
-    raise BadRequest('Missing mandatory parameter: study identifier in url')
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
-@app.route('/api/post-processing/study-case/<int:study_id>/filter/by/discipline', methods=['POST'])
+@app.route("/api/post-processing/study-case/<int:study_id>/filter/by/discipline", methods=["POST"])
 @auth_required
 def get_post_processing_filter(study_id):
 
-    discipline_key = request.json.get('discipline_key', None)
+    discipline_key = request.json.get("discipline_key", None)
 
     missing_parameter = []
     if discipline_key is None:
         missing_parameter.append(
-            'Missing mandatory parameter: discipline_key')
+            "Missing mandatory parameter: discipline_key")
 
     if len(missing_parameter) > 0:
-        return BadRequest('\n'.join(missing_parameter))
+        return BadRequest("\n".join(missing_parameter))
 
     # Checking if user can access study data
     user = get_authenticated_user()
@@ -103,7 +103,7 @@ def get_post_processing_filter(study_id):
     study_case_access = StudyCaseAccess(user.id, study_id)
     if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
         raise BadRequest(
-            'You do not have the necessary rights to retrieve this study case post processing filters')
+            "You do not have the necessary rights to retrieve this study case post processing filters")
 
     # Proceeding after rights verification
     resp = make_response(

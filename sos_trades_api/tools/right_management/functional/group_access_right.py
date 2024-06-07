@@ -27,17 +27,19 @@ methods to define access rights for a group
 
 
 class GroupAccess(ResourceAccess):
-
-    """ Class containing the access right of a group of SoSTrades.
+    """
+    Class containing the access right of a group of SoSTrades.
     """
 
     def __init__(self, user_id):
-        """Constructor
+        """
+        Constructor
         """
         ResourceAccess.__init__(self, user_id)
 
     def check_user_right_for_group(self, right_type, group_id=None):
-        """ Methods that check that the given user right to have a specific right for a specific process
+        """
+        Methods that check that the given user right to have a specific right for a specific process
         """
         has_access = False
         if group_id is not None:

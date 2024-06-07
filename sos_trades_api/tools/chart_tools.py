@@ -27,7 +27,8 @@ various function  regarding chart api
 
 
 def load_post_processing(exec_engine, with_charts):
-    """Methods that iterates through all execution engine disciplines to request their associated filter
+    """
+    Methods that iterates through all execution engine disciplines to request their associated filter
 
     :params: exec_engine execution engine to request
     :type: ExecutionEngine
@@ -37,13 +38,12 @@ def load_post_processing(exec_engine, with_charts):
 
     :return: dictionary with discipline id as key and ChartFilter list as value and a second dictionary depending of the 'with_chart' arguments with discipline id as key and Chart list as value
     """
-
     all_post_processings = {}
 
     if exec_engine is not None and exec_engine.dm is not None and exec_engine.dm.disciplines_dict is not None and len(exec_engine.dm.disciplines_dict) > 0:
         start_time = time.time()
         exec_engine.logger.info(
-            f'Retrieve post-processing for study ({len(exec_engine.dm.disciplines_dict)} discipline to check) ')
+            f"Retrieve post-processing for study ({len(exec_engine.dm.disciplines_dict)} discipline to check) ")
 
         post_processing_factory = PostProcessingFactory()
 
@@ -51,6 +51,6 @@ def load_post_processing(exec_engine, with_charts):
             exec_engine, not with_charts)
 
         exec_engine.logger.info(
-            f'End of post-processing generation ({time.time() - start_time} seconds)')
+            f"End of post-processing generation ({time.time() - start_time} seconds)")
 
     return all_post_processings

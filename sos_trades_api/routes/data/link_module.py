@@ -30,47 +30,45 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 
 
-@app.route('/api/data/link', methods=['GET'])
+@app.route("/api/data/link", methods=["GET"])
 @auth_required
 def index():
     resp = make_response(jsonify(get_links()), 200)
     return resp
 
 
-@app.route('/api/data/link/<int:link_identifier>', methods=['GET'])
+@app.route("/api/data/link/<int:link_identifier>", methods=["GET"])
 @auth_required
 def get_link_by_id(link_identifier):
     """
     Get a specific link from database
     :param link_identifier: link identifier to retrieve
     """
-
     if link_identifier is None or link_identifier <= 0:
-        raise BadRequest(f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer')
+        raise BadRequest(f"Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer")
 
     resp = make_response(jsonify(get_link(link_identifier)), 200)
     return resp
 
 
-@app.route('/api/data/link', methods=['POST'])
+@app.route("/api/data/link", methods=["POST"])
 @auth_required
 def create():
     """
     Create a new Link in database
     """
-
-    user = session['user']
-    url = request.json.get('url', None)
-    label = request.json.get('label', None)
-    description = request.json.get('description', None)
+    user = session["user"]
+    url = request.json.get("url", None)
+    label = request.json.get("label", None)
+    description = request.json.get("description", None)
 
     missing_parameter = []
     if url is None or len(url) == 0:
-        missing_parameter.append('Missing mandatory parameter: url')
+        missing_parameter.append("Missing mandatory parameter: url")
     if label is None or len(label) == 0:
-        missing_parameter.append('Missing mandatory parameter: label')
+        missing_parameter.append("Missing mandatory parameter: label")
     if description is None or len(description) == 0:
-        missing_parameter.append('Missing mandatory parameter: description')
+        missing_parameter.append("Missing mandatory parameter: description")
 
     if len(missing_parameter) > 0:
         raise BadRequest(missing_parameter)
@@ -81,34 +79,33 @@ def create():
     return resp
 
 
-@app.route('/api/data/link/<int:link_identifier>', methods=['POST'])
+@app.route("/api/data/link/<int:link_identifier>", methods=["POST"])
 @auth_required
 def update_link_by_id(link_identifier):
     """
     update a specific link in database
     :param link_identifier: link identifier to retrieve
     """
-
-    user = session['user']
+    user = session["user"]
 
     if link_identifier is None or link_identifier <= 0:
-        raise BadRequest(f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected strictly positive integer')
+        raise BadRequest(f"Invalid argument value for link_identifier.\nReceived {link_identifier}, expected strictly positive integer")
 
-    id = request.json.get('id', None)
-    url = request.json.get('url', None)
-    label = request.json.get('label', None)
-    description = request.json.get('description', None)
+    id = request.json.get("id", None)
+    url = request.json.get("url", None)
+    label = request.json.get("label", None)
+    description = request.json.get("description", None)
 
     if not id == link_identifier:
-        raise BadRequest('Invalid payload identifier regard url parameter')
+        raise BadRequest("Invalid payload identifier regard url parameter")
 
     missing_parameter = []
     if url is None or len(url) == 0:
-        missing_parameter.append('Missing mandatory parameter: url')
+        missing_parameter.append("Missing mandatory parameter: url")
     if label is None or len(label) == 0:
-        missing_parameter.append('Missing mandatory parameter: label')
+        missing_parameter.append("Missing mandatory parameter: label")
     if description is None or len(description) == 0:
-        missing_parameter.append('Missing mandatory parameter: description')
+        missing_parameter.append("Missing mandatory parameter: description")
 
     if len(missing_parameter) > 0:
         raise BadRequest(missing_parameter)
@@ -120,13 +117,13 @@ def update_link_by_id(link_identifier):
     return resp
 
 
-@app.route('/api/data/link/<int:link_identifier>', methods=['DELETE'])
+@app.route("/api/data/link/<int:link_identifier>", methods=["DELETE"])
 @auth_required
 def delete_link_by_id(link_identifier):
 
     if link_identifier is None or link_identifier <= 0:
         raise BadRequest(
-            f'Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer')
+            f"Invalid argument value for link_identifier.\nReceived {link_identifier}, expected stricly positive integer")
 
     delete_link(link_identifier)
 

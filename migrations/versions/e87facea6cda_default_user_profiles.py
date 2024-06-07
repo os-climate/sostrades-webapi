@@ -25,8 +25,8 @@ Create Date: 2021-10-05 17:52:36.266661
 
 """
 # revision identifiers, used by Alembic.
-revision = 'e87facea6cda'
-down_revision = '40ca717b5c0a'
+revision = "e87facea6cda"
+down_revision = "40ca717b5c0a"
 branch_labels = None
 depends_on = None
 
@@ -37,12 +37,12 @@ def upgrade():
 
         study_manager_profile = UserProfile()
         study_manager_profile.name = UserProfile.STUDY_MANAGER
-        study_manager_profile.description = 'Study manager (platform access rights) account for SoSTrades application'
+        study_manager_profile.description = "Study manager (platform access rights) account for SoSTrades application"
         db.session.add(study_manager_profile)
 
         study_user_profile = UserProfile()
         study_user_profile.name = UserProfile.STUDY_USER
-        study_user_profile.description = 'Study user (user rights) account for SoSTrades application'
+        study_user_profile.description = "Study user (user rights) account for SoSTrades application"
         db.session.add(study_user_profile)
 
         db.session.commit()

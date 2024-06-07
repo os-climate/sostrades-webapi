@@ -36,7 +36,6 @@ class ProcessAccess(ResourceAccess):
         :param user_id: user identifier to manage
         :type user_id: int
         """
-
         super().__init__(user_id)
         self.__reset()
         self.retrieve_user_all_process_rights()
@@ -57,7 +56,7 @@ class ProcessAccess(ResourceAccess):
         """
         self._user_loaded_process_list[loaded_process.id] = loaded_process
         self._user_loaded_process_list_by_name[
-            f'{loaded_process.repository_id}.{loaded_process.process_id}'
+            f"{loaded_process.repository_id}.{loaded_process.process_id}"
         ] = loaded_process
 
     def retrieve_user_all_process_rights(self):
@@ -68,7 +67,6 @@ class ProcessAccess(ResourceAccess):
         2 - get process declared for groups where the user belongs
         3 - add all non accessible process (no rights but listed anyway)
         """
-
         self.__reset()
 
         # Manage retrieving of process where the user is declared
@@ -90,7 +88,7 @@ class ProcessAccess(ResourceAccess):
 
             # Adding process to loaded process list
             new_loaded_process = LoadedProcess(
-                current_process.id, current_process.name, current_process.process_path
+                current_process.id, current_process.name, current_process.process_path,
             )
 
             if current_access_rights.access_right == AccessRights.MANAGER:
@@ -149,21 +147,21 @@ class ProcessAccess(ResourceAccess):
 
         # Get all process already in the user list
         already_manage_processes_identifier = list(
-            self._user_loaded_process_list.keys()
+            self._user_loaded_process_list.keys(),
         )
 
         for one_process in all_processes:
 
             if one_process.id not in already_manage_processes_identifier:
                 new_loaded_process = LoadedProcess(
-                    one_process.id, one_process.name, one_process.process_path
+                    one_process.id, one_process.name, one_process.process_path,
                 )
                 new_loaded_process.is_manager = False
                 new_loaded_process.is_contributor = False
                 self.__add_loaded_process(new_loaded_process)
 
     def check_user_right_for_process(
-        self, right_type, process_name=None, repository_name=None, process_id=None
+        self, right_type, process_name=None, repository_name=None, process_id=None,
     ):
         """
         Methods that check that the given user right to have a specific right for a specific process
@@ -203,9 +201,7 @@ class ProcessAccess(ResourceAccess):
                     loaded_process = self._user_loaded_process_list[current_process.id]
 
                     if loaded_process is not None:
-                        if loaded_process.is_manager:
-                            has_access = True
-                        elif (
+                        if loaded_process.is_manager or (
                             right_type == AccessRights.CONTRIBUTOR
                             and loaded_process.is_contributor
                         ):
@@ -225,11 +221,11 @@ class ProcessAccess(ResourceAccess):
         if process_name is not None and repository_name is not None:
 
             process = Process.query.filter(
-                Process.name == process_name, Process.process_path == repository_name
+                Process.name == process_name, Process.process_path == repository_name,
             ).first()
             if process is None:
                 self.__logger.warning(
-                    f'Impossible to find process {process_name} in repository {repository_name} in the database'
+                    f"Impossible to find process {process_name} in repository {repository_name} in the database",
                 )
 
             return process
@@ -247,19 +243,19 @@ class ProcessAccess(ResourceAccess):
         authorized_process_list = []
 
         all_processes = Process.query.filter(
-            Process.disabled == with_disabled_process
+            Process.disabled == with_disabled_process,
         ).all()
 
         for process in all_processes:
 
             if process.id in self._user_loaded_process_list:
                 authorized_process_list.append(
-                    self._user_loaded_process_list[process.id]
+                    self._user_loaded_process_list[process.id],
                 )
 
         if len(authorized_process_list) > 0:
             authorized_process_list = sorted(
-                authorized_process_list, key=lambda ap: ap.repository_name.lower()
+                authorized_process_list, key=lambda ap: ap.repository_name.lower(),
             )
 
         return authorized_process_list

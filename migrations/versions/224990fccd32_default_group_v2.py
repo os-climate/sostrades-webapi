@@ -1,4 +1,5 @@
-"""default_group_v2
+"""
+default_group_v2
 
 Revision ID: 224990fccd32
 Revises: 5e995cf0ba49
@@ -10,8 +11,8 @@ from sos_trades_api.models.database_models import Group
 from sos_trades_api.server.base_server import db
 
 # revision identifiers, used by Alembic.
-revision = '224990fccd32'
-down_revision = '5e995cf0ba49'
+revision = "224990fccd32"
+down_revision = "5e995cf0ba49"
 branch_labels = None
 depends_on = None
 

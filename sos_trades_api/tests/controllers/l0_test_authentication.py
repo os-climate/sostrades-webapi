@@ -29,7 +29,8 @@ Test class for authentication procedures
 
 
 class TestAuthentication(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to authentication controller
+    """
+    Test class for methods related to authentication controller
     Default accounts are used to check those controller
     """
 
@@ -38,18 +39,18 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
 
         # Retrieve standard user password (for test purpose)
         root_folder = dirname(sos_trades_api_file)
-        secret_path = join(root_folder, 'secret')
-        secret_filepath = join(secret_path, 'standardUserPassword')
+        secret_path = join(root_folder, "secret")
+        secret_filepath = join(secret_path, "standardUserPassword")
 
-        with open(secret_filepath, 'r') as f:
+        with open(secret_filepath) as f:
             self.standard_user_password = f.read()
             f.close()
 
     def test_login_succeeded(self):
-        """ Using a valid pair of credential, check authentication process.
+        """
+        Using a valid pair of credential, check authentication process.
         As the account cannot be one declared into LDAP directory, the test is done using a local test account attached to the application
         """
-
         from flask_jwt_extended import decode_token
 
         from sos_trades_api.controllers.sostrades_data.authentication_controller import (
@@ -65,13 +66,13 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
 
             decoded_token = decode_token(jwt_access)
 
-            self.assertEqual(decoded_token['identity'], User.STANDARD_USER_ACCOUNT_EMAIL,
-                             'Test account user is not the same than the one stored into the jwt token')
+            self.assertEqual(decoded_token["identity"], User.STANDARD_USER_ACCOUNT_EMAIL,
+                             "Test account user is not the same than the one stored into the jwt token")
 
     def test_login_failed(self):
-        """ Using invalid pair of credential, check that authentication process is failing
         """
-
+        Using invalid pair of credential, check that authentication process is failing
+        """
         from sos_trades_api.controllers.sostrades_data.authentication_controller import (
             authenticate_user_standard,
         )
@@ -85,9 +86,9 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
             # Test faillure on test account
             with self.assertRaises(InvalidCredentials):
                 authenticate_user_standard(
-                    User.STANDARD_USER_ACCOUNT_NAME, 'bad password')
+                    User.STANDARD_USER_ACCOUNT_NAME, "bad password")
 
             # Test faillure on unknown account
             with self.assertRaises(InvalidCredentials):
                 authenticate_user_standard(
-                    'unknown_user', 'bad password')
+                    "unknown_user", "bad password")

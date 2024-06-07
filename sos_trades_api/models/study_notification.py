@@ -30,13 +30,14 @@ class StudyNotification:
         self.changes = changes
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'id': self.id,
-            'created': self.created,
-            'author': self.author,
-            'type': self.type,
-            'message': self.message,
-            'changes': self.changes
+            "id": self.id,
+            "created": self.created,
+            "author": self.author,
+            "type": self.type,
+            "message": self.message,
+            "changes": self.changes,
         }

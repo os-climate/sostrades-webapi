@@ -52,7 +52,7 @@ class StudyCaseError(Exception):
         Exception.__init__(self, msg)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 class InvalidProcess(StudyCaseError):
@@ -64,7 +64,8 @@ class InvalidStudy(StudyCaseError):
 
 
 def study_need_to_be_updated(study_id, last_modification):
-    """ Methods that check that the given study identifier last modification date is anterior
+    """
+    Methods that check that the given study identifier last modification date is anterior
     to the database last modification date
     group identifier
 
@@ -85,14 +86,15 @@ def study_need_to_be_updated(study_id, last_modification):
 
         is_anterior = study_case.modification_date > last_modification
         app.logger.info(
-            f'Check study identifier {study_id} database date/cached date ({study_case.modification_date}/{last_modification}) need to be updated {is_anterior}')
+            f"Check study identifier {study_id} database date/cached date ({study_case.modification_date}/{last_modification}) need to be updated {is_anterior}")
 
         return is_anterior
 
 
 
 def study_case_manager_loading(study_case_manager, no_data, read_only, profile_loading=False):
-    """ Method that load data into a study case manager
+    """
+    Method that load data into a study case manager
         (usefull for threading study data loading)
 
     :params: study_case_manager, study case manager instance to load
@@ -112,11 +114,11 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
     if profile_loading:
         profiler = cProfile.Profile()
         profiler.enable()
-    
+
     try:
         start_time = time()
         sleep()
-        app.logger.info(f'Loading in background {study_case_manager.study.name}')
+        app.logger.info(f"Loading in background {study_case_manager.study.name}")
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         study_case_manager.load_study_case_from_source()
@@ -137,8 +139,8 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End background loading {study_case_manager.study.name}')
-        app.logger.info('Elapsed time synthesis:')
+            f"End background loading {study_case_manager.study.name}")
+        app.logger.info("Elapsed time synthesis:")
         app.logger.info(
             f'{"Data load":<25} {load_study_case_time - start_time:<5} seconds')
         app.logger.info(
@@ -150,10 +152,10 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
-            f'Error when loading in background {study_case_manager.study.name}')
-        
+            f"Error when loading in background {study_case_manager.study.name}")
+
     if profile_loading:
         profiler.disable()
         profiling_output = io.StringIO()
@@ -166,7 +168,8 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
 
 
 def study_case_manager_update(study_case_manager, values, no_data, read_only):
-    """ Method that inject data into a study case manager
+    """
+    Method that inject data into a study case manager
         (usefull for threading study data loading)
 
     :params: study_case_manager, study case manager instance to load
@@ -187,7 +190,7 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
     try:
         sleep()
         app.logger.info(
-            f'Updating in background {study_case_manager.study.name}')
+            f"Updating in background {study_case_manager.study.name}")
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
@@ -232,18 +235,19 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End background updating {study_case_manager.study.name}')
+            f"End background updating {study_case_manager.study.name}")
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
-            f'Error when updating in background {study_case_manager.study.name}')
+            f"Error when updating in background {study_case_manager.study.name}")
 
 
 def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, notification_id):
-    """ Method that inject data into a study case manager from a datasets mapping
+    """
+    Method that inject data into a study case manager from a datasets mapping
 
     :params: study_case_manager, study case manager instance to load
     :type: StudyCaseManager
@@ -258,10 +262,10 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
     from sos_trades_api.models.loaded_study_case import LoadStatus
     from sos_trades_api.server.base_server import app
-    # todo: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
+    # TODO: really need a new method ? --> ulterior refacto of study_case_manager_update PENDING
     try:
         sleep()
-        app.logger.info(f'Updating in background (from datasets mapping) {study_case_manager.study.name}')
+        app.logger.info(f"Updating in background (from datasets mapping) {study_case_manager.study.name}")
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
         study_case_manager.dataset_load_status = LoadStatus.IN_PROGESS
@@ -275,17 +279,17 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                 from_datasets_mapping=datasets_mapping_deserialized, display_treeview=False)
         except DatasetGenericException as ex:
             study_case_manager.dataset_load_status = LoadStatus.IN_ERROR
-            study_case_manager.dataset_load_error = f'{ex}'
-            
+            study_case_manager.dataset_load_error = f"{ex}"
+
             app.logger.exception(
-                f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
-            
+                f"Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}")
+
             # reload data from file to remove the potential changes and keep the study in coherent status
             app.logger.debug(
-                'Reloading study case to remove potential changes')
+                "Reloading study case to remove potential changes")
             study_case_manager.load_study_case_from_source()
             app.logger.debug(
-                'Finished Reloading study case to remove potential changes')
+                "Finished Reloading study case to remove potential changes")
 
         with app.app_context():
             if study_case_manager.dataset_load_status != LoadStatus.IN_ERROR:
@@ -299,7 +303,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
 
                     # Add change to database
                     for param_chg in datasets_parameter_changes:
-                        
+
 
                         # Check if new value is a dataframe or dict
                         if isinstance(param_chg.new_value, (pandas.DataFrame, dict, ndarray)):
@@ -333,7 +337,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                             param_chg.date,
                             param_chg.connector_id,
                             param_chg.dataset_id,
-                            param_chg.dataset_parameter_id
+                            param_chg.dataset_parameter_id,
                         )
 
                     study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
@@ -357,26 +361,27 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
             clean_obsolete_data_validation_entries(study_case_manager)
 
             study_case_manager.n2_diagram = {}
-                                  
+
 
             # set the loadStatus to loaded to end the loading of a study
             study_case_manager.load_status = LoadStatus.LOADED
 
             app.logger.info(
-                f'End background updating (from datasets mapping) {study_case_manager.study.name}')
-    
+                f"End background updating (from datasets mapping) {study_case_manager.study.name}")
+
     except Exception as ex:
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         app.logger.exception(
-            f'Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}')
+            f"Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}")
 
 
 def study_case_manager_loading_from_reference(study_case_manager, no_data, read_only, reference_folder,
                                               reference_identifier):
-    """ Method that initialize a study case manager instance with a reference
+    """
+    Method that initialize a study case manager instance with a reference
         (usefull for threading study data loading)
 
     :params: study_case_manager, study case manager instance to load
@@ -394,7 +399,6 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
     :params: reference_identifier, reference identifier
     :type: string
     """
-
     study_name = study_case_manager.study.name
 
     try:
@@ -402,7 +406,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
         app.logger.info(
-            f'Loading reference in background {study_name}')
+            f"Loading reference in background {study_name}")
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
@@ -439,7 +443,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End background reference loading {study_name}')
+            f"End background reference loading {study_name}")
     except Exception as ex:
         with app.app_context():
             study_case = StudyCase.query.filter(
@@ -450,14 +454,15 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
-            f'Error when loading reference in background {study_name}')
+            f"Error when loading reference in background {study_name}")
 
 
 def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, read_only, repository_name, process_name,
                                                  reference):
-    """ Method that initialize a study case manager instance with a reference
+    """
+    Method that initialize a study case manager instance with a reference
         (usefull for threading study data loading)
 
     :params: study_case_manager, study case manager instance to load
@@ -484,14 +489,13 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
         app.logger.info(
-            f'Loading usecase data in background {study_case_manager.study.name}')
+            f"Loading usecase data in background {study_case_manager.study.name}")
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
         imported_module = import_module(
-            '.'.join([repository_name, process_name, reference]))
-        imported_usecase = getattr(
-            imported_module, 'Study')()
+            ".".join([repository_name, process_name, reference]))
+        imported_usecase = imported_module.Study()
 
         imported_usecase.load_data()
         input_dict = imported_usecase.execution_engine.get_anonimated_data_dict()
@@ -523,7 +527,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End of loading usecase data in background {study_case_manager.study.name}')
+            f"End of loading usecase data in background {study_case_manager.study.name}")
     except Exception as ex:
         with app.app_context():
             study_case = StudyCase.query.filter(
@@ -534,13 +538,14 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
-            f'Error when loading usecase data in background {study_case_manager.study.name}')
+            f"Error when loading usecase data in background {study_case_manager.study.name}")
 
 
 def study_case_manager_loading_from_study(study_case_manager, no_data, read_only, source_study):
-    """ Method that initialize a study case manager instance with a reference
+    """
+    Method that initialize a study case manager instance with a reference
         (usefull for threading study data loading)
 
     :params: study_case_manager, study case manager instance to load
@@ -560,7 +565,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import app
         app.logger.info(
-            f'Loading from study in background {study_case_manager.study.name}')
+            f"Loading from study in background {study_case_manager.study.name}")
 
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
@@ -598,12 +603,12 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
         study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
-            f'End of loading from study in background {study_case_manager.study.name}')
+            f"End of loading from study in background {study_case_manager.study.name}")
     except Exception as ex:
 
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
-            ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
+            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
         app.logger.exception(
-            f'Error when loading from study in background {study_case_manager.study.name}')
+            f"Error when loading from study in background {study_case_manager.study.name}")

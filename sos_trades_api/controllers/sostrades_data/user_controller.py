@@ -58,14 +58,14 @@ class UserError(Exception):
         message = None
         if msg is not None:
             if isinstance(msg, Exception):
-                message = f'the following exception occurs {msg}.\n{traceback.format_exc()}'
+                message = f"the following exception occurs {msg}.\n{traceback.format_exc()}"
             else:
                 message = msg
 
         Exception.__init__(self, message)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 class InvalidUser(UserError):
@@ -73,7 +73,8 @@ class InvalidUser(UserError):
 
 
 def get_user_list() -> List[User]:
-    """Ask database to retrieve all users information's
+    """
+    Ask database to retrieve all users information's
     """
     users_query = User.query.all()
 
@@ -81,7 +82,8 @@ def get_user_list() -> List[User]:
 
 
 def get_user_list_for_sharing() -> List[UserDto]:
-    """Ask database to retrieve all users information's
+    """
+    Ask database to retrieve all users information's
     """
     users_query = User.query.all()
     user_dto_list = []
@@ -97,11 +99,12 @@ def get_user_list_for_sharing() -> List[UserDto]:
     if len(users_query) == len(user_dto_list):
         return user_dto_list
     else:
-        raise UserError('User list not coherent')
+        raise UserError("User list not coherent")
 
 
 def add_user(firstname, lastname, username, password, email, user_profile_id) -> User:
-    """Create a new user in database
+    """
+    Create a new user in database
 
     :param firstname: user first name
     :type firstname: str
@@ -124,7 +127,6 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
     :param user_profile_id: user profile identifier
     :type user_profile_id: int
     """
-
     # --
     # Make some check about user creation restriction
 
@@ -134,9 +136,9 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
 
     if len(duplicate_users) > 0:
         app.logger.error(
-            f'Failed to add a user with duplicated database entries username {username} or email {email}')
+            f"Failed to add a user with duplicated database entries username {username} or email {email}")
         raise InvalidUser(
-            'A user with the same username or email already exist in database')
+            "A user with the same username or email already exist in database")
 
     new_user = User()
     new_user.firstname = firstname
@@ -163,7 +165,8 @@ def add_user(firstname, lastname, username, password, email, user_profile_id) ->
 
 
 def update_user(user_id, firstname, lastname, username, email, user_profile_id) -> (bool, bool):
-    """Update an existing user in database
+    """
+    Update an existing user in database
 
     Return information about profile change (first boolean) and mail sent about this change(second boolean)
 
@@ -200,9 +203,9 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id) 
 
         if len(duplicate_users) > 0:
             app.logger.error(
-                f'Trying to update a user with duplicated database entries username {username} or email {email}')
+                f"Trying to update a user with duplicated database entries username {username} or email {email}")
             raise InvalidUser(
-                'A user with the same username or email already exist in database')
+                "A user with the same username or email already exist in database")
 
         user_to_update.firstname = firstname
         user_to_update.lastname = lastname
@@ -217,14 +220,14 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id) 
             # Sending warning mail if user profile changed
             if old_user_profile != user_profile_id:
                 new_profile = True
-                profile_name = 'No profile'
+                profile_name = "No profile"
                 if user_profile_id is not None:
                     profile_name_query = UserProfile.query.filter(
                         UserProfile.id == user_profile_id).first()
                     if profile_name_query is not None:
                         profile_name = profile_name_query.name
                     else:
-                        profile_name = 'No profile'
+                        profile_name = "No profile"
 
                 mail_send = send_right_update_mail(user_to_update, profile_name)
 
@@ -232,43 +235,43 @@ def update_user(user_id, firstname, lastname, username, email, user_profile_id) 
 
         except Exception as error:
             app.logger.exception(
-                f'Updating user {username} raise the following error')
+                f"Updating user {username} raise the following error")
             raise InvalidUser(
-                f'Updating user {username} raise the following error : {error}')
+                f"Updating user {username} raise the following error : {error}")
 
-        return f' User {username} has been successfully updated in the database'
+        return f" User {username} has been successfully updated in the database"
 
-    app.logger.error(f'User not found in database, requested id {user_id}')
+    app.logger.error(f"User not found in database, requested id {user_id}")
     raise InvalidUser(
-        'User not found in database')
+        "User not found in database")
 
 
 def delete_user(user_id) -> str:
-    """Delete an existing user from database
+    """
+    Delete an existing user from database
 
     Return message according to the user deletion
 
     :param user_id: user database primary key
     :type user_id: int
     """
-
     user_to_delete = User.query.filter(User.id == user_id).first()
 
     if user_to_delete is not None:
 
         # Select group with user in
-        query_group = Group.query.join(GroupAccessUser).filter(Group.id == GroupAccessUser.group_id
-                                                               ).filter(GroupAccessUser.user_id == user_id
+        query_group = Group.query.join(GroupAccessUser).filter(Group.id == GroupAccessUser.group_id,
+                                                               ).filter(GroupAccessUser.user_id == user_id,
                                                                         ).all()
         group_with_user = []
         for gr in query_group:
             group_with_user.append(gr.id)
 
         # Select group with user and count members
-        query_count_group = db.session.query(func.count(GroupAccessUser.id), GroupAccessUser.group_id
-                                             ).filter(GroupAccessUser.group_id == Group.id
-                                                      ).filter(Group.id.in_(group_with_user)
-                                                               ).group_by(GroupAccessUser.group_id
+        query_count_group = db.session.query(func.count(GroupAccessUser.id), GroupAccessUser.group_id,
+                                             ).filter(GroupAccessUser.group_id == Group.id,
+                                                      ).filter(Group.id.in_(group_with_user),
+                                                               ).group_by(GroupAccessUser.group_id,
                                                                           ).all()
 
         # Remove group where user is alone
@@ -281,23 +284,24 @@ def delete_user(user_id) -> str:
         for sc in study_cases:
             sc.user_id_execution_authorised = None
             db.session.add(sc)
-        
+
 
         # Removing user from db
         db.session.delete(user_to_delete)
         db.session.commit()
 
-        message = f' User {user_to_delete.username} has been successfully deleted in the database'
+        message = f" User {user_to_delete.username} has been successfully deleted in the database"
         app.logger.info(message)
         return message
 
-    app.logger.error(f'User not found in database, requested id {user_id}')
+    app.logger.error(f"User not found in database, requested id {user_id}")
     raise InvalidUser(
-        'User cannot be found in the database')
+        "User cannot be found in the database")
 
 
 def get_user_profile_list() -> List[UserProfile]:
-    """Ask database to retrieved different existing user profiles
+    """
+    Ask database to retrieved different existing user profiles
     """
     user_profiles = UserProfile.query.all()
 
@@ -305,12 +309,12 @@ def get_user_profile_list() -> List[UserProfile]:
 
 
 def reset_user_password(user_id):
-    """Reset password of an existing user from database
+    """
+    Reset password of an existing user from database
 
     :param user_id: user database primary key
     :type user_id: int
     """
-
     # Get user from db
     user = User.query.filter(User.id == user_id).first()
 
@@ -333,13 +337,14 @@ def reset_user_password(user_id):
             db.session.rollback()
             raise ex
 
-    app.logger.error(f'User not found in database, requested id {user_id}')
+    app.logger.error(f"User not found in database, requested id {user_id}")
     raise InvalidUser(
-        'User cannot be found in the database')
+        "User cannot be found in the database")
 
 
 def change_user_password(token, password):
-    """Change password of an existing user from database
+    """
+    Change password of an existing user from database
 
     :param token: user reset uuid token
     :type token: str
@@ -347,7 +352,6 @@ def change_user_password(token, password):
     :param password: new user password
     :type password: str
     """
-
     # Get user from db using token uuid
     user = User.query.filter(User.reset_uuid == token).first()
 
@@ -361,7 +365,7 @@ def change_user_password(token, password):
 
                 db.session.add(user)
                 db.session.commit()
-                app.logger.info(f'Password successfully changed for user {user.username}')
+                app.logger.info(f"Password successfully changed for user {user.username}")
             else:
                 raise InvalidPassword()
 
@@ -369,8 +373,8 @@ def change_user_password(token, password):
             db.session.rollback()
             raise ex
     else:
-        app.logger.error(f'Reset token not found in database, token value {token}')
-        raise InvalidUser('User cannot be found in the database')
+        app.logger.error(f"Reset token not found in database, token value {token}")
+        raise InvalidUser("User cannot be found in the database")
 
 
 def create_test_user_account():
@@ -393,7 +397,7 @@ def create_test_user_account():
                 user.username = User.STANDARD_USER_ACCOUNT_NAME
                 user.email = User.STANDARD_USER_ACCOUNT_EMAIL
                 user.firstname = User.STANDARD_USER_ACCOUNT_NAME
-                user.lastname = ''
+                user.lastname = ""
 
                 user.user_profile_id = study_user_profile.id
 
@@ -410,7 +414,7 @@ def create_test_user_account():
                 raise exc
 
             try:
-                __set_password_in_secret_path(password, 'standardUserPassword', 'Standard user')
+                __set_password_in_secret_path(password, "standardUserPassword", "Standard user")
             except Exception as exc:
                 db.session.rollback()
                 raise exc
@@ -463,7 +467,7 @@ def create_standard_user_account(username, email, firstname, lastname):
                 raise exc
 
             try:
-                __set_password_in_secret_path(password, f'{username}_Password', 'Standard user')
+                __set_password_in_secret_path(password, f"{username}_Password", "Standard user")
             except Exception as exc:
                 db.session.rollback()
                 raise exc
@@ -472,13 +476,13 @@ def create_standard_user_account(username, email, firstname, lastname):
 
 
 def database_create_user_test(username, password):
-    """Create a new user_test
+    """
+    Create a new user_test
     :param:username, the identification name of the user, must be unique in users database
     :type: str
     :param:password, password of the user count
     :type: str
     """
-
     # Set Profile
     study_user_profile = UserProfile.query.filter_by(name=UserProfile.STUDY_USER).first()
     if study_user_profile is None:
@@ -538,7 +542,8 @@ def database_create_user_test(username, password):
 
 
 def database_set_user_access_group(group_list, username):
-    """Set right access from user to groups
+    """
+    Set right access from user to groups
     :param:username, the identification name of the user, must be unique in users database
     :type: str
     :param:access_right, the level of right access
@@ -546,7 +551,6 @@ def database_set_user_access_group(group_list, username):
     :param:group_list, the list of group targeted
     :type: list
     """
-
     # Retrieve user_test to check if it already exists
     user = User.query.filter_by(username=username).first()
 
@@ -569,10 +573,10 @@ def database_set_user_access_group(group_list, username):
 
 
 def reset_local_user_password_by_name(username):
-    '''
+    """
     Generate and save a new password for the user with the username = USERNAME
     The password is then saved in a file on the local repository
-    '''
+    """
     user = User.query.filter_by(username=username).first()
 
     if user is not None:
@@ -589,7 +593,7 @@ def reset_local_user_password_by_name(username):
             raise exc
 
         try:
-            __set_password_in_secret_path(password, f'{username}_Password', username)
+            __set_password_in_secret_path(password, f"{username}_Password", username)
         except Exception as exc:
             print(f"error while writing in file: {exc.description}")
             db.session.rollback()
@@ -602,7 +606,7 @@ def __set_password_in_secret_path(password, file_name, user_name):
     # Write password in a file to let platform installer
     # retrieve it
     root_folder = dirname(sos_trades_api_file)
-    secret_path = join(root_folder, 'secret')
+    secret_path = join(root_folder, "secret")
 
     if not exists(secret_path):
         try:
@@ -612,22 +616,22 @@ def __set_password_in_secret_path(password, file_name, user_name):
                 raise
 
     secret_filepath = join(secret_path, file_name)
-    with open(secret_filepath, 'w') as f:
+    with open(secret_filepath, "w") as f:
         f.write(password)
         f.close()
     print(
-        f'{user_name} password created, password in {secret_filepath} file, delete it after copying it in a secret store')
+        f"{user_name} password created, password in {secret_filepath} file, delete it after copying it in a secret store")
 
 
 def set_user_default_group(group_id, user_id):
     """
-        change a default group into user
+    change a default group into user
 
-        :param user_id: user database primary key
-        :type user_id: int
+    :param user_id: user database primary key
+    :type user_id: int
 
-        :param group_id: user default group
-        :type group_id: int
+    :param group_id: user default group
+    :type group_id: int
 
     """
     user = db.session.query(User).filter(
@@ -650,26 +654,26 @@ def set_user_default_group(group_id, user_id):
                 raise ex
 
         else:
-            raise InvalidGroup('Group cannot be found in the database')
+            raise InvalidGroup("Group cannot be found in the database")
 
     else:
-        raise InvalidUser('User cannot be found in the database')
+        raise InvalidUser("User cannot be found in the database")
 
 
 def set_user_access_group(group_id, user_id, right_id):
     """
-            Set a group access to a user
+    Set a group access to a user
 
-            :param group_id: group identifier
-            :type group_id: int
+    :param group_id: group identifier
+    :type group_id: int
 
-            :param user_id: user identifier
-            :type user_id: int
+    :param user_id: user identifier
+    :type user_id: int
 
-            :param right_id: access_right identifier
-            :type right_id: int
+    :param right_id: access_right identifier
+    :type right_id: int
 
-        """
+    """
     try:
         user_access_group = GroupAccessUser()
         user_access_group.group_id = group_id

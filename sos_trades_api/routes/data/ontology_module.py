@@ -37,7 +37,7 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 )
 
 
-@app.route('/api/data/ontology/ontology-usages', methods=['POST'])
+@app.route("/api/data/ontology/ontology-usages", methods=["POST"])
 @auth_required
 def load_ontology_request_usages():
     """
@@ -96,22 +96,21 @@ def load_ontology_request_usages():
         }
 
     """
-
-    data_request = request.json.get('ontology_request', None)
+    data_request = request.json.get("ontology_request", None)
 
     missing_parameter = []
     if data_request is None:
         missing_parameter.append(
-            'Missing mandatory parameter: ontology_request')
+            "Missing mandatory parameter: ontology_request")
 
     if len(missing_parameter) > 0:
-        raise BadRequest('\n'.join(missing_parameter))
+        raise BadRequest("\n".join(missing_parameter))
 
     resp = make_response(jsonify(load_ontology_usages(data_request)), 200)
     return resp
 
 
-@app.route('/api/data/ontology/models/status', methods=['GET'])
+@app.route("/api/data/ontology/models/status", methods=["GET"])
 @auth_required
 def load_ontology_models_status():
     """
@@ -136,37 +135,38 @@ def load_ontology_models_status():
     return resp
 
 
-@app.route('/api/data/ontology/full_models_list', methods=['GET'])
+@app.route("/api/data/ontology/full_models_list", methods=["GET"])
 @auth_required
 def load_ontology_full_model_list():
-    """Method that return a list of all ontology disciplines and their related information
-        Returned response is with the following data structure
-           [
-               discipline_id:{
-                   'id': string,
-                   'uri': string,
-                   'label': string,
-                   'definition': string,
-                   'category': string,
-                   'version': string,
-                   'last_modification_date': string,
-                   'source': string,
-                   'validated_by': string,
-                   'python_class': string,
-                   'validated': string,
-                   'icon': string,
-                   'output_parameters_quantity': int,
-                   'input_parameters_quantity': int,
-                   'class_inheritance': string list,
-                   'code_repository': string,
-                   'type': string,
-                   'python_module_path': string,
-                   'output_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
-                   'input_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
-                   'process_using_discipline': [{process_id: string, process_label: string, repository_id: string, repository_label: string}],
-               }
-           ]
-           """
+    """
+    Method that return a list of all ontology disciplines and their related information
+    Returned response is with the following data structure
+       [
+           discipline_id:{
+               'id': string,
+               'uri': string,
+               'label': string,
+               'definition': string,
+               'category': string,
+               'version': string,
+               'last_modification_date': string,
+               'source': string,
+               'validated_by': string,
+               'python_class': string,
+               'validated': string,
+               'icon': string,
+               'output_parameters_quantity': int,
+               'input_parameters_quantity': int,
+               'class_inheritance': string list,
+               'code_repository': string,
+               'type': string,
+               'python_module_path': string,
+               'output_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
+               'input_parameters': [{parameter_usage_id: string, parameter_id: string, parameter_label: string}],
+               'process_using_discipline': [{process_id: string, process_label: string, repository_id: string, repository_label: string}],
+           }
+       ]
+    """
     user = get_authenticated_user()
     app.logger.info(user)
 
@@ -176,7 +176,7 @@ def load_ontology_full_model_list():
     return resp
 
 
-@app.route('/api/data/ontology/full_parameter_list', methods=['GET'])
+@app.route("/api/data/ontology/full_parameter_list", methods=["GET"])
 @auth_required
 def load_ontology_parameters():
     """
@@ -198,7 +198,7 @@ def load_ontology_parameters():
     return resp
 
 
-@app.route('/api/data/ontology/full_parameter_label_list', methods=['GET'])
+@app.route("/api/data/ontology/full_parameter_label_list", methods=["GET"])
 @auth_required
 def load_ontology_parameter_labels():
     """
@@ -220,7 +220,7 @@ def load_ontology_parameter_labels():
     return resp
 
 
-@app.route('/api/data/ontology/<string:identifier>/markdown_documentation', methods=['GET'])
+@app.route("/api/data/ontology/<string:identifier>/markdown_documentation", methods=["GET"])
 @auth_required
 def load_markdown_documentation(identifier):
     """
@@ -234,15 +234,14 @@ def load_markdown_documentation(identifier):
             }
         }
     """
-
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     resp = make_response(jsonify(load_markdown_documentation_metadata(identifier)), 200)
     return resp
 
 
-@app.route('/api/data/ontology/full_process_list', methods=['GET'])
+@app.route("/api/data/ontology/full_process_list", methods=["GET"])
 @auth_required
 def load_full_process_list():
     """
@@ -263,37 +262,36 @@ def load_full_process_list():
             }
         ]
     """
-
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     resp = make_response(jsonify(load_ontology_processes()), 200)
     return resp
 
 
-@app.route('/api/data/ontology/general_information', methods=['GET'])
+@app.route("/api/data/ontology/general_information", methods=["GET"])
 @auth_required
 def load_general_information():
-    """ Methods returning generic information concerning the current ontology
+    """
+    Methods returning generic information concerning the current ontology
 
-           Returned response is with the following data structure
-               {
-                   description:string,
-                   version:string,
-                   iri: string,
-                   last_updated:string
-                   entity_count:{
-                       'Code Repositories':integer,
-                       'Process Repositories':integer,
-                       'Processes':integer,
-                       'Models':integer,
-                       'Parameters':integer,
-                       'Usecases':integer,
-                   }
-               }
-       """
-
-    user = session['user']
+    Returned response is with the following data structure
+        {
+            description:string,
+            version:string,
+            iri: string,
+            last_updated:string
+            entity_count:{
+                'Code Repositories':integer,
+                'Process Repositories':integer,
+                'Processes':integer,
+                'Models':integer,
+                'Parameters':integer,
+                'Usecases':integer,
+            }
+        }
+    """
+    user = session["user"]
     app.logger.info(user)
 
     resp = make_response(jsonify(load_ontology_general_information()), 200)

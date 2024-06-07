@@ -28,11 +28,12 @@ class LoadedGroup:
         self.is_member = False
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'group': self.group,
-            'is_owner': self.is_owner,
-            'is_manager': self.is_manager,
-            'is_member': self.is_member
+            "group": self.group,
+            "is_owner": self.is_owner,
+            "is_manager": self.is_manager,
+            "is_member": self.is_member,
         }

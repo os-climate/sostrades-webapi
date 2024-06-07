@@ -25,7 +25,7 @@ from sqlalchemy.orm import sessionmaker
 
 from sos_trades_api.models.database_models import StudyCaseLog
 
-TIME_FMT = '%Y-%m-%d %H:%M:%S'
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class StudyCaseMySQLHandler(Handler):
@@ -54,7 +54,6 @@ class StudyCaseMySQLHandler(Handler):
                 to flush data calling flush method at the end of the process
         :type bulk_transaction: boolean
         """
-
         Handler.__init__(self)
 
         self.study_case_id = study_case_id
@@ -71,14 +70,13 @@ class StudyCaseMySQLHandler(Handler):
         """
         Manage to create a session on database for a 'with' statement
         """
-
-        database_server_uri = f'{self.__sql_alchemy_server_uri}?charset=utf8'
+        database_server_uri = f"{self.__sql_alchemy_server_uri}?charset=utf8"
 
         # Create server connection
         engine = create_engine(
             database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
 
-        use_database_sql_request = f'USE `{self.__sql_alchemy_database_name}`;'
+        use_database_sql_request = f"USE `{self.__sql_alchemy_database_name}`;"
 
         with engine.connect() as connection:
             # Select by default this database to perform further request
@@ -98,9 +96,10 @@ class StudyCaseMySQLHandler(Handler):
 
     @property
     def bulk_transaction(self):
-        """ Return a boolean indicating if the database transaction on commit is bulk or not
+        """
+        Return a boolean indicating if the database transaction on commit is bulk or not
 
-            @return boolean
+        @return boolean
         """
         return self.__bulk_transaction
 
@@ -114,7 +113,6 @@ class StudyCaseMySQLHandler(Handler):
         :param value: enable or not bulk transaction
         :type value: boolean
         """
-
         self.__bulk_transaction = value
 
     def emit(self, record):
@@ -124,7 +122,6 @@ class StudyCaseMySQLHandler(Handler):
         :param record: Logger handler record
         :type record: logger record object instance
         """
-
         # Use default formatting:
         self.format(record)
 
@@ -144,7 +141,7 @@ class StudyCaseMySQLHandler(Handler):
                 record.msg = str(record.msg)
 
             # Instantiate msg with argument format
-            if '%' in record.msg:
+            if "%" in record.msg:
                 record.msg = record.msg % record.args
 
         except:
@@ -154,15 +151,15 @@ class StudyCaseMySQLHandler(Handler):
             # Write only not empty message
             if len(record.msg) > 0:
                 # Reset args to avoid manipulate tuple in database
-                record.args = ''
+                record.args = ""
 
                 # Remove study case id from record name if exist
-                if f'{self.study_case_id}.' in record.name:
+                if f"{self.study_case_id}." in record.name:
                     record.name = record.name.replace(
-                        f'{self.study_case_id}.', '')
-                elif f'{self.study_case_id}' in record.name:
+                        f"{self.study_case_id}.", "")
+                elif f"{self.study_case_id}" in record.name:
                     record.name = record.name.replace(
-                        f'{self.study_case_id}', '')
+                        f"{self.study_case_id}", "")
 
                 study_case_log = StudyCaseLog()
 
@@ -185,7 +182,6 @@ class StudyCaseMySQLHandler(Handler):
         """
         Flush remaining message
         """
-
         self.__write_bulk_into_database(True)
 
     def __write_bulk_into_database(self, flush=False):
@@ -209,7 +205,7 @@ class StudyCaseMySQLHandler(Handler):
                 with self.__get_connection() as session:
                     session.bulk_save_objects(self.__inner_bulk_list)
             except Exception as ex:
-                print(f'Study mysql handler: {str(ex)}')
+                print(f"Study mysql handler: {ex!s}")
             finally:
                 self.__inner_bulk_list = []
 
@@ -220,7 +216,6 @@ class StudyCaseMySQLHandler(Handler):
         :param record: Logger handler record
         :type record: logger record object instance
         """
-
         record.dbtime = strftime(TIME_FMT, localtime(record.created))
 
 

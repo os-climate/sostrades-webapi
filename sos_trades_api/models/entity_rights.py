@@ -46,51 +46,52 @@ class EntityRightsError(Exception):
 
 
 class EntityType:
-    GROUP = 'group'
-    USER = 'user'
+    GROUP = "group"
+    USER = "user"
 
 
 class ResourceType:
-    PROCESS = 'process'
-    GROUP = 'group'
-    STUDYCASE = 'study_case'
-    SOSDISCIPLINE = 'sos_discipline'
+    PROCESS = "process"
+    GROUP = "group"
+    STUDYCASE = "study_case"
+    SOSDISCIPLINE = "sos_discipline"
 
 
 class EntityRight:
 
     def __init__(self):
         self.id = -1
-        self.entity_type = ''
+        self.entity_type = ""
         self.entity_object = None
-        self.selected_right = ''
+        self.selected_right = ""
         self.locked = False
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'id': self.id,
-            'entity_type': self.entity_type,
-            'entity_object': self.entity_object,
-            'selected_right': self.selected_right,
-            'locked': self.locked
+            "id": self.id,
+            "entity_type": self.entity_type,
+            "entity_object": self.entity_object,
+            "selected_right": self.selected_right,
+            "locked": self.locked,
         }
 
     def deserialize(self, json_dict):
-        self.id = json_dict['id']
-        self.entity_type = json_dict['entityType']
+        self.id = json_dict["id"]
+        self.entity_type = json_dict["entityType"]
 
         new_obj = None
         if self.entity_type == EntityType.GROUP:
             new_obj = Group()
-            new_obj.id = json_dict['entityObject']['id']
+            new_obj.id = json_dict["entityObject"]["id"]
         elif self.entity_type == EntityType.USER:
             new_obj = User()
-            new_obj.id = json_dict['entityObject']['id']
+            new_obj.id = json_dict["entityObject"]["id"]
 
         self.entity_object = new_obj
-        self.selected_right = json_dict['selectedRight']
+        self.selected_right = json_dict["selectedRight"]
 
 
 class EntityRights:
@@ -98,27 +99,28 @@ class EntityRights:
     def __init__(self):
 
         self.resource_id = None
-        self.resource_type = ''
+        self.resource_type = ""
         self.available_rights = []
         self.entities_rights = []
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'resource_id': self.resource_id,
-            'resource_type': self.resource_type,
-            'available_rights': self.available_rights,
-            'entities_rights': self.entities_rights,
+            "resource_id": self.resource_id,
+            "resource_type": self.resource_type,
+            "available_rights": self.available_rights,
+            "entities_rights": self.entities_rights,
         }
 
     def deserialize(self, json_dict):
 
-        self.resource_id = json_dict['resourceId']
-        self.resource_type = json_dict['resourceType']
+        self.resource_id = json_dict["resourceId"]
+        self.resource_type = json_dict["resourceType"]
 
-        if len(json_dict['entitiesRights']) > 0:
-            for ent in json_dict['entitiesRights']:
+        if len(json_dict["entitiesRights"]) > 0:
+            for ent in json_dict["entitiesRights"]:
                 new_entity = EntityRight()
                 new_entity.deserialize(ent)
                 self.entities_rights.append(new_entity)
@@ -151,10 +153,10 @@ def apply_entity_rights_changes(db_session, json_data, user_id):
 def check_not_current_user(user_id_changed, current_user_id):
     if user_id_changed == current_user_id:
         raise EntityRightsError(
-            'You are not allowed to modify your own rights.')
+            "You are not allowed to modify your own rights.")
 
 
-class ProcessEntityRights():
+class ProcessEntityRights:
 
     def __init__(self, process_id=None, entity_rights=None):
         if entity_rights is None:
@@ -181,7 +183,7 @@ class ProcessEntityRights():
     def add_access_db_object(self, access_db_object, user_id):
 
         entity_object = None
-        entity_type = ''
+        entity_type = ""
 
         if isinstance(access_db_object, ProcessAccessGroup):
 
@@ -191,7 +193,7 @@ class ProcessEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'Group object id {access_db_object.group_id} not found.')
+                    f"Group object id {access_db_object.group_id} not found.")
 
         elif isinstance(access_db_object, ProcessAccessUser):
 
@@ -206,12 +208,12 @@ class ProcessEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'User object id {access_db_object.user_id} not found.')
+                    f"User object id {access_db_object.user_id} not found.")
 
         else:
             raise EntityRightsError(
-                f'ProcessEntityRights setup error, bad access_db_object.\n ProcessAccessGroup or ProcessAccessUser '
-                f'intended but {type(access_db_object)} given')
+                f"ProcessEntityRights setup error, bad access_db_object.\n ProcessAccessGroup or ProcessAccessUser "
+                f"intended but {type(access_db_object)} given")
 
         new_entity_right = EntityRight()
         new_entity_right.entity_type = entity_type
@@ -244,23 +246,22 @@ class ProcessEntityRights():
             new_object.source = ProcessAccessGroup.SOURCE_USER
             db_session.add(new_object)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                update_object = ProcessAccessGroup.query.filter(
-                    ProcessAccessGroup.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            update_object = ProcessAccessGroup.query.filter(
+                ProcessAccessGroup.id == entity_change.id).first()
 
-                if update_object is not None:
-                    update_object.right_id = entity_change.selected_right
-                    # set source to USER so that it is set as a user action
-                    update_object.source = ProcessAccessGroup.SOURCE_USER
+            if update_object is not None:
+                update_object.right_id = entity_change.selected_right
+                # set source to USER so that it is set as a user action
+                update_object.source = ProcessAccessGroup.SOURCE_USER
 
-            else:  # Remove object
-                self.check_not_last_process_manager(entity_change)
-                delete_object = ProcessAccessGroup.query.filter(
-                    ProcessAccessGroup.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_process_manager(entity_change)
+            delete_object = ProcessAccessGroup.query.filter(
+                ProcessAccessGroup.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    db_session.delete(delete_object)
+            if delete_object is not None:
+                db_session.delete(delete_object)
 
     def change_process_user(self, db_session, entity_change, user_id):
         if entity_change.id == -1:  # New object to create
@@ -271,24 +272,23 @@ class ProcessEntityRights():
             new_object.source = ProcessAccessUser.SOURCE_USER
             db_session.add(new_object)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                check_not_current_user(entity_change.entity_object.id, user_id)
-                update_object = ProcessAccessUser.query.filter(
-                    ProcessAccessUser.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            check_not_current_user(entity_change.entity_object.id, user_id)
+            update_object = ProcessAccessUser.query.filter(
+                ProcessAccessUser.id == entity_change.id).first()
 
-                if update_object is not None:
-                    update_object.right_id = entity_change.selected_right
-                    # set source to USER so that it is set as a user action
-                    update_object.source = ProcessAccessUser.SOURCE_USER
+            if update_object is not None:
+                update_object.right_id = entity_change.selected_right
+                # set source to USER so that it is set as a user action
+                update_object.source = ProcessAccessUser.SOURCE_USER
 
-            else:  # Remove object
-                self.check_not_last_process_manager(entity_change)
-                delete_object = ProcessAccessUser.query.filter(
-                    ProcessAccessUser.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_process_manager(entity_change)
+            delete_object = ProcessAccessUser.query.filter(
+                ProcessAccessUser.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    db_session.delete(delete_object)
+            if delete_object is not None:
+                db_session.delete(delete_object)
 
     def check_not_last_process_manager(self, entity_change):
 
@@ -307,7 +307,7 @@ class ProcessEntityRights():
                     if entity_tested.right_id == manager_right.id:
                         if self.count_manager_for_process() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a process')
+                                "You cannot delete the last manager of a process")
 
             elif entity_change.entity_type == EntityType.USER:
                 entity_tested = ProcessAccessUser.query.filter(
@@ -317,7 +317,7 @@ class ProcessEntityRights():
                     if entity_tested.right_id == manager_right.id:
                         if self.count_manager_for_process() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a process')
+                                "You cannot delete the last manager of a process")
 
     def count_manager_for_process(self):
         managers_users = ProcessAccessUser.query.join(AccessRights).filter(
@@ -334,7 +334,7 @@ class ProcessEntityRights():
         return self.entity.serialize()
 
 
-class GroupEntityRights():
+class GroupEntityRights:
 
     def __init__(self, group_id=None, entity_rights=None):
         if entity_rights is None:
@@ -365,7 +365,7 @@ class GroupEntityRights():
     def add_access_db_object(self, access_db_object, user_id):
 
         entity_object = None
-        entity_type = ''
+        entity_type = ""
 
         if isinstance(access_db_object, GroupAccessGroup):
 
@@ -375,7 +375,7 @@ class GroupEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'Group object id {access_db_object.group_id} not found.')
+                    f"Group object id {access_db_object.group_id} not found.")
 
         elif isinstance(access_db_object, GroupAccessUser):
 
@@ -389,12 +389,12 @@ class GroupEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'User object id {access_db_object.user_id} not found.')
+                    f"User object id {access_db_object.user_id} not found.")
 
         else:
             raise EntityRightsError(
-                f'ProcessEntityRights setup error, bad access_db_object.\n GroupAccessGroup or GroupAccessUser '
-                f'intended but {type(access_db_object)} given')
+                f"ProcessEntityRights setup error, bad access_db_object.\n GroupAccessGroup or GroupAccessUser "
+                f"intended but {type(access_db_object)} given")
 
         new_entity_right = EntityRight()
         new_entity_right.entity_type = entity_type
@@ -439,26 +439,25 @@ class GroupEntityRights():
             ResourceAccess.update_group_members_ids(
                 new_object.group_id)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                update_object = GroupAccessGroup.query.filter(
-                    GroupAccessGroup.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            update_object = GroupAccessGroup.query.filter(
+                GroupAccessGroup.id == entity_change.id).first()
 
-                if update_object is not None:
-                    self.check_not_owner(update_object)
-                    update_object.right_id = entity_change.selected_right
-                    # in case of right update, there is no change in the group_members_ids
+            if update_object is not None:
+                self.check_not_owner(update_object)
+                update_object.right_id = entity_change.selected_right
+                # in case of right update, there is no change in the group_members_ids
 
-            else:  # Remove object
-                self.check_not_last_owner_or_manager(entity_change)
-                delete_object = GroupAccessGroup.query.filter(
-                    GroupAccessGroup.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_owner_or_manager(entity_change)
+            delete_object = GroupAccessGroup.query.filter(
+                GroupAccessGroup.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    db_session.delete(delete_object)
-                    # all group_access_group impacted by this relation need to have their group_members_ids updated
-                    ResourceAccess.update_group_members_ids(
-                        delete_object.group_member_id, delete_object.id)
+            if delete_object is not None:
+                db_session.delete(delete_object)
+                # all group_access_group impacted by this relation need to have their group_members_ids updated
+                ResourceAccess.update_group_members_ids(
+                    delete_object.group_member_id, delete_object.id)
 
     def change_group_user(self, db_session, entity_change, user_id):
         if entity_change.id == -1:  # New object to create
@@ -469,28 +468,27 @@ class GroupEntityRights():
 
             db_session.add(new_object)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                check_not_current_user(entity_change.entity_object.id, user_id)
-                update_object = GroupAccessUser.query.filter(
-                    GroupAccessUser.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            check_not_current_user(entity_change.entity_object.id, user_id)
+            update_object = GroupAccessUser.query.filter(
+                GroupAccessUser.id == entity_change.id).first()
 
-                if update_object is not None:
-                    self.check_not_owner(update_object)
-                    update_object.right_id = entity_change.selected_right
+            if update_object is not None:
+                self.check_not_owner(update_object)
+                update_object.right_id = entity_change.selected_right
 
-            else:  # Remove object
-                self.check_not_last_owner_or_manager(entity_change)
-                delete_object = GroupAccessUser.query.filter(
-                    GroupAccessUser.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_owner_or_manager(entity_change)
+            delete_object = GroupAccessUser.query.filter(
+                GroupAccessUser.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    # Set default group at None
-                    user = User.query.filter(User.id == entity_change.entity_object.id).first()
+            if delete_object is not None:
+                # Set default group at None
+                user = User.query.filter(User.id == entity_change.entity_object.id).first()
 
-                    if self.entity.resource_id == user.default_group_id:
-                        user.default_group_id = None
-                    db_session.delete(delete_object)
+                if self.entity.resource_id == user.default_group_id:
+                    user.default_group_id = None
+                db_session.delete(delete_object)
 
     def check_not_last_owner_or_manager(self, entity_change):
 
@@ -512,7 +510,7 @@ class GroupEntityRights():
                     if entity_tested.right_id == owner_right.id:
                         if self.count_owner_and_managers() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a group')
+                                "You cannot delete the last manager of a group")
 
             elif entity_change.entity_type == EntityType.USER:
                 entity_tested = GroupAccessUser.query.filter(
@@ -522,7 +520,7 @@ class GroupEntityRights():
                     if entity_tested.right_id == owner_right.id:
                         if self.count_owner_and_managers() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a group')
+                                "You cannot delete the last manager of a group")
 
     def count_owner_and_managers(self):
         users = GroupAccessUser.query.join(AccessRights).filter(
@@ -545,10 +543,10 @@ class GroupEntityRights():
         if owner_query is not None:
             if update_object.right_id == owner_query.id:
                 raise EntityRightsError(
-                    'Owner right cannot be changed.')
+                    "Owner right cannot be changed.")
         else:
             raise EntityRightsError(
-                'Owner right cannot be found in database.')
+                "Owner right cannot be found in database.")
 
     @staticmethod
     def check_not_current_user(update_object, user_id):
@@ -558,7 +556,7 @@ class GroupEntityRights():
         return self.entity.serialize()
 
 
-class StudyCaseEntityRights():
+class StudyCaseEntityRights:
 
     def __init__(self, study_id=None, entity_rights=None):
         if entity_rights is None:
@@ -598,7 +596,7 @@ class StudyCaseEntityRights():
     def add_access_db_object(self, access_db_object, user_id):
 
         entity_object = None
-        entity_type = ''
+        entity_type = ""
 
         if isinstance(access_db_object, StudyCaseAccessGroup):
 
@@ -608,7 +606,7 @@ class StudyCaseEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'Group object id {access_db_object.group_id} not found.')
+                    f"Group object id {access_db_object.group_id} not found.")
 
         elif isinstance(access_db_object, StudyCaseAccessUser):
 
@@ -622,12 +620,12 @@ class StudyCaseEntityRights():
 
             if entity_object is None:
                 raise EntityRightsError(
-                    f'User object id {access_db_object.user_id} not found.')
+                    f"User object id {access_db_object.user_id} not found.")
 
         else:
             raise EntityRightsError(
-                f'ProcessEntityRights setup error, bad access_db_object.\n StudyCaseAccessGroup or StudyCaseAccessUser '
-                f'intended but {type(access_db_object)} given')
+                f"ProcessEntityRights setup error, bad access_db_object.\n StudyCaseAccessGroup or StudyCaseAccessUser "
+                f"intended but {type(access_db_object)} given")
 
         new_entity_right = EntityRight()
         new_entity_right.entity_type = entity_type
@@ -666,21 +664,20 @@ class StudyCaseEntityRights():
 
             db_session.add(new_object)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                update_object = StudyCaseAccessGroup.query.filter(
-                    StudyCaseAccessGroup.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            update_object = StudyCaseAccessGroup.query.filter(
+                StudyCaseAccessGroup.id == entity_change.id).first()
 
-                if update_object is not None:
-                    update_object.right_id = entity_change.selected_right
+            if update_object is not None:
+                update_object.right_id = entity_change.selected_right
 
-            else:  # Remove object
-                self.check_not_last_owner_or_manager(entity_change)
-                delete_object = StudyCaseAccessGroup.query.filter(
-                    StudyCaseAccessGroup.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_owner_or_manager(entity_change)
+            delete_object = StudyCaseAccessGroup.query.filter(
+                StudyCaseAccessGroup.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    db_session.delete(delete_object)
+            if delete_object is not None:
+                db_session.delete(delete_object)
 
     def change_study_user(self, db_session, entity_change, user_id):
         if entity_change.id == -1:  # New object to create
@@ -691,23 +688,22 @@ class StudyCaseEntityRights():
 
             db_session.add(new_object)
 
-        else:  # Update or remove object from database
-            if entity_change.selected_right is not None:  # Update object
-                check_not_current_user(entity_change.entity_object.id, user_id)
-                update_object = StudyCaseAccessUser.query.filter(
-                    StudyCaseAccessUser.id == entity_change.id).first()
+        elif entity_change.selected_right is not None:  # Update object
+            check_not_current_user(entity_change.entity_object.id, user_id)
+            update_object = StudyCaseAccessUser.query.filter(
+                StudyCaseAccessUser.id == entity_change.id).first()
 
-                if update_object is not None:
-                    self.check_not_owner(update_object)
-                    update_object.right_id = entity_change.selected_right
+            if update_object is not None:
+                self.check_not_owner(update_object)
+                update_object.right_id = entity_change.selected_right
 
-            else:  # Remove object
-                self.check_not_last_owner_or_manager(entity_change)
-                delete_object = StudyCaseAccessUser.query.filter(
-                    StudyCaseAccessUser.id == entity_change.id).first()
+        else:  # Remove object
+            self.check_not_last_owner_or_manager(entity_change)
+            delete_object = StudyCaseAccessUser.query.filter(
+                StudyCaseAccessUser.id == entity_change.id).first()
 
-                if delete_object is not None:
-                    db_session.delete(delete_object)
+            if delete_object is not None:
+                db_session.delete(delete_object)
 
     def check_not_last_owner_or_manager(self, entity_change):
 
@@ -729,7 +725,7 @@ class StudyCaseEntityRights():
                     if entity_tested.right_id == owner_right.id:
                         if self.count_owner_and_managers() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a group')
+                                "You cannot delete the last manager of a group")
 
             elif entity_change.entity_type == EntityType.USER:
                 entity_tested = StudyCaseAccessUser.query.filter(
@@ -739,7 +735,7 @@ class StudyCaseEntityRights():
                     if entity_tested.right_id == owner_right.id:
                         if self.count_owner_and_managers() <= 1:
                             raise EntityRightsError(
-                                'You cannot delete the last manager of a group')
+                                "You cannot delete the last manager of a group")
 
     def count_owner_and_managers(self):
         users = StudyCaseAccessUser.query.join(AccessRights).filter(
@@ -762,10 +758,10 @@ class StudyCaseEntityRights():
         if owner_query is not None:
             if update_object.right_id == owner_query.id:
                 raise EntityRightsError(
-                    'Owner right cannot be changed.')
+                    "Owner right cannot be changed.")
         else:
             raise EntityRightsError(
-                'Owner right cannot be found in database.')
+                "Owner right cannot be found in database.")
 
     @staticmethod
     def check_not_current_user(update_object, user_id):

@@ -33,13 +33,13 @@ from werkzeug.exceptions import HTTPException
 
 from sos_trades_api.config import Config
 
-START_TIME = 'start_time'
+START_TIME = "start_time"
 first_line_time = time.time()
 
 # Create  flask server and set local configuration
 server_name = __name__
-if os.environ.get('SERVER_NAME') is not None:
-    server_name = os.environ['SERVER_NAME']
+if os.environ.get("SERVER_NAME") is not None:
+    server_name = os.environ["SERVER_NAME"]
 
 app = Flask(server_name)
 
@@ -50,18 +50,18 @@ for handler in app.logger.handlers:
 
 
 # Env constant
-PRODUCTION = 'PRODUCTION'
-ENVIRONMENT = 'ENVIRONMENT'
-UNIT_TEST = 'UNIT_TEST'
+PRODUCTION = "PRODUCTION"
+ENVIRONMENT = "ENVIRONMENT"
+UNIT_TEST = "UNIT_TEST"
 
 try:
-    app.logger.info('Loading configuration')
+    app.logger.info("Loading configuration")
     config = Config()
     config.check()
     flask_config_dict = config.get_flask_config_dict()
     app.config.update(flask_config_dict)
 
-    app.logger.info('Connecting to database')
+    app.logger.info("Connecting to database")
     # Register database on app
     db = SQLAlchemy()
     db.init_app(app)
@@ -69,7 +69,7 @@ try:
     # As flask application and database are initialized, then import
     # sos_trades_api dependencies
 
-    app.logger.info('Importing dependencies')
+    app.logger.info("Importing dependencies")
     from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
@@ -78,25 +78,25 @@ try:
         ApplicationRequestFormatter,
     )
 
-    app.logger.info('Adding application logger handler')
+    app.logger.info("Adding application logger handler")
     app_mysql_handler = ApplicationMySQLHandler(
         db=config.logging_database_data)
     app_mysql_handler.setFormatter(ApplicationRequestFormatter(
         "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
-    os.environ['FLASK_ENV'] = app.config['ENVIRONMENT']
+    os.environ["FLASK_ENV"] = app.config["ENVIRONMENT"]
 
-    app.logger.info('Configuring logger')
-    if os.environ['FLASK_ENV'] == PRODUCTION:
+    app.logger.info("Configuring logger")
+    if os.environ["FLASK_ENV"] == PRODUCTION:
         logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
 
         # Remove all trace
-        logging.getLogger('engineio.server').setLevel(51)
+        logging.getLogger("engineio.server").setLevel(51)
     else:
         logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
         app.logger.setLevel(logging.DEBUG)
-        logging.getLogger('engineio.server').setLevel(logging.DEBUG)
+        logging.getLogger("engineio.server").setLevel(logging.DEBUG)
 
     for handler in logging.getLogger().handlers:
         handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
@@ -107,7 +107,7 @@ try:
     app.json_encoder = CustomJsonEncoder
 except Exception as error:
     app.logger.error(
-        f'The following error occurs when trying to initialize server\n{error} ')
+        f"The following error occurs when trying to initialize server\n{error} ")
     raise error
     exit(-1)
 
@@ -118,14 +118,14 @@ study_case_cache = StudyCaseCache(logger=app.logger)
 jwt = JWTManager(app)
 
 # in case of study server, save the active study file
-pod_name =os.environ.get('HOSTNAME', '')
-if pod_name.startswith('sostrades-study-server-'):
+pod_name =os.environ.get("HOSTNAME", "")
+if pod_name.startswith("sostrades-study-server-"):
     #retreive study id
-    match = re.search(r'(?<=sostrades-study-server-)\d+', pod_name)
+    match = re.search(r"(?<=sostrades-study-server-)\d+", pod_name)
     if match:
         #the number represents the study id
         study_id = int(match.group(0))
-        
+
         from sos_trades_api.tools.active_study_management.active_study_management import (
             ACTIVE_STUDY_FILE_NAME,
             save_study_last_active_date,
@@ -133,7 +133,7 @@ if pod_name.startswith('sostrades-study-server-'):
         # create the active study file if it doesn't exist
         local_path = Config().local_folder_path
         if local_path != "" and os.path.exists(local_path):
-            file_path = os.path.join(local_path, f'{ACTIVE_STUDY_FILE_NAME}{study_id}.txt')
+            file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
             if not os.path.exists(file_path):
                 save_study_last_active_date(study_id, datetime.now())
 
@@ -177,7 +177,7 @@ def database_process_setup():
     database_initialized = False
 
     # Retrieve repository to check from configuration file
-    additional_repository_list = app.config['SOS_TRADES_PROCESS_REPOSITORY']
+    additional_repository_list = app.config["SOS_TRADES_PROCESS_REPOSITORY"]
 
     with app.app_context():
         try:
@@ -189,31 +189,31 @@ def database_process_setup():
                 group_manager_account_account = Group.query.filter(
                     Group.name == Group.SOS_TRADES_DEV_GROUP).first()
                 print(
-                    'No default group have been found. Group Sostrades_dev is get by default')
+                    "No default group have been found. Group Sostrades_dev is get by default")
 
             app.logger.info(
-                'Starting loading available processes and references')
+                "Starting loading available processes and references")
             update_database_with_process(additional_repository_list=additional_repository_list,
                                          logger=app.logger,
                                          default_manager_group=group_manager_account_account)
             update_database_with_references(app.logger)
 
             app.logger.info(
-                'Finished loading available processes and references')
+                "Finished loading available processes and references")
 
-            app.logger.info('Clean reference pod allocations')
+            app.logger.info("Clean reference pod allocations")
             clean_all_allocations_type_reference(app.logger)
-            app.logger.info('Finished cleaning pod allocation references')
+            app.logger.info("Finished cleaning pod allocation references")
 
-            app.logger.info('Clean disabled study case')
+            app.logger.info("Clean disabled study case")
             clean_database_with_disabled_study_case(app.logger)
             app.logger.info(
-                'Finished cleaning disabled study case, server is ready...')
+                "Finished cleaning disabled study case, server is ready...")
 
             database_initialized = True
         except:
             app.logger.exception(
-                'An error occurs during database setup')
+                "An error occurs during database setup")
 
     return database_initialized
 
@@ -223,36 +223,35 @@ def check_identity_provider_availability():
     Check is environment variable needed to activate SAML_V2 compatible identity provider or
     GitHub OAuth provider are available.
     """
-
     # -------- SAML V2 provider
     # Test if SAML settings file path is filled
-    if os.environ.get('SAML_V2_METADATA_FOLDER') is None:
+    if os.environ.get("SAML_V2_METADATA_FOLDER") is None:
         app.logger.info(
-            'SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled')
+            "SAML_V2_METADATA_FOLDER configuration not found, SSO will be disabled")
     else:
-        app.logger.info('SAML_V2_METADATA_FOLDER environment variable found')
+        app.logger.info("SAML_V2_METADATA_FOLDER environment variable found")
 
         # Check that the settings.json file is present:
-        sso_path = os.environ['SAML_V2_METADATA_FOLDER']
+        sso_path = os.environ["SAML_V2_METADATA_FOLDER"]
         if not os.path.exists(sso_path):
-            app.logger.info('SSO folder not found, SSO will be disabled')
+            app.logger.info("SSO folder not found, SSO will be disabled")
         else:
-            app.logger.info('SSO folder file found')
+            app.logger.info("SSO folder file found")
 
     # -------- Github oauth provider
-    if os.environ.get('GITHUB_OAUTH_SETTINGS') is None:
+    if os.environ.get("GITHUB_OAUTH_SETTINGS") is None:
         app.logger.info(
-            'GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled')
+            "GITHUB_OAUTH_SETTINGS configuration not found, Github IdP/oauth will be disabled")
     else:
-        app.logger.info('GITHUB_OAUTH_SETTINGS environment variable found')
+        app.logger.info("GITHUB_OAUTH_SETTINGS environment variable found")
 
         # Check that the settings.json file is present:
-        settings_json_file = os.environ['GITHUB_OAUTH_SETTINGS']
+        settings_json_file = os.environ["GITHUB_OAUTH_SETTINGS"]
         if not os.path.exists(settings_json_file):
             app.logger.info(
-                'GitHub IdP/oauth settings.json file not found, SSO will be disabled')
+                "GitHub IdP/oauth settings.json file not found, SSO will be disabled")
         else:
-            app.logger.info('GitHub IdP/oauth settings.json file found')
+            app.logger.info("GitHub IdP/oauth settings.json file found")
 
 
 def database_check_study_case_state(with_deletion=False):
@@ -287,7 +286,7 @@ def database_check_study_case_state(with_deletion=False):
     # Remove INFO/WARNING level to avoid pushing too many log
     logging.disable(logging.INFO)
     logging.disable(logging.WARNING)
-    print('Only Error, Fatal and Critical logging message will be displayed.')
+    print("Only Error, Fatal and Critical logging message will be displayed.")
 
     study_on_disk = {}
 
@@ -296,7 +295,7 @@ def database_check_study_case_state(with_deletion=False):
         all_study_case = StudyCase.query.all()
         all_group = Group.query.all()
 
-        print('\nCheck file system regarding available data\'s')
+        print("\nCheck file system regarding available data's")
         base_path = StudyCaseManager.get_root_study_data_folder()
 
         # Get all sub elements inside root data folder (looking for group
@@ -321,7 +320,7 @@ def database_check_study_case_state(with_deletion=False):
                     if path.isdir(built_study_path) and study_folder.isdigit():
                         study_on_disk[int(study_folder)] = int(group_folder)
 
-        print(f'\n{len(all_study_case)} study case(s) to check.\n')
+        print(f"\n{len(all_study_case)} study case(s) to check.\n")
 
         study_loaded_synthesis = []
         # Try to load each of them
@@ -336,7 +335,7 @@ def database_check_study_case_state(with_deletion=False):
                 current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
                 date_delta = current_date - study_case.modification_date
                 print(
-                    f'DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}')
+                    f"DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}")
                 is_date_ok = date_delta.days > 30
 
             except:
@@ -348,44 +347,43 @@ def database_check_study_case_state(with_deletion=False):
 
             study_group_result = list(
                 filter(lambda g: g.id == study_case.group_id, all_group))
-            group_name = 'Unknown'
+            group_name = "Unknown"
             if len(study_group_result) == 1:
                 group_name = study_group_result[0].name
 
             if is_load_ok:
-                message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | SUCCESS'
+                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | SUCCESS"
+            elif is_date_ok:
+                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | PARTIAL"
             else:
-                if is_date_ok:
-                    message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | PARTIAL'
-                else:
-                    message = f'{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | FAILED'
-                    if with_deletion:
-                        studies_to_delete.append(study_case.id)
+                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | FAILED"
+                if with_deletion:
+                    studies_to_delete.append(study_case.id)
             study_loaded_synthesis.append(message)
 
-        print('\n'.join(study_loaded_synthesis))
+        print("\n".join(study_loaded_synthesis))
 
         if with_deletion and len(studies_to_delete) > 0:
             delete_study_cases(studies_to_delete)
-            print(f'All failed database studies deleted {studies_to_delete}.')
+            print(f"All failed database studies deleted {studies_to_delete}.")
 
         for study_folder, group_folder in study_on_disk.items():
             study_group_result = list(
                 filter(lambda g: g.id == int(group_folder), all_group))
-            group_name = 'Unknown'
+            group_name = "Unknown"
             if len(study_group_result) == 1:
-                group_name = f'{study_group_result[0].name}?'
+                group_name = f"{study_group_result[0].name}?"
             print(
                 f'{study_folder:<5} | {" ":<30} | {" ":<70} | {" ":<35} | {" ":<19} | {group_name:<15} | UNREFERENCED')
 
             if with_deletion:
-                folder = join(base_path, f'{group_folder}', f'{study_folder}')
+                folder = join(base_path, f"{group_folder}", f"{study_folder}")
                 folders_to_delete.append(folder)
 
         if with_deletion and len(folders_to_delete) > 0:
             for folder in folders_to_delete:
                 rmtree(folder, ignore_errors=True)
-                print(f'Folder {folder:<128} deleted.')
+                print(f"Folder {folder:<128} deleted.")
 
 
 def database_create_standard_user(username, email, firstname, lastname):
@@ -440,7 +438,7 @@ def database_change_user_profile(username, new_profile=None):
             user = User.query.filter(User.username == username).first()
 
             if user is None:
-                raise Exception(f'User {username} not found')
+                raise Exception(f"User {username} not found")
 
             # Get old user profile for logging purpose"
             old_user_profile = UserProfile.query.filter(
@@ -455,23 +453,23 @@ def database_change_user_profile(username, new_profile=None):
                 new_user_profile = UserProfile.query.filter(
                     UserProfile.name == new_profile).first()
                 if new_user_profile is None:
-                    raise Exception(f'Profile {new_profile} not found')
+                    raise Exception(f"Profile {new_profile} not found")
                 else:
                     new_profile_id = new_user_profile.id
 
             # Update the user if changed is required
-            if not user.user_profile_id == new_profile_id:
+            if user.user_profile_id != new_profile_id:
                 user.user_profile_id = new_profile_id
                 db.session.add(user)
                 db.session.commit()
                 app.logger.info(
-                    f'User {username} profile changed from {old_user_profile_name} to {new_profile}')
+                    f"User {username} profile changed from {old_user_profile_name} to {new_profile}")
             else:
-                app.logger.info('Profile already up-to-date')
+                app.logger.info("Profile already up-to-date")
 
         except:
             app.logger.exception(
-                'An error occurs during database setup')
+                "An error occurs during database setup")
 
 
 def database_create_api_key(group_name, api_key_name):
@@ -484,7 +482,6 @@ def database_create_api_key(group_name, api_key_name):
     :param api_key_name: Name to set to the api key
     :type api_key_name: str
     """
-
     from sos_trades_api.models.database_models import (
         AccessRights,
         Device,
@@ -503,7 +500,7 @@ def database_create_api_key(group_name, api_key_name):
 
         if result is None:
             app.logger.error(
-                'To generate an api key, the group must exist and have a user as group OWNER.')
+                "To generate an api key, the group must exist and have a user as group OWNER.")
             exit()
 
         group = result.Group
@@ -513,7 +510,7 @@ def database_create_api_key(group_name, api_key_name):
 
         if device_already_exist:
             app.logger.error(
-                'There is already an api key available for this group')
+                "There is already an api key available for this group")
             exit()
 
         device = Device()
@@ -523,7 +520,7 @@ def database_create_api_key(group_name, api_key_name):
         db.session.add(device)
         db.session.commit()
 
-        app.logger.info('The following api key has been created')
+        app.logger.info("The following api key has been created")
         app.logger.info(device)
 
 
@@ -534,7 +531,6 @@ def database_renew_api_key(group_name):
     :param group_name: Group identifier with assigned api key
     :type group_name: str
     """
-
     from sos_trades_api.models.database_models import Device, Group
 
     with app.app_context():
@@ -544,7 +540,7 @@ def database_renew_api_key(group_name):
             .filter(Group.name == group_name).first()
 
         if result is None:
-            app.logger.error('No api key found for this group')
+            app.logger.error("No api key found for this group")
             exit()
 
         device = result.Device
@@ -556,7 +552,7 @@ def database_renew_api_key(group_name):
         db.session.add(device)
         db.session.commit()
 
-        app.logger.info('The following api key has been updated')
+        app.logger.info("The following api key has been updated")
         app.logger.info(device)
 
 
@@ -567,7 +563,6 @@ def database_revoke_api_key(group_name):
     :param group_name: Group identifier with assigned api key
     :type group_name: str
     """
-
     from sos_trades_api.models.database_models import Device, Group
 
     with app.app_context():
@@ -577,7 +572,7 @@ def database_revoke_api_key(group_name):
             .filter(Group.name == group_name).first()
 
         if result is None:
-            app.logger.error('No api key found for this group.')
+            app.logger.error("No api key found for this group.")
             exit()
 
         device = result.Device
@@ -585,7 +580,7 @@ def database_revoke_api_key(group_name):
         db.session.delete(device)
         db.session.commit()
 
-        app.logger.info('The following api key has been deleted')
+        app.logger.info("The following api key has been deleted")
         app.logger.info(device)
 
 
@@ -593,7 +588,6 @@ def database_list_api_key():
     """
     list all database api key
     """
-
     from sos_trades_api.models.database_models import Device
 
     with app.app_context():
@@ -601,9 +595,9 @@ def database_list_api_key():
         devices = Device.query.all()
 
         if len(devices) == 0:
-            app.logger.info('No api key found')
+            app.logger.info("No api key found")
         else:
-            app.logger.info('Existing api key list')
+            app.logger.info("Existing api key list")
             for device in devices:
                 app.logger.info(device)
 
@@ -641,12 +635,12 @@ def update_all_pod_status_loop_method():
         if not Config().pod_watcher_activated:
             time.sleep(interval)
 
-if app.config['ENVIRONMENT'] != UNIT_TEST:
+if app.config["ENVIRONMENT"] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('init_process')
-    @click.option('-d', '--debug', is_flag=True)
+    @click.command("init_process")
+    @click.option("-d", "--debug", is_flag=True)
     @with_appcontext
     def init_process(debug):
         """
@@ -655,18 +649,18 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         :param debug: show DEBUG log
         :type debug: boolean
         """
-
         if debug:
             app.logger.setLevel(logging.DEBUG)
         else:
             app.logger.setLevel(logging.INFO)
         database_process_setup()
 
-    @click.command('check_study_case_state')
-    @click.option('-wd', '--with_deletion', is_flag=True)
+    @click.command("check_study_case_state")
+    @click.option("-wd", "--with_deletion", is_flag=True)
     @with_appcontext
     def check_study_case_state(with_deletion):
-        """ Check study case state in database
+        """
+        Check study case state in database
         Try to load each of them and store loading status and last modification date
         Give as outputs all study case that cannot be loaded and have more than one month
         with no changes.
@@ -678,14 +672,15 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('create_standard_user')
-    @click.argument('username')
-    @click.argument('email')
-    @click.argument('firstname')
-    @click.argument('lastname')
+    @click.command("create_standard_user")
+    @click.argument("username")
+    @click.argument("email")
+    @click.argument("firstname")
+    @click.argument("lastname")
     @with_appcontext
     def create_standard_user(username, email, firstname, lastname):
-        """ standard creation associated to ALl_user group
+        """
+        standard creation associated to ALl_user group
         :param:username, the identification name of the user, must be unique in users database
         :param:email, email of the user, must be unique in users database
         :param:firstname, first name of the user
@@ -695,11 +690,12 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('reset_standard_user_password')
-    @click.argument('username')
+    @click.command("reset_standard_user_password")
+    @click.argument("username")
     @with_appcontext
     def reset_standard_user_password(username):
-        """ reset the password of a user with this username
+        """
+        reset the password of a user with this username
         :param:username, the user name of the user
         """
         database_reset_user_password(username)
@@ -707,12 +703,13 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('create_user_test')
-    @click.argument('username')
-    @click.argument('password')
+    @click.command("create_user_test")
+    @click.argument("username")
+    @click.argument("password")
     @with_appcontext
     def create_user_test(username, password):
-        """ user_test creation
+        """
+        user_test creation
         :param:username, the identification name of the user, must be unique in users database
         :param:password, password of the user count
         :param:profile, the user profile
@@ -723,20 +720,21 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         # Create the user test
         try:
             database_create_user_test(username, password)
-            app.logger.info(f'{username} has been successfully created')
+            app.logger.info(f"{username} has been successfully created")
         except Exception as ex:
-            app.logger.error(f'The following error occurs when trying to create user_test\n{ex} ')
+            app.logger.error(f"The following error occurs when trying to create user_test\n{ex} ")
             raise ex
 
     # Add custom command on flask cli to execute database init data setup
-    @click.command('set_user_access_group')
-    @click.argument('username')
-    @click.argument('group_list_str')
+    @click.command("set_user_access_group")
+    @click.argument("username")
+    @click.argument("group_list_str")
     @with_appcontext
     def set_user_access_group(username, group_list_str):
-        """ Give user rights at groups
-            :param:username, the identification name of the user, must be unique in users database
-            :param:group_list_str, the list of group targeted
+        """
+        Give user rights at groups
+        :param:username, the identification name of the user, must be unique in users database
+        :param:group_list_str, the list of group targeted
         """
         from sos_trades_api.controllers.sostrades_data.user_controller import (
             database_set_user_access_group,
@@ -750,14 +748,14 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             app.logger.info(f'The group_access_user for "{group_list_str}" has been successfully updated to "{username}"')
 
         except Exception as ex:
-            app.logger.error(f'The following error occurs when trying to set access right to a group\n{ex}')
+            app.logger.error(f"The following error occurs when trying to set access right to a group\n{ex}")
             raise ex
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('set_process_access_user')
-    @click.argument('username')
-    @click.argument('process_list_str')
+    @click.command("set_process_access_user")
+    @click.argument("username")
+    @click.argument("process_list_str")
     @with_appcontext
     def set_process_access_user(username, process_list_str):
         """
@@ -782,111 +780,116 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
                     f'The process_access_user for "{process_list_str}" has been successfully updated to "{username}"')
 
             else:
-                raise Exception(f'User {username} not found in database')
+                raise Exception(f"User {username} not found in database")
         except Exception as ex:
-            app.logger.error(f'The following error occurs when trying to set process to test user\n{ex} ')
+            app.logger.error(f"The following error occurs when trying to set process to test user\n{ex} ")
             raise ex
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
-    @click.command('rename_applicative_group')
-    @click.argument('new_name')
+    @click.command("rename_applicative_group")
+    @click.argument("new_name")
     @with_appcontext
     def rename_applicative_group(new_name):
-        """ rename a group from old_name to new_name
+        """
+        rename a group from old_name to new_name
         """
         database_rename_applicative_group(new_name)
 
-    @click.command('change_user_profile')
-    @click.argument('username')
-    @click.option('-p', '--profile', type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER, UserProfile.STUDY_USER_NO_EXECUTION]), default=None)
+    @click.command("change_user_profile")
+    @click.argument("username")
+    @click.option("-p", "--profile", type=click.Choice([UserProfile.STUDY_MANAGER, UserProfile.STUDY_USER, UserProfile.STUDY_USER_NO_EXECUTION]), default=None)
     @with_appcontext
     def change_user_profile(username, profile):
-        """ update user profile
+        """
+        update user profile
         :param:username, the identification name of the user
         :param:profile, profile value , 'Study user', 'Study manager', 'Study user without execution', or nothing to set no profile
         """
-
         app.logger.setLevel(0)
         if profile is None or len(profile) == 0:
             profile = None
         database_change_user_profile(username, profile)
 
-    @click.command('create_api_key')
-    @click.argument('group_name')
-    @click.argument('api_key_name')
+    @click.command("create_api_key")
+    @click.argument("group_name")
+    @click.argument("api_key_name")
     @with_appcontext
     def create_api_key(group_name, api_key_name):
-        """ create an api key
+        """
+        create an api key
         :param group_name: the group name to assign api key
         :type group_name: str
         :param api_key_name: name to set to the api key
         :type group_name: str
         """
-
         database_create_api_key(group_name, api_key_name)
 
-    @click.command('renew_api_key')
-    @click.argument('group_name')
+    @click.command("renew_api_key")
+    @click.argument("group_name")
     @with_appcontext
     def renew_api_key(group_name):
-        """ update an api key
+        """
+        update an api key
         :param group_name: the group name to renew api key
         :type group_name: str
         """
-
         database_renew_api_key(group_name)
 
-    @click.command('revoke_api_key')
-    @click.argument('group_name')
+    @click.command("revoke_api_key")
+    @click.argument("group_name")
     @with_appcontext
     def revoke_api_key(group_name):
-        """ revoke an api key
+        """
+        revoke an api key
         :param: group_name, the group name to revoke api key
         :type group_name: str
         """
-
         database_revoke_api_key(group_name)
 
-    @click.command('list_api_key')
+    @click.command("list_api_key")
     @with_appcontext
     def list_api_key():
-        """ List all database api key
         """
-
+        List all database api key
+        """
         database_list_api_key()
 
     # Add custom command on flask cli to clean allocations, services and
     # deployments
-    @click.command('clean_all_allocations')
+    @click.command("clean_all_allocations")
     @with_appcontext
     def clean_all_allocations():
-        """  delete all allocations from db and delete services and deployments with kubernetes api
+        """
+        delete all allocations from db and delete services and deployments with kubernetes api
         """
         clean_all_allocations_method()
 
     # Add custom command on flask cli to clean inactive allocation, service and
     # deployment
-    @click.command('clean_inactive_study_pod')
+    @click.command("clean_inactive_study_pod")
     @with_appcontext
     def clean_inactive_study_pod():
-        """  delete inactive current study allocation from db and delete service and deployment with kubernetes api
+        """
+        delete inactive current study allocation from db and delete service and deployment with kubernetes api
         """
         clean_inactive_study_pods()
 
     # Add custom command on flask cli to update all current allocations
-    @click.command('update_pod_allocations_status')
+    @click.command("update_pod_allocations_status")
     @with_appcontext
     def update_pod_allocations_status():
-        """  update all allocations from db 
+        """
+        update all allocations from db
         """
         update_all_pod_status_method()
 
     # Add custom command on flask cli to update all current allocations
-    @click.command('update_pod_allocations_status_loop')
+    @click.command("update_pod_allocations_status_loop")
     @with_appcontext
     def update_pod_allocations_status_loop():
-        """  update all allocations from db 
+        """
+        update all allocations from db
         """
         update_all_pod_status_loop_method()
 
@@ -915,20 +918,20 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
     @jwt.expired_token_loader
     def my_expired_token_callback(expired_token):
         return jsonify({
-            'statusCode': 401,
-            'name': 'Unauthorized',
-            'description': 'User session expired, please log again'
+            "statusCode": 401,
+            "name": "Unauthorized",
+            "description": "User session expired, please log again",
         }), 401
 
     # override debug flag
-    if '--debugger' in sys.argv:
+    if "--debugger" in sys.argv:
         app.debug = True
 
     # Put here all imports from model
     # For migration to detect new tables
     # After running migration script, remove them from here to prevent import
     # error
-    if not app == None and not db == None:
+    if app != None and db != None:
         migrate = Migrate(app, db, compare_type=False)
 
     # Attention compare type find a difference in ReferenceGenerationStatus
@@ -948,15 +951,15 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         tb.print_exc()
         if isinstance(error, HTTPException):
             return jsonify({
-                'statusCode': error.code,
-                'name': error.name,
-                'description': error.description
+                "statusCode": error.code,
+                "name": error.name,
+                "description": error.description,
             }), error.code
         else:
             return jsonify({
-                'statusCode': 500,
-                'name': 'Internal Server Error',
-                'description': str(error)
+                "statusCode": 500,
+                "name": "Internal Server Error",
+                "description": str(error),
             }), 500
 
     @app.before_request
@@ -972,20 +975,20 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
             duration = time.time() - session[START_TIME]
 
         app.logger.info(
-            f'{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.'
+            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
         )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
         # make requests to this server (otherwise, you will get 403s due to same-
         # origin poly)
-        response.headers.add('Access-Control-Allow-Origin',
-                             'http://localhost:4200')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Allow-Headers',
+        response.headers.add("Access-Control-Allow-Origin",
+                             "http://localhost:4200")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Headers",
                              'Content-Type,Authorization,Set-Cookie,Cookie,Cache-Control,Pragma,Expires')  # noqa
-        response.headers.add('Access-Control-Allow-Methods',
-                             'GET,PUT,POST,DELETE')
+        response.headers.add("Access-Control-Allow-Methods",
+                             "GET,PUT,POST,DELETE")
 
         # disable caching all requests
         response.cache_control.no_cache = True
@@ -995,6 +998,6 @@ if app.config['ENVIRONMENT'] != UNIT_TEST:
         return response
 
 
-@app.route('/api/ping', methods=['GET'])
+@app.route("/api/ping", methods=["GET"])
 def ping():
-    return make_response(jsonify('pong'), 200)
+    return make_response(jsonify("pong"), 200)

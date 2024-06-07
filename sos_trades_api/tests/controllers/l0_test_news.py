@@ -29,18 +29,20 @@ Test class for news procedures
 
 
 class TestNews(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to study controller
     """
-    test_message = 'Test_news'
+    Test class for methods related to study controller
+    """
+
+    test_message = "Test_news"
     test_user_id = None
 
     # New user
-    username = 'user1_usrnme'
-    firstname = 'user1_fn'
-    lastname = 'user1_ln'
-    username = 'user1_usrnme'
-    password = 'user1_passwd'
-    email = 'user1@fake.com'
+    username = "user1_usrnme"
+    firstname = "user1_fn"
+    lastname = "user1_ln"
+    username = "user1_usrnme"
+    password = "user1_passwd"
+    email = "user1@fake.com"
     user_profile_id = 2
     created_user_id = None
 
@@ -60,10 +62,10 @@ class TestNews(DatabaseUnitTestConfiguration):
                 test_user = User.query \
                     .filter(User.username == created_user.username).first()
                 self.assertEqual(
-                    created_user, test_user, 'User created is not the same as the one found in the db.')
+                    created_user, test_user, "User created is not the same as the one found in the db.")
 
             self.assertIsNotNone(
-                test_user, 'User test not found in database, check migrations')
+                test_user, "User test not found in database, check migrations")
 
             # Set user identifier
             self.test_user_id = test_user.id
@@ -77,7 +79,7 @@ class TestNews(DatabaseUnitTestConfiguration):
 
             # Retrieve news
             news = get_news()
-            self.assertIsNotNone(news, 'Any news has been found in the database')
+            self.assertIsNotNone(news, "Any news has been found in the database")
 
     def test_create_news(self):
         from sos_trades_api.models.database_models import News
@@ -88,8 +90,8 @@ class TestNews(DatabaseUnitTestConfiguration):
             # Retrieve news that has been created
             test_news = News.query.filter(
                 News.id == news_created.id).first()
-            self.assertEqual(test_news.message, self.test_message, 'News not created')
-            self.assertLessEqual(len(test_news.message), 300, 'The length of the message is greater than 300 characters')
+            self.assertEqual(test_news.message, self.test_message, "News not created")
+            self.assertLessEqual(len(test_news.message), 300, "The length of the message is greater than 300 characters")
 
     def test_update_news(self):
         from sos_trades_api.controllers.sostrades_data.news_controller import (
@@ -99,15 +101,15 @@ class TestNews(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             # Create news
             news_created = self.creation_news()
-            new_message = 'test_new_message'
+            new_message = "test_new_message"
 
             # Update news
             update_news(new_message, news_created.id)
             updated_news = News.query.filter(
                 News.id == news_created.id).first()
 
-            self.assertEqual(updated_news.message, new_message, 'News not updated')
-            self.assertLessEqual(len(new_message), 300, 'The length of the message is greater than 300 characters')
+            self.assertEqual(updated_news.message, new_message, "News not updated")
+            self.assertLessEqual(len(new_message), 300, "The length of the message is greater than 300 characters")
 
     def test_delete_news(self):
         from sos_trades_api.controllers.sostrades_data.news_controller import (
@@ -120,7 +122,7 @@ class TestNews(DatabaseUnitTestConfiguration):
 
             news_to_delete = News.query.filter(
                 News.id == news.id).first()
-            self.assertIsNotNone(news_to_delete, 'News to delete not found in database')
+            self.assertIsNotNone(news_to_delete, "News to delete not found in database")
 
             # Delete news
             delete_news(news_to_delete.id)
@@ -128,7 +130,7 @@ class TestNews(DatabaseUnitTestConfiguration):
             news_deleted = News.query.filter(
                 News.id == self.test_news_id).first()
             self.assertIsNone(
-                news_deleted, 'Error news deleted has be found in database')
+                news_deleted, "Error news deleted has be found in database")
 
     def creation_news(self):
         from sos_trades_api.controllers.sostrades_data.news_controller import (

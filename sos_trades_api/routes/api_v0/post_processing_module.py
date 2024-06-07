@@ -32,10 +32,10 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 
 
-@app.route('/api/v0/post-processing/<int:study_id>', methods=['GET'])
+@app.route("/api/v0/post-processing/<int:study_id>", methods=["GET"])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
-def get_post_processing(study_id: int, ):
+def get_post_processing(study_id: int ):
     """
     Return dictionary containing post processing  data
 
@@ -66,7 +66,7 @@ def get_post_processing(study_id: int, ):
         abort(400, str(e))
 
 
-@app.route('/api/v0/post-processing/<int:study_id>/html', methods=['GET'])
+@app.route("/api/v0/post-processing/<int:study_id>/html", methods=["GET"])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def get_post_processing_html(study_id: int):
@@ -92,10 +92,10 @@ def get_post_processing_html(study_id: int):
                 for post_processing in discipline_value.post_processings:
                     try:
                         post_processing_figs.append(go.Figure(post_processing).to_html(
-                            full_html=False, include_plotlyjs='cdn'))
+                            full_html=False, include_plotlyjs="cdn"))
                     except Exception:
                         app.logger.exception(
-                            'Error on post processing to html')
+                            "Error on post processing to html")
 
                 discipline_figs.append(post_processing_figs)
 

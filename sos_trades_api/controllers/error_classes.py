@@ -29,14 +29,14 @@ class StudyCaseError(Exception):
         message = None
         if msg is not None:
             if isinstance(msg, Exception):
-                message = f'the following exception occurs {msg}.\n{traceback.format_exc()}'
+                message = f"the following exception occurs {msg}.\n{traceback.format_exc()}"
             else:
                 message = msg
 
         Exception.__init__(self, message)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 class InvalidProcess(StudyCaseError):

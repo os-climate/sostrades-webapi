@@ -35,7 +35,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 
 
-@app.route('/api/post-processing/study-case/<int:study_id>', methods=['GET'])
+@app.route("/api/post-processing/study-case/<int:study_id>", methods=["GET"])
 @auth_required
 def post_processing_load_study_case_by_id(study_id):
     if study_id is not None:
@@ -48,7 +48,7 @@ def post_processing_load_study_case_by_id(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to load this study case')
+                "You do not have the necessary rights to load this study case")
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
         # set the study case in the cache
@@ -67,7 +67,7 @@ def post_processing_load_study_case_by_id(study_id):
     abort(403)
 
 
-@app.route('/api/post-processing/study-case/<int:study_id>/reset-cache', methods=['GET'])
+@app.route("/api/post-processing/study-case/<int:study_id>/reset-cache", methods=["GET"])
 @auth_required
 def reset_study_from_cache_(study_id):
     if study_id is not None:
@@ -80,7 +80,7 @@ def reset_study_from_cache_(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to load this study case')
+                "You do not have the necessary rights to load this study case")
         # set the study case in the cache
 
         study_manager = reset_study_from_cache(study_id)
@@ -98,7 +98,7 @@ def reset_study_from_cache_(study_id):
     abort(403)
 
 
-@app.route('/api/post-processing/study-case/<int:study_id>/reload', methods=['GET'])
+@app.route("/api/post-processing/study-case/<int:study_id>/reload", methods=["GET"])
 @auth_required
 def reload_study_case_by_id(study_id):
     if study_id is not None:
@@ -111,7 +111,7 @@ def reload_study_case_by_id(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to load this study case')
+                "You do not have the necessary rights to load this study case")
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
         # set the study case in the cache

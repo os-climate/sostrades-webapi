@@ -34,7 +34,7 @@ def write_object_in_json_file(object_to_write, file_path):
     saved = False
     if object_to_write is not None:
 
-        with open(file_path, 'w+') as json_file:
+        with open(file_path, "w+") as json_file:
             json.dump(object_to_write, json_file, cls=CustomJsonEncoder)
             saved = True
 
@@ -46,7 +46,7 @@ def read_object_in_json_file(file_path):
     """
     result = None
     if os.path.exists(file_path):
-        with open(file_path, 'r') as json_file:
+        with open(file_path) as json_file:
             result = json.load(json_file)
 
     return result

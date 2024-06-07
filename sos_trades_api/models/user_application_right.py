@@ -28,14 +28,16 @@ class UserApplicationRight:
         self.modules = get_applicative_module(self.user.user_profile_id)
 
     def __repr__(self):
-        """ Overload of the class representation
         """
-        return f'{self.user.id} | {self.user.user_profile_id} | {self.modules}'
+        Overload of the class representation
+        """
+        return f"{self.user.id} | {self.user.user_profile_id} | {self.modules}"
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'user': self.user,
-            'modules': self.modules
+            "user": self.user,
+            "modules": self.modules,
         }

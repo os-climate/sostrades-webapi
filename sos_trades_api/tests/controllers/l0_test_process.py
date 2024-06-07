@@ -27,7 +27,8 @@ Test class for processes procedures
 
 
 class TestProcess(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to process controller
+    """
+    Test class for methods related to process controller
     """
 
     @classmethod
@@ -44,10 +45,11 @@ class TestProcess(DatabaseUnitTestConfiguration):
         super().tearDown()
 
     def test_loaded_process_in_database(self):
-        """ Check that database contains default process to load
+        """
+        Check that database contains default process to load
         """
         additional_repository_list = DatabaseUnitTestConfiguration.app.config[
-            'SOS_TRADES_PROCESS_REPOSITORY']
+            "SOS_TRADES_PROCESS_REPOSITORY"]
 
         # Retrieve all process list
         from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
@@ -69,12 +71,12 @@ class TestProcess(DatabaseUnitTestConfiguration):
                         lambda process: process.process_path == process_module and process.name == process_name, all_database_processes))
 
                     self.assertEqual(len(
-                        loaded_process), 1, 'Process is not present or cannot be present more than once')
+                        loaded_process), 1, "Process is not present or cannot be present more than once")
 
     def test_standard_account_process_in_database(self):
-        """ Check that all process are not accessible by the standard account without right access on processes.
         """
-
+        Check that all process are not accessible by the standard account without right access on processes.
+        """
         with DatabaseUnitTestConfiguration.app.app_context():
 
             from sos_trades_api.models.database_models import User
@@ -90,5 +92,5 @@ class TestProcess(DatabaseUnitTestConfiguration):
             process_filtered = filter(
                 lambda x: x.is_manager or x.is_contributor, standard_account_process)
 
-            self.assertEqual(len((list(process_filtered))), 0,
-                             'Some processes are accessible by the test account')
+            self.assertEqual(len(list(process_filtered)), 0,
+                             "Some processes are accessible by the test account")

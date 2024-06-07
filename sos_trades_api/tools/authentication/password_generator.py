@@ -28,30 +28,30 @@ class InvalidPassword(Exception):
 
     def __init__(self):
 
-        msg = '''\
+        msg = """\
             Given password is invalid. Password must fulfilled the following policies
             - ascii lower case (1 minimum)
             - ascii upper case (1 minimum)
             - all digits numbers (1 minimum)
             - punctuation characters (1 minimum) => !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~
-            '''
+            """
 
         Exception.__init__(self, msg)
 
 def generate_password(length=8):
-    """ Generate a random password regarding the length parameter given as attribute
-        Generated password is a random combination of:
-        - ascii lower case (1 minimum)
-        - ascci upper case (1 minimum)
-        - all digits numbers (1 minimum)
-        - punctuation characters (1 minimum) => !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~
-
-        :param length: number of character for the password to generate (default 8, min 8)
-        :type int
-
-        :param str, generated password
     """
+    Generate a random password regarding the length parameter given as attribute
+    Generated password is a random combination of:
+    - ascii lower case (1 minimum)
+    - ascci upper case (1 minimum)
+    - all digits numbers (1 minimum)
+    - punctuation characters (1 minimum) => !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~
 
+    :param length: number of character for the password to generate (default 8, min 8)
+    :type int
+
+    :param str, generated password
+    """
     if length < 8:
         length = 8
 
@@ -72,7 +72,7 @@ def generate_password(length=8):
         password_as_list = random.sample(all_characters, length)
 
         # set result list to string
-        password = ''.join(password_as_list)
+        password = "".join(password_as_list)
 
         # Check password content
         password_ok = check_password(password)
@@ -81,14 +81,14 @@ def generate_password(length=8):
 
 
 def check_password(password):
-    """ Check if password is compliant with the policy (see generate_password function)
-
-        :param password: number of character for the password to generate (default 8, min 8)
-        :type str
-
-        :return boolean, True if the password is compliant with the policy
     """
+    Check if password is compliant with the policy (see generate_password function)
 
+    :param password: number of character for the password to generate (default 8, min 8)
+    :type str
+
+    :return boolean, True if the password is compliant with the policy
+    """
     # character to check
     lower = string.ascii_lowercase
     upper = string.ascii_uppercase

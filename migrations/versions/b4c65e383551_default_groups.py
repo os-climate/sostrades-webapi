@@ -25,8 +25,8 @@ Create Date: 2021-10-05 17:54:14.072536
 
 """
 # revision identifiers, used by Alembic.
-revision = 'b4c65e383551'
-down_revision = '039eba317a4e'
+revision = "b4c65e383551"
+down_revision = "039eba317a4e"
 branch_labels = None
 depends_on = None
 

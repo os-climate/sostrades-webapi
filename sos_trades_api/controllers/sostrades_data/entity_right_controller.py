@@ -62,7 +62,7 @@ def apply_entities_changes(user_id, user_profile_id, entity_rights):
             db_session.rollback()
             raise EntityRightsError(str(error))
 
-        return 'Rights have been successfully updated in database'
+        return "Rights have been successfully updated in database"
 
 
 def get_study_case_entities_rights(user_id, study_id):
@@ -156,31 +156,31 @@ def verify_user_authorised_for_resource(user_id, user_profile_id, entity_rights)
     Check if the user has the MANAGER or OWNER rights for a resources lists
     """
     # PROCESS RESOURCE
-    if entity_rights['resourceType'] == ResourceType.PROCESS:
+    if entity_rights["resourceType"] == ResourceType.PROCESS:
         process = ProcessAccess(user_id)
         # only process manager can request this
         return has_access_to(user_profile_id, access_right.APP_MODULE_STUDY_MANAGER) or \
-               process.check_user_right_for_process(AccessRights.MANAGER, process_id=entity_rights['resourceId'])
+               process.check_user_right_for_process(AccessRights.MANAGER, process_id=entity_rights["resourceId"])
 
     # GROUP RESOURCE
-    elif entity_rights['resourceType'] == ResourceType.GROUP:
+    elif entity_rights["resourceType"] == ResourceType.GROUP:
         group = GroupAccess(user_id)
         # only process manager can request this
 
-        if group.check_user_right_for_group(AccessRights.MANAGER, group_id=entity_rights['resourceId']) \
-                or group.check_user_right_for_group(AccessRights.OWNER, group_id=entity_rights['resourceId']):
+        if group.check_user_right_for_group(AccessRights.MANAGER, group_id=entity_rights["resourceId"]) \
+                or group.check_user_right_for_group(AccessRights.OWNER, group_id=entity_rights["resourceId"]):
             return True
         else:
             return False
 
     # STUDYCASE RESOURCE
-    elif entity_rights['resourceType'] == ResourceType.STUDYCASE:
-        study_case_identifier = entity_rights['resourceId']
+    elif entity_rights["resourceType"] == ResourceType.STUDYCASE:
+        study_case_identifier = entity_rights["resourceId"]
         study = StudyCaseAccess(user_id, study_case_identifier)
         # only process manager can request this
         return study.check_user_right_for_study(AccessRights.MANAGER, study_case_identifier=study_case_identifier)
 
     # SOSDISCIPLINE RESOURCE
-    elif entity_rights['resourceType'] == ResourceType.SOSDISCIPLINE:
+    elif entity_rights["resourceType"] == ResourceType.SOSDISCIPLINE:
         return True
 

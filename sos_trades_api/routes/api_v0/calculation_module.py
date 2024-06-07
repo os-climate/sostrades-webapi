@@ -32,7 +32,7 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 
 
-@app.route('/api/v0/calculation/execute/<int:study_id>', methods=['POST'])
+@app.route("/api/v0/calculation/execute/<int:study_id>", methods=["POST"])
 @api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def study_case_execution(study_id: int):
@@ -52,8 +52,7 @@ def study_case_execution(study_id: int):
             "study_case_id": study_id
         }
     """
-
-    user = session['user']
+    user = session["user"]
     try:
         light_load_study_case(study_id)
 
@@ -65,7 +64,7 @@ def study_case_execution(study_id: int):
         abort(400, str(e))
 
 
-@app.route('/api/v0/calculation/status/<int:study_id>', methods=['GET'])
+@app.route("/api/v0/calculation/status/<int:study_id>", methods=["GET"])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def study_case_execution_status(study_id: int):

@@ -34,11 +34,12 @@ class AccessRightsSelectable:
                 self.selectable = False
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'id': self.id,
-            'access_right': self.access_right,
-            'description': self.description,
-            'selectable': self.selectable
+            "id": self.id,
+            "access_right": self.access_right,
+            "description": self.description,
+            "selectable": self.selectable,
         }

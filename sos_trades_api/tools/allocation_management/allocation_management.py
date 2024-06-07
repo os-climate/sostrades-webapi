@@ -55,22 +55,22 @@ def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, 
     :return: sos_trades_api.models.database_models.PodAllocation
     """
     # check that allocation already exists:
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == identifier, 
-                                                PodAllocation.pod_type == allocation_type
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == identifier,
+                                                PodAllocation.pod_type == allocation_type,
                                                 ).first()
     if pod_allocation is None:
         pod_allocation = PodAllocation()
-     
+
     pod_allocation.identifier = identifier
     pod_allocation.pod_status = PodAllocation.NOT_STARTED
     pod_allocation.pod_type = allocation_type
     pod_allocation.flavor = flavor
     pod_allocation.creation_date = datetime.now()
-    
-    
+
+
     #load allocation
     pod_allocation = load_allocation(pod_allocation, log_file_path)
-    
+
     db.session.add(pod_allocation)
     db.session.commit()
 
@@ -79,17 +79,17 @@ def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, 
     return pod_allocation
 
 def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
-    '''
+    """
     launch pod creation with kubernetes API and get pod status if kubernetes strateg, else set status to DONE
     Then save pod allocation in DB
 
-    '''
+    """
     # create kubernete pod
     config = Config()
     identifier = pod_allocation.identifier
     save_identifier = pod_allocation.identifier
     save_pod_type = pod_allocation.pod_type
-    # in case of execution allocation, the identifier is the study because 
+    # in case of execution allocation, the identifier is the study because
     # we want to have only one execution allocation by study (the current execution id)
     if pod_allocation.pod_type == PodAllocation.TYPE_EXECUTION:
         study = StudyCase.query.filter(StudyCase.id == identifier).first()
@@ -106,7 +106,7 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     elif pod_allocation.pod_type in [PodAllocation.TYPE_EXECUTION, PodAllocation.TYPE_REFERENCE] and \
         config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
         flavors = config.kubernetes_flavor_config_for_exec
-    
+
     #Select default value of flavor in case of the value doesn't exist
     flavor = None
     if flavors is not None and len(flavors) > 0:
@@ -118,33 +118,33 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
         if pod_allocation.pod_type == PodAllocation.TYPE_STUDY and config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
             k8_service = get_kubernetes_jinja_config(pod_name, config.service_study_server_filepath, flavor)
             k8_deployment = get_kubernetes_jinja_config(pod_name, config.deployment_study_server_filepath, flavor)
-            pod_allocation.kubernetes_pod_namespace = k8_deployment['metadata']['namespace']
+            pod_allocation.kubernetes_pod_namespace = k8_deployment["metadata"]["namespace"]
             db.session.add(pod_allocation)
             db.session.commit()
-            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier, 
-                                                PodAllocation.pod_type == save_pod_type
+            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier,
+                                                PodAllocation.pod_type == save_pod_type,
                                                 ).first()
             kubernetes_create_deployment_and_service(k8_service, k8_deployment)
-        
+
         elif pod_allocation.pod_type != PodAllocation.TYPE_STUDY and config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             k8_conf = get_kubernetes_config_eeb(pod_name, identifier, pod_allocation.pod_type, flavor, log_file_path)
-            pod_allocation.kubernetes_pod_namespace = k8_conf['metadata']['namespace']
+            pod_allocation.kubernetes_pod_namespace = k8_conf["metadata"]["namespace"]
             db.session.add(pod_allocation)
             db.session.commit()
-            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier, 
-                                                PodAllocation.pod_type == save_pod_type
+            pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == save_identifier,
+                                                PodAllocation.pod_type == save_pod_type,
                                                 ).first()
 
             kubernetes_create_pod(k8_conf)
-        else: 
-            pod_allocation.flavor = ''
+        else:
+            pod_allocation.flavor = ""
             pod_allocation.pod_status = PodAllocation.RUNNING
             pod_allocation.message = ""
     except Exception as exp:
         pod_allocation.pod_status = PodAllocation.IN_ERROR
-        pod_allocation.message = f'error while pod creation: {str(exp)}'
+        pod_allocation.message = f"error while pod creation: {exp!s}"
 
-    
+
 
     return pod_allocation
 
@@ -158,27 +158,27 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
     eeb_k8_filepath = Config().eeb_filepath
 
     if Path(eeb_k8_filepath).exists():
-        app.logger.debug('pod configuration file found')
+        app.logger.debug("pod configuration file found")
         with open(eeb_k8_filepath) as f:
             k8_conf = yaml.safe_load(f)
 
         if k8_conf is not None:
             # Overload pod configuration file
-            k8_conf['metadata']['name'] = pod_name
+            k8_conf["metadata"]["name"] = pod_name
             if flavor is not None:
-                k8_conf['spec']['containers'][0]['resources'] = flavor
+                k8_conf["spec"]["containers"][0]["resources"] = flavor
             if pod_type == PodAllocation.TYPE_EXECUTION:
-                k8_conf['spec']['containers'][0]['args'] = [
-                    '--execute', str(identifier), log_file_path]
+                k8_conf["spec"]["containers"][0]["args"] = [
+                    "--execute", str(identifier), log_file_path]
             if pod_type == PodAllocation.TYPE_REFERENCE:
-                k8_conf['spec']['containers'][0]['args'] = [
-                '--generate', str(identifier)]
+                k8_conf["spec"]["containers"][0]["args"] = [
+                "--generate", str(identifier)]
     return k8_conf
 
 def get_kubernetes_jinja_config(pod_name, file_path, flavor):
-    '''
+    """
     Get config kubernetes file from jinja template to be rendered with pod_name
-    '''
+    """
     k8_conf = None
     with open(file_path) as f:
         k8_tplt = Template(f.read())
@@ -188,9 +188,9 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
             k8_tplt = k8_tplt.render(pod_name=pod_name)
         k8_conf = yaml.safe_load(k8_tplt)
     return k8_conf
-   
+
 def get_pod_name(identifier, pod_type, execution_identifier):
-    '''
+    """
     build pod name depending on type
     :param identifier: id of the study in case of type STUDY, id of referenceStudy in case of REFERENCE, or StudyCaseExecutionId in case of EXECUTION
     :type identifier: int
@@ -198,17 +198,17 @@ def get_pod_name(identifier, pod_type, execution_identifier):
     :type pod_type: str
     :param identifier: id of the execution in case of type EXECUTION, id of referenceStudy in case of REFERENCE, or StudyCaseExecutionId in case of EXECUTION
     :type identifier: int
-    '''
+    """
     if pod_type == PodAllocation.TYPE_STUDY:
-        return f'sostrades-study-server-{identifier}'
-    
+        return f"sostrades-study-server-{identifier}"
+
     elif pod_type == PodAllocation.TYPE_EXECUTION:
         # retrieve execution id
 
-        return f'eeb-sc{identifier}-e{execution_identifier}-{uuid.uuid4()}'
+        return f"eeb-sc{identifier}-e{execution_identifier}-{uuid.uuid4()}"
 
     elif pod_type == PodAllocation.TYPE_REFERENCE:
-        return f'generation-g{identifier}-{uuid.uuid4()}'
+        return f"generation-g{identifier}-{uuid.uuid4()}"
 
 def get_allocation_status(pod_allocation:PodAllocation):
     """
@@ -227,15 +227,15 @@ def get_allocation_status(pod_allocation:PodAllocation):
             if pod_allocation.kubernetes_pod_name is not None and pod_allocation.kubernetes_pod_namespace is not None:
                 try:
                     pod_phase, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
-                    
+
                     status, reason = get_status_from_pod_phase(pod_phase, reason)
 
-                    
+
 
                 except Exception as ex:
                     status = PodAllocation.IN_ERROR
-                    reason = f'Error while retrieving status: {str(ex)}'
-                
+                    reason = f"Error while retrieving status: {ex!s}"
+
             else:
                 status = PodAllocation.NOT_STARTED
         else:
@@ -283,7 +283,7 @@ def delete_study_server_services_and_deployments(study_case_allocations:list[Pod
         db.session.commit()
     except Exception as ex:
         raise ex
-        
+
 
 def delete_pod_allocation(pod_allocation:PodAllocation, delete_pod_needed):
     """
@@ -304,10 +304,10 @@ def delete_pod_allocation(pod_allocation:PodAllocation, delete_pod_needed):
     except Exception as ex:
         db.session.rollback()
         raise ex
-    
+
     db.session.commit()
     app.logger.info(f"PodAllocation {allocation_name} have been successfully deleted")
-        
+
 
 def update_all_pod_status():
     """
@@ -320,20 +320,20 @@ def update_all_pod_status():
         namespace = None
         if config.server_mode == Config.CONFIG_SERVER_MODE_K8S:
             k8_deployment = get_kubernetes_jinja_config("pod_name", config.deployment_study_server_filepath, None)
-            namespace = k8_deployment['metadata']['namespace']
+            namespace = k8_deployment["metadata"]["namespace"]
         elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             k8_conf = get_kubernetes_config_eeb("pod_name", 1, PodAllocation.TYPE_EXECUTION, None, "log_file_path")
-            namespace = k8_conf['metadata']['namespace']
+            namespace = k8_conf["metadata"]["namespace"]
 
         for event in watch_pod_events(app.logger, namespace):
 
             # get if pod name is in allocations
             pod_name = get_pod_name_from_event(event)
-            if pod_name.startswith('sostrades-study-server'):
+            if pod_name.startswith("sostrades-study-server"):
                 # retreive the service name by removing the uuid of the pod name
-                names = pod_name.split('-')[0:4]
-                pod_name = '-'.join(names)
-            
+                names = pod_name.split("-")[0:4]
+                pod_name = "-".join(names)
+
             with app.app_context():
                 allocations = PodAllocation.query.filter(PodAllocation.kubernetes_pod_name == pod_name).all()
                 allocation = None
@@ -355,7 +355,7 @@ def update_all_pod_status():
                         # delete service and deployment in case of study oomkilled
                         if pod_status == PodAllocation.OOMKILLED and allocation.pod_type == PodAllocation.TYPE_STUDY:
                             kubernetes_service.kubernetes_delete_deployment_and_service(allocation.kubernetes_pod_name, allocation.kubernetes_pod_namespace)
-                        
+
                         # update allocation status in db
                         allocation.pod_status = pod_status
                         allocation.message = reason
@@ -364,7 +364,7 @@ def update_all_pod_status():
 
                 db.session.commit()
                 if updated:
-                    app.logger.info(f'updated pod_status {pod_name}: {allocation.pod_status}, {allocation.message}')
+                    app.logger.info(f"updated pod_status {pod_name}: {allocation.pod_status}, {allocation.message}")
     else:
         # old watcher
         with app.app_context():
@@ -391,4 +391,4 @@ def clean_all_allocations_type_reference(logger):
     for ref_alloc in reference_allocations:
         db.session.delete(ref_alloc)
     db.session.commit()
-    logger.info(f'{len(reference_allocations)} reference allocations have been deleted')
+    logger.info(f"{len(reference_allocations)} reference allocations have been deleted")

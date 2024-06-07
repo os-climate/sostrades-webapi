@@ -88,7 +88,7 @@ def create_empty_study_case(
     reference: str,
     from_type:str,
     study_pod_flavor:str,
-    execution_pod_flavor:str
+    execution_pod_flavor:str,
 ):
     """
     Create study case object in database
@@ -113,7 +113,6 @@ def create_empty_study_case(
     :type from_type: str
     :return: sos_trades_api.models.database_models.StudyCase
     """
-
     study_name_list = (
         StudyCase.query.join(StudyCaseAccessGroup)
         .join(Group)
@@ -127,7 +126,7 @@ def create_empty_study_case(
     for snl in study_name_list:
         if snl.name == name:
             raise InvalidStudy(
-                f'The following study case name "{name}" already exist in the database for the selected group'
+                f'The following study case name "{name}" already exist in the database for the selected group',
             )
 
     # Initialize the new study case object in database
@@ -148,7 +147,7 @@ def create_empty_study_case(
 
     # Add user as owner of the study case
     owner_right = AccessRights.query.filter(
-        AccessRights.access_right == AccessRights.OWNER
+        AccessRights.access_right == AccessRights.OWNER,
     ).first()
     if owner_right is not None:
         new_user_access = StudyCaseAccessUser()
@@ -179,18 +178,17 @@ def create_study_case_allocation(study_case_identifier:int, flavor:str=None)-> P
     :type flavor: str
     :return: sos_trades_api.models.database_models.PodAllocation
     """
-
     # First check that allocated resources does not already exist
     study_case_allocation = get_study_case_allocation(study_case_identifier)
     app.logger.info("Retrieved status of pod of kubernetes from create_study_case_allocation()")
 
     if study_case_allocation is None:
-        app.logger.info('study case create first allocation')
+        app.logger.info("study case create first allocation")
         new_study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, flavor)
-        
+
     else:
-        raise InvalidStudy('Allocation already exist for this study case')
-    
+        raise InvalidStudy("Allocation already exist for this study case")
+
     return new_study_case_allocation
 
 
@@ -209,7 +207,7 @@ def load_study_case_allocation(study_case_identifier):
     if study_case_allocation is not None:
         # First get allocation status
         if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
-            app.logger.info('allocation need reload')
+            app.logger.info("allocation need reload")
             study_case_allocation.identifier = study_case_identifier
             study_case_allocation.pod_status = PodAllocation.NOT_STARTED
             study_case_allocation.message = None
@@ -217,11 +215,11 @@ def load_study_case_allocation(study_case_identifier):
             app.logger.info("Retrieved status of pod of kubernetes from load_study_case_allocation()")
 
     else:
-        app.logger.info('study case create allocation')
+        app.logger.info("study case create allocation")
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         if study_case is not None:
             study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, study_case.study_pod_flavor)
-   
+
 
     return study_case_allocation
 
@@ -234,13 +232,13 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     :return: sos_trades_api.models.database_models.PodAllocation
     """
     study_case_allocations = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).filter(
-                                                        PodAllocation.pod_type == PodAllocation.TYPE_STUDY
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_STUDY,
                                                         ).all()
     study_case_allocation = None
     if len(study_case_allocations) > 0:
         study_case_allocation = study_case_allocations[0]
         pod_status, message = get_allocation_status(study_case_allocation)
-        
+
         #if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
         if pod_status != PodAllocation.NOT_STARTED or  (pod_status == PodAllocation.NOT_STARTED and \
             study_case_allocation.pod_status != PodAllocation.IN_ERROR and study_case_allocation.pod_status != PodAllocation.OOMKILLED):
@@ -248,30 +246,31 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
             study_case_allocation.message = message
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
-        
-        
+
+
 
     return study_case_allocation
 
 def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
-    """ copy an existing study case with a new name but without loading this study
+    """
+    copy an existing study case with a new name but without loading this study
 
-        :param source_study_case_identifier: identifier of the study case to copy
-        :type source_study_case_identifier: str
-        :param new_study_identifier: id of the new study case
-        :type new_study_identifier: integer
-        :param user_identifier:  id user owner of the new study case
-        :type user_identifier: integer
-        """
+    :param source_study_case_identifier: identifier of the study case to copy
+    :type source_study_case_identifier: str
+    :param new_study_identifier: id of the new study case
+    :type new_study_identifier: integer
+    :param user_identifier:  id user owner of the new study case
+    :type user_identifier: integer
+    """
     with app.app_context():
 
         new_study_case = StudyCase.query.filter(StudyCase.id == new_study_identifier).first()
 
         try:
             study_manager_source = StudyCaseManager(source_study_case_identifier)
-            
+
             if new_study_case is not None:
-                
+
                 # Copy the last study case execution and then update study_id, creation date and request_by.
                 study_execution = StudyCaseExecution.query.filter(
                     StudyCaseExecution.study_case_id == source_study_case_identifier) \
@@ -312,7 +311,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
         # Copy of study data sources from the study source_study_case_identifier to study new study
         try:
             study_case_manager = StudyCaseManager(str(new_study_identifier))
-            
+
 
             # Copy dm.pkl in the new
             study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
@@ -346,7 +345,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
                 db.session.delete(new_study_case)
                 db.session.commit()
             app.logger.error(
-                f'Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}')
+                f"Failed to copy study sources from the study {source_study_case_identifier} to study {new_study_identifier} : {ex}")
             raise ex
 
 
@@ -409,7 +408,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                 try:
                     if update_study_name:
                         study_to_update.name = new_study_name
-                    
+
                     if update_flavor:
                         study_to_update.study_pod_flavor = new_flavor
 
@@ -439,7 +438,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                         if pod_allocation is not None:
                             # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
                             delete_study_server_services_and_deployments([pod_allocation])
-                        
+
 
                 except Exception as ex:
                     db.session.rollback()
@@ -455,7 +454,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                         study_case_manager.delete_loaded_study_case_in_json_file()
                     except BaseException as ex:
                         app.logger.error(
-                            f'Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file')
+                            f"Study {study_id} updated with name {new_study_name} and group {new_group_id} error for deleting readonly file")
 
                 # If group has change then move file (can only be done after the study 'add')
                 if update_group_id:
@@ -468,11 +467,11 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                 study_is_updated = study_to_update.name == new_study_name
                 app.logger.info(
-                    f'Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}')
+                    f"Study {study_id} has been successfully updated with name {new_study_name} and group {new_group_id}")
 
                 return study_is_updated
             else:
-                raise InvalidStudy(f'Requested study case (identifier {study_id} does not exist in the database')
+                raise InvalidStudy(f"Requested study case (identifier {study_id} does not exist in the database")
     else:
         raise InvalidStudyExecution("This study is running, you cannot edit it during its run.")
 
@@ -515,7 +514,7 @@ def delete_study_cases_and_allocation(studies):
     with app.app_context():
         query = StudyCase.query.filter(StudyCase.id.in_(
             studies)).all()
-        
+
         if len(query) == len(studies):
             pod_allocations = []
             study_list = []
@@ -546,10 +545,10 @@ def delete_study_cases_and_allocation(studies):
                 folder = StudyCaseManager.get_root_study_data_folder(study.group_id, study.id)
                 rmtree(folder, ignore_errors=True)
 
-            return f'All the studies (identifier(s) {studies}) have been deleted in the database'
+            return f"All the studies (identifier(s) {studies}) have been deleted in the database"
         else:
-            raise InvalidStudy('Unable to find all the study cases to delete in the database, '
-                               'please refresh your study cases list')
+            raise InvalidStudy("Unable to find all the study cases to delete in the database, "
+                               "please refresh your study cases list")
 
 
 def get_user_shared_study_case(user_identifier: int):
@@ -560,7 +559,6 @@ def get_user_shared_study_case(user_identifier: int):
     :type user_identifier: int
     :return: sos_trades_api.models.database_models.StudyCase
     """
-
     result = []
     study_case_access = StudyCaseAccess(user_identifier)
 
@@ -570,7 +568,7 @@ def get_user_shared_study_case(user_identifier: int):
 
         # Sort study using creation date
         all_user_studies = sorted(
-            all_user_studies, key=lambda res: res.creation_date, reverse=True
+            all_user_studies, key=lambda res: res.creation_date, reverse=True,
         )
 
         # Apply Ontology
@@ -581,7 +579,7 @@ def get_user_shared_study_case(user_identifier: int):
         for user_study in all_user_studies:
 
             # Manage gathering of all data needed for the ontology request
-            process_key = f'{user_study.repository}.{user_study.process}'
+            process_key = f"{user_study.repository}.{user_study.process}"
             if process_key not in processes_metadata:
                 processes_metadata.append(process_key)
 
@@ -589,7 +587,7 @@ def get_user_shared_study_case(user_identifier: int):
 
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
-            
+
             add_study_information_on_status(user_study)
 
         process_metadata = load_processes_metadata(processes_metadata)
@@ -601,7 +599,7 @@ def get_user_shared_study_case(user_identifier: int):
         # Retrieve all favorite study
         all_favorite_studies = (
             UserStudyFavorite.query.filter(
-                UserStudyFavorite.study_case_id.in_(all_study_identifier)
+                UserStudyFavorite.study_case_id.in_(all_study_identifier),
             )
             .filter(UserStudyFavorite.user_id == user_identifier)
             .all()
@@ -624,11 +622,11 @@ def get_user_shared_study_case(user_identifier: int):
         all_study_case_execution_identifiers = [
             user_study.current_execution_id
             for user_study in filter(
-                lambda s: s.current_execution_id is not None, all_user_studies
+                lambda s: s.current_execution_id is not None, all_user_studies,
             )
         ]
         all_study_case_execution = StudyCaseExecution.query.filter(
-            StudyCaseExecution.id.in_(all_study_case_execution_identifiers)
+            StudyCaseExecution.id.in_(all_study_case_execution_identifiers),
         ).all()
 
         # Final loop to update study dto
@@ -654,7 +652,7 @@ def get_user_shared_study_case(user_identifier: int):
                 filter(
                     lambda sce: sce.study_case_id == user_study.id,
                     all_study_case_execution,
-                )
+                ),
             )
             if study_case_execution is None or len(study_case_execution) == 0:
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
@@ -670,14 +668,14 @@ def get_user_shared_study_case(user_identifier: int):
 
 
 def get_user_study_case(user_identifier: int, study_identifier: int):
-    '''
+    """
     get a single study case with updated status, ontology and execution
     :param user_identifier: identifier of the user requesting the study
     :type user_identifier:int
     :param study_identifier: identifier of the study
     :type study_identifier:int
     :return: the user study
-    '''
+    """
     study_case_access = StudyCaseAccess(user_identifier)
 
     all_user_studies = study_case_access.user_study_cases
@@ -685,14 +683,14 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
     if len(all_user_studies) > 0:
         # Sort study using creation date
         all_user_studies = sorted(
-            all_user_studies, key=lambda res: res.creation_date, reverse=True
+            all_user_studies, key=lambda res: res.creation_date, reverse=True,
         )
         for user_study in all_user_studies:
             if user_study.id == study_identifier:
                 add_study_information_on_status(user_study)
 
                 # load ontology
-                process_key = f'{user_study.repository}.{user_study.process}'
+                process_key = f"{user_study.repository}.{user_study.process}"
                 repository_key = user_study.repository
                 process_metadata = load_processes_metadata([process_key])
                 repository_metadata = load_repositories_metadata([repository_key])
@@ -701,7 +699,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
 
                 # update study case execution status
                 study_case_execution = StudyCaseExecution.query.filter(
-                    StudyCaseExecution.id == user_study.current_execution_id
+                    StudyCaseExecution.id == user_study.current_execution_id,
                 ).first()
                 if study_case_execution is None:
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
@@ -712,7 +710,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.error = current_execution.message
                 return user_study
     return None
-            
+
 
 
 
@@ -720,9 +718,9 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
 
 def add_study_information_on_status(user_study: StudyCase):
     # check pod status if creation status id not DONE:
-    if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != 'DONE':# before the status was at 'DONE'
+    if user_study.creation_status != StudyCase.CREATION_DONE and user_study.creation_status != "DONE":# before the status was at 'DONE'
         allocation = get_study_case_allocation(user_study.id)
-        
+
         # deal with error cases:
         if allocation is None or (allocation.pod_status != PodAllocation.PENDING and allocation.pod_status != PodAllocation.RUNNING) or \
             (allocation.pod_status != PodAllocation.RUNNING and user_study.creation_status == StudyCase.CREATION_IN_PROGRESS):
@@ -750,10 +748,9 @@ def get_change_file_stream(notification_identifier, parameter_key):
     :type parameter_key: str
     :return: BytesIO
     """
-
     change = (
         StudyCaseChange.query.filter(
-            StudyCaseChange.notification_id == notification_identifier
+            StudyCaseChange.notification_id == notification_identifier,
         )
         .filter(StudyCaseChange.variable_id == parameter_key)
         .first()
@@ -763,7 +760,7 @@ def get_change_file_stream(notification_identifier, parameter_key):
         if change.old_value_blob is not None:
             return BytesIO(change.old_value_blob)
 
-    raise InvalidFile(f'Error, cannot retrieve change file {parameter_key}.csv')
+    raise InvalidFile(f"Error, cannot retrieve change file {parameter_key}.csv")
 
 
 def get_study_case_notifications(study_identifier):
@@ -797,7 +794,7 @@ def get_study_case_notifications(study_identifier):
                 if notif.type == UserCoeditionAction.SAVE:
                     changes_query = (
                         StudyCaseChange.query.filter(
-                            StudyCaseChange.notification_id == notif.id
+                            StudyCaseChange.notification_id == notif.id,
                         )
                         .order_by(StudyCaseChange.last_modified.desc())
                         .all()
@@ -834,16 +831,17 @@ def create_new_notification_after_update_parameter(study_id, change_type, coedit
     Create a new notification after updating a parameter in the study.
 
     Args:
+    ----
         study_id (int): The ID of the study.
         type (str): The type of change.
         coedition_action (str): The coedition action performed.
         user (User): The user who performed the action.
 
     Returns:
+    -------
         int: The ID of the new notification.
 
     """
-
     action = UserCoeditionAction.get_attribute_for_value(coedition_action)
     # Check if the coedition action is valid
     if action is not None:
@@ -891,7 +889,7 @@ def get_last_study_case_changes(notification_id):
 
 
 def get_user_authorised_studies_for_process(
-    user_identifier, process_name, repository_name
+    user_identifier, process_name, repository_name,
 ):
     """
     Retrieve all the study cases shared with the user for the selected process and repository
@@ -904,16 +902,15 @@ def get_user_authorised_studies_for_process(
     :type repository_name: str
     :return: sos_trades_api.models.study_case_dto.StudyCaseDto
     """
-
     result = []
     study_case_access = StudyCaseAccess(user_identifier)
     all_user_studies = study_case_access.get_study_cases_authorised_from_process(
-        process_name, repository_name
+        process_name, repository_name,
     )
 
     if len(all_user_studies) > 0:
         # Apply Ontology
-        processes_metadata = [f'{repository_name}.{process_name}']
+        processes_metadata = [f"{repository_name}.{process_name}"]
         repositories_metadata = [repository_name]
 
         process_metadata = load_processes_metadata(processes_metadata)
@@ -935,13 +932,12 @@ def study_case_logs(study_case_identifier):
     :type study_case_identifier: int
     :return: sos_trades_api.models.database_models.StudyCaseLog[]
     """
-
     if study_case_identifier is not None:
         result = []
         try:
             result = (
                 StudyCaseLog.query.filter(
-                    StudyCaseLog.study_case_id == study_case_identifier
+                    StudyCaseLog.study_case_id == study_case_identifier,
                 )
                 .order_by(StudyCaseLog.id)
                 .limit(200)
@@ -953,7 +949,7 @@ def study_case_logs(study_case_identifier):
             return result
     else:
         raise InvalidStudy(
-            f'Requested study case (identifier {study_case_identifier} does not exist in the database'
+            f"Requested study case (identifier {study_case_identifier} does not exist in the database",
         )
 
 
@@ -965,10 +961,9 @@ def get_raw_logs(study_case_identifier):
     :type study_case_identifier: int
     :return: raw log file path or empty string
     """
-
     study = StudyCaseManager(study_case_identifier)
 
-    file_path = ''
+    file_path = ""
 
     if study is not None:
         file_path = study.raw_log_file_path_absolute()
@@ -987,7 +982,6 @@ def load_study_case_preference(study_case_identifier, user_identifier):
 
     :return: preference dictionary
     """
-
     result = {}
 
     with app.app_context():
@@ -995,7 +989,7 @@ def load_study_case_preference(study_case_identifier, user_identifier):
             and_(
                 UserStudyPreference.user_id == user_identifier,
                 UserStudyPreference.study_case_id == study_case_identifier,
-            )
+            ),
         ).all()
 
         if len(preferences) > 0:
@@ -1018,7 +1012,6 @@ def save_study_case_preference(study_case_identifier, user_identifier, preferenc
     :param preference: user study preference
     :type preference: int
     """
-
     result = {}
 
     with app.app_context():
@@ -1026,7 +1019,7 @@ def save_study_case_preference(study_case_identifier, user_identifier, preferenc
             and_(
                 UserStudyPreference.user_id == user_identifier,
                 UserStudyPreference.study_case_id == study_case_identifier,
-            )
+            ),
         ).all()
 
         current_preference = None
@@ -1056,7 +1049,7 @@ def set_user_authorized_execution(study_case_identifier, user_identifier):
     """
     # Retrieve study case with user authorised for execution
     study_case_loaded = StudyCase.query.filter(
-        StudyCase.id == study_case_identifier
+        StudyCase.id == study_case_identifier,
     ).first()
 
     if study_case_loaded is not None:
@@ -1066,10 +1059,10 @@ def set_user_authorized_execution(study_case_identifier, user_identifier):
         db.session.commit()
     else:
         raise InvalidStudy(
-            f'Unable to find in database the study case with id {study_case_identifier}'
+            f"Unable to find in database the study case with id {study_case_identifier}",
         )
 
-    return 'You successfully claimed Execution ability'
+    return "You successfully claimed Execution ability"
 
 
 def add_favorite_study_case(study_case_identifier, user_identifier):
@@ -1082,7 +1075,6 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
     :type user_identifier: int
 
     """
-
     favorite_study = (
         UserStudyFavorite.query.filter(UserStudyFavorite.user_id == user_identifier)
         .filter(UserStudyFavorite.study_case_id == study_case_identifier)
@@ -1107,7 +1099,7 @@ def add_favorite_study_case(study_case_identifier, user_identifier):
             .first()
         )
         raise InvalidStudy(
-            f'The study - {study_case.name} - is already in your favorite studies'
+            f"The study - {study_case.name} - is already in your favorite studies",
         )
 
 
@@ -1120,7 +1112,6 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
     :param user_identifier: user who removed the favorite study
     :type user_identifier: int
     """
-
     # Get the study-case thanks to study_id into UserFavoriteStudy
     study_case = (
         StudyCase.query.filter(StudyCase.id == study_case_identifier)
@@ -1143,9 +1134,9 @@ def remove_favorite_study_case(study_case_identifier, user_identifier):
             db.session.rollback()
             raise ex
     else:
-        raise InvalidStudy('You cannot remove a study that is not in your favorite study')
+        raise InvalidStudy("You cannot remove a study that is not in your favorite study")
 
-    return f'The study, {study_case.name}, has been removed from favorite study.'
+    return f"The study, {study_case.name}, has been removed from favorite study."
 
 
 def add_last_opened_study_case(study_case_identifier, user_identifier):
@@ -1204,7 +1195,7 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
         except Exception as ex:
             db.session.rollback()
             app.logger.error(
-                f'Study {study_case_identifier} could not be saved in the last open studies : {ex}')
+                f"Study {study_case_identifier} could not be saved in the last open studies : {ex}")
             raise ex
 
 

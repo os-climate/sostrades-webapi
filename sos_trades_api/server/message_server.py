@@ -17,7 +17,7 @@ limitations under the License.
 # Set server name
 import os
 
-os.environ['SERVER_NAME'] = 'MESSAGE_SERVER'
+os.environ["SERVER_NAME"] = "MESSAGE_SERVER"
 
 from flask_socketio import SocketIO
 
@@ -25,7 +25,7 @@ from sos_trades_api.server.base_server import app
 
 # Initialize socket for messaging system
 socketio = SocketIO()
-socketio.init_app(app, cors_allowed_origins='*', async_mode='eventlet', async_handlers=True)
+socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet", async_handlers=True)
 
 # load & register APIs
 from sos_trades_api.routes.message import *

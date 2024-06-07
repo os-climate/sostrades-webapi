@@ -39,21 +39,21 @@ def get_study_case_validation_list(study_case_id):
 
 def add_study_case_validation(study_case_id, user, namespace, status, comment):
     """
-        create and save a study case validation
-        :param: study_case_id, id of the studycase
-        :type: integer
-        :param: user, user that did the validation
-        :type: user
-        :param: namespace, namespace of the data validated
-        :type: string
-        :param: status, state of the validation (validated or not)
-        :type: string
-        :param: comment, comment
-        :type: string
+    create and save a study case validation
+    :param: study_case_id, id of the studycase
+    :type: integer
+    :param: user, user that did the validation
+    :type: user
+    :param: namespace, namespace of the data validated
+    :type: string
+    :param: status, state of the validation (validated or not)
+    :type: string
+    :param: comment, comment
+    :type: string
     """
     new_study_validation = StudyCaseValidation()
     new_study_validation.study_case_id = study_case_id
-    new_study_validation.validation_user = f'{user.firstname} {user.lastname}'
+    new_study_validation.validation_user = f"{user.firstname} {user.lastname}"
     new_study_validation.validation_user_department = user.department
     new_study_validation.namespace = namespace
     new_study_validation.validation_state = status

@@ -25,17 +25,17 @@ Data and graph validation tools
 
 def invalidate_namespace_after_save(study_case_id, user_fullname, user_department, namespace):
     """
-       If a variable has been changed, retrieve the node validation status, if the node was validated
-       that invalidate it. The user have to check changes.
+    If a variable has been changed, retrieve the node validation status, if the node was validated
+    that invalidate it. The user have to check changes.
 
-        :param: study_case_id, id of the studycase
-        :type: integer
-        :param: user_fullname, user's information that did the validation
-        :type: user
-        :param: user_department, user's information that did the validation
-        :type: user
-        :param: namespace, namespace of the data validated
-        :type: string
+     :param: study_case_id, id of the studycase
+     :type: integer
+     :param: user_fullname, user's information that did the validation
+     :type: user
+     :param: user_department, user's information that did the validation
+     :type: user
+     :param: namespace, namespace of the data validated
+     :type: string
 
     """
     with app.app_context():
@@ -52,7 +52,7 @@ def invalidate_namespace_after_save(study_case_id, user_fullname, user_departmen
             new_study_validation.validation_user_department = user_department
             new_study_validation.namespace = namespace
             new_study_validation.validation_state = StudyCaseValidation.NOT_VALIDATED
-            new_study_validation.validation_comment = 'Automatic invalidation after data change(s)'
+            new_study_validation.validation_comment = "Automatic invalidation after data change(s)"
             new_study_validation.validation_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
             db.session.add(new_study_validation)

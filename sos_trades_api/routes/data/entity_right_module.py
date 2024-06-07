@@ -30,24 +30,24 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 
 
-@app.route('/api/data/entity-right', methods=['POST'])
+@app.route("/api/data/entity-right", methods=["POST"])
 @auth_required
 def change_entities_rights():
 
     app.logger.info(get_authenticated_user())
     user = get_authenticated_user()
 
-    entity_rights = request.json.get('entity_rights', None)
+    entity_rights = request.json.get("entity_rights", None)
 
     if entity_rights is None:
-        raise BadRequest('Missing mandatory parameter: entity_rights')
+        raise BadRequest("Missing mandatory parameter: entity_rights")
 
     resp = make_response(
         jsonify(apply_entities_changes(user.id, user.user_profile_id, entity_rights)), 200)
     return resp
 
 
-@app.route('/api/data/entity-right/study-case/<int:study_id>', methods=['GET'])
+@app.route("/api/data/entity-right/study-case/<int:study_id>", methods=["GET"])
 @auth_required
 def study_case_entities_rights(study_id):
 
@@ -59,11 +59,11 @@ def study_case_entities_rights(study_id):
     return resp
 
 
-@app.route('/api/data/entity-right/process/<int:process_id>', methods=['GET'])
+@app.route("/api/data/entity-right/process/<int:process_id>", methods=["GET"])
 @auth_required
 def process_entities_rights(process_id):
 
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     resp = make_response(
@@ -71,7 +71,7 @@ def process_entities_rights(process_id):
     return resp
 
 
-@app.route('/api/data/entity-right/group/<int:group_id>', methods=['GET'])
+@app.route("/api/data/entity-right/group/<int:group_id>", methods=["GET"])
 @auth_required
 def group_entities_rights(group_id):
 

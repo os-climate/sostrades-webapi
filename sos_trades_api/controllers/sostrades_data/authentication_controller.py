@@ -52,7 +52,6 @@ def authenticate_user_standard(username, password):
 
     :return: tuple (access_token, refresh_token, user, mail sending status)
     """
-
     mail_send = False
     # - Check user credential using airbus AD
     user = None
@@ -60,7 +59,7 @@ def authenticate_user_standard(username, password):
     # Create the list of non ldap user authentication
     users_list = []
 
-    if app.config['CREATE_STANDARD_USER_ACCOUNT'] is True:
+    if app.config["CREATE_STANDARD_USER_ACCOUNT"] is True:
         users_list.append(User.STANDARD_USER_ACCOUNT_NAME)
 
     try:
@@ -83,15 +82,15 @@ def authenticate_user_standard(username, password):
                     app.logger.error(
                         f'"{username}" login or password is incorrect (with local database)')
                     raise InvalidCredentials(
-                        'User login or password is incorrect')
+                        "User login or password is incorrect")
         else:
             # Check credential using LDAP request
             user = check_credentials(username, password)
     except LDAPException as ex:
         app.logger.exception(
-            f'{username} login or password is incorrect (with LDAP)')
+            f"{username} login or password is incorrect (with LDAP)")
         raise InvalidCredentials(
-            'User login or password is incorrect')
+            "User login or password is incorrect")
 
     if user:
 
@@ -107,13 +106,13 @@ def authenticate_user_standard(username, password):
             create_access_token(identity=email),
             create_refresh_token(identity=email),
             is_new_user,
-            mail_send
+            mail_send,
         )
 
     app.logger.error(
         f'"{username}" login or password is incorrect (with LDAP)')
     raise InvalidCredentials(
-        'User login or password is incorrect')
+        "User login or password is incorrect")
 
 
 def authenticate_user_saml(flask_request):
@@ -126,11 +125,10 @@ def authenticate_user_saml(flask_request):
     :return: tuple (access_token, refresh_token, url to redirect authentication)
 
     """
-
     try:
         saml_user, return_url = manage_saml_assertion(flask_request)
     except SamlAuthenticationError as ex:
-        app.logger.exception('Authentication exception with saml assertion')
+        app.logger.exception("Authentication exception with saml assertion")
         raise AuthenticationError(str(ex))
 
     if saml_user:
@@ -150,12 +148,12 @@ def authenticate_user_saml(flask_request):
             access_token,
             refresh_token,
             return_url,
-            user
+            user,
         )
 
-    app.logger.error('User login or password is incorrect (in saml assertion)')
+    app.logger.error("User login or password is incorrect (in saml assertion)")
     raise InvalidCredentials(
-        'User login or password is incorrect')
+        "User login or password is incorrect")
 
 
 def authenticate_user_github(github_api_user_response: dict, github_api_user_email_response: dict):
@@ -168,7 +166,6 @@ def authenticate_user_github(github_api_user_response: dict, github_api_user_ema
 
     :return: tuple (access_token, refresh_token, url to redirect authentication)
     """
-
     if github_api_user_response and github_api_user_email_response:
 
         github_user, return_url = GitHubSettings.manage_github_assertion(github_api_user_response, github_api_user_email_response)
@@ -187,12 +184,12 @@ def authenticate_user_github(github_api_user_response: dict, github_api_user_ema
             access_token,
             refresh_token,
             return_url,
-            user
+            user,
         )
 
-    app.logger.error('User login or password is incorrect (in github assertion)')
+    app.logger.error("User login or password is incorrect (in github assertion)")
     raise InvalidCredentials(
-        'User login or password is incorrect')
+        "User login or password is incorrect")
 
 
 
@@ -204,7 +201,6 @@ def authenticate_user_keycloak(userinfo: dict):
 
     :return: tuple (access_token, refresh_token, url to redirect authentication, user)
     """
-
     if userinfo:
 
         # Placeholder: Créez ou mettez à jour l'utilisateur dans votre système en fonction des informations obtenues de Keycloak
@@ -225,12 +221,12 @@ def authenticate_user_keycloak(userinfo: dict):
             access_token,
             refresh_token,
             return_url,
-            user
+            user,
         )
 
-    app.logger.error('User login or password is incorrect (in Keycloak assertion)')
+    app.logger.error("User login or password is incorrect (in Keycloak assertion)")
     raise InvalidCredentials(
-        'User login or password is incorrect')
+        "User login or password is incorrect")
 
 def deauthenticate_user():
     """
@@ -253,14 +249,14 @@ def refresh_authentication():
 
 
 def ldap_available():
-    """ Check if all LDAP configuration settings has been set
+    """
+    Check if all LDAP configuration settings has been set
 
     :return: boolean, LDAP setting fully available
     """
-
-    data_missing = not app.config['LDAP_SERVER'] or \
-        not app.config['LDAP_BASE_DN'] or \
-        not app.config['LDAP_FILTER'] or \
-        not app.config['LDAP_USERNAME']
+    data_missing = not app.config["LDAP_SERVER"] or \
+        not app.config["LDAP_BASE_DN"] or \
+        not app.config["LDAP_FILTER"] or \
+        not app.config["LDAP_USERNAME"]
 
     return not data_missing

@@ -20,14 +20,14 @@ from os.path import dirname, join
 
 from dotenv import load_dotenv
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    if os.environ.get('SOS_TRADES_SERVER_CONFIGURATION') is None:
-        dotenv_path = join(dirname(__file__), '..', '..', '.flaskenv')
+    if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is None:
+        dotenv_path = join(dirname(__file__), "..", "..", ".flaskenv")
         load_dotenv(dotenv_path)
 
     # Import server module after a basic configuration in order to set
     # correctly server  executing environment
     from sos_trades_api.server.api_mode import api_v0_server
 
-    api_v0_server.app.run(host='127.0.0.1', port='5004')
+    api_v0_server.app.run(host="127.0.0.1", port="5004")

@@ -31,14 +31,14 @@ class NewsError(Exception):
         message = None
         if msg is not None:
             if isinstance(msg, Exception):
-                message = f'the following exception occurs {msg}.\n{traceback.format_exc()}'
+                message = f"the following exception occurs {msg}.\n{traceback.format_exc()}"
             else:
                 message = msg
 
         Exception.__init__(self, message)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 class InvalidNews(NewsError):
@@ -51,9 +51,8 @@ def get_news():
 
     :returns: sos_trades_api.models.database_models.News[]
     """
-
     all_news = News.query.order_by(
-        News.last_modification_date.desc()
+        News.last_modification_date.desc(),
     ).all()
 
     return all_news
@@ -66,7 +65,6 @@ def create_news(message, user_identifier):
     :param user_identifier: User that create this news
     :return: sos_trades_api.models.database_models.News
     """
-    
     if len(message) <= 300:
         new_post = News()
         new_post.message = message
@@ -87,12 +85,11 @@ def update_news(new_message, news_identifier):
     :param new_message: message to update
     :return: sos_trades_api.models.database_models.News
     """
-
     # First check that this link does already exist in database
     existing_message = News.query.filter(News.id == news_identifier).first()
 
     if existing_message is None:
-        raise InvalidNews('News to update not found.')
+        raise InvalidNews("News to update not found.")
 
     if len(new_message) <= 300:
         existing_message.message = new_message
@@ -111,12 +108,11 @@ def delete_news(news_identifier):
     Delete the news specified by its identifier given as parameter
     :param news_identifier: news_identifier to delete
     """
-
     # First check that this news does already exist in database
     existing_message = News.query.filter(News.id == news_identifier).first()
 
     if existing_message is None:
-        raise InvalidNews('News to delete not found.')
+        raise InvalidNews("News to delete not found.")
 
     db.session.delete(existing_message)
     db.session.commit()

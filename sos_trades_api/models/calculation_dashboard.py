@@ -35,17 +35,18 @@ class CalculationDashboard:
         self.execution_status = execution_status
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'study_case_id': self.study_case_id,
-            'name': self.name,
-            'study_case_execution_id': self.study_case_execution_id,
-            'repository': self.repository,
-            'process': self.process,
-            'repository_display_name': self.repository_display_name,
-            'process_display_name': self.process_display_name,
-            'creation_date': self.creation_date,
-            'username': self.username,
-            'execution_status': self.execution_status
+            "study_case_id": self.study_case_id,
+            "name": self.name,
+            "study_case_execution_id": self.study_case_execution_id,
+            "repository": self.repository,
+            "process": self.process,
+            "repository_display_name": self.repository_display_name,
+            "process_display_name": self.process_display_name,
+            "creation_date": self.creation_date,
+            "username": self.username,
+            "execution_status": self.execution_status,
         }

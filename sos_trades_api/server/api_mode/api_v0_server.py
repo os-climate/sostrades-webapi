@@ -17,8 +17,8 @@ limitations under the License.
 # Set server name
 import os
 
-os.environ['SERVER_NAME'] = 'API_V0_SERVER'
-os.environ['SOS_TRADES_SERVER_MODE'] = 'mono'
+os.environ["SERVER_NAME"] = "API_V0_SERVER"
+os.environ["SOS_TRADES_SERVER_MODE"] = "mono"
 
 from sos_trades_api import __file__
 from sos_trades_api.server import base_server
@@ -30,7 +30,7 @@ db = base_server.db
 app.template_folder = os.path.join(
     os.path.dirname(__file__),
     "templates",
-    "api_v0"
+    "api_v0",
 )
 
 # load & register APIs

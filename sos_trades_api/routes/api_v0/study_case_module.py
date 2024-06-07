@@ -48,8 +48,8 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 
 
-@app.route('/api/v0/study-case/<int:study_id>', methods=['GET'])
-@app.route('/api/v0/study-case/<int:study_id>/<int:timeout>', methods=['GET'])
+@app.route("/api/v0/study-case/<int:study_id>", methods=["GET"])
+@app.route("/api/v0/study-case/<int:study_id>/<int:timeout>", methods=["GET"])
 @api_key_required
 @has_user_access_right(AccessRights.RESTRICTED_VIEWER)
 def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
@@ -62,10 +62,9 @@ def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
             'discipline2': {'discipline2 data'}...
         }
     """
-
     try:
 
-        user = session['user']
+        user = session["user"]
         study_case_access = StudyCaseAccess(user.id)
         study_access_right = study_case_access.get_user_right_for_study(study_id)
 
@@ -106,20 +105,20 @@ def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
         abort(400, str(e))
 
 
-@app.route('/api/v0/study-case/<int:study_id>/copy', methods=['POST'])
+@app.route("/api/v0/study-case/<int:study_id>/copy", methods=["POST"])
 @api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def copy_study_case_by_id(study_id):
     """
-      Copy a existing study
-      """
+    Copy a existing study
+    """
     try:
         if study_id is not None:
-            user = session['user']
-            group = session['group']
-            
+            user = session["user"]
+            group = session["group"]
 
-            new_study_name = request.json.get('new_study_name', None)
+
+            new_study_name = request.json.get("new_study_name", None)
 
             if new_study_name is None:
                 abort(400, "Missing mandatory parameter: new_name")
@@ -139,27 +138,26 @@ def copy_study_case_by_id(study_id):
             return resp
 
         else:
-            abort(400, 'Missing mandatory parameter: study identifier in url')
+            abort(400, "Missing mandatory parameter: study identifier in url")
 
     except Exception as e:
         abort(400, str(e))
 
 
-@app.route('/api/v0/study-case/<int:study_id>/parameters', methods=['POST'])
+@app.route("/api/v0/study-case/<int:study_id>/parameters", methods=["POST"])
 @api_key_required
 @has_user_access_right(AccessRights.CONTRIBUTOR)
 def update_study_parameters_by_study_case_id(study_id: int):
     """
     Update a study parameters
     """
-
-    user = session['user']
+    user = session["user"]
 
     # Preliminary checks
     if not request.files and not request.json:
         abort(400, "No files or parameters found in request.")
 
-    needed_parameters_keys = ['variableId', 'newValue', 'unit']
+    needed_parameters_keys = ["variableId", "newValue", "unit"]
     if request.json:
         request_json = request.json if isinstance(request.json, list) else [request.json]
 
@@ -169,7 +167,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
 
             for needed_key in needed_parameters_keys:
                 if needed_key not in parameter_json:
-                    messages.append(f'Missing mandatory key: {needed_key}')
+                    messages.append(f"Missing mandatory key: {needed_key}")
                     missing_variable = True
                 else:
                     messages.append(f'Mandatory key {needed_key} found with value {parameter_json.get("needed_key")}')
@@ -195,15 +193,15 @@ def update_study_parameters_by_study_case_id(study_id: int):
                 files.append(file_io)
                 files_info[file_io.filename] = {
                         "variable_id": variable_id,
-                        "namespace": tuple(variable_id.rsplit('.', 1))[0],
-                        "discipline": "Data"
+                        "namespace": tuple(variable_id.rsplit(".", 1))[0],
+                        "discipline": "Data",
                 }
         if request.json:
             for parameter_json in request_json:
                 columns_to_delete = parameter_json.get("column_deleted")
                 parameter_json["changeType"] = StudyCaseChange.SCALAR_CHANGE
                 parameter_json["oldValue"] = ""  # TODO oldValue est necessaire pour le revert ?
-                parameter_json["namespace"], parameter_json["var_name"] = tuple(parameter_json.get("variableId").rsplit('.', 1))
+                parameter_json["namespace"], parameter_json["var_name"] = tuple(parameter_json.get("variableId").rsplit(".", 1))
                 parameters_to_save.append(parameter_json)
 
         resp = update_study_parameters(study_id, user, files, files_info, parameters_to_save, columns_to_delete)
@@ -213,7 +211,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
         abort(400, str(e))
 
 
-@app.route('/api/v0/study-case/<int:study_id>/parameter/download', methods=['POST'])
+@app.route("/api/v0/study-case/<int:study_id>/parameter/download", methods=["POST"])
 @api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_parameter_file_by_study_case_id(study_id: int):
@@ -224,18 +222,18 @@ def get_study_parameter_file_by_study_case_id(study_id: int):
         if request.json is None:
             abort(400, "'parameter_key' not found in request")
 
-        parameter = request.json.get('parameter_key')
+        parameter = request.json.get("parameter_key")
 
         light_load_study_case(study_id)
 
         return send_file(get_file_stream(study_id, parameter),
-                         mimetype='text/csv')
+                         mimetype="text/csv")
 
     except Exception as e:
         abort(400, str(e))
 
 
-@app.route('/api/v0/study-case/<int:study_id>/url', methods=['GET'])
+@app.route("/api/v0/study-case/<int:study_id>/url", methods=["GET"])
 @api_key_required
 def get_study_case_url(study_id: int):
     """
@@ -243,7 +241,6 @@ def get_study_case_url(study_id: int):
 
     :return: json response like {'study_url': 'http/link/to/webgui/'}
     """
-
     try:
 
         study_case_cache.get_study_case(study_id, False)
@@ -255,7 +252,7 @@ def get_study_case_url(study_id: int):
         abort(400, str(e))
 
 
-@app.route('/api/v0/study-case/<int:study_id>/logs', methods=['GET'])
+@app.route("/api/v0/study-case/<int:study_id>/logs", methods=["GET"])
 @api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
 def get_study_case_raw_logs(study_id):
@@ -266,7 +263,7 @@ def get_study_case_raw_logs(study_id):
         resp = send_file(file_path)
         return resp
     else:
-        resp = make_response(jsonify('No logs found.'), 404)
+        resp = make_response(jsonify("No logs found."), 404)
         return resp
 
 

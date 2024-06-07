@@ -29,16 +29,18 @@ Test class for study procedures
 
 
 class TestStudy(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to study controller
     """
-    test_repository_name = 'sostrades_core.sos_processes.test'
-    test_process_name = 'test_disc1_disc2_coupling'
+    Test class for methods related to study controller
+    """
+
+    test_repository_name = "sostrades_core.sos_processes.test"
+    test_process_name = "test_disc1_disc2_coupling"
     #test_clear_error_process_name = 'test_sellar_opt'
-    test_clear_error_process_name = 'test_sellar_opt_discopt'
-    test_csv_process_name = 'test_csv_data'
-    test_study_name = 'test_creation'
-    test_study_csv_name = 'test_csv'
-    test_study_clear_error_name = 'test_clear_error'
+    test_clear_error_process_name = "test_sellar_opt_discopt"
+    test_csv_process_name = "test_csv_data"
+    test_study_name = "test_creation"
+    test_study_csv_name = "test_csv"
+    test_study_clear_error_name = "test_clear_error"
     test_study_id = None
     test_study_csv_id = None
     test_study_clear_error_id = None
@@ -74,7 +76,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             test_user = User.query \
                 .filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             self.assertIsNotNone(
-                test_user, 'Default user test not found in database, check migrations')
+                test_user, "Default user test not found in database, check migrations")
             self.test_user_id = test_user.id
             # Retrieve all_group
             all_group = Group.query \
@@ -96,7 +98,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             manager_right = AccessRights.query.filter(
                 AccessRights.access_right == AccessRights.MANAGER).first()
             self.assertIsNotNone(manager_right,
-                                 'Default access right Manager cannot be found in database, check migrations')
+                                 "Default access right Manager cannot be found in database, check migrations")
             # Authorize user_test for process
             # Test if user already authorized
             process_access_user = ProcessAccessUser.query \
@@ -120,10 +122,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      self.test_repository_name,
                                                      self.test_process_name,
                                                      self.test_user_group_id,
-                                                     'Empty Study',
+                                                     "Empty Study",
                                                      StudyCase.FROM_REFERENCE,
                                                      None,
-                                                     None
+                                                     None,
                                                      )
 
             self.test_study_id = new_study_case.id
@@ -138,10 +140,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                          self.test_repository_name,
                                                          self.test_csv_process_name,
                                                          self.test_user_group_id,
-                                                         'Empty Study',
+                                                         "Empty Study",
                                                          StudyCase.FROM_REFERENCE,
                                                      None,
-                                                     None
+                                                     None,
                                                          )
 
             self.test_study_csv_id = new_study_case_csv.id
@@ -156,10 +158,10 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                                  self.test_repository_name,
                                                                  self.test_clear_error_process_name,
                                                                  self.test_user_group_id,
-                                                                 'Empty Study',
+                                                                 "Empty Study",
                                                                  StudyCase.FROM_REFERENCE,
                                                      None,
-                                                     None
+                                                     None,
                                                                  )
 
             self.test_study_clear_error_id = new_study_case_clear_error.id
@@ -181,11 +183,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             new_created_study = StudyCase.query.filter(
                 StudyCase.id == self.test_study_id).first()
             self.assertEqual(new_created_study.name, self.test_study_name,
-                             'Created study case name does not match, test set up name used')
+                             "Created study case name does not match, test set up name used")
             self.assertEqual(new_created_study.process, self.test_process_name,
-                             'Created study case process does not match, test set up process name used')
+                             "Created study case process does not match, test set up process name used")
             self.assertEqual(new_created_study.repository, self.test_repository_name,
-                             'Created study case repository does not match, test set up repository name used')
+                             "Created study case repository does not match, test set up repository name used")
 
     def test_get_user_shared_study_case(self):
         from sos_trades_api.controllers.sostrades_data.study_case_controller import (
@@ -200,25 +202,25 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                           and std.process == self.test_process_name
                                                           and std.repository == self.test_repository_name, user_shared_study_cases))
             self.assertIsNotNone(study_test_disc1_disc2_coupling[0],
-                                 'Created study case test_disc1_disc2_coupling cannot be found in database')
+                                 "Created study case test_disc1_disc2_coupling cannot be found in database")
 
             # Secondly created study case test_csv_data
             study_test_csv = list(filter(lambda std: std.name == self.test_study_csv_name
                                          and std.process == self.test_csv_process_name
                                          and std.repository == self.test_repository_name, user_shared_study_cases))
             self.assertIsNotNone(study_test_csv[0],
-                                 'Created study case test_csv_data cannot be found in database')
+                                 "Created study case test_csv_data cannot be found in database")
 
             # thirdly created study case test_csv_data
             study_test_clear_error = list(filter(lambda std: std.name == self.test_study_clear_error_name
                                                  and std.process == self.test_clear_error_process_name
                                                  and std.repository == self.test_repository_name, user_shared_study_cases))
             self.assertIsNotNone(study_test_clear_error[0],
-                                 'Created study case test_clear_error cannot be found in database')
+                                 "Created study case test_clear_error cannot be found in database")
 
             # Checking only 3 study cases
             self.assertEqual(len(user_shared_study_cases), 3,
-                             'User study case list does not match, study case list created and shared in test')
+                             "User study case list does not match, study case list created and shared in test")
 
     def test_load_study_case(self):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -232,7 +234,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
 
             study_manager = study_case_cache.get_study_case(study_test.id, False)
 
@@ -254,11 +256,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
 
             self.assertEqual(loaded_study.study_case.name, self.test_study_name,
-                             'Created study case name does not match, test set up name used')
+                             "Created study case name does not match, test set up name used")
             self.assertEqual(loaded_study.study_case.process, self.test_process_name,
-                             'Created study case process does not match, test set up process name used')
+                             "Created study case process does not match, test set up process name used")
             self.assertEqual(loaded_study.study_case.repository, self.test_repository_name,
-                             'Created study case repository does not match, test set up repository name used')
+                             "Created study case repository does not match, test set up repository name used")
 
     def test_study_case_log(self):
         from sos_trades_api.models.database_models import (
@@ -270,7 +272,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
 
             # check that logs are created
             self.assertNotEqual(len(StudyCaseLog.query
@@ -289,7 +291,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
             study_copy_name = "test_study_copy"
 
             new_study_case = create_empty_study_case(self.test_user_id,
@@ -300,7 +302,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      str(study_test.id),
                                                      StudyCase.FROM_STUDYCASE,
                                                      None,
-                                                     None
+                                                     None,
                                                      )
 
             copy_study_case(new_study_case.id,
@@ -309,9 +311,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
             self.assertEqual(study_case_copied.process, self.test_process_name,
-                             'Copied study case process does not match, test set up process name used')
+                             "Copied study case process does not match, test set up process name used")
             self.assertEqual(study_case_copied.repository, self.test_repository_name,
-                             'Copied study case repository does not match, test set up repository name used')
+                             "Copied study case repository does not match, test set up repository name used")
 
     def test_update_study_parameters(self):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -324,22 +326,22 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
 
             user_test = User.query.filter(User.id == self.test_user_id).first()
             self.assertIsNotNone(
-                user_test, 'Unable to retrieve user_test, check migrations')
+                user_test, "Unable to retrieve user_test, check migrations")
 
             initial_modification_date = study_test.modification_date
             parameters_update_list = [
-                {"variableId": f'{study_test.name}.Disc1.a',
+                {"variableId": f"{study_test.name}.Disc1.a",
                  "variableType": "float",
                  "changeType": "scalar",
                  "newValue": 10,
                  "oldValue": 5,
-                 'namespace': f'{study_test.name}',
-                 'discipline': 'Disc1',
-                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
+                 "namespace": f"{study_test.name}",
+                 "discipline": "Disc1",
+                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
             ]
             columns_to_delete = []
 
@@ -373,7 +375,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test_updated = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test_updated, 'Unable to retrieve study case created and updated for test')
+                study_test_updated, "Unable to retrieve study case created and updated for test")
             last_modification_date = study_test_updated.modification_date
             # self.assertNotEqual(initial_modification_date, last_modification_date,
             #                    'Modification date cannot be the same as the one at creation')
@@ -397,11 +399,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_csv_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_csv_name).first()
             self.assertIsNotNone(
-                study_csv_test, 'Unable to retrieve study case csv created for test')
+                study_csv_test, "Unable to retrieve study case csv created for test")
 
             user_test = User.query.filter(User.id == self.test_user_id).first()
             self.assertIsNotNone(
-                user_test, 'Unable to retrieve user_test, check migrations')
+                user_test, "Unable to retrieve user_test, check migrations")
 
             study_manager = study_case_cache.get_study_case(study_csv_test.id, False)
 
@@ -410,65 +412,65 @@ class TestStudy(DatabaseUnitTestConfiguration):
             sleep(2)
 
             # Declaration of objects to test
-            array_mixed_types = np.array(("TEXT", None, '', 1, 1), dtype='O')
-            dict_mixed_types = {'a': '', 'b': None,
-                                'c': [1, None, 3], 'd': 'test'}
+            array_mixed_types = np.array(("TEXT", None, "", 1, 1), dtype="O")
+            dict_mixed_types = {"a": "", "b": None,
+                                "c": [1, None, 3], "d": "test"}
             dataframe_mix_types = pd.DataFrame(
-                {'a': [1, None, 3], 'b': 40.0, 'c': ['abc', '', None]})
+                {"a": [1, None, 3], "b": 40.0, "c": ["abc", "", None]})
             dict_as_dict_dataframe_types = \
                 {
-                    'dict_key_1': pd.DataFrame(
+                    "dict_key_1": pd.DataFrame(
                         {
-                            'col1': ['col_1_value_1', 'col_1_value_2', 'col_1_value_3', 'col_1_value_4',
-                                     'col_1_value_5', 'col_1_value_6', 'col_1_value_7', 'col_1_value_8',
-                                     'col_1_value_9'],
-                            'col2': [3001.0, 3002.0, 3003.0, 3004.0, 3005.0, 3006.0, 3008.0, 3007.0, 3009.0]
-                        }
+                            "col1": ["col_1_value_1", "col_1_value_2", "col_1_value_3", "col_1_value_4",
+                                     "col_1_value_5", "col_1_value_6", "col_1_value_7", "col_1_value_8",
+                                     "col_1_value_9"],
+                            "col2": [3001.0, 3002.0, 3003.0, 3004.0, 3005.0, 3006.0, 3008.0, 3007.0, 3009.0],
+                        },
                     ),
-                    'dict_key_3': pd.DataFrame(
+                    "dict_key_3": pd.DataFrame(
                         {
-                            'col1': ['col_1_value_10', 'col_1_value_11', 'col_1_value_12', 'col_1_value_13',
-                                     'col_1_value_14', 'col_1_value_15', 'col_1_value_16', 'col_1_value_17',
-                                     'col_1_value_18', 'col_1_value_19', 'col_1_value_20', 'col_1_value_21',
-                                     'col_1_value_22', 'col_1_value_23', 'col_1_value_24', 'col_1_value_25',
-                                     'col_1_value_26', 'col_1_value_27', 'col_1_value_28'],
-                            'col2': [3008.0, 3001.0, 3002.0, 3000.0, 3003.0, 3006.0, 3009.0, 3008.0, 3007.0, 3005.0,
-                                     3004.0, 3002.0, 3001.0, 3005.0, 3003.0, 3006.0, 3004.0, 3008.0, 3009.0]
-                        }
-                    )
+                            "col1": ["col_1_value_10", "col_1_value_11", "col_1_value_12", "col_1_value_13",
+                                     "col_1_value_14", "col_1_value_15", "col_1_value_16", "col_1_value_17",
+                                     "col_1_value_18", "col_1_value_19", "col_1_value_20", "col_1_value_21",
+                                     "col_1_value_22", "col_1_value_23", "col_1_value_24", "col_1_value_25",
+                                     "col_1_value_26", "col_1_value_27", "col_1_value_28"],
+                            "col2": [3008.0, 3001.0, 3002.0, 3000.0, 3003.0, 3006.0, 3009.0, 3008.0, 3007.0, 3005.0,
+                                     3004.0, 3002.0, 3001.0, 3005.0, 3003.0, 3006.0, 3004.0, 3008.0, 3009.0],
+                        },
+                    ),
                 }
             # Array ---------------------------------------
-            array_path = join(dirname(data.__file__), 'array_mix_types.csv')
-            array_file = open(array_path, 'rb')
+            array_path = join(dirname(data.__file__), "array_mix_types.csv")
+            array_file = open(array_path, "rb")
             array_fs = FileStorage(array_file)
             # Dict ---------------------------------------
-            dict_path = join(dirname(data.__file__), 'dict_mix_types.csv')
-            dict_file = open(dict_path, 'rb')
+            dict_path = join(dirname(data.__file__), "dict_mix_types.csv")
+            dict_file = open(dict_path, "rb")
             dict_fs = FileStorage(dict_file)
             # Dataframe ---------------------------------------
             dataframe_path = join(dirname(data.__file__),
-                                  'dataframe_mix_types.csv')
-            dataframe_file = open(dataframe_path, 'rb')
+                                  "dataframe_mix_types.csv")
+            dataframe_file = open(dataframe_path, "rb")
             dataframe_fs = FileStorage(dataframe_file)
             # Dict as Dict of dataframe ---------------------------------------
             # type dict
             # subtype_descriptor: {'dict': 'dataframe'}
             dict_as_dict_dataframe_path = join(dirname(data.__file__),
-                                               'dict_as_dict_dataframe.csv')
+                                               "dict_as_dict_dataframe.csv")
             dict_as_dict_dataframe_file = open(
-                dict_as_dict_dataframe_path, 'rb')
+                dict_as_dict_dataframe_path, "rb")
             dict_as_dict_dataframe_fs = FileStorage(
                 dict_as_dict_dataframe_file)
 
             file_info = {
-                array_path: {'variable_id': f'{self.test_study_csv_name}.array_mix_types',
-                             'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
-                dict_path: {'variable_id': f'{self.test_study_csv_name}.dict_mix_types',
-                            'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
-                dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dataframe_mix_types',
-                                 'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'},
-                dict_as_dict_dataframe_path: {'variable_id': f'{self.test_study_csv_name}.dict_as_dict_dataframe',
-                                              'discipline': 'Data', 'namespace': f'{self.test_study_csv_name}'}
+                array_path: {"variable_id": f"{self.test_study_csv_name}.array_mix_types",
+                             "discipline": "Data", "namespace": f"{self.test_study_csv_name}"},
+                dict_path: {"variable_id": f"{self.test_study_csv_name}.dict_mix_types",
+                            "discipline": "Data", "namespace": f"{self.test_study_csv_name}"},
+                dataframe_path: {"variable_id": f"{self.test_study_csv_name}.dataframe_mix_types",
+                                 "discipline": "Data", "namespace": f"{self.test_study_csv_name}"},
+                dict_as_dict_dataframe_path: {"variable_id": f"{self.test_study_csv_name}.dict_as_dict_dataframe",
+                                              "discipline": "Data", "namespace": f"{self.test_study_csv_name}"},
 
             }
             files_list = [array_fs, dict_fs,
@@ -495,34 +497,34 @@ class TestStudy(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             study_dm = study_manager.execution_engine.dm.convert_data_dict_with_full_name()
             dm_array = np.array(
-                study_dm[f'{self.test_study_csv_name}.array_mix_types']['value'])
-            dm_dict = study_dm[f'{self.test_study_csv_name}.dict_mix_types']['value']
-            dm_dataframe = study_dm[f'{self.test_study_csv_name}.dataframe_mix_types']['value']
-            dm_dict_as_dict_dataframe = study_dm[f'{self.test_study_csv_name}.dict_as_dict_dataframe']['value']
+                study_dm[f"{self.test_study_csv_name}.array_mix_types"]["value"])
+            dm_dict = study_dm[f"{self.test_study_csv_name}.dict_mix_types"]["value"]
+            dm_dataframe = study_dm[f"{self.test_study_csv_name}.dataframe_mix_types"]["value"]
+            dm_dict_as_dict_dataframe = study_dm[f"{self.test_study_csv_name}.dict_as_dict_dataframe"]["value"]
 
             self.assertTrue(np.array_equiv(array_mixed_types, dm_array),
-                            f'Input array {array_mixed_types} != from dm array {dm_array}')
+                            f"Input array {array_mixed_types} != from dm array {dm_array}")
             self.assertTrue(dm_dict == dict_mixed_types,
-                            f'Input dict {dict_mixed_types} != from dm dict {dm_dict}')
+                            f"Input dict {dict_mixed_types} != from dm dict {dm_dict}")
             self.assertTrue(dataframe_mix_types.equals(dm_dataframe),
-                            f'Input dataframe {dataframe_mix_types} != from dm dataframe {dm_dataframe}')
+                            f"Input dataframe {dataframe_mix_types} != from dm dataframe {dm_dataframe}")
 
             # ----------------------------------
             # Check equality for dm_dict_as_dict_dataframe
             type_key_list = np.array(dict_as_dict_dataframe_types.keys())
             dm_key_list = np.array(dm_dict_as_dict_dataframe.keys())
             self.assertTrue((type_key_list == dm_key_list).all(),
-                            f'key of dict_as_dict_dataframe {type_key_list} != from keys in dm {dm_key_list} ')
+                            f"key of dict_as_dict_dataframe {type_key_list} != from keys in dm {dm_key_list} ")
             # Check dataframes equality for dict_key_1
-            type_dataframe_key_dict_key_1 = dict_as_dict_dataframe_types['dict_key_1']
-            dm_dataframe_key_dict_key_1 = dm_dict_as_dict_dataframe['dict_key_1']
+            type_dataframe_key_dict_key_1 = dict_as_dict_dataframe_types["dict_key_1"]
+            dm_dataframe_key_dict_key_1 = dm_dict_as_dict_dataframe["dict_key_1"]
             self.assertTrue(type_dataframe_key_dict_key_1.equals(dm_dataframe_key_dict_key_1),
-                            f'Dataframe of dict_as_dict_dataframe dict_key_1 {type_dataframe_key_dict_key_1} != from dm dataframe dict_key_1 {dm_dataframe_key_dict_key_1}')
+                            f"Dataframe of dict_as_dict_dataframe dict_key_1 {type_dataframe_key_dict_key_1} != from dm dataframe dict_key_1 {dm_dataframe_key_dict_key_1}")
             # Check dataframes equality for dict_key_3
-            type_dataframe_key_dict_key_3 = dict_as_dict_dataframe_types['dict_key_3']
-            dm_dataframe_key_dict_key_3 = dm_dict_as_dict_dataframe['dict_key_3']
+            type_dataframe_key_dict_key_3 = dict_as_dict_dataframe_types["dict_key_3"]
+            dm_dataframe_key_dict_key_3 = dm_dict_as_dict_dataframe["dict_key_3"]
             self.assertTrue(type_dataframe_key_dict_key_3.equals(dm_dataframe_key_dict_key_3),
-                            f'Dataframe of dict_as_dict_dataframe dict_key_3 {type_dataframe_key_dict_key_3} != from dm dataframe dict_key_3 {dm_dataframe_key_dict_key_3}')
+                            f"Dataframe of dict_as_dict_dataframe dict_key_3 {type_dataframe_key_dict_key_3} != from dm dataframe dict_key_3 {dm_dataframe_key_dict_key_3}")
 
             array_file.close()
             dict_file.close()
@@ -545,11 +547,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test_deleted = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNone(
-                study_test_deleted, 'Error study case deleted has be found in database')
+                study_test_deleted, "Error study case deleted has be found in database")
             # check that the folder of study data as been deleted
             self.assertFalse(os.path.exists(StudyCaseManager.get_root_study_data_folder(study_test.group_id,
                                                                                         study_test.id)),
-                             'Error study case folder not deleted')
+                             "Error study case folder not deleted")
 
     def test_get_study_data_stream(self):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -583,14 +585,14 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             initial_modification_date = study_test.modification_date
             parameters_update_list = [
-                {"variableId": f'{study_test.name}.Disc1.a',
+                {"variableId": f"{study_test.name}.Disc1.a",
                  "variableType": "float",
                  "changeType": "scalar",
                  "newValue": 10,
                  "oldValue": 5,
-                 'namespace': f'{study_test.name}',
-                 'discipline': 'Disc1',
-                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
+                 "namespace": f"{study_test.name}",
+                 "discipline": "Disc1",
+                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
             ]
 
             study_manager = study_case_cache.get_study_case(study_test.id, False)
@@ -618,9 +620,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             notifications = get_study_case_notifications(study_test.id)
             change = notifications[0].changes[0]
             self.assertIsNotNone(
-                change, 'Error no change created at study update in database')
-            self.assertEqual(change.variable_id, f'{study_test.name}.Disc1.a')
-            self.assertEqual(change.change_type, 'scalar')
+                change, "Error no change created at study update in database")
+            self.assertEqual(change.variable_id, f"{study_test.name}.Disc1.a")
+            self.assertEqual(change.change_type, "scalar")
             self.assertEqual(change.new_value, 10)
             self.assertEqual(change.old_value, 5)
 
@@ -633,15 +635,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created and updated for test')
+                study_test, "Unable to retrieve study case created and updated for test")
             user_authorised_studies = get_user_authorised_studies_for_process(self.test_user_id,
                                                                               self.test_process_name,
                                                                               self.test_repository_name)
 
             self.assertEqual(user_authorised_studies[0].process, self.test_process_name,
-                             'Copied study case process does not match, test set up process name used')
+                             "Copied study case process does not match, test set up process name used")
             self.assertEqual(user_authorised_studies[0].repository, self.test_repository_name,
-                             'Copied study case repository does not match, test set up repository name used')
+                             "Copied study case repository does not match, test set up repository name used")
 
     def test_get_user_study_case_preference(self):
         import json
@@ -659,15 +661,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.test_study_id, self.test_user_id)
 
         self.assertEqual(len(preference), 0,
-                         'Initial preference data must be empty')
+                         "Initial preference data must be empty")
 
         # Set some preference data into the database
         preference_data = {
-            'key1': 38,
-            'key2': 'namespace value',
-            'key3': {
-                'sub_key': [1, 2, 3]
-            }
+            "key1": 38,
+            "key2": "namespace value",
+            "key3": {
+                "sub_key": [1, 2, 3],
+            },
         }
 
         save_study_case_preference(
@@ -679,18 +681,18 @@ class TestStudy(DatabaseUnitTestConfiguration):
                      UserStudyPreference.study_case_id == self.test_study_id)).all()
 
             self.assertEqual(len(preferences), 1,
-                             'It must have only one reference tuple into database')
+                             "It must have only one reference tuple into database")
 
             loaded_preference = json.loads(preferences[0].preference)
 
             self.assertDictEqual(preference_data, loaded_preference,
-                                 'Direct read preference is not the same a the save one')
+                                 "Direct read preference is not the same a the save one")
 
             loaded_preference = load_study_case_preference(
                 self.test_study_id, self.test_user_id)
 
             self.assertDictEqual(preference_data, loaded_preference,
-                                 'Controller read preference is not the same a the save one')
+                                 "Controller read preference is not the same a the save one")
 
     def _test_clear_error_in_study_case_controller(self):
         from os.path import dirname, join
@@ -717,14 +719,14 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertIsNotNone(user_test)
 
             dataframe_path = join(dirname(data.__file__),
-                                  'wrong_design_space.csv')
-            dataframe_file = open(dataframe_path, 'rb')
+                                  "wrong_design_space.csv")
+            dataframe_file = open(dataframe_path, "rb")
             dataframe_fs = FileStorage(dataframe_file)
 
             file_info = {
-                dataframe_path: {'variable_id': f'{self.test_study_clear_error_name}.SellarOptimScenario.design_space',
-                                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
-                                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario'}
+                dataframe_path: {"variable_id": f"{self.test_study_clear_error_name}.SellarOptimScenario.design_space",
+                                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
+                                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario"},
             }
             files_list = [dataframe_fs]
             columns_to_delete = []
@@ -748,103 +750,103 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.assertTrue(study_manager.load_status == LoadStatus.IN_ERROR)
 
-            error_message = 'The current value of variable test_clear_error.SellarOptimScenario.z!15.0 is not between the lower bound 0.0 and the upper bound 10.0'
+            error_message = "The current value of variable test_clear_error.SellarOptimScenario.z!15.0 is not between the lower bound 0.0 and the upper bound 10.0"
             self.assertIn(error_message, study_manager.error_message)
 
             dataframe_path = join(dirname(data.__file__),
-                                  'correct_design_space.csv')
-            dataframe_file = open(dataframe_path, 'rb')
+                                  "correct_design_space.csv")
+            dataframe_file = open(dataframe_path, "rb")
             dataframe_fs = FileStorage(dataframe_file)
 
             file_info = {
-                dataframe_path: {'variable_id': f'{self.test_study_clear_error_name}.SellarOptimScenario.design_space',
-                                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
-                                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario'}
+                dataframe_path: {"variable_id": f"{self.test_study_clear_error_name}.SellarOptimScenario.design_space",
+                                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
+                                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario"},
             }
             files_list = [dataframe_fs]
 
             # other inputs to configure the process
             parameters_update_list = [
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.x',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.x",
                  "variableType": "array",
                  "changeType": "scalar",
                  "newValue": array([1.]),
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.z',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.z",
                  "variableType": "array",
                  "changeType": "scalar",
                  "newValue": array([1., 1.]),
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem.local_dv',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem.local_dv",
                  "variableType": "float",
                  "changeType": "scalar",
                  "newValue": 10.,
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem',
-                 'discipline': 'sostrades_core.sos_wrapping.test_discs.sellar.SellarProblem',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario.Sellar_Problem",
+                 "discipline": "sostrades_core.sos_wrapping.test_discs.sellar.SellarProblem",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.max_iter',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.max_iter",
                  "variableType": "int",
                  "changeType": "scalar",
                  "newValue": 2,
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.algo',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.algo",
                  "variableType": "string",
                  "changeType": "scalar",
                  "newValue": "L-BFGS-B",
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.formulation',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.formulation",
                  "variableType": "string",
                  "changeType": "scalar",
-                 "newValue": 'DisciplinaryOpt',
+                 "newValue": "DisciplinaryOpt",
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.objective_name',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.objective_name",
                  "variableType": "string",
                  "changeType": "scalar",
-                 "newValue": 'obj',
+                 "newValue": "obj",
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.algo_options',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.algo_options",
                  "variableType": "dict",
                  "changeType": "scalar",
                  "newValue": {"ftol_rel": 1e-6, "ineq_tolerance": 1e-6, "normalize_design_space": True},
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
                  "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
 
-                {"variableId": f'{self.test_study_clear_error_name}.SellarOptimScenario.ineq_constraints',
+                {"variableId": f"{self.test_study_clear_error_name}.SellarOptimScenario.ineq_constraints",
                  "variableType": "array",
                  "changeType": "scalar",
                  "newValue": [],
                  "oldValue": None,
-                 'namespace': f'{self.test_study_clear_error_name}.SellarOptimScenario',
-                 'discipline': 'sostrades_core.execution_engine.sos_optim_scenario',
-                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None}
+                 "namespace": f"{self.test_study_clear_error_name}.SellarOptimScenario",
+                 "discipline": "sostrades_core.execution_engine.sos_optim_scenario",
+                 "lastModified": "2021-01-11T13:51:26.118Z", "id": None, "author": None},
             ]
             columns_to_delete = []
             # updating study case with correct design space
@@ -885,7 +887,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_csv_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
             study_copy_name = "test_study_copy_read_only"
 
             new_study_case = create_empty_study_case(self.test_user_id,
@@ -896,7 +898,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      str(study_test.id),
                                                      StudyCase.FROM_STUDYCASE,
                                                      None,
-                                                     None
+                                                     None,
                                                      )
 
             study_case_copy = copy_study_case(
@@ -918,15 +920,15 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
             self.assertTrue(study_manager.check_study_case_json_file_exists(
-            ), 'Unable to retrieve study case read only file')
+            ), "Unable to retrieve study case read only file")
             study_json = get_study_in_read_only_mode(study_case_copy_id, False)
             self.assertIsNotNone(
-                study_json, 'Unable to read study case read only file')
+                study_json, "Unable to read study case read only file")
 
             # check that the json contains the data
             self.assertTrue(
-                'test_study_copy_read_only.dataframe_mix_types' in str(study_json),
-                'the parameter is not in the read only file')
+                "test_study_copy_read_only.dataframe_mix_types" in str(study_json),
+                "the parameter is not in the read only file")
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
@@ -957,7 +959,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             study_test = StudyCase.query.filter(
                 StudyCase.name == self.test_study_csv_name).first()
             self.assertIsNotNone(
-                study_test, 'Unable to retrieve study case created for test')
+                study_test, "Unable to retrieve study case created for test")
             study_copy_name = "test_study_for_dataset_mapping"
 
             new_study_case = create_empty_study_case(self.test_user_id,
@@ -968,7 +970,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      str(study_test.id),
                                                      StudyCase.FROM_STUDYCASE,
                                                      None,
-                                                     None
+                                                     None,
                                                      )
 
             study_case_copy = copy_study_case(
@@ -991,12 +993,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
 
             files_data = {
-                'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
-                'namespace_datasets_mapping': {
-                    'v0|<study_ph>.test_disc1_disc2_coupling.Disc1|*':
-                        ['MVP0_datasets_connector|default_numerical_parameters|*',
-                         'MVP0_datasets_connector|dataset_a|*']
-                }
+                "process_module_path": "sostrades_core.sos_processes.test.test_disc1_disc2_dataset",
+                "namespace_datasets_mapping": {
+                    "v0|<study_ph>.test_disc1_disc2_coupling.Disc1|*":
+                        ["MVP0_datasets_connector|default_numerical_parameters|*",
+                         "MVP0_datasets_connector|dataset_a|*"],
+                },
             }
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             # Create new notification
@@ -1026,11 +1028,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertTrue(len(parameter_changes) == 0)
 
             files_data = {
-                'process_module_path': 'sostrades_core.sos_processes.test.test_disc1_disc2_dataset',
-                'namespace_datasets_mapping': {
-                    'v0|<study_ph>.Disc1|*':
-                        ['MVP0_datasets_connector|dataset_a|*']
-                }
+                "process_module_path": "sostrades_core.sos_processes.test.test_disc1_disc2_dataset",
+                "namespace_datasets_mapping": {
+                    "v0|<study_ph>.Disc1|*":
+                        ["MVP0_datasets_connector|dataset_a|*"],
+                },
             }
             user_test = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             # Create new notification

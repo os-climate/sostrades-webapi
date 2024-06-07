@@ -33,13 +33,14 @@ class LoadedStudyCaseExecutionStatus:
         self.study_case_execution_memory = study_case_execution_memory
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'study_case_id': self.study_case_id,
-            'disciplines_status': self.study_case_execution,
-            'study_case_execution_status': self.study_case_execution_status,
-            'study_case_execution_error_message': self.study_case_execution_error_message,
-            'study_case_execution_cpu': self.study_case_execution_cpu,
-            'study_case_execution_memory': self.study_case_execution_memory
+            "study_case_id": self.study_case_id,
+            "disciplines_status": self.study_case_execution,
+            "study_case_execution_status": self.study_case_execution_status,
+            "study_case_execution_error_message": self.study_case_execution_error_message,
+            "study_case_execution_cpu": self.study_case_execution_cpu,
+            "study_case_execution_memory": self.study_case_execution_memory,
         }

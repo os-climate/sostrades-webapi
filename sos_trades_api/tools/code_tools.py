@@ -33,7 +33,7 @@ def time_function(logger: Optional[logging.Logger] = None):
 
     def inner(func):
         def wrapper_function(*args, **kwargs):
-            """fonction wrapper"""
+            """Fonction wrapper"""
             t_start = time()
             return_args = func(*args, **kwargs)
             t_end = time()
@@ -65,7 +65,6 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     :return: list of string
     """
-
     # Temporary buffer to store read lines during process
     binary_buffer = bytearray()
     buffer_size = 4096
@@ -73,7 +72,7 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     app.logger.debug(f"Opening log file {file_name}.")
 
     # Open file for reading in binary mode
-    with open(file_name, 'rb') as file_object:
+    with open(file_name, "rb") as file_object:
         app.logger.debug(f"Log file opened {file_name}.")
         # Set file pointer to the end and initialize pointer value
         file_object.seek(0, os.SEEK_END)
@@ -84,10 +83,10 @@ def file_tail(file_name, line_count, encoding="utf-8"):
         previous_n_read_bytes = 0
 
         # While we haven't read enough lines, or reached the end of the file
-        while binary_buffer.count(b'\n') < line_count and read_size < file_size:
+        while binary_buffer.count(b"\n") < line_count and read_size < file_size:
             # Amount of bytes to read
             n_bytes_to_read = min(buffer_size, file_size - read_size)
-            
+
             # Seek position from current position
             offset_from_current_pos = -(n_bytes_to_read + previous_n_read_bytes)
             file_object.seek(offset_from_current_pos, os.SEEK_CUR)
@@ -101,15 +100,15 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
             # Keep track of bytes read this iteration
             previous_n_read_bytes = n_bytes_to_read
-        
+
     # Decode buffer
     content = binary_buffer[::-1].decode(encoding=encoding, errors="ignore")
 
     # Split lines
-    lines = content.split('\n')
+    lines = content.split("\n")
     if len(lines) > line_count:
         # Trim aditionnal lines
         lines = lines[-line_count:]
-    
+
     app.logger.debug(f"Done parsing logs {file_name}.")
     return lines

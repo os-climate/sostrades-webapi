@@ -25,7 +25,8 @@ Test class for user management procedures
 
 
 class TestUserManagemenent(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to user controller
+    """
+    Test class for methods related to user controller
     """
 
     @classmethod
@@ -40,20 +41,20 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             test_user = User.query \
                 .filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             self.assertIsNotNone(
-                test_user, 'Default user test not found in database, check migrations')
+                test_user, "Default user test not found in database, check migrations")
             self.test_user_id = test_user.id
             self.test_user_name = test_user.username
             self.test_user_mail = test_user.email
             # Set field to create an user
-            self.username = 'user1_usrnme'
-            self.firstname = 'user1_fn'
-            self.lastname = 'user1_ln'
-            self.username = 'user1_usrnme'
-            self.password = 'user1_passwd'
-            self.email = 'user1@fake.com'
+            self.username = "user1_usrnme"
+            self.firstname = "user1_fn"
+            self.lastname = "user1_ln"
+            self.username = "user1_usrnme"
+            self.password = "user1_passwd"
+            self.email = "user1@fake.com"
             self.user_profile_id = 2
             # Set field to update
-            self.new_email = 'mailhasbeenmodified@fake.com'
+            self.new_email = "mailhasbeenmodified@fake.com"
 
     def tearDown(self):
         super().tearDown()
@@ -67,9 +68,9 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             user_list = get_user_list()
             self.assertEqual(
-                1, len(user_list), 'User list returned is greater than 1, should only return test user')
+                1, len(user_list), "User list returned is greater than 1, should only return test user")
             self.assertEqual(
-                user_list[0].username, self.test_user_name, 'User returned is not test user')
+                user_list[0].username, self.test_user_name, "User returned is not test user")
 
     def test_02_add_user(self):
         from sos_trades_api.controllers.sostrades_data.user_controller import add_user
@@ -80,13 +81,13 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             created_user_from_db = User.query \
                 .filter(User.username == self.username).first()
             self.assertEqual(
-                created_user, created_user_from_db, 'User created is not the same as the one found in the db.')
+                created_user, created_user_from_db, "User created is not the same as the one found in the db.")
             # Ensure we can't create a second user with the same unique key
             # than the first one
             try:
                 add_user(self.firstname, self.lastname, self.username,
                          self.password, self.email, self.user_profile_id)
-                raise Exception('Can create user with duplicate unique key.')
+                raise Exception("Can create user with duplicate unique key.")
             except:
                 pass
 
@@ -103,12 +104,12 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             updated_user = User.query \
                 .filter(User.id == user_id).first()
             self.assertEqual(
-                updated_user.email, self.new_email, 'The field who should have been updated is not equal to the new value.')
+                updated_user.email, self.new_email, "The field who should have been updated is not equal to the new value.")
             # Ensure we can't update an user with an existing unique key
             try:
                 update_user(user_id,  self.firstname,  self.lastname,
                             self.username,  self.test_user_mail,  self.user_profile_id)
-                raise Exception('Can update user with duplicate unique key.')
+                raise Exception("Can update user with duplicate unique key.")
             except:
                 pass
 
@@ -124,7 +125,7 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             deleted_user = User.query \
                 .filter(User.id == user_id).first()
             self.assertIsNone(deleted_user,
-                              'User has not been deleted successfully')
+                              "User has not been deleted successfully")
 
     def test_05_get_user_profile_list(self):
         from sos_trades_api.controllers.sostrades_data.user_controller import (
@@ -135,4 +136,4 @@ class TestUserManagemenent(DatabaseUnitTestConfiguration):
             # Ensure the first one retrieved is not Admin profile and length is
             # >= 1
             self.assertNotEqual(len(user_profile_list), 0,
-                                'Empty profile list')
+                                "Empty profile list")

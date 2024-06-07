@@ -25,24 +25,24 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 Application module
 """
 
-@app.route('/api/data/application/infos', methods=['GET'])
+@app.route("/api/data/application/infos", methods=["GET"])
 def application_info():
     """
     application info
     """
     result = {}
-    result['version'] = application_version()
-    result['platform'] = app.config['SOS_TRADES_ENVIRONMENT']
+    result["version"] = application_version()
+    result["platform"] = app.config["SOS_TRADES_ENVIRONMENT"]
     resp = make_response(jsonify(result), 200)
     return resp
 
 
-@app.route('/api/data/application/support', methods=['GET'])
+@app.route("/api/data/application/support", methods=["GET"])
 @auth_required
 def application_support():
     """
     application support
     """
-    result = {'support': 'contact@sostrades.org'}
+    result = {"support": "contact@sostrades.org"}
     resp = make_response(jsonify(result), 200)
     return resp

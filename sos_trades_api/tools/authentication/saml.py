@@ -26,11 +26,11 @@ from sos_trades_api.server.base_server import app
 """
 SAML integration to authenticate user on Airbus corp network with SSO
 """
-SSO_FIRST_NAME = 'firstName'
-SSO_LAST_NAME = 'lastname'
-SSO_MAIL = 'mail'
-SSO_COMPANY = 'company'
-SSO_DEPARTMENT = 'department'
+SSO_FIRST_NAME = "firstName"
+SSO_LAST_NAME = "lastname"
+SSO_MAIL = "mail"
+SSO_COMPANY = "company"
+SSO_DEPARTMENT = "department"
 
 
 class SamlAuthenticationError(Exception):
@@ -42,40 +42,39 @@ class SamlAuthenticationError(Exception):
 
 def init_saml_auth(req):
     """
-        :param request, dictionary with sso request informations
+    :param request, dictionary with sso request informations
 
-        :return: onelogin saml authentication object instance
+    :return: onelogin saml authentication object instance
     """
-    auth = OneLogin_Saml2_Auth(req, custom_base_path=os.environ['SAML_V2_METADATA_FOLDER'])
+    auth = OneLogin_Saml2_Auth(req, custom_base_path=os.environ["SAML_V2_METADATA_FOLDER"])
     return auth
 
 
 def prepare_flask_request(request):
     """
-        :param: flask request coming from the SSO IDP
+    :param: flask request coming from the SSO IDP
 
-        :return: a new dictionary with key intended by SSO api
+    :return: a new dictionary with key intended by SSO api
     """
-
     # If server is behind proxys or balancers use the HTTP_X_FORWARDED fields
     url_data = urlparse(request.url)
     return {
-        'https': 'on' if request.scheme == 'https' else 'off',
-        'http_host': request.host,
-        'server_port': url_data.port,
-        'script_name': request.path,
-        'get_data': request.args.copy(),
-        'post_data': request.form.copy(),
-        'query_string': request.query_string
+        "https": "on" if request.scheme == "https" else "off",
+        "http_host": request.host,
+        "server_port": url_data.port,
+        "script_name": request.path,
+        "get_data": request.args.copy(),
+        "post_data": request.form.copy(),
+        "query_string": request.query_string,
     }
 
 
 def manage_saml_assertion(flask_request):
-    """ one login assertion consumer service based on SAML V2 protocol
+    """
+    one login assertion consumer service based on SAML V2 protocol
 
     :param: flask_request, incoming flask request coming from SSO IDP
     """
-
     req = prepare_flask_request(flask_request)
     auth = init_saml_auth(req)
 
@@ -103,14 +102,14 @@ def manage_saml_assertion(flask_request):
         if SSO_DEPARTMENT in request_user_attributes:
             user_infos.department = request_user_attributes[SSO_DEPARTMENT]
         else:
-            user_infos.department = 'n/a'
+            user_infos.department = "n/a"
 
         if SSO_COMPANY in request_user_attributes:
             user_infos.company = request_user_attributes[SSO_COMPANY]
         else:
-            user_infos.company = 'n/a'
+            user_infos.company = "n/a"
 
-        if 'RelayState' in flask_request.form and self_url != flask_request.form['RelayState']:
+        if "RelayState" in flask_request.form and self_url != flask_request.form["RelayState"]:
             return_url = f'{auth.redirect_to(flask_request.form["RelayState"])}'
         else:
             return_url = f'{auth.redirect_to(app.config["SOS_TRADES_FRONT_END_DNS"])}'

@@ -33,7 +33,6 @@ class ResourceAccess:
         :param user_id: user identifier to manage
         :type user_id: int
         """
-
         self.user_id = user_id
         self.__reset()
         self.set_user_full_group_list_with_rights()
@@ -97,7 +96,7 @@ class ResourceAccess:
             group_groups = (
                 db.session.query(Group, AccessRights)
                 .filter(Group.id == GroupAccessGroup.group_id)
-                .filter(GroupAccessGroup.group_members_ids.like(f'%.{ugi}.%'))
+                .filter(GroupAccessGroup.group_members_ids.like(f"%.{ugi}.%"))
                 .filter(AccessRights.id == GroupAccessGroup.right_id)
                 .all()
             )
@@ -138,23 +137,23 @@ class ResourceAccess:
         ResourceAccess.get_children_group_id_recurse(group_member_id, group_members_ids)
 
         # create a string of ids from the set
-        str_group_members_ids = '.'
+        str_group_members_ids = "."
         for sub_id in group_members_ids:
-            str_group_members_ids = f'{str_group_members_ids}{sub_id}.'
+            str_group_members_ids = f"{str_group_members_ids}{sub_id}."
 
         return str_group_members_ids
 
     @staticmethod
     def get_children_group_id_recurse(group_id, children_id_set):
         children_group_access_groups = GroupAccessGroup.query.filter(
-            GroupAccessGroup.group_id == group_id
+            GroupAccessGroup.group_id == group_id,
         ).all()
         for children_group in children_group_access_groups:
             # this test is to avoid infinite loops
             if children_group.group_member_id not in children_id_set:
                 children_id_set.add(children_group.group_member_id)
                 ResourceAccess.get_children_group_id_recurse(
-                    children_group.group_member_id, children_id_set
+                    children_group.group_member_id, children_id_set,
                 )
 
     @staticmethod
@@ -162,13 +161,13 @@ class ResourceAccess:
         # retrieve all group_access_group containing the group_id_to_look_for
         # that has been created or deleted
         group_access_group_to_update = GroupAccessGroup.query.filter(
-            GroupAccessGroup.group_members_ids.like(f'%.{group_id_to_look_for}.%'),
+            GroupAccessGroup.group_members_ids.like(f"%.{group_id_to_look_for}.%"),
             GroupAccessGroup.id != filtered_id,
         ).all()
         if len(group_access_group_to_update) > 0:
             for group_access_group in group_access_group_to_update:
                 # update the group_members_ids field
                 str_group_members_ids = ResourceAccess.generate_group_members_ids(
-                    group_access_group.group_member_id
+                    group_access_group.group_member_id,
                 )
                 group_access_group.group_members_ids = str_group_members_ids

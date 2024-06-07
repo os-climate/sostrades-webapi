@@ -29,11 +29,11 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 
 
-@app.route('/api/data/resources/process', methods=['GET'])
+@app.route("/api/data/resources/process", methods=["GET"])
 @auth_required
 def get_processes_for_user():
 
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     try:
@@ -41,25 +41,25 @@ def get_processes_for_user():
         processes = api_get_processes_for_user(user)
     except Exception as error:
         raise ProcessError(
-            f'The following error occurs when trying to retrieve processes list : {str(error)}')
+            f"The following error occurs when trying to retrieve processes list : {error!s}")
 
     resp = make_response(jsonify(processes), 200)
     return resp
 
 
-@app.route('/api/data/resources/process/dashboard', methods=['GET'])
+@app.route("/api/data/resources/process/dashboard", methods=["GET"])
 @auth_required
 @study_manager_profile
 def get_processes_for_dashboard():
 
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     try:
         processes = api_get_processes_for_dashboard()
     except Exception as error:
         raise ProcessError(
-            f'The following error occurs when trying to retrieve processes list : {str(error)}')
+            f"The following error occurs when trying to retrieve processes list : {error!s}")
 
     resp = make_response(jsonify(processes), 200)
     return resp

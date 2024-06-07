@@ -37,7 +37,7 @@ class VisualisationError(Exception):
         Exception.__init__(self, msg)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 def get_execution_sequence_graph_data(study_id):
@@ -65,9 +65,8 @@ def get_n2_diagram_graph_data(study_id):
 
     :return: dictionary
     """
-
     if not study_case_cache.is_study_case_cached(study_id):
-        raise VisualisationError('Study case has to be loaded first before requesting for n2 diagram')
+        raise VisualisationError("Study case has to be loaded first before requesting for n2 diagram")
 
     study_case_manager = study_case_cache.get_study_case(study_id, False, False)
 

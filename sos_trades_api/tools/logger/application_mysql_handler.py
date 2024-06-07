@@ -26,16 +26,16 @@ from MySQLdb._mysql import escape_string
 
 from sos_trades_api.tools.authentication.authentication import get_authenticated_user
 
-TIME_FMT = '%Y-%m-%d %H:%M:%S'
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class ApplicationRequestFormatter(logging.Formatter):
     def format(self, record):
 
-        record.user = ''
-        record.remoteaddr = ''
-        record.remoteport = ''
-        record.useragent = ''
+        record.user = ""
+        record.remoteaddr = ""
+        record.remoteport = ""
+        record.useragent = ""
 
         if has_request_context():
 
@@ -54,14 +54,14 @@ class ApplicationRequestFormatter(logging.Formatter):
 #             for key in request.environ:
 #                 print(f'{key} => {request.environ.get(key)}')
 
-            if 'X-Forwarded-Host' in request.headers:
+            if "X-Forwarded-Host" in request.headers:
                 # A proxy is used, so get the origin client address
-                record.remoteaddr = request.headers.get('X-Forwarded-Host')
+                record.remoteaddr = request.headers.get("X-Forwarded-Host")
             else:
                 # Retrieve standard remote address from request
-                record.remoteaddr = request.environ.get('REMOTE_ADDR')
+                record.remoteaddr = request.environ.get("REMOTE_ADDR")
 
-            record.useragent = request.environ.get('HTTP_USER_AGENT')
+            record.useragent = request.environ.get("HTTP_USER_AGENT")
 
         return super().format(record)
 
@@ -111,14 +111,13 @@ class ApplicationMySQLHandler(Handler):
                         '%(useragent)s'
                     );
                     """
-    sql_fields = findall(escape('%(') + "(.*)" + escape(')'), insertion_sql)
+    sql_fields = findall(escape("%(") + "(.*)" + escape(")"), insertion_sql)
 
     def __init__(self, db):
         """
         Constructor
         @param db: {'HOST','PORT','USER', 'PASSWORD', 'DATABASE_NAME', 'SSL'}
         """
-
         Handler.__init__(self)
 
         self.db = db
@@ -149,13 +148,13 @@ class ApplicationMySQLHandler(Handler):
 
     def __get_connection(self):
 
-        if self.db['SSL']:
-            return MySQLdb.connect(host=self.db['HOST'], port=self.db['PORT'],
-                                    user=self.db['USER'], passwd=self.db['PASSWORD'], db=self.db['DATABASE_NAME'],
-                                    ssl=self.db['SSL'])
+        if self.db["SSL"]:
+            return MySQLdb.connect(host=self.db["HOST"], port=self.db["PORT"],
+                                    user=self.db["USER"], passwd=self.db["PASSWORD"], db=self.db["DATABASE_NAME"],
+                                    ssl=self.db["SSL"])
         else:
-            return MySQLdb.connect(host=self.db['HOST'], port=self.db['PORT'],
-                                   user=self.db['USER'], passwd=self.db['PASSWORD'], db=self.db['DATABASE_NAME'])
+            return MySQLdb.connect(host=self.db["HOST"], port=self.db["PORT"],
+                                   user=self.db["USER"], passwd=self.db["PASSWORD"], db=self.db["DATABASE_NAME"])
 
 
     def check_table_presence(self):
@@ -192,7 +191,6 @@ class ApplicationMySQLHandler(Handler):
         @param record:
         @return: 
         """
-
         # Inject own variables
         if has_request_context():
             record.url = request.url
@@ -213,22 +211,22 @@ class ApplicationMySQLHandler(Handler):
             if isinstance(v, str):
                 setattr(record, k, escape_string(
                     v.replace("'", "''")).decode("utf-8"))
-            elif v.__class__.__name__ == 'Exception':
+            elif v.__class__.__name__ == "Exception":
                 setattr(record, k, escape_string(str(v)).decode("utf-8"))
 
         try:
             # Instanciate msg with argument format
-            if '%' in record.msg:
+            if "%" in record.msg:
                 record.msg = record.msg % record.args
 
             # Reset args to avoir manipulate tuple in database
-            record.args = ''
+            record.args = ""
 
             # Insert log record
             sql = ApplicationMySQLHandler.insertion_sql % record.__dict__
 
         except:
-            sql = ''
+            sql = ""
 
         if len(sql) > 0:
             try:

@@ -56,28 +56,28 @@ class ExecutionEngineThread(threading.Thread):
                 StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
             if study_case_execution is not None:
                 study_case_execution.execution_status = StudyCaseExecution.RUNNING
-                study_case_execution.message = ''
+                study_case_execution.message = ""
                 db.session.add(study_case_execution)
                 db.session.commit()
             else:
                 study_case_execution.execution_status = StudyCaseExecution.FAILED
-                study_case_execution.message = 'Execution id not found'
+                study_case_execution.message = "Execution id not found"
                 db.session.add(study_case_execution)
                 db.session.commit()
-                self.__execution_logger.error('Execution id not found')
+                self.__execution_logger.error("Execution id not found")
                 execution_error = True
-        
+
         execution_error = False
         start_time = time.time()
         self.__execution_logger.debug(
-            'Clean database regarding execution status')
+            "Clean database regarding execution status")
 
         elapsed_time = time.time() - start_time
         self.__execution_logger.debug(
-            f'Cleaning time : {elapsed_time} seconds')
+            f"Cleaning time : {elapsed_time} seconds")
 
         start_time = time.time()
-        self.__execution_logger.debug('Set status observer on each discipline')
+        self.__execution_logger.debug("Set status observer on each discipline")
 
         # List that store handler for discipline status observer
         status_observer = ExecutionEngineObserver(self.__study_case_id)
@@ -87,7 +87,7 @@ class ExecutionEngineThread(threading.Thread):
         status_setup_list = []
         for disc_key, disc_value in self.__study_manager.execution_engine.dm.disciplines_dict.items():
 
-            discipline = disc_value['reference']
+            discipline = disc_value["reference"]
             discipline.add_status_observer(status_observer)
 
             sce = StudyCaseDisciplineStatus()
@@ -118,33 +118,33 @@ class ExecutionEngineThread(threading.Thread):
 
         elapsed_time = time.time() - start_time
         self.__execution_logger.debug(
-            f'Observer setting time : {elapsed_time} seconds')
+            f"Observer setting time : {elapsed_time} seconds")
 
         try:
             # Execute current process
             start_time = time.time()
-            self.__execution_logger.debug('Launch execution engine')
+            self.__execution_logger.debug("Launch execution engine")
 
             self.__study_manager.run()
 
             elapsed_time = time.time() - start_time
             self.__execution_logger.debug(
-                f'Execution engine calculation time : {elapsed_time} seconds')
+                f"Execution engine calculation time : {elapsed_time} seconds")
 
         except Exception as error:
             self.__execution_logger.exception(
-                f'The following exception occurs during execution.\n{str(error)}')
+                f"The following exception occurs during execution.\n{error!s}")
             execution_error = True
 
         finally:
             start_time = time.time()
             self.__execution_logger.debug(
-                'Unsubscribe status observer on each discipline')
+                "Unsubscribe status observer on each discipline")
 
             # Unsubscribe each previously assign observer
             for disc_key, disc_value in self.__study_manager.execution_engine.dm.disciplines_dict.items():
 
-                discipline = disc_value['reference']
+                discipline = disc_value["reference"]
                 discipline.remove_status_observer(status_observer)
 
             status_observer.stop()
@@ -152,7 +152,7 @@ class ExecutionEngineThread(threading.Thread):
 
             elapsed_time = time.time() - start_time
             self.__execution_logger.debug(
-                f'Observer unsubscribe time : {elapsed_time} seconds')
+                f"Observer unsubscribe time : {elapsed_time} seconds")
 
             with app.app_context():
                 study_case_execution = StudyCaseExecution.query. \
@@ -165,26 +165,26 @@ class ExecutionEngineThread(threading.Thread):
 
                     try:
                         start_time = time.time()
-                        self.__execution_logger.debug('Dump study case data')
+                        self.__execution_logger.debug("Dump study case data")
                         # Persist data using the current persistance strategy
                         self.__study_manager.save_study_case()
                         self.__study_manager.save_study_read_only_mode_in_file()
                     except Exception as error:
                         self.__execution_logger.exception(
-                            f'The following exception occurs during study dumping.\n{str(error)}')
+                            f"The following exception occurs during study dumping.\n{error!s}")
                         execution_error = True
                     finally:
                         # Update study case execution status
 
                         self.__execution_logger.debug(
-                            'Updating study case with finished status')
+                            "Updating study case with finished status")
                         study_case = StudyCase.query.filter(
                             StudyCase.id.like(self.__study_case_id)).first()
 
                         # Update last modification date to make record to be
                         # updated
                         self.__execution_logger.info(
-                            f'Study case modification date before update: {study_case.modification_date}')
+                            f"Study case modification date before update: {study_case.modification_date}")
 
                         new_modification_date = datetime.now().astimezone(
                             timezone.utc).replace(tzinfo=None)
@@ -199,13 +199,13 @@ class ExecutionEngineThread(threading.Thread):
                         # then a simple 5 seconds increment is done
                         if study_case.modification_date >= new_modification_date:
                             self.__execution_logger.warning(
-                                f'Generated modification date ({new_modification_date}) is anterior to the old one, please check operating system timezone')
+                                f"Generated modification date ({new_modification_date}) is anterior to the old one, please check operating system timezone")
                             study_case.modification_date = study_case.modification_date + \
                                 timedelta(seconds=5)
                         else:
                             study_case.modification_date = new_modification_date
                             self.__execution_logger.info(
-                                f'New modification date: {study_case.modification_date}')
+                                f"New modification date: {study_case.modification_date}")
                         db.session.add(study_case)
 
                         study_case_execution = StudyCaseExecution.query.filter(
@@ -216,7 +216,7 @@ class ExecutionEngineThread(threading.Thread):
 
                         elapsed_time = time.time() - start_time
                         self.__execution_logger.debug(
-                            f'Dump time : {elapsed_time} seconds')
+                            f"Dump time : {elapsed_time} seconds")
                 else:
                     self.__execution_logger.info(
-                        f'Study interrupted, current state is not RUNNING but {study_case_execution.execution_status}')
+                        f"Study interrupted, current state is not RUNNING but {study_case_execution.execution_status}")

@@ -30,69 +30,69 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 
 
-@app.route('/api/main/study-case/<int:study_id>/execution-sequence', methods=['GET'])
+@app.route("/api/main/study-case/<int:study_id>/execution-sequence", methods=["GET"])
 @auth_required
 def execution_sequence_graph_data(study_id):
     if study_id is not None:
 
-        user = session['user']
+        user = session["user"]
 
         # Verify user has study case authorisation to retrieve execution status of study (RESTRICTED_VIEWER)
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
-            AccessRights.RESTRICTED_VIEWER, study_id
+            AccessRights.RESTRICTED_VIEWER, study_id,
         ):
             raise BadRequest(
-                'You do not have the necessary rights to retrieve '
-                'execution sequence data of this study case'
+                "You do not have the necessary rights to retrieve "
+                "execution sequence data of this study case",
             )
 
         # Proceed after rights verification
         resp = make_response(jsonify(get_execution_sequence_graph_data(study_id)), 200)
         return resp
 
-    raise BadRequest('Missing mandatory parameter: study identifier in url')
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
-@app.route('/api/main/study-case/<int:study_id>/interface-diagram', methods=['GET'])
+@app.route("/api/main/study-case/<int:study_id>/interface-diagram", methods=["GET"])
 @auth_required
 def interface_diagram_data(study_id):
     if study_id is not None:
 
-        user = session['user']
+        user = session["user"]
 
         # Verify user has study case authorisation to retrieve execution status of study (RESTRICTED_VIEWER)
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
-            AccessRights.RESTRICTED_VIEWER, study_id
+            AccessRights.RESTRICTED_VIEWER, study_id,
         ):
             raise BadRequest(
-                'You do not have the necessary rights to retrieve '
-                'interface diagram of this study case'
+                "You do not have the necessary rights to retrieve "
+                "interface diagram of this study case",
             )
 
         # Proceed after rights verification
         resp = make_response(jsonify(get_interface_diagram_data(study_id)), 200)
         return resp
 
-    raise BadRequest('Missing mandatory parameter: study identifier in url')
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
-@app.route('/api/main/study-case/<int:study_id>/n2-diagram', methods=['GET'])
+@app.route("/api/main/study-case/<int:study_id>/n2-diagram", methods=["GET"])
 @auth_required
 def n2_diagram_graph_data(study_id):
 
     if study_id is not None:
 
-        user = session['user']
+        user = session["user"]
 
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(
-            AccessRights.RESTRICTED_VIEWER, study_id
+            AccessRights.RESTRICTED_VIEWER, study_id,
         ):
             raise BadRequest(
-                'You do not have the necessary rights to retrieve n2 diagram data of this study case'
+                "You do not have the necessary rights to retrieve n2 diagram data of this study case",
             )
 
         # Proceed after rights verification
@@ -100,4 +100,4 @@ def n2_diagram_graph_data(study_id):
 
         return resp
 
-    raise BadRequest('Missing mandatory parameter: study identifier in url')
+    raise BadRequest("Missing mandatory parameter: study identifier in url")

@@ -24,7 +24,8 @@ Test class for group management procedures
 """
 
 class TestGroupManagemenent(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to group controller
+    """
+    Test class for methods related to group controller
     """
 
     @classmethod
@@ -39,10 +40,10 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
             test_user = User.query \
                 .filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             self.assertIsNotNone(
-                test_user, 'Default user test not found in database, check migrations')
+                test_user, "Default user test not found in database, check migrations")
             self.test_user_id = test_user.id
-            self.group_name = 'test_group'
-            self.group_description = 'Group created for testing purpose'
+            self.group_name = "test_group"
+            self.group_description = "Group created for testing purpose"
             self.group_confidential = False
 
     def tearDown(self):
@@ -55,7 +56,7 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             all_groups = get_all_groups()
             self.assertIsNotNone(all_groups,
-                                 'No group returned by get_all_groups().')
+                                 "No group returned by get_all_groups().")
 
     def test_02_create_group(self):
         from sos_trades_api.controllers.sostrades_data.group_controller import (
@@ -68,7 +69,7 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
             test_group = Group.query \
                 .filter(Group.name == self.group_name).first()
             self.assertIsNotNone(test_group,
-                                 'Created group not present in database.')
+                                 "Created group not present in database.")
 
     def test_03_get_group_list(self):
         from sos_trades_api.controllers.sostrades_data.group_controller import (
@@ -81,7 +82,7 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
                 if grp.group.name == self.group_name:
                     created_group_present = True
             self.assertTrue(created_group_present,
-                            'Test group owned by test user not retrieved while looking for group list of test user')
+                            "Test group owned by test user not retrieved while looking for group list of test user")
 
     def test_04_delete_group(self):
         from sos_trades_api.controllers.sostrades_data.group_controller import (
@@ -95,4 +96,4 @@ class TestGroupManagemenent(DatabaseUnitTestConfiguration):
             is_group_deleted = Group.query \
                 .filter(Group.id == test_group_id).first()
             self.assertIsNone(is_group_deleted,
-                              'Test group still present in database after attempt to delete it.')
+                              "Test group still present in database after attempt to delete it.")

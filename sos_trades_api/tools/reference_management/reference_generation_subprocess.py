@@ -24,13 +24,15 @@ Reference generation subprocess launch
 """
 
 
-class ReferenceGenerationSubprocess():
-    """ Class that allow to launch reference generation process as 
+class ReferenceGenerationSubprocess:
+    """
+    Class that allow to launch reference generation process as
     system subprocess
     """
 
     def __init__(self, reference_identifier):
-        """ Class constructor
+        """
+        Class constructor
 
         :params: reference_identifier, database identifier of the reference to generate
         :type: integer
@@ -38,11 +40,12 @@ class ReferenceGenerationSubprocess():
         self.__reference_identifier = reference_identifier
 
     def run(self):
-        """ Launch the process using subprocess.Popen
+        """
+        Launch the process using subprocess.Popen
         """
         path = join(dirname(sos_trades_api.__file__),
-                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
+                    "..", "server_scripts", "calculation", "launch_calculation.py")
         process = subprocess.Popen(
             f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)
-        
+
         return process.pid

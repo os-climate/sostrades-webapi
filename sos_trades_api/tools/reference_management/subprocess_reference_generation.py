@@ -27,7 +27,7 @@ with app.app_context():
 
     ref_model_id = int(sys.argv[2])
     ref_gen_model = ReferenceStudy.query.filter(ReferenceStudy.id == ref_model_id).update({
-        'execution_status': ReferenceStudy.RUNNING})
+        "execution_status": ReferenceStudy.RUNNING})
     db.session.commit()
     # reference_basepath = sys.argv[3]  # Config().reference_root_dir
     reference_basepath = Config().reference_root_dir
@@ -36,16 +36,16 @@ with app.app_context():
     module_name = sys.argv[1]
     try:
         imported_module = import_module(module_name)
-        imported_usecase = getattr(imported_module, 'Study')()
+        imported_usecase = imported_module.Study()
         try:
             imported_usecase.set_dump_directory(reference_basepath)
             imported_usecase.run(dump_study=True)
         except:
             pass
         ref_gen_model = ReferenceStudy.query.filter(ReferenceStudy.id == ref_model_id).update({
-            'execution_status': ReferenceStudy.FINISHED})
+            "execution_status": ReferenceStudy.FINISHED})
         db.session.commit()
     except Exception as e:
         ref_gen_model = ReferenceStudy.query.filter(ReferenceStudy.id == ref_model_id).update(
-            {'execution_status': ReferenceStudy.FAILED, 'generation_logs': str(e)})
+            {"execution_status": ReferenceStudy.FAILED, "generation_logs": str(e)})
         db.session.commit()

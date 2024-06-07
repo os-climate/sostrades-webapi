@@ -29,12 +29,12 @@ class Testheader(unittest.TestCase):
     """
 
     def setUp(self):
-        '''
+        """
         Initialize third data needed for testing
-        '''
+        """
         self.pp = pprint.PrettyPrinter(indent=4, compact=True)
 
-        with open(os.path.join(os.path.dirname(__file__),"..","..","headers_ignore_config.json"),"r",encoding="utf-8") as f:
+        with open(os.path.join(os.path.dirname(__file__),"..","..","headers_ignore_config.json"),encoding="utf-8") as f:
 
             headers_ignore_config=json.load(f)
 
@@ -44,7 +44,7 @@ class Testheader(unittest.TestCase):
             #commit from where to compare added, modeified deleted ...
             self.airbus_rev_commit = headers_ignore_config["airbus_rev_commit"]
 
-        
+
 
     def test_Headers(self):
         ht = HeaderTools()

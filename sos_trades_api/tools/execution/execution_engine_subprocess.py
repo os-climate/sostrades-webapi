@@ -31,15 +31,14 @@ class ExecutionEngineSubprocess:
         :param study_case_execution_id: study case execution to run
         :param log_file_path: file to redirect stdout and stderr
         """
-
         self.__study_case_execution_id = study_case_execution_id
         self.__log_file_path = log_file_path
 
     def run(self):
         path = join(dirname(sos_trades_api.__file__),
-                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
+                    "..", "server_scripts", "calculation", "launch_calculation.py")
 
-        with open(self.__log_file_path, 'wb') as log_file:
+        with open(self.__log_file_path, "wb") as log_file:
 
             process = subprocess.Popen(
                 f'python "{path}" --execute {self.__study_case_execution_id}',

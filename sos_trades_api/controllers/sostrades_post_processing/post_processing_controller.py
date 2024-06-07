@@ -32,11 +32,12 @@ class PostProcessingError(Exception):
         Exception.__init__(self, msg)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
-def load_post_processing(study_id, namespace, filters, discipline_module=''):
-    """ load post processing regarding a namespace and a specific discipline inside this namespace
+def load_post_processing(study_id, namespace, filters, discipline_module=""):
+    """
+    load post processing regarding a namespace and a specific discipline inside this namespace
 
     :params: study_id, study to  load
     :type: integer
@@ -49,7 +50,6 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
 
     :return: tbd
     """
-
     study_manager = light_load_study_case(study_id)
 
     all_post_processing_data = []
@@ -60,7 +60,7 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
             namespace)
 
         # Check if discipline of the node has to be filtered
-        if not discipline_module == '':
+        if discipline_module != "":
             match_discipline = list(filter(
                 lambda d: d.get_module() == discipline_module, discipline_list))
 
@@ -91,11 +91,11 @@ def load_post_processing(study_id, namespace, filters, discipline_module=''):
 
 def load_post_processing_graph_filters(study_id, discipline_key):
     """
-        get post processing filters
-        :params: study_id, study id
-        :type: integer
-        :params: discipline_key, key of the discipline to load
-        :type: string
+    get post processing filters
+    :params: study_id, study id
+    :type: integer
+    :params: discipline_key, key of the discipline to load
+    :type: string
     """
     study_manager = light_load_study_case(study_id)
 
@@ -112,14 +112,14 @@ def load_post_processing_graph_filters(study_id, discipline_key):
 
     else:
         raise PostProcessingError(
-            f'Discipline \'{discipline_key}\' does not exist in this study case.')
+            f"Discipline '{discipline_key}' does not exist in this study case.")
 
 
 def reset_study_from_cache(study_id):
     """
-        Reset study from cache
-        :params: study_id, id of the study to load
-        :type: integer
+    Reset study from cache
+    :params: study_id, id of the study to load
+    :type: integer
     """
     try:
         # Check if study is already in cache
@@ -133,5 +133,5 @@ def reset_study_from_cache(study_id):
             return study_manager
 
     except Exception as ex:
-        raise f'Error during reset study from cache : {ex}'
+        raise f"Error during reset study from cache : {ex}"
 

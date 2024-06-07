@@ -20,7 +20,7 @@ from time import localtime, strftime
 from sos_trades_api.models.database_models import ReferenceStudyExecutionLog
 from sos_trades_api.server.base_server import app, db
 
-TIME_FMT = '%Y-%m-%d %H:%M:%S'
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class ReferenceMySQLHandler(Handler):
@@ -34,7 +34,6 @@ class ReferenceMySQLHandler(Handler):
         :param reference_identifier: identifier of the associated reference
         :type reference_identifier: str
         """
-
         Handler.__init__(self)
 
         self.__reference_identifier = reference_identifier
@@ -54,7 +53,6 @@ class ReferenceMySQLHandler(Handler):
         @param record:
         @return:
         """
-
         # Use default formatting:
         self.format(record)
 
@@ -68,14 +66,14 @@ class ReferenceMySQLHandler(Handler):
 
         try:
             # Instanciate msg with argument format
-            if '%' in record.msg:
+            if "%" in record.msg:
                 record.msg = record.msg % record.args
         except:
             pass
 
         try:
             # Reset args to avoir manipulate tuple in database
-            record.args = ''
+            record.args = ""
 
             rel = ReferenceStudyExecutionLog()
 
@@ -105,14 +103,15 @@ class ReferenceMySQLHandler(Handler):
             with app.app_context():
                 db.session.query(ReferenceStudyExecutionLog).filter(
                     ReferenceStudyExecutionLog.reference_id
-                    == self.__reference_identifier
+                    == self.__reference_identifier,
                 ).delete()
                 db.session.commit()
         except Exception as ex:
-            print(f'Reference mysql handler: {str(ex)}')
+            print(f"Reference mysql handler: {ex!s}")
 
     def __write_into_database(self, flush=False):
-        """Write stored object into database
+        """
+        Write stored object into database
 
         :params: flush, boolean to flush the list without taking into account number of elements
         :type: boolean
@@ -123,5 +122,5 @@ class ReferenceMySQLHandler(Handler):
                     db.session.bulk_save_objects(self.__inner_bulk_list)
                     db.session.commit()
             except Exception as ex:
-                print(f'Reference mysql handler: {str(ex)}')
+                print(f"Reference mysql handler: {ex!s}")
             self.__inner_bulk_list = []
