@@ -209,7 +209,7 @@ class StudyCaseMySQLHandler(Handler):
                 with self.__get_connection() as session:
                     session.bulk_save_objects(self.__inner_bulk_list)
             except Exception as ex:
-                print(f'Execution mysql handler: {str(ex)}')
+                print(f'Study mysql handler: {str(ex)}')
             finally:
                 self.__inner_bulk_list = []
 
