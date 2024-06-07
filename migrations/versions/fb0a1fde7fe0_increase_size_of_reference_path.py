@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+from alembic import op
+from sqlalchemy.dialects import mysql
+
 """increase size of reference path
 
 Revision ID: fb0a1fde7fe0
@@ -21,8 +24,6 @@ Revises: bcc99700bfe4
 Create Date: 2022-09-21 11:28:43.480706
 
 """
-from alembic import op
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = 'fb0a1fde7fe0'

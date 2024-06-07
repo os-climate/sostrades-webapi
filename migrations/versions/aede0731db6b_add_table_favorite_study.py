@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+import sqlalchemy as sa
+from alembic import op
+
 """Add table favorite study
 
 Revision ID: aede0731db6b
@@ -21,8 +24,6 @@ Revises: 0f797979d08f
 Create Date: 2022-02-28 10:40:41.290528
 
 """
-import sqlalchemy as sa
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'aede0731db6b'

@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import mysql
+
 """First cleaned migration
 
 Revision ID: 40ca717b5c0a
@@ -21,9 +25,6 @@ Revises:
 Create Date: 2021-10-05 17:50:29.107226
 
 """
-import sqlalchemy as sa
-from alembic import op
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = '40ca717b5c0a'
