@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Execution engine observerExecution engine threadns
-"""
 import queue
 import threading
 import time
@@ -27,6 +23,9 @@ from sostrades_core.execution_engine.sos_mdo_discipline import SoSMDODiscipline
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
 from sos_trades_api.server.base_server import app, db
 
+"""
+Execution engine observer
+"""
 
 class ExecutionEngineObserver():
     """Class that manage observer process implemented into discipline in order to be notified

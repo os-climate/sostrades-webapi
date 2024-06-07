@@ -14,13 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.user_dto import UserDto
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class overlad defaut json encoder to manage our class
-"""
-
 from datetime import datetime
 
 import numpy as np
@@ -77,7 +70,11 @@ from sos_trades_api.models.model_status import ModelStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.models.user_application_right import UserApplicationRight
+from sos_trades_api.models.user_dto import UserDto
 
+"""
+Class overlad defaut json encoder to manage our class
+"""
 
 class CustomJsonEncoder(JSONEncoder):
     def __init__(self, *args, **kwargs):

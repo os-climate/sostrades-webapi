@@ -14,11 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Ontology Functions
-"""
-
 import json
 from datetime import datetime, timedelta
 from functools import wraps
@@ -32,6 +27,10 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.visualisation.couplings_force_graph import (
     get_couplings_force_graph,
 )
+
+"""
+Ontology Functions
+"""
 
 
 def ontology_enable(default_returned_valued):

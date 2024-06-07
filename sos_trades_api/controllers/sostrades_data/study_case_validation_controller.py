@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Study case validation Functions
-"""
 from datetime import datetime, timezone
 
 from sos_trades_api.models.database_models import StudyCaseValidation
 from sos_trades_api.server.base_server import db
 
+"""
+Study case validation Functions
+"""
 
 def get_study_case_validation_list(study_case_id):
     """

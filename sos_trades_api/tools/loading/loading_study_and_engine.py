@@ -14,17 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import pandas
-from numpy import ndarray
-from sostrades_core.tools.tree.serializer import DataSerializer
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-tools methods to manage behaviour around StudyCase
-"""
-
-# pylint: disable=line-too-long
-
 import cProfile
 import io
 import pstats
@@ -34,9 +23,12 @@ from datetime import datetime, timezone
 from importlib import import_module
 from time import time
 
+import pandas
 from eventlet import sleep
+from numpy import ndarray
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
+from sostrades_core.tools.tree.serializer import DataSerializer
 
 from sos_trades_api.models.database_models import (
     StudyCase,
@@ -49,6 +41,9 @@ from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
     clean_obsolete_data_validation_entries,
 )
 
+"""
+tools methods to manage behaviour around StudyCase
+"""
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""

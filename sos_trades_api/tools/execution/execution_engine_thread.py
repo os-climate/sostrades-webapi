@@ -14,10 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Execution engine threadns
-"""
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -35,6 +31,9 @@ from sos_trades_api.tools.execution.execution_engine_observer import (
 )
 from sos_trades_api.tools.execution.execution_metrics import ExecutionMetrics
 
+"""
+Execution engine threadns
+"""
 
 class ExecutionEngineThread(threading.Thread):
 

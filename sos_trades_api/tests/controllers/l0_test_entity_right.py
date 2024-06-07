@@ -14,18 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for entity right procedures
-"""
 
 
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
 
-# pylint: disable=no-member
-# pylint: disable=line-too-long
+"""
+Test class for entity right procedures
+"""
 
 
 class TestEntityRight(DatabaseUnitTestConfiguration):

@@ -14,14 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.right_management.functional.study_case_access_right import (
-    StudyCaseAccess,
-)
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Authentication tooling function
-"""
 import base64
 from datetime import datetime
 from functools import wraps
@@ -50,7 +42,13 @@ from sos_trades_api.tools.right_management.access_right import has_access_to
 from sos_trades_api.tools.right_management.functional.group_access_right import (
     GroupAccess,
 )
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
+"""
+Authentication tooling function
+"""
 
 class AuthenticationError(Exception):
     """Base Authentication Exception"""

@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Test class for authentication procedures
-"""
 
 from os.path import dirname, join
 
@@ -25,8 +21,10 @@ from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
 
-# pylint: disable=no-member
-# pylint: disable=line-too-long
+"""
+mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
+Test class for authentication procedures
+"""
 
 
 class TestAuthentication(DatabaseUnitTestConfiguration):

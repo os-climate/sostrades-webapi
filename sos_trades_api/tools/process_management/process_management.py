@@ -14,10 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Process management
-"""
 from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
 from sqlalchemy import and_
 
@@ -33,6 +29,9 @@ from sos_trades_api.models.database_models import (
 from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.right_management.functional import process_access_right
 
+"""
+Process management
+"""
 
 def update_database_with_process(additional_repository_list=None, logger=None, default_manager_user=None,
                                  default_manager_group=None):

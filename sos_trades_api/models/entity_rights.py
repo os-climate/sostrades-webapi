@@ -14,12 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.models.user_dto import UserDto
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class that represent entities : User or Group with associated rights (relative to a Resource)
-"""
 from sqlalchemy import or_
 
 from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
@@ -34,9 +28,14 @@ from sos_trades_api.models.database_models import (
     StudyCaseAccessUser,
     User,
 )
+from sos_trades_api.models.user_dto import UserDto
 from sos_trades_api.tools.right_management.functional.tools_access_right import (
     ResourceAccess,
 )
+
+"""
+Class that represent entities : User or Group with associated rights (relative to a Resource)
+"""
 
 
 class EntityRightsError(Exception):

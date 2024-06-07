@@ -14,10 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class that represent a study case with its logical treeview loaded
-"""
 import json
 
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
@@ -32,6 +28,9 @@ from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.chart_tools import load_post_processing
 
+"""
+Class that represent a study case with its logical treeview loaded
+"""
 
 class LoadStatus:
     NONE = 'none'

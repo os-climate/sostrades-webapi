@@ -14,32 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 import os
 import shutil
 from datetime import datetime, timedelta, timezone
+from io import BytesIO
 from shutil import rmtree
 
-from sostrades_core.tools.tree.serializer import DataSerializer
-
-from sos_trades_api.tools.allocation_management.allocation_management import (
-    create_and_load_allocation,
-    delete_study_server_services_and_deployments,
-    get_allocation_status,
-    load_allocation,
-)
-from sos_trades_api.tools.execution.execution_tools import (
-    update_study_case_execution_status,
-)
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Study case Functions
-"""
-
-import json
-from io import BytesIO
-
 from sostrades_core.tools.tree.deserialization import isevaluatable
+from sostrades_core.tools.tree.serializer import DataSerializer
 from sqlalchemy.sql.expression import and_, desc
 
 from sos_trades_api.controllers.error_classes import (
@@ -71,16 +54,29 @@ from sos_trades_api.models.database_models import (
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.study_notification import StudyNotification
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    create_and_load_allocation,
+    delete_study_server_services_and_deployments,
+    get_allocation_status,
+    load_allocation,
+)
 from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.coedition.coedition import (
     CoeditionMessage,
     UserCoeditionAction,
     add_notification_db,
 )
+from sos_trades_api.tools.execution.execution_tools import (
+    update_study_case_execution_status,
+)
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+
+"""
+Study case Functions
+"""
 
 
 def create_empty_study_case(

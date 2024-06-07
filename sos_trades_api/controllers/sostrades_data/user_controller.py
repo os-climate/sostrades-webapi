@@ -14,13 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
-from sos_trades_api.models.user_dto import UserDto
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-User Functions
-"""
 import errno
 import traceback
 import uuid
@@ -33,6 +26,7 @@ from sqlalchemy import and_, func, or_
 
 from sos_trades_api import __file__ as sos_trades_api_file
 from sos_trades_api.controllers.sostrades_data import group_controller
+from sos_trades_api.controllers.sostrades_data.group_controller import InvalidGroup
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
@@ -41,6 +35,7 @@ from sos_trades_api.models.database_models import (
     User,
     UserProfile,
 )
+from sos_trades_api.models.user_dto import UserDto
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.authentication.password_generator import (
     InvalidPassword,
@@ -52,6 +47,9 @@ from sos_trades_api.tools.smtp.smtp_service import (
     send_right_update_mail,
 )
 
+"""
+User Functions
+"""
 
 class UserError(Exception):
     """Base User Exception"""

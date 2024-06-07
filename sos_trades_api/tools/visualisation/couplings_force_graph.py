@@ -15,13 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging
+import time
 
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
-
-import time
 
 
 def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hierarchyLinks):

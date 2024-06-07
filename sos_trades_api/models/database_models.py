@@ -14,10 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Database models
-"""
 import uuid
 from datetime import datetime
 
@@ -40,6 +36,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from sos_trades_api.server.base_server import db
 
+"""
+Database models
+"""
 
 class UserProfile(db.Model):
     STUDY_USER = 'Study user'

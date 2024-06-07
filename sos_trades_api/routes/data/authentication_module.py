@@ -14,9 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-Login/logout APIs
-"""
 
 import os
 from urllib.parse import urlencode, urlparse
@@ -45,6 +42,9 @@ from sos_trades_api.tools.authentication.authentication import (
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
 
+"""
+Login/logout APIs
+"""
 
 def init_saml_auth(req):
     """

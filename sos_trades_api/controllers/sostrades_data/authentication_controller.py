@@ -14,10 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Authentication Functions
-"""
 
 from flask_jwt_extended import create_access_token, create_refresh_token
 
@@ -38,6 +34,10 @@ from sos_trades_api.tools.authentication.saml import (
     manage_saml_assertion,
 )
 from sos_trades_api.tools.smtp.smtp_service import send_new_user_mail
+
+"""
+Authentication Functions
+"""
 
 
 def authenticate_user_standard(username, password):

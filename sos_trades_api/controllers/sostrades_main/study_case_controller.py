@@ -15,28 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from sostrades_core.datasets.dataset_mapping import (
-    DatasetsMapping,
-    DatasetsMappingException,
-)
-
-from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-    add_last_opened_study_case,
-)
-from sos_trades_api.tools.active_study_management.active_study_management import (
-    check_studies_last_active_date,
-    delete_study_last_active_file,
-    save_study_last_active_date,
-)
-from sos_trades_api.tools.allocation_management.allocation_management import (
-    delete_study_server_services_and_deployments,
-)
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Study case Functions
-"""
-
 import os
 import shutil
 import sys
@@ -51,6 +29,10 @@ from tempfile import gettempdir
 
 import pandas as pd
 from numpy import array
+from sostrades_core.datasets.dataset_mapping import (
+    DatasetsMapping,
+    DatasetsMappingException,
+)
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
@@ -75,6 +57,9 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import (
     load_processes_metadata,
     load_repositories_metadata,
 )
+from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+    add_last_opened_study_case,
+)
 from sos_trades_api.models.database_models import (
     AccessRights,
     PodAllocation,
@@ -87,6 +72,14 @@ from sos_trades_api.models.database_models import (
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, db, study_case_cache
+from sos_trades_api.tools.active_study_management.active_study_management import (
+    check_studies_last_active_date,
+    delete_study_last_active_file,
+    save_study_last_active_date,
+)
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    delete_study_server_services_and_deployments,
+)
 from sos_trades_api.tools.coedition.coedition import (
     CoeditionMessage,
     UserCoeditionAction,
@@ -106,6 +99,9 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
+"""
+Study case Functions
+"""
 
 def load_or_create_study_case(user_id, study_case_identifier, study_access_right=None, read_only_mode=False):
     """

@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Reference Functions
-"""
 import io
 import os
 import signal
@@ -46,6 +42,10 @@ from sos_trades_api.tools.reference_management.reference_generation_subprocess i
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
+
+"""
+Reference Functions
+"""
 
 
 def generate_reference(repository_name:str, process_name:str, usecase_name:str, user_id:int):
