@@ -20,8 +20,11 @@ various function  regarding chart api
 
 # pylint: disable=line-too-long
 
-from sostrades_core.tools.post_processing.post_processing_factory import PostProcessingFactory
 import time
+
+from sostrades_core.tools.post_processing.post_processing_factory import (
+    PostProcessingFactory,
+)
 
 
 def load_post_processing(exec_engine, with_charts):

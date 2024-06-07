@@ -17,9 +17,10 @@ limitations under the License.
 mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Data and graph validation tools
 """
-from sos_trades_api.server.base_server import db, app
 from datetime import datetime, timezone
+
 from sos_trades_api.models.database_models import StudyCaseValidation
+from sos_trades_api.server.base_server import app, db
 
 
 def invalidate_namespace_after_save(study_case_id, user_fullname, user_department, namespace):

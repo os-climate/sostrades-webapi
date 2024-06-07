@@ -13,16 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import MySQLdb
-
-from time import strftime, localtime
-from logging import Handler, _defaultFormatter
-from re import findall, escape
-from flask import has_request_context, request
 import logging
-from sos_trades_api.tools.authentication.authentication import get_authenticated_user
-from MySQLdb._mysql import escape_string
+from logging import Handler, _defaultFormatter
+from re import escape, findall
+from time import localtime, strftime
+
+import MySQLdb
+from flask import has_request_context, request
 from MySQLdb._exceptions import MySQLError
+from MySQLdb._mysql import escape_string
+
+from sos_trades_api.tools.authentication.authentication import get_authenticated_user
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'
 

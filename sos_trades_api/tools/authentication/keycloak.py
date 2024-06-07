@@ -20,10 +20,12 @@ GitHub integration to authenticate user using OAuth
 
 
 import os
+
 from keycloak import KeycloakOpenID
 
 from sos_trades_api.models.database_models import User
 from sos_trades_api.server.base_server import app
+
 
 def get_keycloak_openid():
     KEYCLOAK_SERVER_URL = os.getenv(

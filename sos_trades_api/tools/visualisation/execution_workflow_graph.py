@@ -19,9 +19,10 @@ mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
 
-import time
-from graphviz import Digraph
 import logging
+import time
+
+from graphviz import Digraph
 
 #from sostrades_core.execution_engine.scatter_data import SoSScatterData
 
