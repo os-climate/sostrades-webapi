@@ -98,8 +98,10 @@ genson==1.2.2
 gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
-    # via -r ./sostrades-webapi/requirements.in
-google-auth==2.29.0
+    # via
+    #   -r ./sostrades-core/requirements.in
+    #   -r ./sostrades-webapi/requirements.in
+google-auth==2.30.0
     # via kubernetes
 graphviz==0.16
     # via
@@ -135,7 +137,7 @@ jwcrypto==1.5.6
     # via python-keycloak
 kiwisolver==1.4.5
     # via matplotlib
-kubernetes==11.0.0
+kubernetes==29.0.0
     # via -r ./sostrades-webapi/requirements.in
 lxml==5.2.2
     # via xmlsec
@@ -193,7 +195,9 @@ numpy==1.24.4
     #   scs
     #   seaborn
 oauthlib==3.2.2
-    # via requests-oauthlib
+    # via
+    #   kubernetes
+    #   requests-oauthlib
 openpyxl==3.0.7 ; python_version >= "3"
     # via -r ./gemseo/requirements.txt
 openturns==1.18
@@ -311,9 +315,7 @@ python-dateutil==2.9.0.post0
     #   matplotlib
     #   pandas
 python-dotenv==0.12.0
-    # via
-    #   -r ./sostrades-core/requirements.in
-    #   -r ./sostrades-webapi/requirements.in
+    # via -r ./sostrades-webapi/requirements.in
 python-engineio==4.5.1
     # via
     #   -r ./sostrades-webapi/requirements.in
@@ -344,7 +346,6 @@ qdldl==0.1.7.post2
 requests==2.31.0
     # via
     #   -r ./gemseo/requirements.txt
-    #   -r ./sostrades-core/requirements.in
     #   -r ./sostrades-webapi/requirements.in
     #   kubernetes
     #   python-arango
@@ -423,7 +424,7 @@ tqdm==4.61.0
     #   -r ./gemseo/requirements.txt
     #   -r ./sostrades-core/requirements.in
     #   -r ./witness-core/requirements.in
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   alembic
     #   black

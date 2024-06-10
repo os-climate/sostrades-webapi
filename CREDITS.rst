@@ -48,7 +48,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `PyJWT (1.7.1) <https://github.com/jpadilla/pyjwt>`_
     MIT
 
-`kubernetes (11.0.0) <https://github.com/kubernetes-client/python>`_
+`kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
 
 `mysqlclient (2.2.0) <https://mysqlclient.readthedocs.io/>`_
