@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,32 +12,32 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
+import smtplib
+from email.message import EmailMessage
+from smtplib import SMTPException
+
+from sos_trades_api.server.base_server import app
+
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 SMTP service
 """
 
-# pylint: disable=line-too-long
-import smtplib
-from smtplib import SMTPException
-from email.message import EmailMessage
-from sos_trades_api.server.base_server import app
-
 
 def send_new_user_mail(user):
-    """ Methods notifying using an automatic mail that a new user has
+    """
+    Methods notifying using an automatic mail that a new user has
     connected to the application
 
     :params: user instance
     :type: User
     """
-
     message = EmailMessage()
-    message['Subject'] = f'New user connected to Sos Trades : {user.firstname},{user.lastname}'
-    message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
-    message['To'] = app.config['SMTP_SOS_TRADES_ADDR']
-    message.set_content('SoS Trades new user message.')
+    message["Subject"] = f"New user connected to Sos Trades : {user.firstname},{user.lastname}"
+    message["From"] = app.config["SMTP_SOS_TRADES_ADDR"]
+    message["To"] = app.config["SMTP_SOS_TRADES_ADDR"]
+    message.set_content("SoS Trades new user message.")
     message.add_alternative("""\
     <!DOCTYPE html>
         <html>
@@ -63,10 +63,10 @@ def send_new_user_mail(user):
         
             </body>
         </html>
-    """ % (user.username, user.firstname, user.lastname, user.email, app.config['SOS_TRADES_ENVIRONMENT']), subtype='html')
+    """ % (user.username, user.firstname, user.lastname, user.email, app.config["SOS_TRADES_ENVIRONMENT"]), subtype="html")
 
     try:
-        smtp_obj = smtplib.SMTP(app.config['SMTP_SERVER'])
+        smtp_obj = smtplib.SMTP(app.config["SMTP_SERVER"])
         smtp_obj.send_message(message)
         return True
     except SMTPException:
@@ -74,7 +74,8 @@ def send_new_user_mail(user):
 
 
 def send_right_update_mail(user, profilename):
-    """ Methods notifying a user when its profile is changed in the application
+    """
+    Methods notifying a user when its profile is changed in the application
 
     :params: user instance
     :type: User
@@ -82,13 +83,12 @@ def send_right_update_mail(user, profilename):
     :params: user new profile name
     :type: str
     """
-
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades authorization rights updated'
-    message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
-    message['To'] = user.email
+    message["Subject"] = "SoSTrades authorization rights updated"
+    message["From"] = app.config["SMTP_SOS_TRADES_ADDR"]
+    message["To"] = user.email
     message.set_content(
-        'The authorization rights for your account have been updated.')
+        "The authorization rights for your account have been updated.")
     message.add_alternative("""\
     <!DOCTYPE html>
         <html>
@@ -103,10 +103,10 @@ def send_right_update_mail(user, profilename):
                 <b>SoSTrades Team</b>
             </body>
         </html>
-    """ % (profilename), subtype='html')
+    """ % (profilename), subtype="html")
 
     try:
-        smtp_obj = smtplib.SMTP(app.config['SMTP_SERVER'])
+        smtp_obj = smtplib.SMTP(app.config["SMTP_SERVER"])
         smtp_obj.send_message(message)
         return True
     except SMTPException:
@@ -114,7 +114,8 @@ def send_right_update_mail(user, profilename):
 
 
 def send_password_reset_mail(user, reset_link):
-    """ Methods notifying a user when its profile is changed in the application
+    """
+    Methods notifying a user when its profile is changed in the application
 
     :param user instance
     :type User
@@ -122,17 +123,16 @@ def send_password_reset_mail(user, reset_link):
     :param reset_link, link to password reset page
     :type str
     """
-
     message = EmailMessage()
-    message['Subject'] = f'SoSTrades password reset request'
-    message['From'] = app.config['SMTP_SOS_TRADES_ADDR']
-    message['To'] = user.email
-    message.set_content(f'''\
+    message["Subject"] = "SoSTrades password reset request"
+    message["From"] = app.config["SMTP_SOS_TRADES_ADDR"]
+    message["To"] = user.email
+    message.set_content(f"""\
         Reset password request has been taken into account. 
         Use the link below to change your password
         {reset_link}
-        ''')
-    message.add_alternative(f'''\
+        """)
+    message.add_alternative(f"""\
     <!DOCTYPE html>
         <html>
             <body>
@@ -146,10 +146,10 @@ def send_password_reset_mail(user, reset_link):
                 <b>SoSTrades Team</b>
             </body>
         </html>
-    ''')
+    """)
 
     try:
-        smtp_obj = smtplib.SMTP(app.config['SMTP_SERVER'])
+        smtp_obj = smtplib.SMTP(app.config["SMTP_SERVER"])
         smtp_obj.send_message(message)
         return True
     except SMTPException as ex:

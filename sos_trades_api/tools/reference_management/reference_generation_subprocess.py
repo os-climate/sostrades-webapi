@@ -14,22 +14,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Reference generation subprocess launch
-"""
 import subprocess
-from os.path import join, dirname
+from os.path import dirname, join
+
 import sos_trades_api
 
+"""
+Reference generation subprocess launch
+"""
 
-class ReferenceGenerationSubprocess():
-    """ Class that allow to launch reference generation process as 
+
+class ReferenceGenerationSubprocess:
+    """
+    Class that allow to launch reference generation process as
     system subprocess
     """
 
     def __init__(self, reference_identifier):
-        """ Class constructor
+        """
+        Class constructor
 
         :params: reference_identifier, database identifier of the reference to generate
         :type: integer
@@ -37,11 +40,12 @@ class ReferenceGenerationSubprocess():
         self.__reference_identifier = reference_identifier
 
     def run(self):
-        """ Launch the process using subprocess.Popen
+        """
+        Launch the process using subprocess.Popen
         """
         path = join(dirname(sos_trades_api.__file__),
-                    '..', 'server_scripts', 'calculation', 'launch_calculation.py')
+                    "..", "server_scripts", "calculation", "launch_calculation.py")
         process = subprocess.Popen(
             f'python "{path}" --generate {self.__reference_identifier}', shell=True, stdin=subprocess.PIPE)
-        
+
         return process.pid
