@@ -19,7 +19,7 @@ graphviz==0.16
 itsdangerous==2.0.1
 jinja2==3.0.1
 PyJWT==1.7.1
-kubernetes==11.0.0
+kubernetes==29.0.0
 mysqlclient==2.2.0
 numpy==1.24.4
 pandas==2.2.2
