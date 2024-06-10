@@ -17,8 +17,9 @@ limitations under the License.
 import time
 from functools import partial
 
-from kubernetes import client, config, watch
 import urllib3
+from kubernetes import client, config, watch
+
 from sos_trades_api.server.base_server import app
 
 """
