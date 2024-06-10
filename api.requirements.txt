@@ -120,8 +120,10 @@ iniconfig==2.0.0
     # via pytest
 isodate==0.6.1
     # via python3-saml
-itsdangerous==2.2.0
-    # via flask
+itsdangerous==2.0.1
+    # via
+    #   -r ./sostrades-webapi/requirements.in
+    #   flask
 jinja2==3.0.1
     # via
     #   -r ./gemseo/requirements.txt
