@@ -42,6 +42,9 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `graphviz (0.16) <https://github.com/xflr6/graphviz>`_
     MIT
 
+`itsdangerous (2.0.1) <https://palletsprojects.com/p/itsdangerous/>`_
+    BSD-3-Clause
+
 `jinja2 (3.0.1) <https://palletsprojects.com/p/jinja/>`_
     BSD-3-Clause
 

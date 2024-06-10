@@ -13,6 +13,7 @@ Flask-SQLAlchemy==2.4.1
 furl==2.1.3
 gitpython==3.1.43
 graphviz==0.16
+itsdangerous==2.0.1  # Necessary to be compatible with flask 1.1.1
 jinja2==3.0.1
 kubernetes==29.0.0
 mysqlclient==2.2.0
