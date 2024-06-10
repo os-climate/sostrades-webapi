@@ -3,30 +3,31 @@
 
 # External libraries
 click==8.1.7
-dnspython==2.2.1
-python-dotenv==0.12.0
 eventlet==0.33.3
 Flask==1.1.1
 flask-jwt-extended==3.24.1
 flask_login==0.5.0
 Flask-Migrate==2.5.2
 flask-socketio==5.3.6
-python-socketio==5.8.0  # Must be added to freeze version, so message server works
-python-engineio==4.5.1  # Must be added to freeze version, so message server works
 Flask-SQLAlchemy==2.4.1
 furl==2.1.3
+gitpython==3.1.43
 graphviz==0.16
-itsdangerous==2.0.1
 jinja2==3.0.1
-PyJWT==1.7.1
 kubernetes==11.0.0
 mysqlclient==2.2.0
 numpy==1.24.4
 pandas==2.2.2
 plotly==5.3.0
 psutil==5.9.5
+PyJWT==1.7.1
+python-dotenv==0.12.0
 python-ldap==3.4.0; platform_system!='Windows'
 https://download.lfd.uci.edu/pythonlibs/archived/python_ldap-3.4.0-cp39-cp39-win_amd64.whl; platform_system=='Windows'
+    "keycloak",
+python-keycloak==4.0.0
+python-engineio==4.5.1  # Must be added to freeze version, so message server works
+python-socketio==5.8.0  # Must be added to freeze version, so message server works
 python3-saml==1.9.0
 pytz==2023.3.post1
 PyYAML==6.0.1
@@ -35,8 +36,6 @@ simplejson==3.19.2
 SQLAlchemy==1.3.13
 urllib3==2.1.0
 werkzeug==2.0.3
-gitpython==3.1.43
-python-keycloak==4.0.0
 
 # Development requirements
 pytest==7.4.3

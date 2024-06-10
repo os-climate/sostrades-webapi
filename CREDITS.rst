@@ -6,9 +6,6 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `click (8.1.7) <https://palletsprojects.com/p/click/>`_
     BSD-3-Clause
 
-`dnspython (2.2.1) <https://www.dnspython.org>`_
-    ISC
-
 `python-dotenv (0.12.0) <https://github.com/theskumar/python-dotenv>`_
     BSD-3-Clause
 
@@ -44,9 +41,6 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 
 `graphviz (0.16) <https://github.com/xflr6/graphviz>`_
     MIT
-
-`itsdangerous (2.0.1) <https://palletsprojects.com/p/itsdangerous/>`_
-    BSD-3-Clause
 
 `jinja2 (3.0.1) <https://palletsprojects.com/p/jinja/>`_
     BSD-3-Clause
@@ -93,7 +87,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `SQLAlchemy (1.3.13) <https://www.sqlalchemy.org>`_
     MIT
 
-`urllib3 (2.0.6) <https://urllib3.readthedocs.io>`_
+`urllib3 (2.1.0) <https://urllib3.readthedocs.io>`_
     MIT License
 
 `werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
@@ -102,5 +96,5 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
     BSD
 
-`nose2 (0.9.1) <https://docs.nose2.io/>`_
-    BSD-2-Clause
+`python-keycloak (4.0.0) <https://pypi.org/project/python-keycloak/>`_
+    MIT License
