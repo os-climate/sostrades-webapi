@@ -22,23 +22,24 @@ Class that represent a study case data transfert object with group information
 class UserDto:
 
     def __init__(self, user_id):
-        """ Initialize DTO using a study case instance
+        """
+        Initialize DTO using a study case instance
 
         :params: user_id : user identifier
         :type: integer
         """
-
         self.id = user_id
         self.username = ""
         self.firstname = ""
         self.lastname = ""
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'id': self.id,
-            'username': self.username,
-            'firstname': self.firstname,
-            'lastname': self.lastname,
+            "id": self.id,
+            "username": self.username,
+            "firstname": self.firstname,
+            "lastname": self.lastname,
         }

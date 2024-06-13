@@ -14,12 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from datetime import datetime, timedelta
-import threading
 import logging
+import threading
+from datetime import datetime, timedelta
 
-from sos_trades_api.models.loaded_study_case import LoadStatus
-from sos_trades_api.tools.loading.loading_study_and_engine import study_need_to_be_updated
+from sos_trades_api.tools.loading.loading_study_and_engine import (
+    study_need_to_be_updated,
+)
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
@@ -66,8 +67,7 @@ class StudyCaseReference:
         :param value: new date to set
         :type value: datetime
         """
-
-        if not self.__modification_date == value:
+        if self.__modification_date != value:
             self.__modification_date = value
 
 
@@ -119,12 +119,11 @@ class StudyCaseCache:
         :param study_case_manager: StudyCaseManager instance to add
         :type study_case_manager: sos_trades_api.tools.loading.study_case_manager.StudyCaseManager
         """
-
         study_case_manager.attach_logger()
         study_case = study_case_manager.study
         if not self.is_study_case_cached(study_case.id):
             self.__study_case_dict[study_case.id] = StudyCaseReference(
-                study_case.id, study_case.modification_date
+                study_case.id, study_case.modification_date,
             )
             self.__study_case_manager_dict[study_case.id] = study_case_manager
             self.__lock_cache[study_case.id] = threading.Lock()
@@ -132,7 +131,7 @@ class StudyCaseCache:
             try:
                 self.__lock_cache[study_case.id].acquire()
                 self.__study_case_dict[study_case.id] = StudyCaseReference(
-                    study_case.id, study_case.modification_date
+                    study_case.id, study_case.modification_date,
                 )
                 self.__study_case_manager_dict[study_case.id].detach_logger()
                 self.__study_case_manager_dict[study_case.id] = study_case_manager
@@ -149,14 +148,13 @@ class StudyCaseCache:
         :param study_case_identifier: identifier of the study to add to tha cache
         :type study_case_identifier: int
         """
-
         study_case_manager = StudyCaseManager(study_case_identifier)
         study_case_manager.attach_logger()
 
         self.__study_case_dict[study_case_manager.study.id] = StudyCaseReference(
-            study_case_manager.study.id, study_case_manager.study.modification_date
+            study_case_manager.study.id, study_case_manager.study.modification_date,
         )
-        
+
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
 
@@ -172,7 +170,6 @@ class StudyCaseCache:
         :type check_expire: boolean
         :return: sos_trades_api.tools.loading.study_case_manager.StudyCaseManager
         """
-
         if not self.is_study_case_cached(study_case_identifier):
             self.__add_study_case_in_cache_from_database(study_case_identifier)
         elif check_expire:
@@ -202,7 +199,6 @@ class StudyCaseCache:
         :param study_case_identifier: study case identifier to unlock
         :type study_case_identifier: int
         """
-
         if self.is_study_case_cached(study_case_identifier):
 
             if self.__lock_cache[study_case_identifier].locked():
@@ -222,14 +218,14 @@ class StudyCaseCache:
             self.release_study_case(study_identifier)
 
     def update_study_case_last_active_date(self, study_case_id)->bool:
-        '''
+        """
         update study case last active date in dict only if there is more than an elapsed time between 2 update
 
-        '''
+        """
         has_been_updated = False
         delta_time = datetime.now() - timedelta(seconds=self.ACTIVE_DATE_ELAPSED_WRITTING_TIME)
         #update the last active date if it is more than 5s elapsed time
-        if (study_case_id not in self.__last_alive_date 
+        if (study_case_id not in self.__last_alive_date
             or self.__last_alive_date[study_case_id] < delta_time):
             self.__last_alive_date[study_case_id] = datetime.now()
             has_been_updated = True

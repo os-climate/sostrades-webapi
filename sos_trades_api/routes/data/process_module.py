@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,19 +12,28 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
 # coding: utf-8
 from flask import jsonify, make_response, session
+
+from sos_trades_api.controllers.sostrades_data.process_controller import (
+    ProcessError,
+    api_get_processes_for_dashboard,
+    api_get_processes_for_user,
+)
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, study_manager_profile
-from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user, ProcessError, api_get_processes_for_dashboard
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    study_manager_profile,
+)
 
 
-@app.route(f'/api/data/resources/process', methods=['GET'])
+@app.route("/api/data/resources/process", methods=["GET"])
 @auth_required
 def get_processes_for_user():
 
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     try:
@@ -32,25 +41,25 @@ def get_processes_for_user():
         processes = api_get_processes_for_user(user)
     except Exception as error:
         raise ProcessError(
-            f'The following error occurs when trying to retrieve processes list : {str(error)}')
+            f"The following error occurs when trying to retrieve processes list : {error!s}")
 
     resp = make_response(jsonify(processes), 200)
     return resp
 
 
-@app.route(f'/api/data/resources/process/dashboard', methods=['GET'])
+@app.route("/api/data/resources/process/dashboard", methods=["GET"])
 @auth_required
 @study_manager_profile
 def get_processes_for_dashboard():
 
-    user = session['user']
+    user = session["user"]
     app.logger.info(user)
 
     try:
         processes = api_get_processes_for_dashboard()
     except Exception as error:
         raise ProcessError(
-            f'The following error occurs when trying to retrieve processes list : {str(error)}')
+            f"The following error occurs when trying to retrieve processes list : {error!s}")
 
     resp = make_response(jsonify(processes), 200)
     return resp

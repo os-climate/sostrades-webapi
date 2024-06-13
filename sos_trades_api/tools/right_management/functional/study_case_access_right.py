@@ -14,22 +14,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-methods to define access rights for a group
-"""
 from sos_trades_api.models.database_models import (
     AccessRights,
-    StudyCase,
-    StudyCaseAccessUser,
-    StudyCaseAccessGroup,
     Group,
+    StudyCase,
+    StudyCaseAccessGroup,
+    StudyCaseAccessUser,
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
-from sos_trades_api.server.base_server import db, app
+
+"""
+methods to define access rights for a group
+"""
 
 
 class StudyCaseAccess(ProcessAccess):
@@ -79,7 +79,7 @@ class StudyCaseAccess(ProcessAccess):
         self.__reset()
 
         owner_right = AccessRights.query.filter(
-            AccessRights.access_right == AccessRights.OWNER
+            AccessRights.access_right == AccessRights.OWNER,
         ).first()
 
         # Retrieve all study_cases authorised directly to user
@@ -95,7 +95,7 @@ class StudyCaseAccess(ProcessAccess):
 
         if study_case_identifier is not None:
             user_study_cases_query = user_study_cases_query.filter(
-                StudyCase.id == study_case_identifier
+                StudyCase.id == study_case_identifier,
             )
 
         user_study_cases = user_study_cases_query.all()
@@ -107,7 +107,7 @@ class StudyCaseAccess(ProcessAccess):
             current_owner_group = ust[2]
 
             # Check user is authorised for process before adding study case
-            key = f'{current_study_case.repository}.{current_study_case.process}'
+            key = f"{current_study_case.repository}.{current_study_case.process}"
 
             if key in self._user_loaded_process_list_by_name.keys():
 
@@ -145,7 +145,7 @@ class StudyCaseAccess(ProcessAccess):
 
         if study_case_identifier is not None:
             group_study_cases_query = group_study_cases_query.filter(
-                StudyCase.id == study_case_identifier
+                StudyCase.id == study_case_identifier,
             )
 
         group_study_cases = group_study_cases_query.all()
@@ -185,7 +185,7 @@ class StudyCaseAccess(ProcessAccess):
 
                 # Group right allow every study even if user has not the process right (no need to check process right)
                 new_study_dto = StudyCaseDto(
-                    current_study_case_group, current_owner_group
+                    current_study_case_group, current_owner_group,
                 )
 
                 # Add study in raw list
@@ -268,7 +268,7 @@ class StudyCaseAccess(ProcessAccess):
                 and ust.repository == repository_name
                 and (ust.is_manager or ust.is_contributor),
                 self._user_study_cases.values(),
-            )
+            ),
         )
 
         return studies_authorised_process

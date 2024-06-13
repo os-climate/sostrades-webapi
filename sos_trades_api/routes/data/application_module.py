@@ -14,36 +14,35 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from flask import make_response
+from flask.json import jsonify
+
+from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.api_version import application_version
 from sos_trades_api.tools.authentication.authentication import auth_required
 
 """
 Application module
 """
 
-from flask import make_response
-from flask.json import jsonify
-from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.api_version import application_version
-
-
-@app.route(f'/api/data/application/infos', methods=['GET'])
+@app.route("/api/data/application/infos", methods=["GET"])
 def application_info():
     """
     application info
     """
     result = {}
-    result['version'] = application_version()
-    result['platform'] = app.config['SOS_TRADES_ENVIRONMENT']
+    result["version"] = application_version()
+    result["platform"] = app.config["SOS_TRADES_ENVIRONMENT"]
     resp = make_response(jsonify(result), 200)
     return resp
 
 
-@app.route(f'/api/data/application/support', methods=['GET'])
+@app.route("/api/data/application/support", methods=["GET"])
 @auth_required
 def application_support():
     """
     application support
     """
-    result = {'support': 'contact@sostrades.org'}
+    result = {"support": "contact@sostrades.org"}
     resp = make_response(jsonify(result), 200)
     return resp

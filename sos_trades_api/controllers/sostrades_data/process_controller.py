@@ -15,13 +15,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import traceback
-from sos_trades_api.models.database_models import ReferenceStudy, StudyCase, User, Process
-from sos_trades_api.tools.right_management.functional.process_access_right import ProcessAccess
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata, load_ontology_processes
-from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.models.loaded_process import LoadedProcess
 from typing import List
+
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_ontology_processes,
+)
+from sos_trades_api.models.database_models import (
+    Process,
+    ReferenceStudy,
+    StudyCase,
+    User,
+)
+from sos_trades_api.models.loaded_process import LoadedProcess
+from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.tools.right_management.functional.process_access_right import (
+    ProcessAccess,
+)
 
 
 class ProcessError(Exception):
@@ -32,14 +41,14 @@ class ProcessError(Exception):
         message = None
         if msg is not None:
             if isinstance(msg, Exception):
-                message = f'the following exception occurs {msg}.\n{traceback.format_exc()}'
+                message = f"the following exception occurs {msg}.\n{traceback.format_exc()}"
             else:
                 message = msg
 
         Exception.__init__(self, message)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 def api_get_processes_for_user(user: User) -> List[LoadedProcess]:
@@ -76,13 +85,13 @@ def api_get_processes_for_user(user: User) -> List[LoadedProcess]:
                 new_ref.repository = authorized_process.repository_id
                 new_ref.creation_date = ref.creation_date
                 new_ref.group_id = None
-                new_ref.group_name = 'All groups'
+                new_ref.group_name = "All groups"
 
                 if ref.reference_type == ReferenceStudy.TYPE_REFERENCE:
-                    new_ref.description = 'Reference study'
+                    new_ref.description = "Reference study"
                     new_ref.study_type = StudyCase.FROM_REFERENCE
                 else:
-                    new_ref.description = 'Usecase data'
+                    new_ref.description = "Usecase data"
                     new_ref.study_type = StudyCase.FROM_USECASE
                 process_ref_list.append(new_ref)
 
@@ -119,7 +128,6 @@ def apply_ontology_to_loaded_process(loaded_processes: List[LoadedProcess]) -> L
     Apply ontology to each loaded process elements
     :param loaded_processes: process on which ontology has to be applied
     """
-
     # Retrieve full processes ontology
     processes = load_ontology_processes()
 
