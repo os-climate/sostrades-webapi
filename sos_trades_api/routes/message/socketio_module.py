@@ -223,4 +223,18 @@ def on_validation_change(data):
           "study_case_validation": validation},
          room=room)
 
+@socketio.on("export")
+@auth_refresh_required
+def on_export(data):
+    room = data["study_case_id"]
+    changes = data["changes"]
+    user = get_authenticated_user()
+
+    # Emit notification
+    emit("study-exported",
+         {"author": f"{user.firstname} {user.lastname}",
+          "type": UserCoeditionAction.EXPORT,
+          "changes": changes,
+          "message": CoeditionMessage.EXPORT_DATASET},
+         room=room)
 

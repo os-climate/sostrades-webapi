@@ -42,6 +42,7 @@ class UserCoeditionAction:
     EDIT = "edit"
     DELETE = "delete"
     VALIDATION_CHANGE = "validation_change"
+    EXPORT = "export"
 
     @classmethod
     def get_attribute_for_value(cls, value):
@@ -61,6 +62,7 @@ class CoeditionMessage:
     CLAIM = "User just claimed the study case execution right."
     RELOAD = "User just reload the study case."
     IMPORT_DATASET = "User just updated parameter from dataset"
+    EXPORT_DATASET = "User just exported parameters into dataset"
 
 
 def add_user_to_room(user_id, study_case_id):

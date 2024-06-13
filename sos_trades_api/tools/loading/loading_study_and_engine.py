@@ -378,6 +378,79 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
             f"Error when updating in background (from datasets mapping) {study_case_manager.study.name}: {ex}")
 
 
+def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_mapping_deserialized, notification_id):
+    """
+    Method that export study data into a dataset defined with the datasets mapping
+
+    :params: study_case_manager, study case manager instance to load
+    :type: StudyCaseManager
+
+    :params: datasets_mapping_deserialized, with namespace and parameter mapping to datasets connector and id
+    :type: dictionary
+
+    """
+    from sostrades_core.datasets.datasets_connectors.abstract_datasets_connector import (
+        DatasetGenericException,
+    )
+
+    from sos_trades_api.models.loaded_study_case import LoadStatus
+    from sos_trades_api.server.base_server import app
+            
+    app.logger.info(f"exporting in background (from datasets mapping) {study_case_manager.study.name}")
+
+    study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.IN_PROGESS
+    study_case_manager.dataset_export_error_dict[notification_id] = None
+    
+    try:
+        # Update parameter into dictionary
+        datasets_parameter_changes = study_case_manager.export_data_from_dataset_mapping(
+            from_datasets_mapping=datasets_mapping_deserialized)
+        # Add change to database
+        with app.app_context():
+            for param_chg in datasets_parameter_changes:
+                # Check if new value is a dataframe or dict
+                if isinstance(param_chg.old_value, (pandas.DataFrame, dict, ndarray)):
+                    study_case_change = StudyCaseChange.CSV_CHANGE
+                    try:
+                        # Conversion old_value to byte in order to store it in database
+                        serializer = DataSerializer()
+                        old_value_stream = serializer.convert_to_dataframe_and_bytes_io(param_chg.old_value, param_chg.parameter_id)
+                        old_value_bytes = old_value_stream.getvalue()
+                        old_value = None
+                        new_value = None
+                    except Exception as error:
+                        raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                else:
+                    study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+                    old_value = str(param_chg.old_value)
+                    old_value_bytes = None
+
+                # Add change into database
+                add_change_db(
+                    notification_id,
+                    param_chg.parameter_id,
+                    param_chg.variable_type,
+                    None,
+                    study_case_change,
+                    None,
+                    old_value,
+                    old_value_bytes,
+                    param_chg.date,
+                    param_chg.connector_id,
+                    param_chg.dataset_id,
+                    param_chg.dataset_parameter_id,
+                )
+                
+            study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.LOADED
+    except DatasetGenericException as ex:
+        study_case_manager.dataset_export_error_dict[notification_id] = f"{ex}"
+        study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.IN_ERROR
+
+        app.logger.exception(
+            f"Error when exporting in background (from datasets mapping) {study_case_manager.study.name}: {ex}")
+
+    
+
 def study_case_manager_loading_from_reference(study_case_manager, no_data, read_only, reference_folder,
                                               reference_identifier):
     """
