@@ -686,6 +686,7 @@ class StudyCaseChange(db.Model):
     """StudyCaseChanges class"""
 
     DATASET_MAPPING_CHANGE = "dataset_mapping"
+    DATASET_MAPPING_EXPORT = "dataset_mapping_export"
     CSV_CHANGE = "csv"
     SCALAR_CHANGE = "scalar"
 
