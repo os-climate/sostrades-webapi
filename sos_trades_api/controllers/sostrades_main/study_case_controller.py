@@ -619,7 +619,7 @@ def export_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
                     args=(study_manager, datasets_mapping_deserialized, notification_id),
                 ).start()
             else:
-                raise exception("study case is currently loading, please retry the export at the end of the loading.")
+                raise Exception("study case is currently loading, please retry the export at the end of the loading.")
         # deal with errors
         elif study_manager.dataset_export_status_dict[notification_id]  == LoadStatus.IN_ERROR:
             if notification_id in study_manager.dataset_export_error_dict.keys():
