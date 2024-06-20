@@ -791,7 +791,7 @@ def get_study_case_notifications(study_identifier):
                     notif.message,
                     [],
                 )
-                if notif.type == UserCoeditionAction.SAVE:
+                if notif.type == UserCoeditionAction.SAVE or notif.type == UserCoeditionAction.EXPORT:
                     changes_query = (
                         StudyCaseChange.query.filter(
                             StudyCaseChange.notification_id == notif.id,
@@ -849,8 +849,10 @@ def create_new_notification_after_update_parameter(study_id, change_type, coedit
         user_coedition_action = getattr(UserCoeditionAction, action)
 
         # Determine the coedition message based on the type
-        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE:
+        if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE and user_coedition_action == UserCoeditionAction.SAVE:
             coedition_message = CoeditionMessage.IMPORT_DATASET
+        if change_type == StudyCaseChange.DATASET_MAPPING_EXPORT and user_coedition_action == UserCoeditionAction.EXPORT:
+            coedition_message = CoeditionMessage.EXPORT_DATASET
         else:
             coedition_message = CoeditionMessage.SAVE
 
