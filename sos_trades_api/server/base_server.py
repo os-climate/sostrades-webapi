@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/05/16 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/06/13 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -931,7 +931,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     # For migration to detect new tables
     # After running migration script, remove them from here to prevent import
     # error
-    if app != None and db != None:
+    if app is not None and db is not None:
         migrate = Migrate(app, db, compare_type=False)
 
     # Attention compare type find a difference in ReferenceGenerationStatus
