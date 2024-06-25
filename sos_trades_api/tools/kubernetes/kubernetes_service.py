@@ -313,9 +313,9 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
         api = client.CustomObjectsApi()
         resources = api.list_namespaced_custom_object(group="metrics.k8s.io", version="v1beta1",
                                                         namespace=pod_namespace, plural="pods")
-
+        print(resources["items"])
         pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-
+        print(pod_searched)
         pod_cpu = round(float("".join(
             filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
 
