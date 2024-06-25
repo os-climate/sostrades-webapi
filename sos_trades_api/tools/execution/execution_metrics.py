@@ -19,8 +19,11 @@ import time
 
 import psutil
 
-from sos_trades_api.models.database_models import StudyCaseExecution
+from sos_trades_api.config import Config
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_allocation
+from sos_trades_api.models.database_models import StudyCaseExecution, StudyCase
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_get_pod_info
 
 """
 Execution metric thread
@@ -61,18 +64,40 @@ class ExecutionMetrics:
             # shut down calculation
             try:
                 # Open a database context
-                with app.app_context():
-                    study_case_execution = StudyCaseExecution.query. \
-                        filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
+                with (((app.app_context()))):
+                    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
 
-                    # Check environment info
-                    cpu_count_physical = psutil.cpu_count()
-                    cpu_usage = round((psutil.cpu_percent() / 100) * cpu_count_physical, 2)
-                    cpu_metric = f"{cpu_usage}/{cpu_count_physical}"
+                    config = Config()
+                    if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
+                        study_case_allocation = get_study_case_allocation(study_case_execution.study_case_id)
 
-                    memory_count = round(psutil.virtual_memory()[0] / (1024 * 1024 * 1024), 2)
-                    memory_usage = round(psutil.virtual_memory()[3] / (1024 * 1024 * 1024), 2)
-                    memory_metric = f"{memory_usage}/{memory_count} [GB]"
+                        # Retrieve memory and cpu from kubernetes
+                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
+
+                        # Retrieve study case from database
+                        study_case = StudyCase.query.filter(StudyCase.id.like(study_case_execution.study_case_id)).first()
+
+                        # Retrieve limits of pod from config
+                        cpu_limits = ''
+                        memory_limits = ''
+                        pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case.execution_pod_flavor]["limits"]
+                        if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
+                            cpu_limits = pod_execution_limit_from_config["cpu"]
+                            memory_limits = pod_execution_limit_from_config["memory"]
+
+                        cpu_metric = f'{cpu_limits}'
+                        memory_metric = f'{memory_limits} [GB]'
+                        print(cpu_metric, memory_metric)
+
+                    else:
+                        # Check environment info
+                        cpu_count_physical = psutil.cpu_count()
+                        cpu_usage = round((psutil.cpu_percent() / 100) * cpu_count_physical, 2)
+                        cpu_metric = f"{cpu_usage}/{cpu_count_physical}"
+
+                        memory_count = round(psutil.virtual_memory()[0] / (1024 * 1024 * 1024), 2)
+                        memory_usage = round(psutil.virtual_memory()[3] / (1024 * 1024 * 1024), 2)
+                        memory_metric = f"{memory_usage}/{memory_count} [GB]"
 
                     study_case_execution.cpu_usage = cpu_metric
                     study_case_execution.memory_usage = memory_metric
