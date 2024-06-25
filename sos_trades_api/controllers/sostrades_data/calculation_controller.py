@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2024/04/05 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/06/25 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -128,8 +128,8 @@ def execute_calculation(study_id, username):
         # study_case_execution_id key)
         StudyCaseExecutionLog.query\
             .filter(StudyCaseExecutionLog.study_case_id == study_id)\
-            .filter(StudyCaseExecutionLog.study_case_execution_id == None)\
-            .delete()
+            .filter(StudyCaseExecutionLog.study_case_execution_id == None) \
+            .delete()  # noqa: E711
         db.session.commit()
 
         # Once the process is validated, then generate the corresponding data

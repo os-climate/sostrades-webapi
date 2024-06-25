@@ -23,6 +23,9 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     copy_study_discipline_data,
     delete_study_cases,
+    export_study_parameters_from_datasets_mapping,
+    get_dataset_export_error_message,
+    get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
     get_study_data_file_path,
@@ -144,7 +147,7 @@ def main_load_study_case_by_id(study_id):
 @app.route("/api/main/study-case/<int:study_id>/<int:notification_id>/import-datasets-mapping", methods=["POST"])
 @auth_required
 def update_study_from_datasets_mapping(study_id, notification_id):
-    if study_id is not None:
+    if study_id is not None and notification_id is not None:
         user = session["user"]
         # Verify user has study case authorisation to load study (Contributor)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -168,7 +171,68 @@ def update_study_from_datasets_mapping(study_id, notification_id):
             jsonify(update_study_parameters_from_datasets_mapping(study_id, user, files_data, notification_id)), 200)
         return resp
 
-    raise BadRequest("Missing mandatory parameter: study identifier in url")
+    raise BadRequest("Missing mandatory parameter: study or notification identifier in url")
+
+@app.route("/api/main/study-case/<int:study_id>/<int:notification_id>/export-datasets-mapping", methods=["POST"])
+@auth_required
+def export_study_from_datasets_mapping(study_id, notification_id):
+    if study_id is not None and notification_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Contributor)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to modify this study case")
+
+        # Proceeding after rights verification
+        files_data = None
+        if "datasets_mapping_file" in request.files:
+            try:
+                file_content = request.files["datasets_mapping_file"].read().decode("utf-8")
+                files_data = json.loads(file_content)
+
+            except Exception as ex:
+                raise BadRequest(f"Invalid JSON format : {ex}")
+        else:
+            raise BadRequest("Missing mandatory datasets_mapping_file")
+
+        resp = make_response(
+            jsonify(export_study_parameters_from_datasets_mapping(study_id, user, files_data, notification_id)), 200)
+        return resp
+
+    raise BadRequest("Missing mandatory parameter: study or notification identifier in url")
+
+@app.route("/api/main/study-case/<int:study_id>/<int:notification_id>/export-datasets-status", methods=["GET"])
+@auth_required
+def get_export_study_in_datasets_status(study_id, notification_id):
+    if study_id is not None and notification_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Contributor)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to get this study case")
+        resp = make_response(
+            jsonify(get_dataset_export_status(study_id, notification_id)), 200)
+        return resp
+
+    raise BadRequest("Missing mandatory parameter: study or notification identifier in url")
+
+@app.route("/api/main/study-case/<int:study_id>/<int:notification_id>/export-datasets-error", methods=["GET"])
+@auth_required
+def get_export_study_in_datasets_error(study_id, notification_id):
+    if study_id is not None and notification_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Contributor)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to get this study case")
+        resp = make_response(
+            jsonify(get_dataset_export_error_message(study_id, notification_id)), 200)
+        return resp
+
+    raise BadRequest("Missing mandatory parameter: study or notification identifier in url")
 
 @app.route("/api/main/study-case/<int:study_id>/import-datasets-error-message", methods=["GET"])
 @auth_required

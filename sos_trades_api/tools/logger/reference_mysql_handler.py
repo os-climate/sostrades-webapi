@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/06/07 Copyright 2024 Capgemini
+Modifications on 2024/06/07-2024/06/13 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -116,7 +116,7 @@ class ReferenceMySQLHandler(Handler):
         :params: flush, boolean to flush the list without taking into account number of elements
         :type: boolean
         """
-        if len(self.__inner_bulk_list) > 200 or flush == True:
+        if len(self.__inner_bulk_list) > 200 or flush:
             try:
                 with app.app_context():
                     db.session.bulk_save_objects(self.__inner_bulk_list)

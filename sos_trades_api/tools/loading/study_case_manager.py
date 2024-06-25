@@ -167,6 +167,11 @@ class StudyCaseManager(BaseStudyManager):
         self.dataset_load_status = LoadStatus.NONE
         self.dataset_load_error = None
 
+        # export status in case of dataset export
+        # it is a dict with notification id in case multiple export at the same time
+        self.dataset_export_status_dict = {}
+        self.dataset_export_error_dict = {}
+
         self.n2_diagram = {}
         self.__error_message = ""
 
