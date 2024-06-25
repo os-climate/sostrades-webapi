@@ -71,7 +71,7 @@ class ExecutionMetrics:
                     print(f"config => : {config.execution_strategy}")
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
                         study_case_allocation = get_study_case_allocation(study_case_execution.study_case_id)
-
+                        print(f'pod allocation => : pod name {study_case_allocation.kubernetes_pod_name} + namespace {study_case_allocation.kubernetes_pod_namespace}')
                         # Retrieve memory and cpu from kubernetes
                         result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
                         print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
