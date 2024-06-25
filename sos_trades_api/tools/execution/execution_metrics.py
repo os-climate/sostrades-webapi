@@ -64,16 +64,17 @@ class ExecutionMetrics:
             # shut down calculation
             try:
                 # Open a database context
-                with (((app.app_context()))):
+                with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
 
                     config = Config()
+                    print(f"config => : {config.execution_strategy}")
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
                         study_case_allocation = get_study_case_allocation(study_case_execution.study_case_id)
 
                         # Retrieve memory and cpu from kubernetes
                         result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
-
+                        print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
                         # Retrieve study case from database
                         study_case = StudyCase.query.filter(StudyCase.id.like(study_case_execution.study_case_id)).first()
 
@@ -85,9 +86,8 @@ class ExecutionMetrics:
                             cpu_limits = pod_execution_limit_from_config["cpu"]
                             memory_limits = pod_execution_limit_from_config["memory"]
 
-                        cpu_metric = f'{cpu_limits}'
-                        memory_metric = f'{memory_limits} [GB]'
-                        print(cpu_metric, memory_metric)
+                        cpu_metric = f'{result["cpu"]}/{cpu_limits}'
+                        memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
 
                     else:
                         # Check environment info
