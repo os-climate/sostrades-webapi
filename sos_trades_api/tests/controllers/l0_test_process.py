@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2023/10/13-2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,22 +12,23 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
+
+from builtins import classmethod
+
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
+
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for processes procedures
 """
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
-from builtins import classmethod
-
-
-# pylint: disable=no-member
-# pylint: disable=line-too-long
-
 
 class TestProcess(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to process controller
+    """
+    Test class for methods related to process controller
     """
 
     @classmethod
@@ -44,10 +45,11 @@ class TestProcess(DatabaseUnitTestConfiguration):
         super().tearDown()
 
     def test_loaded_process_in_database(self):
-        """ Check that database contains default process to load
+        """
+        Check that database contains default process to load
         """
         additional_repository_list = DatabaseUnitTestConfiguration.app.config[
-            'SOS_TRADES_PROCESS_REPOSITORY']
+            "SOS_TRADES_PROCESS_REPOSITORY"]
 
         # Retrieve all process list
         from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
@@ -69,24 +71,26 @@ class TestProcess(DatabaseUnitTestConfiguration):
                         lambda process: process.process_path == process_module and process.name == process_name, all_database_processes))
 
                     self.assertEqual(len(
-                        loaded_process), 1, 'Process is not present or cannot be present more than once')
+                        loaded_process), 1, "Process is not present or cannot be present more than once")
 
     def test_standard_account_process_in_database(self):
-        """ Check that all process are not accessible by the standard account without right access on processes.
         """
-
+        Check that all process are not accessible by the standard account without right access on processes.
+        """
         with DatabaseUnitTestConfiguration.app.app_context():
 
             from sos_trades_api.models.database_models import User
             standard_account = User.query.filter(
                 User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
 
-            from sos_trades_api.controllers.sostrades_data.process_controller import api_get_processes_for_user
+            from sos_trades_api.controllers.sostrades_data.process_controller import (
+                api_get_processes_for_user,
+            )
             standard_account_process = api_get_processes_for_user(
                 standard_account)
 
             process_filtered = filter(
                 lambda x: x.is_manager or x.is_contributor, standard_account_process)
 
-            self.assertEqual(len((list(process_filtered))), 0,
-                             'Some processes are accessible by the test account')
+            self.assertEqual(len(list(process_filtered)), 0,
+                             "Some processes are accessible by the test account")

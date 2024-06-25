@@ -14,21 +14,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Process management
-"""
-from sos_trades_api.server.base_server import db
-from sqlalchemy import and_
 from sostrades_core.sos_processes.processes_factory import SoSProcessFactory
-from sos_trades_api.models.database_models import Process, AccessRights, \
-    ProcessAccessUser, ProcessAccessGroup, StudyCase, User, Group
+from sqlalchemy import and_
+
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    Process,
+    ProcessAccessGroup,
+    ProcessAccessUser,
+    StudyCase,
+    User,
+)
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.right_management.functional import process_access_right
 
+"""
+Process management
+"""
 
 def update_database_with_process(additional_repository_list=None, logger=None, default_manager_user=None,
                                  default_manager_group=None):
-    """ Method that retrieve all available processes and inject them into database
+    """
+    Method that retrieve all available processes and inject them into database
     If a process already exist in database it will be enabled or disabled regarding
     is the process is found into the source code
 
@@ -59,7 +67,7 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
     # Get processes dictionary
     processes_dict = process_factory.get_processes_dict()
     logger.info(
-        f'{len(processes_dict)} repository found.')
+        f"{len(processes_dict)} repository found.")
 
     # Get all default process access rights from repository files
     default_user_rights = process_factory.get_user_default_rights_dict()
@@ -73,7 +81,7 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
         database_process.disabled = True
         db.session.add(database_process)
     logger.info(
-        f'{len(all_database_processes)} existing process disabled found')
+        f"{len(all_database_processes)} existing process disabled found")
 
     # Retrieve all existing process user access created from repository file
     all_database_process_access_user = ProcessAccessUser.query.filter(
@@ -83,9 +91,9 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
 
     # Remove all existing default access rights to add only existing ones
     logger.info(
-        f'{all_database_process_access_user.count()} existing default ProcessAccessUser to delete')
+        f"{all_database_process_access_user.count()} existing default ProcessAccessUser to delete")
     logger.info(
-        f'{all_database_process_access_group.count()} existing default ProcessAccessGroup to delete')
+        f"{all_database_process_access_group.count()} existing default ProcessAccessGroup to delete")
     for process_access_user in all_database_process_access_user:
         db.session.delete(process_access_user)
     for process_access_group in all_database_process_access_group:
@@ -115,9 +123,9 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                     loaded_process_sorted = sorted(
                         loaded_process, key=lambda proc: proc.id)
                     for i in range(1, len(loaded_process_sorted)):
-                        logger.info(f'Removed one duplicate entry for process {loaded_process_sorted[i].name} '
-                                    f'with path {loaded_process_sorted[i].process_path}'
-                                    f'and id of duplicate {loaded_process_sorted[i].id}')
+                        logger.info(f"Removed one duplicate entry for process {loaded_process_sorted[i].name} "
+                                    f"with path {loaded_process_sorted[i].process_path}"
+                                    f"and id of duplicate {loaded_process_sorted[i].id}")
                         db.session.delete(loaded_process_sorted[i])
                     # Keep initial process
                     existing_process = loaded_process_sorted[0]
@@ -195,16 +203,18 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                     db.session.flush()
 
     logger.info(
-        f'{new_process_access_user_count} new default ProcessAccessUser added')
+        f"{new_process_access_user_count} new default ProcessAccessUser added")
     logger.info(
-        f'{new_process_access_group_count} new default ProcessAccessGroup added')
-    logger.info(f'{new_process_count} new process(es) found')
-    logger.info(f'{enabled_process_count} enabled process(es)')
+        f"{new_process_access_group_count} new default ProcessAccessGroup added")
+    logger.info(f"{new_process_count} new process(es) found")
+    logger.info(f"{enabled_process_count} enabled process(es)")
 
     disabled_process = Process.query.filter(Process.disabled == True).all()
     if len(disabled_process) > 0:
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import delete_study_cases
-        logger.info(f'{len(disabled_process)} disabled processes found.')
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            delete_study_cases,
+        )
+        logger.info(f"{len(disabled_process)} disabled processes found.")
 
         # Removing for each disabled process, related studycase
         process_ids_to_delete = []
@@ -237,7 +247,7 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                         logger.info(
                             f'Removed study case with id : {sc_id} and name : "{sc_name}"')
 
-        logger.info('Start deleting disabled process...')
+        logger.info("Start deleting disabled process...")
         disabled_process_to_delete = Process.query.filter(
             Process.disabled == True).all()
         for process in disabled_process_to_delete:
@@ -249,7 +259,8 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
 
 
 def set_process_user_right(user_id, process_id, right_id, is_source_file):
-    """Set specific right on the specified user regarding given process identifier
+    """
+    Set specific right on the specified user regarding given process identifier
 
     If the user_right doesn't already exists, it create a ProcessAccessUser instance with the defined right
 
@@ -289,7 +300,8 @@ def set_process_user_right(user_id, process_id, right_id, is_source_file):
 
 
 def set_process_group_right(group_id, process_id, right_id, is_source_file):
-    """Set specific right on the specified group regarding given process identifier
+    """
+    Set specific right on the specified group regarding given process identifier
 
     If the group_right doesn't already exists, create a ProcessAccessGroup  instancewith the defined right
 
@@ -327,19 +339,19 @@ def set_process_group_right(group_id, process_id, right_id, is_source_file):
 
 
 def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
-    """Set specific process to the user
+    """
+    Set specific process to the user
 
-        :param process_list: List of the process targeted for the user
-        :type process_list: list
+    :param process_list: List of the process targeted for the user
+    :type process_list: list
 
-        :param user_id: The user identifier
-        :type user_id: integer
+    :param user_id: The user identifier
+    :type user_id: integer
 
-        :param logger: logging message
-        :type logger: logging.Logger
+    :param logger: logging message
+    :type logger: logging.Logger
 
-        """
-
+    """
     process_id_list = []
 
     if process_list is not None and len(process_list) > 0:
@@ -349,7 +361,7 @@ def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
             if process is not None:
                 process_id_list.append(process.id)
             else:
-                logger.error(f'The process {process_name} does not exist on the database')
+                logger.error(f"The process {process_name} does not exist on the database")
 
     if len(process_id_list) > 0:
 
@@ -359,7 +371,7 @@ def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
         if user_id is not None:
             user = User.query.filter(User.id == user_id).first()
             if user is None:
-                raise Exception(f'User not found in database')
+                raise Exception("User not found in database")
 
             if manager_right is not None:
                 try:
@@ -378,10 +390,9 @@ def set_processes_to_user(process_list: list[str], user_id: int, logger=None):
                             new_process_access_user.source = ProcessAccessUser.SOURCE_USER
                             db.session.add(new_process_access_user)
                             db.session.flush()
-                        else:
-                            if process_access_user.right_id is not manager_right.id:
-                                process_access_user.right = manager_right.id
-                                db.session.flush()
+                        elif process_access_user.right_id is not manager_right.id:
+                            process_access_user.right = manager_right.id
+                            db.session.flush()
                     db.session.commit()
 
                 except Exception as ex:
