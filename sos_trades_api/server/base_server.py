@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/06/13 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/06/25 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -986,7 +986,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
                              "http://localhost:4200")
         response.headers.add("Access-Control-Allow-Credentials", "true")
         response.headers.add("Access-Control-Allow-Headers",
-                             'Content-Type,Authorization,Set-Cookie,Cookie,Cache-Control,Pragma,Expires')  # noqa
+                             'Content-Type,Authorization,Set-Cookie,Cookie,Cache-Control,Pragma,Expires')
         response.headers.add("Access-Control-Allow-Methods",
                              "GET,PUT,POST,DELETE")
 

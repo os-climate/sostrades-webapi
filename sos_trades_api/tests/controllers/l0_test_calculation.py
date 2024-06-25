@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/03/06-2024/06/24 Copyright 2024 Capgemini
+Modifications on 2024/03/06-2024/06/25 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -196,8 +196,8 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
-            stop_calculation,
             get_calculation_dashboard,
+            stop_calculation,
         )
         from sos_trades_api.models.database_models import (
             StudyCase,
