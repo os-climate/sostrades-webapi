@@ -21,7 +21,7 @@ import psutil
 
 from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data.study_case_controller import get_study_case_allocation
-from sos_trades_api.models.database_models import StudyCaseExecution, StudyCase
+from sos_trades_api.models.database_models import StudyCaseExecution, PodAllocation
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_get_pod_info
 
@@ -70,18 +70,18 @@ class ExecutionMetrics:
                     config = Config()
                     print(f"config => : {config.execution_strategy}")
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                        study_case_allocation = get_study_case_allocation(study_case_execution.study_case_id)
+                        study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
+                                                        ).first()
                         print(f'pod allocation => : pod name {study_case_allocation.kubernetes_pod_name} + namespace {study_case_allocation.kubernetes_pod_namespace}')
                         # Retrieve memory and cpu from kubernetes
                         result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
                         print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
-                        # Retrieve study case from database
-                        study_case = StudyCase.query.filter(StudyCase.id.like(study_case_execution.study_case_id)).first()
 
                         # Retrieve limits of pod from config
                         cpu_limits = ''
                         memory_limits = ''
-                        pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case.execution_pod_flavor]["limits"]
+                        pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
                             cpu_limits = pod_execution_limit_from_config["cpu"]
                             memory_limits = pod_execution_limit_from_config["memory"]
