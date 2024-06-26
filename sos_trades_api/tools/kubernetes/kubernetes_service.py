@@ -326,14 +326,15 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                     plural="pods",
                     async_req=True
                 )
-                # Attente que la requête asynchrone soit terminée
+
+                time.sleep(5)
                 while not async_request.ready():
-                    print("Attente des métriques...")
+                    print("Waiting metric...")
                     time.sleep(1)
 
                 resources = async_request.get()
+                print(resources["items"])
 
-                # Recherche des métriques pour le pod cible
                 pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
                 print(pod_searched)
                 if len(pod_searched) > 0:
@@ -341,7 +342,6 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                         filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
 
                     # Retrieve memory usage and convert it to GB
-
                     pod_memory_kib = round(
                         float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))), 2)
                     pod_memory_gib = pod_memory_kib / (1024 * 1024)
