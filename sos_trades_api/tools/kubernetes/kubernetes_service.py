@@ -330,7 +330,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
             result["cpu"] = pod_cpu
             result["memory"] = pod_memory_gb
         else:
-            print({resources["items"]})
+            print(resources["items"])
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
