@@ -83,8 +83,7 @@ class ExecutionMetrics:
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
                             # Retrieve only numbers of limits
                             cpu_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["cpu"])))
-                            memory_limits_gb = pod_execution_limit_from_config["memory"]/8
-                            memory_limits = str(''.join(re.findall(r'\d+', memory_limits_gb)))
+                            memory_limits = str(int(''.join(re.findall(r'\d+', pod_execution_limit_from_config["memory"])))/8)
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
                         memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
