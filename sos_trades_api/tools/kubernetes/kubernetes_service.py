@@ -327,10 +327,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                     async_req=True
                 )
 
-                time.sleep(5)
-                while not async_request.ready():
-                    print("Waiting metric...")
-                    time.sleep(1)
+                time.sleep(2)
 
                 resources = async_request.get()
                 print(resources["items"])
