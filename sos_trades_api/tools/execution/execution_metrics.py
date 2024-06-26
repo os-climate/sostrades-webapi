@@ -16,7 +16,7 @@ limitations under the License.
 '''
 import threading
 import time
-
+import re
 import psutil
 
 from sos_trades_api.config import Config
@@ -81,8 +81,9 @@ class ExecutionMetrics:
                         memory_limits = ''
                         pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
-                            cpu_limits = pod_execution_limit_from_config["cpu"]
-                            memory_limits = pod_execution_limit_from_config["memory"]
+                            # Retrieve only numbers of limits
+                            cpu_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["cpu"])))
+                            memory_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["memory"])))
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
                         memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
