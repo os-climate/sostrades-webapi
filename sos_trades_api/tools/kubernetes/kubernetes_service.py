@@ -305,7 +305,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
         "cpu": "----",
         "memory": "----",
     }
-    max_wait_time = 10  # second
+    max_wait_time = 15  # second
     wait_time = 0
     polling_interval = 1
 
