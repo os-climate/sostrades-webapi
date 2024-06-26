@@ -68,25 +68,24 @@ class ExecutionMetrics:
                     config = Config()
                     print(f"config => : {config.execution_strategy}")
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
-                        if study_case_execution.execution_status == StudyCaseExecution.RUNNING:
-                            study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
-                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
-                                                            ).first()
-                            print(f'pod allocation => : pod name {study_case_allocation.kubernetes_pod_name} + namespace {study_case_allocation.kubernetes_pod_namespace}')
-                            # Retrieve memory and cpu from kubernetes
-                            result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
-                            print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
+                        study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
+                                                        PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
+                                                        ).first()
+                        print(f'pod allocation => : pod name {study_case_allocation.kubernetes_pod_name} + namespace {study_case_allocation.kubernetes_pod_namespace}')
+                        # Retrieve memory and cpu from kubernetes
+                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
+                        print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
 
-                            # Retrieve limits of pod from config
-                            cpu_limits = ''
-                            memory_limits = ''
-                            pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
-                            if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
-                                cpu_limits = pod_execution_limit_from_config["cpu"]
-                                memory_limits = pod_execution_limit_from_config["memory"]
+                        # Retrieve limits of pod from config
+                        cpu_limits = ''
+                        memory_limits = ''
+                        pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
+                        if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
+                            cpu_limits = pod_execution_limit_from_config["cpu"]
+                            memory_limits = pod_execution_limit_from_config["memory"]
 
-                            cpu_metric = f'{result["cpu"]}/{cpu_limits}'
-                            memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
+                        cpu_metric = f'{result["cpu"]}/{cpu_limits}'
+                        memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
 
                     else:
                         # Check environment info

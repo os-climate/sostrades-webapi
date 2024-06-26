@@ -312,22 +312,25 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
     try:
         api = client.CustomObjectsApi()
         resources = api.list_namespaced_custom_object(group="metrics.k8s.io", version="v1beta1",
-                                                        namespace=pod_namespace, plural="pods")
-        print(resources["items"])
+                                                      namespace=pod_namespace, plural="pods")
+
         pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
         print(pod_searched)
-        pod_cpu = round(float("".join(
-            filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
+        if len(pod_searched) > 0:
+            pod_cpu = round(float("".join(
+                filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
 
-        # Retrieve memory usage and convert it to GB
+            # Retrieve memory usage and convert it to GB
 
-        pod_memory_kib = round(float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))),2)
-        pod_memory_gib = pod_memory_kib / (1024 * 1024)
-        gigabyte = 1.073741824
-        pod_memory_gb = pod_memory_gib * gigabyte
+            pod_memory_kib = round(float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))),2)
+            pod_memory_gib = pod_memory_kib / (1024 * 1024)
+            gigabyte = 1.073741824
+            pod_memory_gb = pod_memory_gib * gigabyte
 
-        result["cpu"] = pod_cpu
-        result["memory"] = pod_memory_gb
+            result["cpu"] = pod_cpu
+            result["memory"] = pod_memory_gb
+        else:
+            print({resources["items"]})
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
