@@ -305,6 +305,10 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
         "cpu": "----",
         "memory": "----",
     }
+    max_wait_time = 10  # second
+    wait_time = 0
+    polling_interval = 1
+
     # Create k8 api client object
     kubernetes_load_kube_config()
     try:
@@ -319,37 +323,46 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                 break
         if target_pod:
             if target_pod.status.phase == "Running":
-                async_request = api.list_namespaced_custom_object(
-                    group="metrics.k8s.io",
-                    version="v1beta1",
-                    namespace=pod_namespace,
-                    plural="pods",
-                    async_req=True
-                )
+                while wait_time < max_wait_time:
+                    async_request = api.list_namespaced_custom_object(
+                        group="metrics.k8s.io",
+                        version="v1beta1",
+                        namespace=pod_namespace,
+                        plural="pods",
+                        async_req=True
+                    )
 
-                time.sleep(2)
-                while not async_request.ready():
-                    print("Waiting metric...")
-                    time.sleep(1)
+                    while not async_request.ready():
+                        print("Waiting metric...")
+                        time.sleep(1)
+                    print(f"Status: {target_pod.status.phase} - Name container: {target_pod.status.container_statuses[0].name}")
 
-                resources = async_request.get()
-                print(resources["items"])
+                    resources = async_request.get()
+                    print(resources["items"])
 
-                pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-                print(pod_searched)
-                if len(pod_searched) > 0:
-                    pod_cpu = round(float("".join(
-                        filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
+                    pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
+                    print(pod_searched)
+                    if len(pod_searched) > 0:
+                        pod_cpu = round(float("".join(
+                            filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
 
-                    # Retrieve memory usage and convert it to GB
-                    pod_memory_kib = round(
-                        float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))), 2)
-                    pod_memory_gib = pod_memory_kib / (1024 * 1024)
-                    gigabyte = 1.073741824
-                    pod_memory_gb = pod_memory_gib * gigabyte
+                        # Retrieve memory usage and convert it to GB
+                        pod_memory_kib = round(
+                            float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))), 2)
+                        pod_memory_gib = pod_memory_kib / (1024 * 1024)
+                        gigabyte = 1.073741824
+                        pod_memory_gb = pod_memory_gib * gigabyte
 
-                    result["cpu"] = pod_cpu
-                    result["memory"] = pod_memory_gb
+                        result["cpu"] = pod_cpu
+                        result["memory"] = pod_memory_gb
+                        break
+                    else:
+                        time.sleep(polling_interval)
+                        wait_time += polling_interval
+
+                if wait_time >= max_wait_time:
+                    print(f"Max wait time {max_wait_time}s exceeded. Pod not found or not running.")
+
             else:
                 print(f" {pod_name} is not running. Status: {target_pod.status.phase}")
         else:
