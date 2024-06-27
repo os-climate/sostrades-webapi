@@ -346,12 +346,12 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                         pod_cpu = round(float("".join(
                             filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
 
-                        # Retrieve memory usage and convert it to GB
+                        # Retrieve memory usage and convert it to gigabit
                         pod_memory_kib = round(
                             float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))), 2)
                         pod_memory_gib = pod_memory_kib / (1024 * 1024)
-                        gigabyte = 1.073741824
-                        pod_memory_gb = pod_memory_gib * gigabyte
+
+                        pod_memory_gb = pod_memory_gib / 8
 
                         result["cpu"] = pod_cpu
                         result["memory"] = round(pod_memory_gb, 2)
