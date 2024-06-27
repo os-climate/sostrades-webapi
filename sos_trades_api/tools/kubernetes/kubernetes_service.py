@@ -354,7 +354,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                         pod_memory_gb = pod_memory_gib * gigabyte
 
                         result["cpu"] = pod_cpu
-                        result["memory"] = pod_memory_gb
+                        result["memory"] = round(pod_memory_gb, 2)
                         break
                     else:
                         time.sleep(polling_interval)

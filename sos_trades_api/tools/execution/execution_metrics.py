@@ -77,14 +77,21 @@ class ExecutionMetrics:
                         print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
 
                         # Retrieve limits of pod from config
-                        cpu_limits = ''
-                        memory_limits = ''
+                        cpu_limits = 'Not found from configuration'
+                        memory_limits = 'Not found from configuration'
                         pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
                             print(f"memory limit from config {pod_execution_limit_from_config['memory']}")
+
                             # Retrieve only numbers of limits
+                            memory_limits_from_config = pod_execution_limit_from_config["memory"]
+                            if "Mi" in memory_limits_from_config:
+                                convert_to_gb = 1024
+                            else:
+                                convert_to_gb = 8
+                            memory_limits = str(int(''.join(re.findall(r'\d+', memory_limits_from_config))) / convert_to_gb)
+
                             cpu_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["cpu"])))
-                            memory_limits = str(int(''.join(re.findall(r'\d+', pod_execution_limit_from_config["memory"])))/8)
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
                         memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
