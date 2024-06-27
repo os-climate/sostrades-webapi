@@ -58,9 +58,11 @@ class ExecutionMetrics:
         """
         # Infinite loop
         # The database connection is kept open
+        count_retry = 0
         while self.__started:
             # Add an exception manager to ensure that database eoor will not
             # shut down calculation
+            count_retry += 1
             try:
                 # Open a database context
                 with app.app_context():
@@ -118,3 +120,4 @@ class ExecutionMetrics:
                 # Wait 2 seconds before next metrics
                 if self.__started:
                     time.sleep(2)
+        print(f"retry = {count_retry}")
