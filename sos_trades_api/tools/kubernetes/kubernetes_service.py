@@ -305,7 +305,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
         "cpu": "----",
         "memory": "----",
     }
-    max_wait_time = 15  # second
+    max_wait_time = 20  # second
     wait_time = 0
     polling_interval = 1
 
@@ -333,15 +333,10 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                     )
 
                     while not async_request.ready():
-                        print("Waiting metric...")
                         time.sleep(1)
-                    print(f"Status: {target_pod.status.phase} - Name container: {target_pod.status.container_statuses[0].name}")
 
                     resources = async_request.get()
-                    print(resources["items"])
-
                     pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-                    print(pod_searched)
                     if len(pod_searched) > 0:
                         pod_cpu = round(float("".join(
                             filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
@@ -367,27 +362,6 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
                 print(f" {pod_name} is not running. Status: {target_pod.status.phase}")
         else:
             print(f"{pod_name} pod not found")
-
-        # resources = api.list_namespaced_custom_object(group="metrics.k8s.io", version="v1beta1",
-        #                                               namespace=pod_namespace, plural="pods")
-        #
-        # pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-        # print(pod_searched)
-        # if len(pod_searched) > 0:
-        #     pod_cpu = round(float("".join(
-        #         filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
-        #
-        #     # Retrieve memory usage and convert it to GB
-        #
-        #     pod_memory_kib = round(float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))),2)
-        #     pod_memory_gib = pod_memory_kib / (1024 * 1024)
-        #     gigabyte = 1.073741824
-        #     pod_memory_gb = pod_memory_gib * gigabyte
-        #
-        #     result["cpu"] = pod_cpu
-        #     result["memory"] = pod_memory_gb
-        # else:
-        #     print(resources["items"])
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
