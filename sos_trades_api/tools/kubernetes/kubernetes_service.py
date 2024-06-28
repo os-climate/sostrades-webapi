@@ -20,6 +20,7 @@ import urllib3
 from kubernetes import client, config, watch
 
 from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.code_tools import convert_bit_into_byte, extract_number_and_unit
 
 """
 Execution engine kubernete
@@ -291,7 +292,7 @@ def kubernetes_load_kube_config():
                 raise ExecutionEngineKuberneteError(message)
 
 
-def kubernetes_get_pod_info(pod_name, pod_namespace):
+def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_target: str):
     """
     get pod usage info like cpu and memory
     :param pod_name: unique name of the pod => metadata.name
@@ -299,6 +300,10 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
 
     :param pod_namespace: namespace where is the pod
     :type pod_namespace: str
+
+    :param unit_byte_target: unit in byte targeted
+    :type unit_byte_target: str
+
     :return: dict with cpu usage (number of cpu) and memory usage (Go)
     """
     result = {
@@ -312,56 +317,42 @@ def kubernetes_get_pod_info(pod_name, pod_namespace):
     # Create k8 api client object
     kubernetes_load_kube_config()
     try:
-        v1 = client.CoreV1Api()
         api = client.CustomObjectsApi()
-        pods = v1.list_namespaced_pod(pod_namespace)
 
-        target_pod = None
-        for pod in pods.items:
-            if pod.metadata.name == pod_name:
-                target_pod = pod
+        while wait_time < max_wait_time:
+            async_request = api.list_namespaced_custom_object(
+                group="metrics.k8s.io",
+                version="v1beta1",
+                namespace=pod_namespace,
+                plural="pods",
+                async_req=True
+            )
+
+            while not async_request.ready():
+                time.sleep(1)
+
+            resources = async_request.get()
+            pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
+            if len(pod_searched) > 0:
+
+                # Retrieve cpu (in nanocores) and unit and convert it in CPU
+                pod_cpu_nanocores, pod_cpu_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["cpu"])
+                pod_cpu = round(pod_cpu_nanocores / 1e9, 2)
+
+                # Retrieve memory usage and convert it to gigabit
+                pod_memory_kib, pod_memory_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["memory"])
+
+                pod_memory_converted = convert_bit_into_byte(pod_memory_kib, pod_memory_unit, unit_byte_target)
+
+                result["cpu"] = pod_cpu
+                result["memory"] = round(pod_memory_converted, 2)
                 break
-        if target_pod:
-            if target_pod.status.phase == "Running":
-                while wait_time < max_wait_time:
-                    async_request = api.list_namespaced_custom_object(
-                        group="metrics.k8s.io",
-                        version="v1beta1",
-                        namespace=pod_namespace,
-                        plural="pods",
-                        async_req=True
-                    )
-
-                    while not async_request.ready():
-                        time.sleep(1)
-
-                    resources = async_request.get()
-                    pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-                    if len(pod_searched) > 0:
-                        pod_cpu = round(float("".join(
-                            filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
-
-                        # Retrieve memory usage and convert it to gigabit
-                        pod_memory_kib = round(
-                            float("".join(filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))), 2)
-                        pod_memory_gib = pod_memory_kib / (1024 * 1024)
-
-                        pod_memory_gb = pod_memory_gib / 8
-
-                        result["cpu"] = pod_cpu
-                        result["memory"] = round(pod_memory_gb, 2)
-                        break
-                    else:
-                        time.sleep(polling_interval)
-                        wait_time += polling_interval
-
-                if wait_time >= max_wait_time:
-                    print(f"Max wait time {max_wait_time}s exceeded. Pod not found or not running.")
-
             else:
-                print(f" {pod_name} is not running. Status: {target_pod.status.phase}")
-        else:
-            print(f"{pod_name} pod not found")
+                time.sleep(polling_interval)
+                wait_time += polling_interval
+
+        if wait_time >= max_wait_time:
+            print(f"Max wait time {max_wait_time}s  to load metrics exceeded")
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
@@ -431,13 +422,13 @@ def watch_pod_events(logger, namespace):
                 event['object']['metadata']['name'].startswith('generation') :
 
                 yield event
-                
+
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
         #time out, the watcher will be restarted
         pass
 
-        
+
 
 def get_pod_name_from_event(event):
     return event["object"]["metadata"]["name"]
