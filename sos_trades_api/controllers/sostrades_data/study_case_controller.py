@@ -851,7 +851,7 @@ def create_new_notification_after_update_parameter(study_id, change_type, coedit
         # Determine the coedition message based on the type
         if change_type == StudyCaseChange.DATASET_MAPPING_CHANGE and user_coedition_action == UserCoeditionAction.SAVE:
             coedition_message = CoeditionMessage.IMPORT_DATASET
-        if change_type == StudyCaseChange.DATASET_MAPPING_EXPORT and user_coedition_action == UserCoeditionAction.EXPORT:
+        elif change_type == StudyCaseChange.DATASET_MAPPING_EXPORT and user_coedition_action == UserCoeditionAction.EXPORT:
             coedition_message = CoeditionMessage.EXPORT_DATASET
         else:
             coedition_message = CoeditionMessage.SAVE
