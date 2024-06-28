@@ -22,6 +22,7 @@ import psutil
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import StudyCaseExecution, PodAllocation
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.code_tools import extract_number_and_unit, convert_bit_into_byte
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_get_pod_info
 
 """
@@ -58,45 +59,46 @@ class ExecutionMetrics:
         """
         # Infinite loop
         # The database connection is kept open
-        count_retry = 0
         while self.__started:
             # Add an exception manager to ensure that database eoor will not
             # shut down calculation
-            count_retry += 1
             try:
                 # Open a database context
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
                     config = Config()
-                    print(f"config => : {config.execution_strategy}")
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
                         study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
                                                         PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
                                                         ).first()
-                        print(f'pod allocation => : pod name {study_case_allocation.kubernetes_pod_name} + namespace {study_case_allocation.kubernetes_pod_namespace}')
-                        # Retrieve memory and cpu from kubernetes
-                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace)
-                        print(f'result from kubernetes => : cpu {result["cpu"]} + memory {result["memory"]}')
 
                         # Retrieve limits of pod from config
                         cpu_limits = 'Not found from configuration'
                         memory_limits = 'Not found from configuration'
+                        unit_byte_target = "GB"
                         pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
+
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
-                            print(f"memory limit from config {pod_execution_limit_from_config['memory']}")
-
-                            # Retrieve only numbers of limits
-                            memory_limits_from_config = pod_execution_limit_from_config["memory"]
-                            if "Mi" in memory_limits_from_config:
-                                convert_to_gb = 1024
-                            else:
-                                convert_to_gb = 8
-                            memory_limits = str(int(''.join(re.findall(r'\d+', memory_limits_from_config))) / convert_to_gb)
-
+                            # CPU limits
                             cpu_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["cpu"])))
+                            # Retrieve and convert memory limits
+                            memory_limits_from_config = pod_execution_limit_from_config["memory"]
+
+                            if "mi" in memory_limits_from_config.lower():
+                                unit_byte_target = "MB"
+
+                            # Retrieve and extract limit and its unit
+                            memory_limits_bit, memory_limits_unit_bit = extract_number_and_unit(memory_limits_from_config)
+                            memory_limits_byte_converted = convert_bit_into_byte(memory_limits_bit, memory_limits_unit_bit,
+                                                                                 unit_byte_target)
+                            if memory_limits_byte_converted is not None:
+                                memory_limits = round(memory_limits_byte_converted, 2)
+
+                        # Retrieve memory and cpu from kubernetes
+                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_target)
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
-                        memory_metric = f'{result["memory"]}/{memory_limits} [GB]'
+                        memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_target}]'
 
                     else:
                         # Check environment info
@@ -120,4 +122,3 @@ class ExecutionMetrics:
                 # Wait 2 seconds before next metrics
                 if self.__started:
                     time.sleep(2)
-        print(f"retry = {count_retry}")

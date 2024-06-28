@@ -17,6 +17,7 @@ limitations under the License.
 
 import logging
 import os
+import re
 from time import time
 from typing import Optional
 
@@ -112,3 +113,76 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     app.logger.debug(f"Done parsing logs {file_name}.")
     return lines
+
+
+def convert_bit_into_byte(bit: float, unit_bit: str, unit_byte: str) -> float:
+    """
+        Convert a given amount of bits into bytes based on specified units.
+
+        :param bit: The amount of bits to convert.
+        :type bit: float
+        :param unit_bit: The unit of the input bit value.
+        :type unit_bit: str
+        :param unit_byte: The unit of the output byte value.
+        :type unit_byte: str
+        :return: The converted value in bytes.
+        :rtype: float
+        """
+
+    byte = None
+
+    # Conversion factors
+    kibibit_to_megabyte = 1 / (8 * 1024)
+    kibibit_to_gigabyte = 1 / (8 * 1024 * 1024)
+    megabit_to_megabyte = 1 / 8
+    megabit_to_gigabyte = 1 / (8 * 1024)
+    gigabit_to_gigabyte = 1 / 8
+
+    if unit_bit.lower() == "mi" or unit_bit.lower() == "megabit":
+
+        # Convert Megabit to Megabyte
+        if unit_byte.lower() == "mb" or unit_bit.lower() == "megabyte":
+            byte = bit * megabit_to_megabyte
+
+        # Convert Megabit to Gigabyte
+        elif unit_byte == "gb" or unit_byte.lower() == "gigabyte":
+            byte = bit * megabit_to_gigabyte
+
+    elif unit_bit.lower() == "gi" or unit_bit.lower() == "gigabit":
+
+        # Convert Gigabit to Gigabyte
+        if unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
+            byte = bit * gigabit_to_gigabyte
+
+    elif unit_bit.lower() == "ki" or unit_bit.lower() == "kibibit":
+        # Convert kibibit to Megabyte
+        if unit_byte.lower() == "mb" or unit_byte.lower() == "megabyte":
+            byte = bit * kibibit_to_megabyte
+
+        # Convert kibibit to Gigabyte
+        elif unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
+            byte = bit * kibibit_to_gigabyte
+
+    return byte
+
+
+def extract_number_and_unit(input_string: str) -> tuple:
+    """
+    Extracts the number and unit from a given string.
+
+    Args:
+    input_string (str): The string from which to extract the number.
+
+    :return: A tuple containing the number and the unit.
+    :rtype: tuple (number: int, unit: str)
+    """
+
+    # Use a regular expression to extract the number and the unit
+    match = re.match(r"(\d+)\s*([a-zA-Z]+)", input_string.strip())
+    if not match:
+        raise ValueError("The input string must contain both a number and a unit.")
+
+    number = int(match.group(1))
+    unit = match.group(2)
+
+    return number, unit
