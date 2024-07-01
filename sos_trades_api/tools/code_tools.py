@@ -178,11 +178,12 @@ def extract_number_and_unit(input_string: str) -> tuple:
     """
 
     # Use a regular expression to extract the number and the unit
-    match = re.match(r"(\d+)\s*([a-zA-Z]+)", input_string.strip())
+    match = re.match(r"(\d+[\.,]?\d*)\s*([a-zA-Z]+)", input_string.strip())
     if not match:
         raise ValueError("The input string must contain both a number and a unit.")
 
-    number = int(match.group(1))
+    # Replace comma with a dot to handle decimal numbers correctly
+    number = float(match.group(1).replace(',', '.'))
     unit = match.group(2)
 
     return number, unit
