@@ -64,6 +64,7 @@ class Config:
     CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
     CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
+    CONFIG_FLAVOR_POD_EXECUTION = "PodExec"
 
     def __init__(self):
         """
@@ -640,12 +641,12 @@ class Config:
 
             kubernetes_flavor = self.__server_config_file[self.CONFIG_FLAVOR_KUBERNETES]
 
-            if "PodExec" not in kubernetes_flavor.keys():
+            if self.CONFIG_FLAVOR_POD_EXECUTION not in kubernetes_flavor.keys():
                 raise KeyError("PodExec is not in CONFIG_FLAVOR_KUBERNETES")
 
-            self.__validate_flavor(kubernetes_flavor["PodExec"])
+            self.__validate_flavor(kubernetes_flavor[self.CONFIG_FLAVOR_POD_EXECUTION])
 
-            self.__kubernetes_flavor_for_exec = kubernetes_flavor["PodExec"]
+            self.__kubernetes_flavor_for_exec = kubernetes_flavor[self.CONFIG_FLAVOR_POD_EXECUTION]
 
         return self.__kubernetes_flavor_for_exec
 
