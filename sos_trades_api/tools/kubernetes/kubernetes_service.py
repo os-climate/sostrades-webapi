@@ -292,7 +292,7 @@ def kubernetes_load_kube_config():
                 raise ExecutionEngineKuberneteError(message)
 
 
-def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_target: str):
+def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: str):
     """
     get pod usage info like cpu and memory
     :param pod_name: unique name of the pod => metadata.name
@@ -301,8 +301,8 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_target: str):
     :param pod_namespace: namespace where is the pod
     :type pod_namespace: str
 
-    :param unit_byte_target: unit in byte targeted
-    :type unit_byte_target: str
+    :param unit_byte_to_conversion: unit in byte targeted
+    :type unit_byte_to_conversion: str
 
     :return: dict with cpu usage (number of cpu) and memory usage (Go)
     """
@@ -342,7 +342,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_target: str):
                 # Retrieve memory usage and convert it to gigabit
                 pod_memory_kib, pod_memory_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["memory"])
 
-                pod_memory_converted = convert_bit_into_byte(pod_memory_kib, pod_memory_unit, unit_byte_target)
+                pod_memory_converted = convert_bit_into_byte(pod_memory_kib, pod_memory_unit, unit_byte_to_conversion)
 
                 result["cpu"] = pod_cpu
                 result["memory"] = round(pod_memory_converted, 2)

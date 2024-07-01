@@ -73,10 +73,10 @@ class ExecutionMetrics:
                                                         ).first()
 
                         # Retrieve limits of pod from config
-                        cpu_limits = 'Not found from configuration'
-                        memory_limits = 'Not found from configuration'
-                        unit_byte_target = "GB"
-                        pod_execution_limit_from_config = app.config["CONFIG_FLAVOR_KUBERNETES"]["PodExec"][study_case_allocation.flavor]["limits"]
+                        cpu_limits = '----'
+                        memory_limits = '----'
+                        unit_byte_to_conversion = "GB"
+                        pod_execution_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]
 
                         if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
                             # CPU limits
@@ -85,20 +85,20 @@ class ExecutionMetrics:
                             memory_limits_from_config = pod_execution_limit_from_config["memory"]
 
                             if "mi" in memory_limits_from_config.lower():
-                                unit_byte_target = "MB"
+                                unit_byte_to_conversion = "MB"
 
                             # Retrieve and extract limit and its unit
                             memory_limits_bit, memory_limits_unit_bit = extract_number_and_unit(memory_limits_from_config)
                             memory_limits_byte_converted = convert_bit_into_byte(memory_limits_bit, memory_limits_unit_bit,
-                                                                                 unit_byte_target)
+                                                                                 unit_byte_to_conversion)
                             if memory_limits_byte_converted is not None:
                                 memory_limits = round(memory_limits_byte_converted, 2)
 
                         # Retrieve memory and cpu from kubernetes
-                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_target)
+                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion)
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
-                        memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_target}]'
+                        memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_to_conversion}]'
 
                     else:
                         # Check environment info
