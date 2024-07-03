@@ -53,5 +53,51 @@ def read_object_in_json_file(file_path):
     return result
 
 
+def retrieve_contain_from_file(file_path: str) -> list:
+    """
+       :Summary:
+           Open a file and return its lines.
+
+       :Args:
+           file_path (str): Path of file
+
+       :Return: Lines of this file.
+           :rtype: list
+       """
+    if file_path is not None and len(file_path.strip()) > 0:
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
+                if len(lines) > 0:
+                    return lines
+                else:
+                    raise FileExistsError(f"The file '{file_path}' is empty.")
+        else:
+            FileNotFoundError(f"The file '{file_path}' not found.")
+    else:
+        raise ValueError("The path cannot be none or empty.")
+
+
+def get_cpu_usage_from_file(cpu_stat_path: str):
+    """
+        :Summary:
+           Reads the CPU usage statistics from the specified cgroup CPU stat file.
+           This function opens the given file, reads its content, and extracts the
+           'usage_usec' value which represents the total CPU time consumed by tasks
+           in this cgroup in microseconds.
+
+       :Args:
+           cpu_stat_path (str): The file path to the cgroup CPU stat file.
+
+       :Returns:
+           int: The total CPU usage in microseconds.
+
+       """
+    cpu_line = retrieve_contain_from_file(cpu_stat_path)
+    cpu_stat = {}
+    for line in cpu_line:
+        key, value = line.split()
+        cpu_stat[key] = int(value)
+    return cpu_stat['usage_usec']
 
 

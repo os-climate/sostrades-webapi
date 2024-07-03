@@ -115,15 +115,15 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     return lines
 
 
-def convert_byte_into_byte_unit_targeted(byte: float, unit_bibit: str, unit_byte: str) -> float:
+def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: str, unit_bytes: str) -> float:
     """
     :Summary:
         Convert a given amount of bits into bytes based on specified units.
 
     :Args:
-        byte (float): The amount of bits to convert.
-        unit_bit (str): The unit of the input bit value.
-        unit_byte (str): The unit of the output byte value.
+        bytes_to_convert (float): The amount of bytes to convert.
+        unit_source (str): The unit of source bytes.
+        unit_bytes (str): The unit to convert bytes.
 
     :Return: The converted value in bytes.
         :rtype: float
@@ -132,36 +132,59 @@ def convert_byte_into_byte_unit_targeted(byte: float, unit_bibit: str, unit_byte
     byte_converted = None
 
     # Conversion factors
-    kibibit_to_megabit = 1 / 976.6
-    kibibit_to_gigabit = 1 / 976600
-    mebibit_to_megabit = 1.049
-    mebibit_to_gigabit = 1 / 953.7
-    gibibit_to_gigabit = 1.074
+    bytes_to_megabyte = 1 / (1024 * 1024)
+    bytes_to_gigabyte = 1 / (1024 * 1024 * 1024)
+    kibibytes_to_megabytes = 1024/1000/1000
+    kibibytes_to_gigabytes = 1024/1000/1000/1000
+    mebibytes_to_megabytes = 1024*1024/1000/1000
+    mebibytes_to_gigabytes = 1024*1024/1000/1000/1000
+    gibibytes_to_gigabytes = 1024*1024*1024/1000/1000/1000
 
-    if unit_bibit.lower() == "mi" or unit_bibit.lower() == "megabit":
+    if unit_source.lower() == "byte":
+        # Convert byte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * bytes_to_megabyte
 
-        # Convert Megabit to Megabyte
-        if unit_byte.lower() == "mb" or unit_bibit.lower() == "megabyte":
-            byte_converted = byte * mebibit_to_megabit
+        # Convert v to Gigabyte
+        elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * bytes_to_gigabyte
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
 
-        # Convert Megabit to Gigabyte
-        elif unit_byte == "gb" or unit_byte.lower() == "gigabyte":
-            byte_converted = byte * mebibit_to_gigabit
+    elif unit_source.lower() == "ki" or unit_source.lower() == "kibibyte":
+        # Convert kibibyte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * kibibytes_to_megabytes
 
-    elif unit_bibit.lower() == "gi" or unit_bibit.lower() == "gigabit":
+        # Convert kibibyte to Gigabyte
+        elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * kibibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
 
-        # Convert Gigabit to Gigabyte
-        if unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
-            byte_converted = byte * gibibit_to_gigabit
+    elif unit_source.lower() == "mi" or unit_source.lower() == "mebibyte":
 
-    elif unit_bibit.lower() == "ki" or unit_bibit.lower() == "kibibit":
-        # Convert kibibit to Megabyte
-        if unit_byte.lower() == "mb" or unit_byte.lower() == "megabyte":
-            byte_converted = byte * kibibit_to_megabit
+        # Convert Megabyte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * mebibytes_to_megabytes
 
-        # Convert kibibit to Gigabyte
-        elif unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
-            byte_converted = byte * kibibit_to_gigabit
+        # Convert Megabyte to Gigabyte
+        elif unit_bytes == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * mebibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+    elif unit_source.lower() == "gi" or unit_source.lower() == "gibibyte":
+
+        # Convert Gigabyte to Gigabyte
+        if unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * gibibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+
+    else:
+        raise ValueError(f'Unit {unit_source} is not handled')
 
     return byte_converted
 
@@ -188,3 +211,4 @@ def extract_number_and_unit(input_string: str) -> tuple:
     unit = match.group(2)
 
     return number, unit
+
