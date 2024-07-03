@@ -81,7 +81,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `PyYAML (6.0.1) <https://pyyaml.org/>`_
     MIT
 
-`requests (2.31.0) <https://requests.readthedocs.io>`_
+`requests (2.32.3) <https://requests.readthedocs.io>`_
     Apache 2.0
 
 `simplejson (3.19.2) <https://github.com/simplejson/simplejson>`_
