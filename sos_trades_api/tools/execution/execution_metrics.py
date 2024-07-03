@@ -22,7 +22,7 @@ import psutil
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import StudyCaseExecution, PodAllocation
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.code_tools import extract_number_and_unit, convert_bit_into_byte
+from sos_trades_api.tools.code_tools import extract_number_and_unit, convert_byte_into_byte_unit_targeted
 from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_get_pod_info
 
 """
@@ -59,11 +59,13 @@ class ExecutionMetrics:
         """
         # Infinite loop
         # The database connection is kept open
+        count_retry = 0
         while self.__started:
             # Add an exception manager to ensure that database eoor will not
             # shut down calculation
             try:
                 # Open a database context
+                count_retry += 1
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
                     config = Config()
@@ -76,20 +78,19 @@ class ExecutionMetrics:
                         cpu_limits = '----'
                         memory_limits = '----'
                         unit_byte_to_conversion = "GB"
-                        pod_execution_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]
+                        pod_exec_memory_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]["memory"]
+                        pod_exec_cpu_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]["cpu"]
 
-                        if pod_execution_limit_from_config is not None and pod_execution_limit_from_config["cpu"] is not None and pod_execution_limit_from_config["memory"]:
+                        if pod_exec_memory_limit_from_config is not None and pod_exec_cpu_limit_from_config:
                             # CPU limits
-                            cpu_limits = str(''.join(re.findall(r'\d+', pod_execution_limit_from_config["cpu"])))
+                            cpu_limits = str(''.join(re.findall(r'\d+', pod_exec_cpu_limit_from_config)))
                             # Retrieve and convert memory limits
-                            memory_limits_from_config = pod_execution_limit_from_config["memory"]
-
-                            if "mi" in memory_limits_from_config.lower():
+                            if "mi" in pod_exec_memory_limit_from_config.lower():
                                 unit_byte_to_conversion = "MB"
 
                             # Retrieve and extract limit and its unit
-                            memory_limits_bit, memory_limits_unit_bit = extract_number_and_unit(memory_limits_from_config)
-                            memory_limits_byte_converted = convert_bit_into_byte(memory_limits_bit, memory_limits_unit_bit,
+                            memory_limits_bit, memory_limits_unit_bit = extract_number_and_unit(pod_exec_memory_limit_from_config)
+                            memory_limits_byte_converted = convert_byte_into_byte_unit_targeted(memory_limits_bit, memory_limits_unit_bit,
                                                                                  unit_byte_to_conversion)
                             if memory_limits_byte_converted is not None:
                                 memory_limits = round(memory_limits_byte_converted, 2)
@@ -122,3 +123,5 @@ class ExecutionMetrics:
                 # Wait 2 seconds before next metrics
                 if self.__started:
                     time.sleep(2)
+
+        print(f"retry = {count_retry}")
