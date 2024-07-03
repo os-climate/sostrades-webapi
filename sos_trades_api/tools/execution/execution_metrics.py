@@ -59,13 +59,11 @@ class ExecutionMetrics:
         """
         # Infinite loop
         # The database connection is kept open
-        count_retry = 0
         while self.__started:
             # Add an exception manager to ensure that database eoor will not
             # shut down calculation
             try:
                 # Open a database context
-                count_retry += 1
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
                     config = Config()
@@ -95,11 +93,13 @@ class ExecutionMetrics:
                             if memory_limits_byte_converted is not None:
                                 memory_limits = round(memory_limits_byte_converted, 2)
 
-                        # Retrieve memory and cpu from kubernetes
-                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion, int(cpu_limits))
+                            # Retrieve memory and cpu from kubernetes
+                            result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion)
 
-                        cpu_metric = f'{result["cpu"]}/{cpu_limits}'
-                        memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_to_conversion}]'
+                            cpu_metric = f'{result["cpu"]}/{cpu_limits}'
+                            memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_to_conversion}]'
+                        else:
+                            raise ValueError('Limit from configuration not found')
 
                     else:
                         # Check environment info
@@ -123,5 +123,3 @@ class ExecutionMetrics:
                 # Wait 2 seconds before next metrics
                 if self.__started:
                     time.sleep(2)
-
-        print(f"retry = {count_retry}")

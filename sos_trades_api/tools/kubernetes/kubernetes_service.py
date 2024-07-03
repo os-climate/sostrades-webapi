@@ -294,7 +294,7 @@ def kubernetes_load_kube_config():
                 raise ExecutionEngineKuberneteError(message)
 
 
-def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conversion: str, cpu_limits: int) -> dict:
+def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conversion: str) -> dict:
     """
 
     :Summary:
@@ -310,10 +310,7 @@ def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conv
         dict of cpu usage and memory usage
     """
 
-    result = {
-        "cpu": "----",
-        "memory": "----",
-    }
+    result = {}
 
     # Create k8 api client object
     kubernetes_load_kube_config()
@@ -384,7 +381,7 @@ def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conv
                     memory_converted = convert_byte_into_byte_unit_targeted(bytes_value, "byte",
                                                                             unit_byte_to_conversion)
 
-                    result["memory"] = memory_converted
+                    result["memory"] = round(memory_converted, 2)
                     result["cpu"] = round(cpu_usage, 2)
 
                 return result
