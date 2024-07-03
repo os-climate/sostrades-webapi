@@ -18,9 +18,11 @@ import time
 from functools import partial
 import urllib3
 from kubernetes import client, config, watch
+from datetime import datetime
 
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.code_tools import convert_byte_into_byte_unit_targeted, extract_number_and_unit
+from sos_trades_api.tools.file_tools import get_cpu_usage_from_file, retrieve_contain_from_file
 
 """
 Execution engine kubernete
@@ -292,28 +294,26 @@ def kubernetes_load_kube_config():
                 raise ExecutionEngineKuberneteError(message)
 
 
-def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: str):
+def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conversion: str, cpu_limits: int) -> dict:
     """
-    get pod usage info like cpu and memory
-    :param pod_name: unique name of the pod => metadata.name
-    :type pod_name: str
 
-    :param pod_namespace: namespace where is the pod
-    :type pod_namespace: str
+    :Summary:
+           Get pod usage info like cpu and memory
 
-    :param unit_byte_to_conversion: unit in byte targeted
-    :type unit_byte_to_conversion: str
+    :Args:
+        pod_name (str): unique name of the pod => metadata.name
+        pod_namespace (str): namespace where is the pod
+        unit_byte_to_conversion (str) : unit in byte targeted
+        cpu_limits (int) : limit of cpu from configuration
 
-    :return: dict with cpu usage (number of cpu) and memory usage (Go)
+    :return:
+        dict of cpu usage and memory usage
     """
 
     result = {
         "cpu": "----",
         "memory": "----",
     }
-    max_wait_time = 20  # second
-    wait_time = 0
-    polling_interval = 1
 
     # Create k8 api client object
     kubernetes_load_kube_config()
@@ -330,17 +330,14 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: st
         if target_pod:
             print(f"pod '{target_pod.metadata.name}' is '{target_pod.status.phase}'")
             if target_pod.status.phase == "Running":
-
                 api = client.CustomObjectsApi()
-                async_request = api.list_namespaced_custom_object(
+                resources = api.list_namespaced_custom_object(
                     group="metrics.k8s.io",
                     version="v1beta1",
                     namespace=pod_namespace,
                     plural="pods",
-                    async_req=True
                 )
 
-                resources = async_request.get()
                 print(f"Pods list :{resources['items']}")
                 pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
                 if len(pod_searched) > 0:
@@ -357,44 +354,49 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: st
                     result["cpu"] = pod_cpu
                     result["memory"] = round(pod_memory_converted, 2)
 
+                    return result
+                else:
+                    cpu_stat_path = '/sys/fs/cgroup/cpu.stat'
+                    # First measurement
+                    start_time = datetime.now()
+                    start_usage_usec = get_cpu_usage_from_file(cpu_stat_path)
 
-            # # cgroup v1
-            # memory_current_path = "/sys/fs/cgroup/memory.current"
-            # cpu_stat_path = "/sys/fs/cgroup/cpu.stat"
-            #
-            # # Commande pour lire le fichier memory.current
-            # command_memory = ["cat", memory_current_path]
-            # command_cpu = ["cat", cpu_stat_path]
-            # from kubernetes.stream import stream
-            # # Exécuter la commande dans le pod
-            # response_memory = stream(v1.connect_get_namespaced_pod_exec,
-            #                   pod_name,
-            #                   pod_namespace,
-            #                   command=command_memory,
-            #                   stderr=True, stdin=False,
-            #                   stdout=True, tty=False)
-            # memory_converted = convert_byte_into_byte_unit_targeted(int(response_memory), "octet", unit_byte_to_conversion)
-            # response_cpu = stream(v1.connect_get_namespaced_pod_exec,
-            #                         pod_name,
-            #                         pod_namespace,
-            #                         command=command_cpu,
-            #                         stderr=True, stdin=False,
-            #                         stdout=True, tty=False)
-            # x = create_stat_dict(response_cpu)
-            # usage_usec = x['usage_usec']
-            #
-            #
-            # result["memory"] = round(memory_converted, 2)
-            # result["cpu"] = round(usage_usec / 1e6, 2)
+                    # Sleep for a short period
+                    time.sleep(0.5)
 
+                    # Second measurement
+                    end_time = datetime.now()
+                    end_usage_usec = get_cpu_usage_from_file(cpu_stat_path)
 
+                    # Calculate elapsed time in seconds
+                    elapsed_time_sec = (end_time - start_time).total_seconds()
+
+                    # Calculate CPU usage in seconds
+                    cpu_usage_seconds = (end_usage_usec - start_usage_usec) / 1e6
+
+                    # Calculate CPU usage percentage
+                    cpu_usage = cpu_usage_seconds / elapsed_time_sec
+
+                    # Retrieve memory from file system
+                    memory_path = "/sys/fs/cgroup/memory.current"
+                    memory_lines = retrieve_contain_from_file(memory_path)
+                    bytes_value = int(memory_lines[0])
+                    memory_converted = convert_byte_into_byte_unit_targeted(bytes_value, "byte",
+                                                                            unit_byte_to_conversion)
+
+                    result["memory"] = memory_converted
+                    result["cpu"] = round(cpu_usage, 2)
+
+                return result
+            else:
+                raise ExecutionEngineKuberneteError(f"Pod '{target_pod}' is not running. Status : {target_pod.status.phase}")
+        else:
+            raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' not found")
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
         app.logger.error(message)
         raise ExecutionEngineKuberneteError(message)
-
-    return result
 
 def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     """

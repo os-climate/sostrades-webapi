@@ -96,7 +96,7 @@ class ExecutionMetrics:
                                 memory_limits = round(memory_limits_byte_converted, 2)
 
                         # Retrieve memory and cpu from kubernetes
-                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion)
+                        result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion, int(cpu_limits))
 
                         cpu_metric = f'{result["cpu"]}/{cpu_limits}'
                         memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_to_conversion}]'
