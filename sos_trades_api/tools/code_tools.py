@@ -115,66 +115,67 @@ def file_tail(file_name, line_count, encoding="utf-8"):
     return lines
 
 
-def convert_bit_into_byte(bit: float, unit_bit: str, unit_byte: str) -> float:
+def convert_byte_into_byte_unit_targeted(byte: float, unit_bibit: str, unit_byte: str) -> float:
     """
+    :Summary:
         Convert a given amount of bits into bytes based on specified units.
 
-        :param bit: The amount of bits to convert.
-        :type bit: float
-        :param unit_bit: The unit of the input bit value.
-        :type unit_bit: str
-        :param unit_byte: The unit of the output byte value.
-        :type unit_byte: str
-        :return: The converted value in bytes.
-        :rtype: float
-        """
+    :Args:
+        byte (float): The amount of bits to convert.
+        unit_bit (str): The unit of the input bit value.
+        unit_byte (str): The unit of the output byte value.
 
-    byte = None
+    :Return: The converted value in bytes.
+        :rtype: float
+    """
+
+    byte_converted = None
 
     # Conversion factors
-    kibibit_to_megabyte = 1 / (8 * 1024)
-    kibibit_to_gigabyte = 1 / (8 * 1024 * 1024)
-    megabit_to_megabyte = 1 / 8
-    megabit_to_gigabyte = 1 / (8 * 1024)
-    gigabit_to_gigabyte = 1 / 8
+    kibibit_to_megabit = 1 / 976.6
+    kibibit_to_gigabit = 1 / 976600
+    mebibit_to_megabit = 1.049
+    mebibit_to_gigabit = 1 / 953.7
+    gibibit_to_gigabit = 1.074
 
-    if unit_bit.lower() == "mi" or unit_bit.lower() == "megabit":
+    if unit_bibit.lower() == "mi" or unit_bibit.lower() == "megabit":
 
         # Convert Megabit to Megabyte
-        if unit_byte.lower() == "mb" or unit_bit.lower() == "megabyte":
-            byte = bit * megabit_to_megabyte
+        if unit_byte.lower() == "mb" or unit_bibit.lower() == "megabyte":
+            byte_converted = byte * mebibit_to_megabit
 
         # Convert Megabit to Gigabyte
         elif unit_byte == "gb" or unit_byte.lower() == "gigabyte":
-            byte = bit * megabit_to_gigabyte
+            byte_converted = byte * mebibit_to_gigabit
 
-    elif unit_bit.lower() == "gi" or unit_bit.lower() == "gigabit":
+    elif unit_bibit.lower() == "gi" or unit_bibit.lower() == "gigabit":
 
         # Convert Gigabit to Gigabyte
         if unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
-            byte = bit * gigabit_to_gigabyte
+            byte_converted = byte * gibibit_to_gigabit
 
-    elif unit_bit.lower() == "ki" or unit_bit.lower() == "kibibit":
+    elif unit_bibit.lower() == "ki" or unit_bibit.lower() == "kibibit":
         # Convert kibibit to Megabyte
         if unit_byte.lower() == "mb" or unit_byte.lower() == "megabyte":
-            byte = bit * kibibit_to_megabyte
+            byte_converted = byte * kibibit_to_megabit
 
         # Convert kibibit to Gigabyte
         elif unit_byte.lower() == "gb" or unit_byte.lower() == "gigabyte":
-            byte = bit * kibibit_to_gigabyte
+            byte_converted = byte * kibibit_to_gigabit
 
-    return byte
+    return byte_converted
 
 
 def extract_number_and_unit(input_string: str) -> tuple:
     """
-    Extracts the number and unit from a given string.
+    :Summary:
+        Extracts the number and unit from a given string.
 
     Args:
-    input_string (str): The string from which to extract the number.
+        input_string (str): The string from which to extract the number.
 
-    :return: A tuple containing the number and the unit.
-    :rtype: tuple (number: int, unit: str)
+    :Return: A tuple containing the number and the unit.
+        :rtype: tuple (number: int, unit: str)
     """
 
     # Use a regular expression to extract the number and the unit

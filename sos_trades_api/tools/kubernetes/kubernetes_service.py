@@ -20,7 +20,7 @@ import urllib3
 from kubernetes import client, config, watch
 
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.code_tools import convert_bit_into_byte, extract_number_and_unit
+from sos_trades_api.tools.code_tools import convert_byte_into_byte_unit_targeted, extract_number_and_unit
 
 """
 Execution engine kubernete
@@ -306,6 +306,7 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: st
 
     :return: dict with cpu usage (number of cpu) and memory usage (Go)
     """
+
     result = {
         "cpu": "----",
         "memory": "----",
@@ -317,42 +318,76 @@ def kubernetes_get_pod_info(pod_name, pod_namespace, unit_byte_to_conversion: st
     # Create k8 api client object
     kubernetes_load_kube_config()
     try:
-        api = client.CustomObjectsApi()
 
-        while wait_time < max_wait_time:
-            async_request = api.list_namespaced_custom_object(
-                group="metrics.k8s.io",
-                version="v1beta1",
-                namespace=pod_namespace,
-                plural="pods",
-                async_req=True
-            )
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(pod_namespace)
 
-            while not async_request.ready():
-                time.sleep(1)
-
-            resources = async_request.get()
-            pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
-            if len(pod_searched) > 0:
-
-                # Retrieve cpu (in nanocores) and unit and convert it in CPU
-                pod_cpu_nanocores, pod_cpu_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["cpu"])
-                pod_cpu = round(pod_cpu_nanocores / 1e9, 2)
-
-                # Retrieve memory usage and convert it to gigabit
-                pod_memory_kib, pod_memory_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["memory"])
-
-                pod_memory_converted = convert_bit_into_byte(pod_memory_kib, pod_memory_unit, unit_byte_to_conversion)
-
-                result["cpu"] = pod_cpu
-                result["memory"] = round(pod_memory_converted, 2)
+        target_pod = None
+        for pod in pods.items:
+            if pod.metadata.name == pod_name:
+                target_pod = pod
                 break
-            else:
-                time.sleep(polling_interval)
-                wait_time += polling_interval
+        if target_pod:
+            print(f"pod '{target_pod.metadata.name}' is '{target_pod.status.phase}'")
+            if target_pod.status.phase == "Running":
 
-        if wait_time >= max_wait_time:
-            print(f"Max wait time {max_wait_time}s  to load metrics exceeded")
+                api = client.CustomObjectsApi()
+                async_request = api.list_namespaced_custom_object(
+                    group="metrics.k8s.io",
+                    version="v1beta1",
+                    namespace=pod_namespace,
+                    plural="pods",
+                    async_req=True
+                )
+
+                resources = async_request.get()
+                print(f"Pods list :{resources['items']}")
+                pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
+                if len(pod_searched) > 0:
+
+                    # Retrieve cpu (in nanocores) and unit and convert it in CPU
+                    pod_cpu_nanocores, pod_cpu_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["cpu"])
+                    pod_cpu = round(pod_cpu_nanocores / 1e9, 2)
+
+                    # Retrieve memory usage and convert it to gigabit
+                    pod_memory_kib, pod_memory_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["memory"])
+
+                    pod_memory_converted = convert_byte_into_byte_unit_targeted(pod_memory_kib, pod_memory_unit, unit_byte_to_conversion)
+
+                    result["cpu"] = pod_cpu
+                    result["memory"] = round(pod_memory_converted, 2)
+
+
+            # # cgroup v1
+            # memory_current_path = "/sys/fs/cgroup/memory.current"
+            # cpu_stat_path = "/sys/fs/cgroup/cpu.stat"
+            #
+            # # Commande pour lire le fichier memory.current
+            # command_memory = ["cat", memory_current_path]
+            # command_cpu = ["cat", cpu_stat_path]
+            # from kubernetes.stream import stream
+            # # Exécuter la commande dans le pod
+            # response_memory = stream(v1.connect_get_namespaced_pod_exec,
+            #                   pod_name,
+            #                   pod_namespace,
+            #                   command=command_memory,
+            #                   stderr=True, stdin=False,
+            #                   stdout=True, tty=False)
+            # memory_converted = convert_byte_into_byte_unit_targeted(int(response_memory), "octet", unit_byte_to_conversion)
+            # response_cpu = stream(v1.connect_get_namespaced_pod_exec,
+            #                         pod_name,
+            #                         pod_namespace,
+            #                         command=command_cpu,
+            #                         stderr=True, stdin=False,
+            #                         stdout=True, tty=False)
+            # x = create_stat_dict(response_cpu)
+            # usage_usec = x['usage_usec']
+            #
+            #
+            # result["memory"] = round(memory_converted, 2)
+            # result["cpu"] = round(usage_usec / 1e6, 2)
+
+
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
