@@ -18,11 +18,9 @@ import time
 from functools import partial
 import urllib3
 from kubernetes import client, config, watch
-from datetime import datetime
 
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.code_tools import convert_byte_into_byte_unit_targeted, extract_number_and_unit
-from sos_trades_api.tools.file_tools import get_cpu_usage_from_file, retrieve_contain_from_file
 
 """
 Execution engine kubernete
