@@ -23,7 +23,7 @@ from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import StudyCaseExecution, PodAllocation
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.code_tools import extract_number_and_unit, convert_byte_into_byte_unit_targeted
-from sos_trades_api.tools.kubernetes.kubernetes_service import kubernetes_get_pod_info
+from sos_trades_api.tools.file_tools import get_metric_from_file_system
 
 """
 Execution metric thread
@@ -75,7 +75,7 @@ class ExecutionMetrics:
                         # Retrieve limits of pod from config
                         cpu_limits = '----'
                         memory_limits = '----'
-                        unit_byte_to_conversion = "GB"
+                        unit_byte_targeted = "GB"
                         pod_exec_memory_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]["memory"]
                         pod_exec_cpu_limit_from_config = app.config[Config.CONFIG_FLAVOR_KUBERNETES][Config.CONFIG_FLAVOR_POD_EXECUTION][study_case_allocation.flavor]["limits"]["cpu"]
 
@@ -84,20 +84,22 @@ class ExecutionMetrics:
                             cpu_limits = str(''.join(re.findall(r'\d+', pod_exec_cpu_limit_from_config)))
                             # Retrieve and convert memory limits
                             if "mi" in pod_exec_memory_limit_from_config.lower():
-                                unit_byte_to_conversion = "MB"
+                                unit_byte_targeted = "MB"
 
                             # Retrieve and extract limit and its unit
                             memory_limits_bit, memory_limits_unit_bit = extract_number_and_unit(pod_exec_memory_limit_from_config)
                             memory_limits_byte_converted = convert_byte_into_byte_unit_targeted(memory_limits_bit, memory_limits_unit_bit,
-                                                                                 unit_byte_to_conversion)
+                                                                                 unit_byte_targeted)
                             if memory_limits_byte_converted is not None:
                                 memory_limits = round(memory_limits_byte_converted, 2)
 
-                            # Retrieve memory and cpu from kubernetes
-                            result = kubernetes_get_pod_info(study_case_allocation.kubernetes_pod_name, study_case_allocation.kubernetes_pod_namespace, unit_byte_to_conversion)
+                            # Retrieve memory and cpu from file system
+                            memory_file_path = "/sys/fs/cgroup/memory.current"
+                            cpu_file_path = "/sys/fs/cgroup/cpu.stat"
+                            memory_usage, cpu_usage = get_metric_from_file_system(memory_file_path, cpu_file_path, unit_byte_targeted)
 
-                            cpu_metric = f'{result["cpu"]}/{cpu_limits}'
-                            memory_metric = f'{result["memory"]}/{memory_limits} [{unit_byte_to_conversion}]'
+                            cpu_metric = f'{cpu_usage}/{cpu_limits}'
+                            memory_metric = f'{memory_usage}/{memory_limits} [{unit_byte_targeted}]'
                         else:
                             raise ValueError('Limit from configuration not found')
 

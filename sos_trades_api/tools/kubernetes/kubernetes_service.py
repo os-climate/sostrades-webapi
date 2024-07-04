@@ -353,42 +353,11 @@ def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conv
 
                     return result
                 else:
-                    cpu_stat_path = '/sys/fs/cgroup/cpu.stat'
-                    # First measurement
-                    start_time = datetime.now()
-                    start_usage_usec = get_cpu_usage_from_file(cpu_stat_path)
-
-                    # Sleep for a short period
-                    time.sleep(0.5)
-
-                    # Second measurement
-                    end_time = datetime.now()
-                    end_usage_usec = get_cpu_usage_from_file(cpu_stat_path)
-
-                    # Calculate elapsed time in seconds
-                    elapsed_time_sec = (end_time - start_time).total_seconds()
-
-                    # Calculate CPU usage in seconds
-                    cpu_usage_seconds = (end_usage_usec - start_usage_usec) / 1e6
-
-                    # Calculate CPU usage percentage
-                    cpu_usage = cpu_usage_seconds / elapsed_time_sec
-
-                    # Retrieve memory from file system
-                    memory_path = "/sys/fs/cgroup/memory.current"
-                    memory_lines = retrieve_contain_from_file(memory_path)
-                    bytes_value = int(memory_lines[0])
-                    memory_converted = convert_byte_into_byte_unit_targeted(bytes_value, "byte",
-                                                                            unit_byte_to_conversion)
-
-                    result["memory"] = round(memory_converted, 2)
-                    result["cpu"] = round(cpu_usage, 2)
-
-                return result
+                    raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' from CustomObjectsApi not found")
             else:
                 raise ExecutionEngineKuberneteError(f"Pod '{target_pod}' is not running. Status : {target_pod.status.phase}")
         else:
-            raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' not found")
+            raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' from CoreV1Api not found")
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
