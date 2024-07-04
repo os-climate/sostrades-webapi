@@ -96,7 +96,7 @@ def get_metric_from_file_system(memory_file_path: str, cpu_file_path: str, unit_
     cpu_usage_seconds = (end_usage_usec - start_usage_usec) / 1e6
 
     # Calculate CPU usage percentage
-    cpu_usage = (cpu_usage_seconds / elapsed_time_sec) * 100
+    cpu_usage = (cpu_usage_seconds / elapsed_time_sec)
 
     # Retrieve memory from file system
     memory_lines = get_lines_from_file(memory_file_path)

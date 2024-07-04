@@ -64,6 +64,8 @@ class StudyCaseDto:
         self.study_pod_flavor = None
         self.execution_pod_flavor = None
         self.generation_pod_flavor = None
+        self.last_memory_usage = ""
+        self.last_cpu_usage = ""
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -151,6 +153,8 @@ class StudyCaseDto:
         result.update({"study_pod_flavor": self.study_pod_flavor})
         result.update({"execution_pod_flavor": self.execution_pod_flavor})
         result.update({"generation_pod_flavor": self.generation_pod_flavor})
+        result.update({"last_memory_usage": self.last_memory_usage})
+        result.update({"last_cpu_usage": self.last_cpu_usage})
 
         return result
 
