@@ -81,7 +81,12 @@ class ExecutionMetrics:
 
                         if pod_exec_memory_limit_from_config is not None and pod_exec_cpu_limit_from_config:
                             # CPU limits
-                            cpu_limits = str(''.join(re.findall(r'\d+', pod_exec_cpu_limit_from_config)))
+                            cpu_limits = pod_exec_cpu_limit_from_config
+                            if "m" in cpu_limits:
+                                cpu_millicore, cpu_limits_unit = extract_number_and_unit(pod_exec_cpu_limit_from_config)
+                                # Convert cpu in core
+                                cpu_limits = cpu_millicore / 1000
+
                             # Retrieve and convert memory limits
                             if "mi" in pod_exec_memory_limit_from_config.lower():
                                 unit_byte_targeted = "MB"
@@ -97,6 +102,9 @@ class ExecutionMetrics:
                             memory_file_path = "/sys/fs/cgroup/memory.current"
                             cpu_file_path = "/sys/fs/cgroup/cpu.stat"
                             memory_usage, cpu_usage = get_metric_from_file_system(memory_file_path, cpu_file_path, unit_byte_targeted)
+
+                            if memory_usage is None or cpu_usage is None:
+                                raise ValueError('Metrics from file system not found')
 
                             cpu_metric = f'{cpu_usage}/{cpu_limits}'
                             memory_metric = f'{memory_usage}/{memory_limits} [{unit_byte_targeted}]'
