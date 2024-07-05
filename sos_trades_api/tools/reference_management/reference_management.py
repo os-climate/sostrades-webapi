@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/06/30-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/06/30-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ def update_database_with_references(logger=None):
     logger.info(f"{new_references_count} new reference(s) found")
     logger.info(f"{enabled_references_count} enabled reference(s)")
 
-    disabled_references = ReferenceStudy.query.filter(ReferenceStudy.disabled == True).all()
+    disabled_references = ReferenceStudy.query.filter(ReferenceStudy.disabled).all()
 
     if len(disabled_references) > 0:
         logger.info(f"{len(disabled_references)} disabled reference found.")

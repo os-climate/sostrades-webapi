@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -531,7 +531,7 @@ class SoSExecutionWorkflow:
         drawn_nodes = set()
 
         for nodeId, node in self.nodes_dict.items():
-            if node["hasLinks"] == True and node["level"] == 1:
+            if node["hasLinks"] and node["level"] == 1:
                 dot.node(
                     name=str(nodeId),
                     label="\n".join([node["label"], node["type"]]),
@@ -645,10 +645,10 @@ class SoSExecutionWorkflow:
 
                 # look for all in links to the scatter data with this parameter
                 in_links = {
-                    l_id: l
-                    for l_id, l in self.links_dict.items()
-                    if l["to"] == param_mapping["discipline"]
-                    and param_in in l["parameters"]
+                    l_id: link_aux
+                    for l_id, link_aux in self.links_dict.items()
+                    if link_aux["to"] == param_mapping["discipline"]
+                    and param_in in link_aux["parameters"]
                 }
 
                 for l_in_id, l_dict in in_links.items():
@@ -697,10 +697,10 @@ class SoSExecutionWorkflow:
                 # look for all out links of the scatter data with this
                 # parameter
                 out_links = {
-                    l_id: l
-                    for l_id, l in self.links_dict.items()
-                    if l["from"] == param_mapping["discipline"]
-                    and param_in in l["parameters"]
+                    l_id: link_aux
+                    for l_id, link_aux in self.links_dict.items()
+                    if link_aux["from"] == param_mapping["discipline"]
+                    and param_in in link_aux["parameters"]
                 }
 
                 for l_out_id, l_dict in out_links.items():

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/05/16 Copyright 2024 Capgemini
+Modifications on 2024/05/16-2024/06/13 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -536,9 +536,9 @@ class InterfaceDiagramGenerator:
         filtered_discipline_node_list = []
         for disc_dict in discipline_node_list:
             disc_links = [
-                l["id"]
-                for l in links_list
-                if l["from"] == disc_dict["id"] or l["to"] == disc_dict["id"]
+                link["id"]
+                for link in links_list
+                if link["from"] == disc_dict["id"] or link["to"] == disc_dict["id"]
             ]
             if len(disc_links) > 0:
                 disc_dict["couplings_number"] = len(disc_links)

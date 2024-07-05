@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/10/26-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/10/26-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -209,7 +209,7 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
     logger.info(f"{new_process_count} new process(es) found")
     logger.info(f"{enabled_process_count} enabled process(es)")
 
-    disabled_process = Process.query.filter(Process.disabled == True).all()
+    disabled_process = Process.query.filter(Process.disabled).all()
     if len(disabled_process) > 0:
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
             delete_study_cases,
@@ -248,8 +248,7 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                             f'Removed study case with id : {sc_id} and name : "{sc_name}"')
 
         logger.info("Start deleting disabled process...")
-        disabled_process_to_delete = Process.query.filter(
-            Process.disabled == True).all()
+        disabled_process_to_delete = Process.query.filter(Process.disabled).all()
         for process in disabled_process_to_delete:
             logger.info(
                 f'Removed process with id : {process.id} and name : "{process.name}"')

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/05/16 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -691,11 +691,11 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         study_manager = study_case_cache.get_study_case(study_id, True)
 
         # Create notification
-        if parameters_to_save != [] or files_list != None or columns_to_delete != []:
+        if parameters_to_save != [] or files_list is not None or columns_to_delete != []:
             # Add notification to database
             new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.SAVE)
 
-        if files_list != None:
+        if files_list is not None:
             for file in files_list:
                 # Converted file stream to a data frame
                 # Write temporarly the received file
@@ -1176,7 +1176,7 @@ def clean_database_with_disabled_study_case(logger=None):
     @type Logger
 
     """
-    study_list = StudyCase.query.filter(StudyCase.disabled == True).all()
+    study_list = StudyCase.query.filter(StudyCase.disabled).all()
 
     logger.info(f"{len(study_list)} study disabled found")
 
