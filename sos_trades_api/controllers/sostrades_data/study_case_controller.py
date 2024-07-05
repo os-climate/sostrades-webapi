@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/05/07 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/06/25 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ def create_empty_study_case(
         .join(GroupAccessUser)
         .filter(GroupAccessUser.user_id == user_identifier)
         .filter(Group.id == group_identifier)
-        .filter(StudyCase.disabled == False)
+        .filter(not StudyCase.disabled)
         .all()
     )
 
@@ -393,7 +393,7 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                         Group).join(GroupAccessUser) \
                         .filter(GroupAccessUser.user_id == user_id) \
                         .filter(Group.id == new_group_id) \
-                        .filter(StudyCase.disabled == False).all()
+                        .filter(not StudyCase.disabled).all()
 
                     for study in study_name_list:
                         if study.name == new_study_name:

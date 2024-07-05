@@ -45,7 +45,6 @@ def check_studies_last_active_date( delay_hr, logger):
             is_inactive = False
 
             try:
-
                 # read the file and get the last_active date
                 with open(file) as f:
                     last_active_date_str = f.readline().strip()
@@ -61,7 +60,7 @@ def check_studies_last_active_date( delay_hr, logger):
 
 
             # check if the date is past the delay of inactivity
-            if last_active_date != None:
+            if last_active_date is not None:
                 delta_time = datetime.now() - timedelta(hours=delay_hr)
                 is_inactive = last_active_date < delta_time
 

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/06/07 Copyright 2024 Capgemini
+Modifications on 2024/06/07-2024/06/13 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -71,6 +71,7 @@ print(f"Configuration file used for test: {test_configuration_file}")
 print(f"Database used for test: {test_database_name}")
 print(f"Database used for test log: {test_log_database_name}")
 
+# ruff: noqa: E402
 import unittest
 from builtins import classmethod
 

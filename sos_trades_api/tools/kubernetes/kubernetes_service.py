@@ -16,11 +16,15 @@ limitations under the License.
 '''
 import time
 from functools import partial
+
 import urllib3
 from kubernetes import client, config, watch
 
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.code_tools import convert_byte_into_byte_unit_targeted, extract_number_and_unit
+from sos_trades_api.tools.code_tools import (
+    convert_byte_into_byte_unit_targeted,
+    extract_number_and_unit,
+)
 
 """
 Execution engine kubernete
