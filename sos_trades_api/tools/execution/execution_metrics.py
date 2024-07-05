@@ -16,13 +16,16 @@ limitations under the License.
 '''
 import threading
 import time
-import re
+
 import psutil
 
 from sos_trades_api.config import Config
-from sos_trades_api.models.database_models import StudyCaseExecution, PodAllocation
+from sos_trades_api.models.database_models import PodAllocation, StudyCaseExecution
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.code_tools import extract_number_and_unit, convert_byte_into_byte_unit_targeted
+from sos_trades_api.tools.code_tools import (
+    convert_byte_into_byte_unit_targeted,
+    extract_number_and_unit,
+)
 from sos_trades_api.tools.file_tools import get_metric_from_file_system
 
 """
