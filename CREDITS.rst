@@ -90,7 +90,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `SQLAlchemy (1.3.13) <https://www.sqlalchemy.org>`_
     MIT
 
-`urllib3 (2.1.0) <https://urllib3.readthedocs.io>`_
+`urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
     MIT License
 
 `werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
