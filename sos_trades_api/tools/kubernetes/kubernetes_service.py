@@ -21,6 +21,10 @@ import urllib3
 from kubernetes import client, config, watch
 
 from sos_trades_api.server.base_server import app
+from sos_trades_api.tools.code_tools import (
+    convert_byte_into_byte_unit_targeted,
+    extract_number_and_unit,
+)
 
 """
 Execution engine kubernete
@@ -292,44 +296,75 @@ def kubernetes_load_kube_config():
                 raise ExecutionEngineKuberneteError(message)
 
 
-def kubernetes_get_pod_info(pod_name, pod_namespace):
+def kubernetes_get_pod_info(pod_name: str, pod_namespace: str, unit_byte_to_conversion: str) -> dict:
     """
-    get pod usage info like cpu and memory
-    :param pod_name: unique name of the pod => metadata.name
-    :type pod_name: str
 
-    :param pod_namespace: namespace where is the pod
-    :type pod_namespace: str
-    :return: dict with cpu usage (number of cpu) and memory usage (Go)
+    :Summary:
+           Get pod usage info like cpu and memory
+
+    :Args:
+        pod_name (str): unique name of the pod => metadata.name
+        pod_namespace (str): namespace where is the pod
+        unit_byte_to_conversion (str) : unit in byte targeted
+        cpu_limits (int) : limit of cpu from configuration
+
+    :return:
+        dict of cpu usage and memory usage
     """
-    result = {
-        "cpu": "----",
-        "memory": "----",
-    }
+
+    result = {}
 
     # Create k8 api client object
     kubernetes_load_kube_config()
     try:
-        api = client.CustomObjectsApi()
-        resources = api.list_namespaced_custom_object(group="metrics.k8s.io", version="v1beta1",
-                                                        namespace=pod_namespace, plural="pods")
 
-        pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(pod_namespace)
 
-        pod_cpu = round(float("".join(
-            filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["cpu"]))) / 1e9, 2)
-        pod_memory = round(float("".join(
-            filter(str.isdigit, pod_searched[0]["containers"][0]["usage"]["memory"]))) / (1024 * 1024), 2)
-        result["cpu"] = f"{pod_cpu} [-]"
-        result["memory"] = f"{pod_memory} [Go]"
+        target_pod = None
+        for pod in pods.items:
+            if pod.metadata.name == pod_name:
+                target_pod = pod
+                break
+        if target_pod:
+            print(f"pod '{target_pod.metadata.name}' is '{target_pod.status.phase}'")
+            if target_pod.status.phase == "Running":
+                api = client.CustomObjectsApi()
+                resources = api.list_namespaced_custom_object(
+                    group="metrics.k8s.io",
+                    version="v1beta1",
+                    namespace=pod_namespace,
+                    plural="pods",
+                )
+
+                print(f"Pods list :{resources['items']}")
+                pod_searched = list(filter(lambda pod: pod["metadata"]["name"] == pod_name, resources["items"]))
+                if len(pod_searched) > 0:
+
+                    # Retrieve cpu (in nanocores) and unit and convert it in CPU
+                    pod_cpu_nanocores, pod_cpu_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["cpu"])
+                    pod_cpu = round(pod_cpu_nanocores / 1e9, 2)
+
+                    # Retrieve memory usage and convert it to gigabit
+                    pod_memory_kib, pod_memory_unit = extract_number_and_unit(pod_searched[0]["containers"][0]["usage"]["memory"])
+
+                    pod_memory_converted = convert_byte_into_byte_unit_targeted(pod_memory_kib, pod_memory_unit, unit_byte_to_conversion)
+
+                    result["cpu"] = pod_cpu
+                    result["memory"] = round(pod_memory_converted, 2)
+
+                    return result
+                else:
+                    raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' from CustomObjectsApi not found")
+            else:
+                raise ExecutionEngineKuberneteError(f"Pod '{target_pod}' is not running. Status : {target_pod.status.phase}")
+        else:
+            raise ExecutionEngineKuberneteError(f"Pod '{pod_name}' from CoreV1Api not found")
 
     except Exception as error:
         message = f"Unable to retrieve pod metrics: {error}"
         app.logger.error(message)
         raise ExecutionEngineKuberneteError(message)
-
-
-    return result
 
 def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     """
@@ -392,13 +427,13 @@ def watch_pod_events(logger, namespace):
                 event['object']['metadata']['name'].startswith('generation') :
 
                 yield event
-                
+
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
         #time out, the watcher will be restarted
         pass
 
-        
+
 
 def get_pod_name_from_event(event):
     return event["object"]["metadata"]["name"]

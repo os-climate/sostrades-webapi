@@ -341,6 +341,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
         study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
         loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+        loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+        loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
 
 
     app.logger.info(f"load_study_case {study_id}, get cache: {cache_duration}")
