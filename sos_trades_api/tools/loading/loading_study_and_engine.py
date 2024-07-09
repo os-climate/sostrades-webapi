@@ -26,6 +26,7 @@ from time import time
 import pandas
 from eventlet import sleep
 from numpy import ndarray
+from sostrades_core.datasets.dataset_mapping import DatasetsMappingException
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.serializer import DataSerializer
@@ -443,6 +444,12 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                 
             study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.LOADED
     except DatasetGenericException as ex:
+        study_case_manager.dataset_export_error_dict[notification_id] = f"{ex}"
+        study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.IN_ERROR
+
+        app.logger.exception(
+            f"Error when exporting in background (from datasets mapping) {study_case_manager.study.name}: {ex}")
+    except DatasetsMappingException as ex:
         study_case_manager.dataset_export_error_dict[notification_id] = f"{ex}"
         study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.IN_ERROR
 

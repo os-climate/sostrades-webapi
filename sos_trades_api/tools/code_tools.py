@@ -17,6 +17,7 @@ limitations under the License.
 
 import logging
 import os
+import re
 from time import time
 from typing import Optional
 
@@ -112,3 +113,102 @@ def file_tail(file_name, line_count, encoding="utf-8"):
 
     app.logger.debug(f"Done parsing logs {file_name}.")
     return lines
+
+
+def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: str, unit_bytes: str) -> float:
+    """
+    :Summary:
+        Convert a given amount of bits into bytes based on specified units.
+
+    :Args:
+        bytes_to_convert (float): The amount of bytes to convert.
+        unit_source (str): The unit of source bytes.
+        unit_bytes (str): The unit to convert bytes.
+
+    :Return: The converted value in bytes.
+        :rtype: float
+    """
+
+    byte_converted = None
+
+    # Conversion factors
+    bytes_to_megabyte = 1 / (1024 * 1024)
+    bytes_to_gigabyte = 1 / (1024 * 1024 * 1024)
+    kibibytes_to_megabytes = 1024/1000/1000
+    kibibytes_to_gigabytes = 1024/1000/1000/1000
+    mebibytes_to_megabytes = 1024*1024/1000/1000
+    mebibytes_to_gigabytes = 1024*1024/1000/1000/1000
+    gibibytes_to_gigabytes = 1024*1024*1024/1000/1000/1000
+
+    if unit_source.lower() == "byte":
+        # Convert byte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * bytes_to_megabyte
+
+        # Convert v to Gigabyte
+        elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * bytes_to_gigabyte
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+    elif unit_source.lower() == "ki" or unit_source.lower() == "kibibyte":
+        # Convert kibibyte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * kibibytes_to_megabytes
+
+        # Convert kibibyte to Gigabyte
+        elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * kibibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+    elif unit_source.lower() == "mi" or unit_source.lower() == "mebibyte":
+
+        # Convert Megabyte to Megabyte
+        if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
+            byte_converted = bytes_to_convert * mebibytes_to_megabytes
+
+        # Convert Megabyte to Gigabyte
+        elif unit_bytes == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * mebibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+    elif unit_source.lower() == "gi" or unit_source.lower() == "gibibyte":
+
+        # Convert Gigabyte to Gigabyte
+        if unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
+            byte_converted = bytes_to_convert * gibibytes_to_gigabytes
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+
+
+    else:
+        raise ValueError(f'Unit {unit_source} is not handled')
+
+    return byte_converted
+
+
+def extract_number_and_unit(input_string: str) -> tuple:
+    """
+    :Summary:
+        Extracts the number and unit from a given string.
+
+    Args:
+        input_string (str): The string from which to extract the number.
+
+    :Return: A tuple containing the number and the unit.
+        :rtype: tuple (number: int, unit: str)
+    """
+
+    # Use a regular expression to extract the number and the unit
+    match = re.match(r"(\d+[\.,]?\d*)\s*([a-zA-Z]+)", input_string.strip())
+    if not match:
+        raise ValueError("The input string must contain both a number and a unit.")
+
+    # Replace comma with a dot to handle decimal numbers correctly
+    number = float(match.group(1).replace(',', '.'))
+    unit = match.group(2)
+
+    return number, unit
+
