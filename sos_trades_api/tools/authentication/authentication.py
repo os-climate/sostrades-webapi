@@ -23,7 +23,6 @@ from flask import abort, request, session
 from flask_jwt_extended import (
     get_jwt_identity,
     verify_jwt_in_request,
-    verify_jwt_refresh_token_in_request,
 )
 from jwt.exceptions import InvalidSignatureError
 from werkzeug.exceptions import Unauthorized
@@ -245,7 +244,7 @@ def auth_refresh_required(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        verify_jwt_refresh_token_in_request()
+        verify_jwt_in_request(refresh=True)
         try:
             get_authenticated_user()
             return func(*args, **kwargs)

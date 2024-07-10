@@ -18,7 +18,6 @@ import uuid
 from datetime import datetime
 
 import pytz
-from flask_login import UserMixin
 from sqlalchemy import (
     Boolean,
     Column,
@@ -31,7 +30,6 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql.types import LONGBLOB, TEXT
-from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from sos_trades_api.server.base_server import db
@@ -68,7 +66,7 @@ class UserProfile(db.Model):
         }
 
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     STANDARD_USER_ACCOUNT_NAME = "user_test"
     STANDARD_USER_ACCOUNT_EMAIL = f"{STANDARD_USER_ACCOUNT_NAME}@sostrades.com"
 
@@ -170,7 +168,7 @@ class Group(db.Model):
                             f"{User.__tablename__}.id",
                             name="fk_group_creator_id"),
                         nullable=True)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
     description = Column(String(255))
     confidential = Column(Boolean, default=False)
     is_default_applicative_group = Column(Boolean, default=False)
@@ -236,11 +234,11 @@ class StudyCase(db.Model):
                             name="fk_study_case_process_id"),
                         nullable=True)
     description = Column(TEXT, index=False, unique=False)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
     creation_status = Column(String(64), index=False, unique=False, server_default=CREATION_DONE)
     reference = Column(String(64), unique=False, nullable=True)
     from_type = Column(String(64), unique=False)
-    modification_date = Column(DateTime(timezone=True), server_default=func.now())
+    modification_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
     user_id_execution_authorised = Column(Integer,
                                           ForeignKey(
                                               f"{User.__tablename__}.id",
@@ -293,7 +291,7 @@ class PodAllocation(db.Model):
     pod_type = Column(String(64), unique=False, nullable=False)
     flavor = Column(String(64), unique=False, nullable=True, server_default="")
     message = Column(Text, index=False, unique=False, nullable=True)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
 
 
     def serialize(self):
@@ -389,7 +387,7 @@ class UserLastOpenedStudy(db.Model):
                                ondelete="CASCADE",
                                name="fk_user_study_last_opened_study_case_id"),
                            nullable=False)
-    opening_date = Column(DateTime(timezone=True), server_default=func.now())
+    opening_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
 
     def serialize(self):
         """
@@ -666,7 +664,7 @@ class Notification(db.Model):
     author = Column(String(94), index=True, unique=False)
     type = Column(String(64), index=True, unique=False)
     message = Column(String(255), unique=False)
-    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
 
     def serialize(self):
         """
@@ -702,7 +700,7 @@ class StudyCaseChange(db.Model):
     new_value = Column(Text, index=False, unique=False)
     old_value = Column(Text, index=False, unique=False)
     old_value_blob = Column(LargeBinary().with_variant(LONGBLOB, "mysql"), index=False, unique=False)
-    last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_modified = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
     deleted_columns = Column(TEXT, index=False, unique=False)
 
     dataset_connector_id = Column(TEXT, index=False, unique=False)
@@ -775,7 +773,7 @@ class StudyCaseExecution(db.Model):
     execution_status = Column(String(64), index=True, unique=False, server_default=FINISHED)
     execution_type = Column(String(64), index=True, unique=False, server_default="")
     process_identifier = Column(Integer, index=False, unique=False)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
     requested_by = Column(String(64), index=True, unique=False, server_default="", nullable=False)
     cpu_usage = Column(String(32), index=False, unique=False, server_default="----", nullable=True)
     memory_usage = Column(String(32), index=False, unique=False, server_default="----", nullable=True)
@@ -840,7 +838,7 @@ class StudyCaseLog(db.Model):
                                name="fk_study_case_log_study_case_id"))
     name = Column(Text, index=False, unique=False)
     log_level_name = Column(String(64), index=False, unique=False)
-    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
     message = Column(Text, index=False, unique=False)
     exception = Column(Text, index=False, unique=False)
 
@@ -872,7 +870,7 @@ class StudyCaseExecutionLog(db.Model):
                                      nullable=True)
     name = Column(Text, index=False, unique=False)
     log_level_name = Column(String(64), index=False, unique=False)
-    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
     message = Column(Text, index=False, unique=False)
     exception = Column(Text, index=False, unique=False)
 
@@ -902,7 +900,7 @@ class StudyCaseValidation(db.Model):
     namespace = Column(Text, index=False, unique=False)
     validation_comment = Column(Text, index=False, unique=False)
     validation_state = Column(String(64), index=False, unique=False)
-    validation_date = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    validation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
     validation_user = Column(Text, index=False, unique=False)
     validation_user_department = Column(String(64), index=False, unique=False)
 
@@ -979,7 +977,7 @@ class ReferenceStudyExecutionLog(db.Model):
                               name="fk_reference_study_execution_log_reference_id"))
     name = Column(Text, index=False, unique=False)
     log_level_name = Column(String(64), index=False, unique=False)
-    created = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
     message = Column(Text, index=False, unique=False)
     exception = Column(Text, index=False, unique=False)
 
@@ -1004,7 +1002,7 @@ class Link(db.Model):
     label = Column(String(64), index=False, nullable=False)
     description = Column(String(300), index=False, nullable=False)
     user_id = Column(Integer, ForeignKey(f"{User.__tablename__}.id", name="fk_link_user_id"), nullable=True)
-    last_modified = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_modified = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), onupdate=str(datetime.utcnow()))
 
     def serialize(self):
         """
@@ -1027,7 +1025,7 @@ class OAuthState(db.Model):
     is_active = Column(Boolean, default=False)
     is_invalidated = Column(Boolean, default=False)
     state = Column(String(64), index=False, nullable=False)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
     check_date = Column(DateTime(timezone=True), server_default=None, nullable=True)
 
     def serialize(self):
@@ -1052,8 +1050,8 @@ class News(db.Model):
     id = Column(Integer, primary_key=True)
     message = Column(String(300), index=False, unique=False)
     user_id = Column(Integer, ForeignKey(f"{User.__tablename__}.id", name="fk_news_user_id"), nullable=True)
-    creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    last_modification_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
+    creation_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()))
+    last_modification_date = Column(DateTime(timezone=True), server_default=str(datetime.utcnow()), nullable=True)
 
     def serialize(self):
         """

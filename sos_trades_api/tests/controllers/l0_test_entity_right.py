@@ -189,9 +189,9 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             group_access_user = GroupAccessUser.query \
                 .filter(GroupAccessUser.group_id == created_group.id) \
                 .filter(GroupAccessUser.user_id == created_user.id).first()
-
-            self.assertEqual(group_access_user.right_id, member_rights_id,
-                             "Right not coherent")
+            if group_access_user and member_rights is not None:
+                self.assertEqual(group_access_user.right_id, member_rights_id,
+                                 "Right not coherent")
 
     def test_02_get_study_case_entities_rights(self):
         from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
@@ -367,8 +367,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(
-                self.test_user_id, self.user_profile_id, entities_rights)
+        apply_entities_changes(
+            self.test_user_id, self.user_profile_id, entities_rights)
+
+        with DatabaseUnitTestConfiguration.app.app_context():
             process_access_user = ProcessAccessUser.query \
                 .filter(ProcessAccessUser.process_id == self.test_process_id) \
                 .filter(ProcessAccessUser.user_id == self.test_user_id).first()

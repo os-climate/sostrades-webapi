@@ -542,6 +542,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(study_test)
             studies_id_list_to_delete = [study_test.id]
+        with DatabaseUnitTestConfiguration.app.app_context():
             delete_study_cases(studies_id_list_to_delete)
 
             study_test_deleted = StudyCase.query.filter(
