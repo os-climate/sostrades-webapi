@@ -6,7 +6,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `click (8.1.7) <https://palletsprojects.com/p/click/>`_
     BSD-3-Clause
 
-`python-dotenv (0.12.0) <https://github.com/theskumar/python-dotenv>`_
+`python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
     BSD-3-Clause
 
 `eventlet (0.36.1) <http://eventlet.net>`_
@@ -43,7 +43,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
 
-`mysqlclient (2.2.0) <https://mysqlclient.readthedocs.io/>`_
+`mysqlclient (2.2.4) <https://mysqlclient.readthedocs.io/>`_
     GNU General Public License v2 (GPLv2)
 
 `numpy (1.24.4) <https://numpy.org>`_
@@ -55,7 +55,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `plotly (5.3.0) <https://plotly.com/python/>`_
     MIT
 
-`psutil (5.9.5) <https://github.com/giampaolo/psutil>`_
+`psutil (psutil) <https://github.com/giampaolo/psutil>`_
     BSD-3-Clause
 
 `python-ldap (3.3.0) <https://www.python-ldap.org/>`_
@@ -76,7 +76,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `simplejson (3.19.2) <https://github.com/simplejson/simplejson>`_
     MIT License
 
-`urllib3 (2.1.0) <https://urllib3.readthedocs.io>`_
+`urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
     MIT License
 
 `werkzeug (2.2.3) <https://werkzeug.palletsprojects.com/>`_
