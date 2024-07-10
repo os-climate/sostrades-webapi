@@ -15,7 +15,7 @@ gitpython==3.1.43
 graphviz==0.16
 itsdangerous==2.0.1  # Necessary to be compatible with flask 1.1.1
 jinja2==3.0.1  # Necessary to be compatible with flask 1.1.1
-kubernetes==29.0.0
+kubernetes==29.0.0 # Linked to kubernetes version deployed
 mysqlclient==2.2.0 # Issue when moving up due to https://stackoverflow.com/questions/76688014/error-connections-using-insecure-transport-are-prohibited-while-require-secur
 numpy==1.24.4
 pandas==2.2.2
