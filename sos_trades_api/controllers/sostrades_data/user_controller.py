@@ -22,7 +22,7 @@ from os import makedirs
 from os.path import dirname, exists, join
 from typing import List
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, or_
 
 from sos_trades_api import __file__ as sos_trades_api_file
 from sos_trades_api.controllers.sostrades_data import group_controller
@@ -268,11 +268,10 @@ def delete_user(user_id) -> str:
             group_with_user.append(gr.id)
 
         # Select group with user and count members
-        query_count_group = db.session.query(func.count(GroupAccessUser.id), GroupAccessUser.group_id,
-                                             ).filter(GroupAccessUser.group_id == Group.id,
-                                                      ).filter(Group.id.in_(group_with_user),
-                                                               ).group_by(GroupAccessUser.group_id,
-                                                                          ).all()
+        query_count_group = []
+        for grou_id in group_with_user:
+            count = db.session.query(GroupAccessUser.id).filter(Group.id == GroupAccessUser.group_id).count()
+            query_count_group.append((count, grou_id))
 
         # Remove group where user is alone
         for qcg in query_count_group:

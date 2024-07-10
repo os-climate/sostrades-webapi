@@ -76,6 +76,7 @@ import unittest
 from builtins import classmethod
 
 import sqlalchemy
+from sqlalchemy import text
 from flask_migrate import Migrate, upgrade
 
 from sos_trades_api.config import Config
@@ -108,9 +109,9 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         DatabaseUnitTestConfiguration.tearDownClass()
 
         # 'IF NOT EXISTS' instruction is MySql/MariaDB specific
-        create_database_sql_request = f"create database IF NOT EXISTS `{database_name}`;"
-        create_log_database_sql_request = f"create database IF NOT EXISTS `{log_database_name}`;"
-        use_database_sql_request = f"USE `{database_name}`;"
+        create_database_sql_request = text(f"create database IF NOT EXISTS `{database_name}`;")
+        create_log_database_sql_request = text(f"create database IF NOT EXISTS `{log_database_name}`;")
+        use_database_sql_request = text(f"USE `{database_name}`;")
 
         # Create server connection
         engine = sqlalchemy.create_engine(
@@ -153,8 +154,8 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         Drop database used for tests
         """
         # 'IF EXISTS' instruction is MySql/MariaDB specific
-        drop_database_sql_request = f"drop database IF EXISTS `{database_name}`;"
-        drop_log_database_sql_request = f"drop database IF EXISTS `{log_database_name}`;"
+        drop_database_sql_request = text(f"drop database IF EXISTS `{database_name}`;")
+        drop_log_database_sql_request = text(f"drop database IF EXISTS `{log_database_name}`;")
 
         # Create server connection
         engine = sqlalchemy.create_engine(
