@@ -16,7 +16,9 @@ limitations under the License.
 '''
 
 from os.path import dirname, join
+
 from flask_jwt_extended.config import config
+
 from sos_trades_api import __file__ as sos_trades_api_file
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,

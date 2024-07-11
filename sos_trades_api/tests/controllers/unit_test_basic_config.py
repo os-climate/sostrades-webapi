@@ -76,8 +76,8 @@ import unittest
 from builtins import classmethod
 
 import sqlalchemy
-from sqlalchemy import text
 from flask_migrate import Migrate, upgrade
+from sqlalchemy import text
 
 from sos_trades_api.config import Config
 
