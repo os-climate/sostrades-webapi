@@ -87,5 +87,5 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
     MIT License
 
-`werkzeug (2.3.7) <https://werkzeug.palletsprojects.com/>`_
+`werkzeug (2.3.8) <https://werkzeug.palletsprojects.com/>`_
     BSD License

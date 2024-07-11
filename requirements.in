@@ -33,7 +33,7 @@ requests==2.32.3
 simplejson==3.19.2
 SQLAlchemy==2.0.31
 urllib3==2.2.2
-werkzeug==2.3.7
+werkzeug==2.3.8
 
 # Development requirements
 # breaking change in 8.2.0 https://docs.pytest.org/en/stable/changelog.html#pytest-8-2-0-2024-04-27
