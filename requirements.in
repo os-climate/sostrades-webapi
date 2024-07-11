@@ -31,6 +31,7 @@ pytz==2024.1
 PyYAML==6.0.1
 requests==2.32.3
 simplejson==3.19.2
+SQLAlchemy==2.0.31
 urllib3==2.2.2
 werkzeug==2.2.3
 
