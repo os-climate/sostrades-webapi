@@ -60,7 +60,6 @@ from sos_trades_api.tools.allocation_management.allocation_management import (
     get_allocation_status,
     load_allocation,
 )
-from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.coedition.coedition import (
     CoeditionMessage,
     UserCoeditionAction,
@@ -192,7 +191,6 @@ def create_study_case_allocation(study_case_identifier:int, flavor:str=None)-> P
     return new_study_case_allocation
 
 
-@time_function(logger=app.logger)
 def load_study_case_allocation(study_case_identifier):
     """
     Load a study case allocation and if server mode is kubernetes, check pod status
@@ -206,7 +204,7 @@ def load_study_case_allocation(study_case_identifier):
 
     if study_case_allocation is not None:
         # First get allocation status
-        if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
+        if study_case_allocation.pod_status == PodAllocation.IN_ERROR or study_case_allocation.pod_status == PodAllocation.OOMKILLED or study_case_allocation.pod_status == PodAllocation.NOT_STARTED:
             app.logger.info("allocation need reload")
             study_case_allocation.identifier = study_case_identifier
             study_case_allocation.pod_status = PodAllocation.NOT_STARTED
