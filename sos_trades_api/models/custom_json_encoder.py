@@ -16,6 +16,7 @@ limitations under the License.
 '''
 import json
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 from flask.json.provider import JSONProvider
@@ -134,5 +135,5 @@ class CustomJsonProvider(JSONProvider):
         kwargs["cls"] = CustomJsonEncoder
         return json.dumps(obj, **kwargs)
 
-    def loads(self, s: str | bytes, **kwargs):
+    def loads(self, s: Union[str, bytes], **kwargs):
         return json.loads(s, **kwargs)
