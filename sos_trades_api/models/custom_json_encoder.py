@@ -14,9 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 from datetime import datetime
 
 import numpy as np
+from flask.json.provider import JSONProvider
 from pandas import DataFrame, Index, Series
 from simplejson import JSONEncoder
 from sostrades_core.execution_engine.namespace import Namespace
@@ -121,3 +123,16 @@ class CustomJsonEncoder(JSONEncoder):
         # default, if not one of the specified object. Caller's problem if this is not
         # serializable.
         return JSONEncoder.default(self, o)
+
+
+class CustomJsonProvider(JSONProvider):
+    """
+    Custom json provider class
+    """
+
+    def dumps(self, obj, **kwargs):
+        kwargs["cls"] = CustomJsonEncoder
+        return json.dumps(obj, **kwargs)
+
+    def loads(self, s: str | bytes, **kwargs):
+        return json.loads(s, **kwargs)
