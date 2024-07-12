@@ -70,7 +70,7 @@ try:
     # sos_trades_api dependencies
 
     app.logger.info("Importing dependencies")
-    from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+    from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_mysql_handler import (
@@ -104,7 +104,8 @@ try:
     app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder
-    app.json_encoder = CustomJsonEncoder
+    app.json_provider_class = CustomJsonProvider
+    app.json = CustomJsonProvider(app)
 except Exception as error:
     app.logger.error(
         f"The following error occurs when trying to initialize server\n{error} ")
