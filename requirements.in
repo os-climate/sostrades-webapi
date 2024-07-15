@@ -42,4 +42,3 @@ pytest==8.1.2
 pytest-cov==5.0.0
 pytest-xdist==3.6.1
 pytest-durations==1.2.0
-ruff==0.5.0
