@@ -917,7 +917,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     # token attempts to access an endpoint
 
     @jwt.expired_token_loader
-    def my_expired_token_callback(expired_token):
+    def my_expired_token_callback(jwt_header, jwt_data):
         return jsonify({
             "statusCode": 401,
             "name": "Unauthorized",
