@@ -6,8 +6,6 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `click (8.1.7) <https://palletsprojects.com/p/click/>`_
     BSD-3-Clause
 
-`python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
-    BSD-3-Clause
 
 `eventlet (0.33.3) <http://eventlet.net>`_
     MIT License
@@ -27,19 +25,13 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `flask-socketio (5.3.6) <https://github.com/miguelgrinberg/flask-socketio>`_
     MIT License
 
-`python-socketio (5.8.0) <https://github.com/miguelgrinberg/python-socketio>`_
-    MIT License
-
-`python-engineio (4.5.1) <https://github.com/miguelgrinberg/python-engineio>`_
-    MIT License
-
 `Flask-SQLAlchemy (2.4.1) <https://flask-sqlalchemy.palletsprojects.com>`_
     BSD License
 
 `furl (2.1.3) <https://github.com/gruns/furl>`_
     Unlicense
 
-`graphviz (0.16) <https://github.com/xflr6/graphviz>`_
+`graphviz (0.20.3) <https://github.com/xflr6/graphviz>`_
     MIT
 
 `itsdangerous (2.0.1) <https://palletsprojects.com/p/itsdangerous/>`_
@@ -48,34 +40,46 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `jinja2 (3.0.1) <https://palletsprojects.com/p/jinja/>`_
     BSD-3-Clause
 
-`PyJWT (1.7.1) <https://github.com/jpadilla/pyjwt>`_
-    MIT
+`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
+    BSD
 
 `kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
 
-`mysqlclient (2.2.4) <https://mysqlclient.readthedocs.io/>`_
+`mysqlclient (2.2.0) <https://mysqlclient.readthedocs.io/>`_
     GNU General Public License v2 (GPLv2)
 
 `numpy (1.24.4) <https://numpy.org>`_
     BSD License
 
-`pandas (1.3.0) <https://pandas.pydata.org>`_
+`pandas (2.2.2) <https://pandas.pydata.org>`_
     BSD License
 
 `plotly (5.3.0) <https://plotly.com/python/>`_
     MIT
 
-`psutil (psutil) <https://github.com/giampaolo/psutil>`_
+`psutil (6.0.0) <https://github.com/giampaolo/psutil>`_
     BSD-3-Clause
 
-`python-ldap (3.3.0) <https://www.python-ldap.org/>`_
+`python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
+    BSD-3-Clause
+
+`python-ldap (3.4.0) <https://www.python-ldap.org/>`_
     Python style
+
+`python-keycloak (4.0.0) <https://pypi.org/project/python-keycloak/>`_
+    MIT License
 
 `python3-saml (1.9.0) <https://github.com/SAML-Toolkits/python3-saml>`_
     MIT
 
-`pytz (2023.3.post1) <http://pythonhosted.org/pytz>`_
+`python-engineio (4.5.1) <https://github.com/miguelgrinberg/python-engineio>`_
+    MIT License
+    
+`python-socketio (5.8.0) <https://github.com/miguelgrinberg/python-socketio>`_
+    MIT License
+
+`pytz (2024.1) <http://pythonhosted.org/pytz>`_
     MIT
 
 `PyYAML (6.0.1) <https://pyyaml.org/>`_
@@ -95,9 +99,3 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 
 `werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
     BSD License
-
-`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
-    BSD
-
-`python-keycloak (4.0.0) <https://pypi.org/project/python-keycloak/>`_
-    MIT License
