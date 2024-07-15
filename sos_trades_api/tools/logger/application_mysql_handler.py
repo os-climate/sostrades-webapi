@@ -191,6 +191,7 @@ class ApplicationMySQLHandler(Handler):
         @param record:
         @return: 
         """
+        print("Emitting", record.msg)
         # Inject own variables
         if has_request_context():
             record.url = request.url
@@ -213,7 +214,7 @@ class ApplicationMySQLHandler(Handler):
                     v.replace("'", "''")).decode("utf-8"))
             elif v.__class__.__name__ == "Exception":
                 setattr(record, k, escape_string(str(v)).decode("utf-8"))
-
+        print("Sending message")
         try:
             # Instanciate msg with argument format
             if "%" in record.msg:
@@ -226,6 +227,7 @@ class ApplicationMySQLHandler(Handler):
             sql = ApplicationMySQLHandler.insertion_sql % record.__dict__
 
         except:
+            print("Exception building insertion request")
             sql = ""
 
         if len(sql) > 0:
@@ -242,6 +244,7 @@ class ApplicationMySQLHandler(Handler):
             try:
                 cur.execute(sql)
             except MySQLError as error:
+                print("Exception sending message")
                 errno, errstr = error.args
                 if not errno == 1146:
                     raise
@@ -251,6 +254,7 @@ class ApplicationMySQLHandler(Handler):
                     cur.execute(ApplicationMySQLHandler.initial_sql)
 
                 except MySQLError as error:
+                    print("Exception 2 sending message")
                     # definitly can't work...
                     conn.rollback()
                     cur.close()
@@ -273,3 +277,4 @@ class ApplicationMySQLHandler(Handler):
             finally:
                 cur.close()
                 conn.close()
+                print("Finally")
