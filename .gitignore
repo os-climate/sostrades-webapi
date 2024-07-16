@@ -11,3 +11,4 @@ dist/
 sos_trades_api.egg-info/
 sos_trades_api/secret
 *.bat
+sos_trades_api/git_commits_info.json

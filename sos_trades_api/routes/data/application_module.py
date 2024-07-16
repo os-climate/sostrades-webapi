@@ -18,7 +18,7 @@ from flask import make_response
 from flask.json import jsonify
 
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.api_version import application_version
+from sos_trades_api.tools.api_version import (application_version, git_commits_info)
 from sos_trades_api.tools.authentication.authentication import auth_required
 
 """
@@ -44,5 +44,15 @@ def application_support():
     application support
     """
     result = {"support": "contact@sostrades.org"}
+    resp = make_response(jsonify(result), 200)
+    return resp
+
+@app.route("/api/data/application/git-repos-info", methods=["GET"])
+@auth_required
+def application_git_repo_info():
+    """
+    application git info
+    """
+    result = git_commits_info()
     resp = make_response(jsonify(result), 200)
     return resp
