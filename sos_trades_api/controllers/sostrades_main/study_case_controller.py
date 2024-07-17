@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/05/16 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -90,6 +90,7 @@ from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
     invalidate_namespace_after_save,
 )
 from sos_trades_api.tools.loading.loading_study_and_engine import (
+    study_case_manager_export_from_dataset_mapping,
     study_case_manager_loading,
     study_case_manager_loading_from_reference,
     study_case_manager_loading_from_study,
@@ -340,6 +341,8 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
         study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
         loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+        loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+        loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
 
 
     app.logger.info(f"load_study_case {study_id}, get cache: {cache_duration}")
@@ -588,6 +591,58 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
         study_case_cache.release_study_case(study_id)
         raise StudyCaseError(error)
 
+def export_study_parameters_from_datasets_mapping(study_id, user, datasets_mapping, notification_id):
+    """
+    Export study parameters in datasets defined in the mapping file
+    :param: study_id, id of the study
+    :type: integer
+    :param: user, user that did the modification of parameters
+    :type: integer
+    :param: datasets_mapping, namespace+parameter to connector_id+dataset_id+parameter mapping
+    :type: dict
+    """
+    try:
+
+        # Retrieve study_manager
+        study_manager = study_case_cache.get_study_case(study_id, False)
+
+        
+        # Launch load study-case with new parameters from dataset
+        if notification_id not in study_manager.dataset_export_status_dict.keys():
+            
+            # check that the study is not loading
+            if study_manager.load_status != LoadStatus.IN_PROGESS:
+                study_manager.dataset_export_status_dict[notification_id] = LoadStatus.IN_PROGESS
+                # Deserialize mapping
+                datasets_mapping_deserialized = DatasetsMapping.deserialize(datasets_mapping)
+
+                threading.Thread(
+                    target=study_case_manager_export_from_dataset_mapping,
+                    args=(study_manager, datasets_mapping_deserialized, notification_id),
+                ).start()
+            else:
+                raise Exception("study case is currently loading, please retry the export at the end of the loading.")
+        # deal with errors
+        elif study_manager.dataset_export_status_dict[notification_id]  == LoadStatus.IN_ERROR:
+            if notification_id in study_manager.dataset_export_error_dict.keys():
+                raise Exception(study_manager.dataset_export_error_dict[notification_id])
+            else:
+                raise Exception("Error while exporting parameters in dataset")
+
+        # return the status of the export
+        return study_manager.dataset_export_status_dict.get(notification_id, LoadStatus.NONE)
+
+    except DatasetsMappingException as exception :
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+        app.logger.exception(
+            f"Error when updating in background (from datasets mapping) {study_manager.study.name}:{exception}")
+        raise exception
+    except Exception as error:
+        # Releasing study
+        study_case_cache.release_study_case(study_id)
+        raise StudyCaseError(error)
+
 def get_dataset_import_error_message(study_id):
     """
     Retrieve study manager dataset load error in cache
@@ -595,6 +650,22 @@ def get_dataset_import_error_message(study_id):
     # Retrieve study_manager
     study_manager = study_case_cache.get_study_case(study_id, False)
     return study_manager.dataset_load_error
+
+def get_dataset_export_status(study_id, notification_id):
+    """
+    Retrieve study manager dataset export status in cache
+    """
+    # Retrieve study_manager
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    return study_manager.dataset_export_status_dict.get(notification_id, LoadStatus.NONE)
+
+def get_dataset_export_error_message(study_id, notification_id):
+    """
+    Retrieve study manager dataset export error in cache
+    """
+    # Retrieve study_manager
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    return study_manager.dataset_export_error_dict.get(notification_id, "")
 
 
 
@@ -620,11 +691,11 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         study_manager = study_case_cache.get_study_case(study_id, True)
 
         # Create notification
-        if parameters_to_save != [] or files_list != None or columns_to_delete != []:
+        if parameters_to_save != [] or files_list is not None or columns_to_delete != []:
             # Add notification to database
             new_notification_id = add_notification_db(study_id, user, UserCoeditionAction.SAVE, CoeditionMessage.SAVE)
 
-        if files_list != None:
+        if files_list is not None:
             for file in files_list:
                 # Converted file stream to a data frame
                 # Write temporarly the received file
@@ -1105,7 +1176,7 @@ def clean_database_with_disabled_study_case(logger=None):
     @type Logger
 
     """
-    study_list = StudyCase.query.filter(StudyCase.disabled == True).all()
+    study_list = StudyCase.query.filter(StudyCase.disabled).all()
 
     logger.info(f"{len(study_list)} study disabled found")
 

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/03/06 Copyright 2024 Capgemini
+Modifications on 2024/03/06-2024/06/25 Copyright 2024 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -183,16 +183,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         )
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
-            sc = StudyCase.query.filter(
-                StudyCase.name == self.test_study_name).first()
-            self.assertIsNotNone(sc.current_execution_id,
-                                 "No study case execution created")
+            sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
+            self.assertIsNotNone(sc.current_execution_id, "No study case execution created")
             sc_status = calculation_status(sc.id)
 
-            sce = StudyCaseExecution.query.filter(
-                StudyCaseExecution.id == sc.current_execution_id).first()
-            self.assertEqual(sc_status.study_case_execution_status, sce.execution_status,
-                             "Study case execution status not coherent")
+            sce = StudyCaseExecution.query.filter(StudyCaseExecution.id == sc.current_execution_id).first()
+            self.assertEqual(sc_status.study_case_execution_status, sce.execution_status, "Study case execution status not coherent")
 
     def test_03_get_calculation_dashboard(self):
         import os
@@ -201,6 +197,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
             get_calculation_dashboard,
+            stop_calculation,
         )
         from sos_trades_api.models.database_models import (
             StudyCase,
@@ -208,16 +205,13 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             User,
         )
         with DatabaseUnitTestConfiguration.app.app_context():
-            sc = StudyCase.query.filter(
-                StudyCase.name == self.test_study_name).first()
+            sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
+            stop_calculation(sc.id)
             os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "thread"
             execute_calculation(sc.id, User.STANDARD_USER_ACCOUNT_NAME)
-            calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.PENDING,
-                                         get_calculation_dashboard()))
-            self.assertTrue(len(calc_dashboard) >= 1,
-                            "At least one study should be running.")
-            self.assertEqual(calc_dashboard[0].study_case_id, sc.id,
-                             f"Study running should be study with id { sc.id }")
+            calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.PENDING, get_calculation_dashboard()))
+            self.assertTrue(len(calc_dashboard) >= 1, "At least one study should be running.")
+            self.assertEqual(calc_dashboard[0].study_case_id, sc.id, f"Study running should be study with id { sc.id }")
 
             # Wait for process calculation end
             time.sleep(50.0)
@@ -229,8 +223,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         )
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
-            sc = StudyCase.query.filter(
-                StudyCase.name == self.test_study_name).first()
+            sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
             stop_calculation(sc.id)
 
             sc_status = calculation_status(sc.id)
