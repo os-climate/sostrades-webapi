@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import json
 from datetime import datetime
 from os import environ
 from os.path import dirname, exists, join
-import json
 
 import sos_trades_api
 from sos_trades_api.server.base_server import app
