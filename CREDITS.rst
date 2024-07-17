@@ -12,7 +12,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `Flask (2.3.3) <https://flask.palletsprojects.com/>`_
     BSD License
 
-`flask-jwt-extended (4.4.4) <https://github.com/vimalloc/flask-jwt-extended>`_
+`flask-jwt-extended (4.6.0) <https://github.com/vimalloc/flask-jwt-extended>`_
     MIT
 
 `Flask-Migrate (4.0.7) <https://github.com/miguelgrinberg/flask-migrate>`_
