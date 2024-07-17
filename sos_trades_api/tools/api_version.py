@@ -17,6 +17,7 @@ limitations under the License.
 from datetime import datetime
 from os import environ
 from os.path import dirname, exists, join
+import json
 
 import sos_trades_api
 from sos_trades_api.server.base_server import app
@@ -55,3 +56,17 @@ def application_version():
             "The following error occurs when trying to get the version")
 
     return version
+
+def git_commits_info():
+    """
+    Methods that retrieve all the repositories used by the platform last commits info
+    This info is in the following file:
+    git_commits_info_file_path = f"{platform_path}/sostrades-webapi/sos_trades_api/git_commits_info.json"
+    """
+
+    git_data = None
+    git_commits_info_file_path = join(dirname(sos_trades_api.__file__), "git_commits_info.json")
+    if exists(git_commits_info_file_path):
+        with open(git_commits_info_file_path, 'r') as json_file:
+            git_data = json.load(json_file)
+    return git_data

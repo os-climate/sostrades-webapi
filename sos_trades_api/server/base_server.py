@@ -89,17 +89,17 @@ try:
 
     app.logger.info("Configuring logger")
     if os.environ["FLASK_ENV"] == PRODUCTION:
-        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s")
 
         # Remove all trace
         logging.getLogger("engineio.server").setLevel(51)
     else:
-        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s")
         app.logger.setLevel(logging.DEBUG)
         logging.getLogger("engineio.server").setLevel(logging.DEBUG)
 
     for handler in logging.getLogger().handlers:
-        handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
+        handler.setFormatter(logging.Formatter("[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s"))
     app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
     app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
@@ -917,7 +917,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     # token attempts to access an endpoint
 
     @jwt.expired_token_loader
-    def my_expired_token_callback(expired_token):
+    def my_expired_token_callback(jwt_header, jwt_data):
         return jsonify({
             "statusCode": 401,
             "name": "Unauthorized",
