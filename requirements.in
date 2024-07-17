@@ -5,7 +5,7 @@
 click==8.1.7
 eventlet==0.36.1
 Flask==2.3.3
-flask-jwt-extended==4.4.4
+flask-jwt-extended==4.6.0
 Flask-Migrate==4.0.7
 flask-socketio==5.3.6
 Flask-SQLAlchemy==2.5.1  # When upgrading to 3.x, issue with liveness probes handling
