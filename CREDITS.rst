@@ -21,17 +21,20 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `flask-socketio (5.3.6) <https://github.com/miguelgrinberg/flask-socketio>`_
     MIT License
 
-`Flask-SQLAlchemy (3.1.1) <https://flask-sqlalchemy.palletsprojects.com>`_
+`Flask-SQLAlchemy (2.5.1) <https://flask-sqlalchemy.palletsprojects.com>`_
     BSD License
 
 `furl (2.1.3) <https://github.com/gruns/furl>`_
     Unlicense
 
+`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
+    BSD
+
 `graphviz (0.20.3) <https://github.com/xflr6/graphviz>`_
     MIT
 
-`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
-    BSD
+`jinja2 (3.1.4) <https://pypi.org/project/Jinja2/>`_
+    BSD License
 
 `kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
@@ -50,6 +53,9 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 
 `psutil (6.0.0) <https://github.com/giampaolo/psutil>`_
     BSD-3-Clause
+
+`PyJWT (2.8.0) <https://pypi.org/project/PyJWT/>`_
+    MIT
 
 `python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
     BSD-3-Clause
@@ -81,7 +87,7 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `simplejson (3.19.2) <https://github.com/simplejson/simplejson>`_
     MIT License
 
-`SQLAlchemy (2.0.31) <https://pypi.org/project/SQLAlchemy/>`_
+`SQLAlchemy (1.4.52) <https://pypi.org/project/SQLAlchemy/>`_
     MIT License
 
 `urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
