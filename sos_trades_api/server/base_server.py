@@ -70,9 +70,7 @@ try:
     # sos_trades_api dependencies
 
     app.logger.info("Importing dependencies")
-    from sos_trades_api.models.custom_json_encoder import (
-        CustomJsonProvider,
-    )
+    from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_request_formatter import (
