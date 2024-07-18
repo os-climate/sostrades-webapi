@@ -85,10 +85,8 @@ try:
         "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
-    os.environ["FLASK_ENV"] = app.config["ENVIRONMENT"]
-
     app.logger.info("Configuring logger")
-    if os.environ["FLASK_ENV"] == PRODUCTION:
+    if app.config["ENVIRONMENT"] == PRODUCTION:
         logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s")
 
         # Remove all trace
@@ -100,7 +98,7 @@ try:
 
     for handler in logging.getLogger().handlers:
         handler.setFormatter(logging.Formatter("[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s"))
-    app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+    app.logger.info(f'{app.config["ENVIRONMENT"]} environment configuration loaded')
     app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder

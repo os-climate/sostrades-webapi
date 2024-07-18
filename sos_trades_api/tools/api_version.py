@@ -38,7 +38,7 @@ def application_version():
 
     version = "Version not available"
 
-    if environ.get("FLASK_ENV") is None or environ["FLASK_ENV"] == "development":
+    if app.config['ENVIRONMENT'] is None or app.config['ENVIRONMENT'] == "DEVELOPMENT":
         return f'{datetime.now().strftime("%d.%m.%Y")}*' # id dev always give the last date
 
     try:
