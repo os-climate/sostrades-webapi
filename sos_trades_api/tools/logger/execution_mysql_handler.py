@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,23 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import MySQLdb
-from MySQLdb._mysql import escape_string
-from MySQLdb._exceptions import MySQLError
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sos_trades_api.config import Config
-from re import findall, escape
 
-from time import strftime, localtime
-from logging import Handler, _defaultFormatter
-from sos_trades_api.models.database_models import StudyCaseExecutionLog
-from sos_trades_api.server.base_server import app, db
+'''
 import time
 from contextlib import contextmanager
+from logging import Handler, _defaultFormatter
+from time import localtime, strftime
 
-TIME_FMT = '%Y-%m-%d %H:%M:%S'
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
+from sos_trades_api.models.database_models import StudyCaseExecutionLog
+
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class ExecutionMySQLHandler(Handler):
@@ -57,7 +53,6 @@ class ExecutionMySQLHandler(Handler):
         @type boolean
 
         """
-
         Handler.__init__(self)
 
         self.study_case_id = study_case_id
@@ -73,13 +68,13 @@ class ExecutionMySQLHandler(Handler):
     @contextmanager
     def __get_connection(self):
 
-        database_server_uri = f'{self.__sql_alchemy_server_uri}?charset=utf8'
+        database_server_uri = f"{self.__sql_alchemy_server_uri}?charset=utf8"
 
         # Create server connection
         engine = create_engine(
             database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
 
-        use_database_sql_request = f'USE `{self.__sql_alchemy_database_name}`;'
+        use_database_sql_request = text(f"USE `{self.__sql_alchemy_database_name}`;")
 
         with engine.connect() as connection:
             # Select by default this database to perform further request
@@ -107,20 +102,22 @@ class ExecutionMySQLHandler(Handler):
 
     @property
     def bulk_transaction(self):
-        """ Return a boolean indicating if the database transaction on commit is bulk or not
+        """
+        Return a boolean indicating if the database transaction on commit is bulk or not
 
-            @return boolean
+        @return boolean
         """
         return self.__bulk_transaction
 
     @bulk_transaction.setter
     def bulk_transaction(self, value):
-        """ Set a boolean indicating if the database transaction on commit is bulk or not
-            Activate bulk transaction improve performance regarding calculation
-            but it is necessary to flush data calling flush method at the end of the process
+        """
+        Set a boolean indicating if the database transaction on commit is bulk or not
+        Activate bulk transaction improve performance regarding calculation
+        but it is necessary to flush data calling flush method at the end of the process
 
-            @param value, enable or not bulk transaction
-            @type boolean
+        @param value, enable or not bulk transaction
+        @type boolean
         """
         self.__bulk_transaction = value
 
@@ -130,7 +127,6 @@ class ExecutionMySQLHandler(Handler):
         @param record, logging structure that contains data to save
         @type logger record
         """
-
         # Use default formatting:
         self.format(record)
 
@@ -150,7 +146,7 @@ class ExecutionMySQLHandler(Handler):
                 record.msg = str(record.msg)
 
             # Instanciate msg with argument format
-            if '%' in record.msg:
+            if "%" in record.msg:
                 record.msg = record.msg % record.args
 
         except:
@@ -160,15 +156,15 @@ class ExecutionMySQLHandler(Handler):
             # Write only not empty message
             if len(record.msg) > 0:
                 # Reset args to avoir manipulate tuple in database
-                record.args = ''
+                record.args = ""
 
                 # Remove study case id from record name if exist
-                if f'{self.study_case_id}.' in record.name:
+                if f"{self.study_case_id}." in record.name:
                     record.name = record.name.replace(
-                        f'{self.study_case_id}.', '')
-                elif f'{self.study_case_id}' in record.name:
+                        f"{self.study_case_id}.", "")
+                elif f"{self.study_case_id}" in record.name:
                     record.name = record.name.replace(
-                        f'{self.study_case_id}', '')
+                        f"{self.study_case_id}", "")
 
                 scel = StudyCaseExecutionLog()
 
@@ -189,13 +185,14 @@ class ExecutionMySQLHandler(Handler):
             print(e)
 
     def flush(self):
-        """ Flush remaining message
         """
-
+        Flush remaining message
+        """
         self.__write_bulk_into_database(True)
 
     def __write_bulk_into_database(self, flush=False):
-        """ Write stored object into database
+        """
+        Write stored object into database
 
         @param flush, boolean to flush the list without taking into account number of elements
         @type boolean
@@ -212,9 +209,10 @@ class ExecutionMySQLHandler(Handler):
 
             try:
                 with self.__get_connection() as session:
-                    session.bulk_save_objects(self.__inner_bulk_list)
+                    for obj in self.__inner_bulk_list:
+                        session.merge(obj)
             except Exception as ex:
-                print(f'Execution mysql handler: {str(ex)}')
+                print(f"Execution mysql handler: {ex!s}")
             finally:
                 self.__inner_bulk_list = []
 

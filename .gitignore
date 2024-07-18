@@ -13,3 +13,4 @@ sos_trades_api/secret
 *.bat
 sostrades-data.db
 sostrades-logs.db
+sos_trades_api/git_commits_info.json

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,18 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
 import os
-import MySQLdb
-
-from time import strftime, localtime
 from logging import Handler, _defaultFormatter
-from re import findall, escape
-from flask import has_request_context, request
-from MySQLdb._mysql import escape_string
-from MySQLdb._exceptions import MySQLError
+from re import escape, findall
+from time import localtime, strftime
 
-TIME_FMT = '%Y-%m-%d %H:%M:%S'
+import MySQLdb
+from flask import has_request_context, request
+from MySQLdb._exceptions import MySQLError
+from MySQLdb._mysql import escape_string
+
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class ApplicationMySQLHandler(Handler):
@@ -71,14 +72,13 @@ class ApplicationMySQLHandler(Handler):
                         '%(useragent)s'
                     );
                     """
-    sql_fields = findall(escape('%(') + "(.*)" + escape(')'), insertion_sql)
+    sql_fields = findall(escape("%(") + "(.*)" + escape(")"), insertion_sql)
 
     def __init__(self, db):
         """
         Constructor
         @param db: {'HOST','PORT','USER', 'PASSWORD', 'DATABASE_NAME', 'SSL'}
         """
-
         Handler.__init__(self)
 
         self.db = db
@@ -109,13 +109,13 @@ class ApplicationMySQLHandler(Handler):
 
     def __get_connection(self):
 
-        if self.db['SSL']:
-            return MySQLdb.connect(host=self.db['HOST'], port=self.db['PORT'],
-                                    user=self.db['USER'], passwd=self.db['PASSWORD'], db=self.db['DATABASE_NAME'],
-                                    ssl=self.db['SSL'])
+        if self.db["SSL"]:
+            return MySQLdb.connect(host=self.db["HOST"], port=self.db["PORT"],
+                                    user=self.db["USER"], passwd=self.db["PASSWORD"], db=self.db["DATABASE_NAME"],
+                                    ssl=self.db["SSL"])
         else:
-            return MySQLdb.connect(host=self.db['HOST'], port=self.db['PORT'],
-                                   user=self.db['USER'], passwd=self.db['PASSWORD'], db=self.db['DATABASE_NAME'])
+            return MySQLdb.connect(host=self.db["HOST"], port=self.db["PORT"],
+                                   user=self.db["USER"], passwd=self.db["PASSWORD"], db=self.db["DATABASE_NAME"])
 
 
     def check_table_presence(self):
@@ -152,7 +152,6 @@ class ApplicationMySQLHandler(Handler):
         @param record:
         @return: 
         """
-
         # Inject own variables
         if has_request_context():
             record.url = request.url
@@ -173,22 +172,22 @@ class ApplicationMySQLHandler(Handler):
             if isinstance(v, str):
                 setattr(record, k, escape_string(
                     v.replace("'", "''")).decode("utf-8"))
-            elif v.__class__.__name__ == 'Exception':
+            elif v.__class__.__name__ == "Exception":
                 setattr(record, k, escape_string(str(v)).decode("utf-8"))
 
         try:
             # Instanciate msg with argument format
-            if '%' in record.msg:
+            if "%" in record.msg:
                 record.msg = record.msg % record.args
 
             # Reset args to avoir manipulate tuple in database
-            record.args = ''
+            record.args = ""
 
             # Insert log record
             sql = ApplicationMySQLHandler.insertion_sql % record.__dict__
 
         except:
-            sql = ''
+            sql = ""
 
         if len(sql) > 0:
             try:

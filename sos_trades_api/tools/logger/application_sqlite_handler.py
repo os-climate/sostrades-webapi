@@ -15,8 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import sqlite3
-from time import strftime, localtime
 from logging import Handler, _defaultFormatter
+from time import localtime, strftime
+
 from flask import has_request_context, request
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S'

@@ -15,13 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging
+import time
 
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
-
-import time
 
 
 def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hierarchyLinks):
@@ -33,75 +31,75 @@ def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hier
     groupedLinksDict = {}
 
     # Create dictionaries to simplify access
-    treeNodesDict = {element['id']: element for element in treeNodes}
-    parametersDict = {element['id']: element for element in parameterNodes}
+    treeNodesDict = {element["id"]: element for element in treeNodes}
+    parametersDict = {element["id"]: element for element in parameterNodes}
 
     # Create coupling links
     if couplingMatrix_df is not None:
         # convert dataframe to dict
-        couplingMatrixDict = couplingMatrix_df.to_dict(orient='index')
+        couplingMatrixDict = couplingMatrix_df.to_dict(orient="index")
 
         # create a unique set of ids
-        idsList = set([key['id'] for key in parameterNodes + treeNodes])
+        idsList = set([key["id"] for key in parameterNodes + treeNodes])
 
         for row in couplingMatrixDict.values():
             rowLinks = []
-            discFromId = row['disc_1']
-            discToId = row['disc_2']
-            parameterId = row['var_name']
+            discFromId = row["disc_1"]
+            discToId = row["disc_2"]
+            parameterId = row["var_name"]
 
             # Avoid to create links to nodes that do not exists which would
             # crash the drawing of the matrix
             if discFromId in idsList and parameterId in idsList and discToId in idsList:
                 rowLinks.append(dict({
-                    'id': discFromId + '_TO_' + parameterId + '_TYPE_OUTPUT OF',
-                    'source': discFromId,
-                    'target': parameterId,
-                    'Type': 'OUTPUT_OF',
-                    'Size': 3,
-                    'ancestors': get_ancestors(treeNodesDict, discFromId),
-                    'active': 0
+                    "id": discFromId + "_TO_" + parameterId + "_TYPE_OUTPUT OF",
+                    "source": discFromId,
+                    "target": parameterId,
+                    "Type": "OUTPUT_OF",
+                    "Size": 3,
+                    "ancestors": get_ancestors(treeNodesDict, discFromId),
+                    "active": 0,
                 }))
 
                 rowLinks.append(dict({
-                    'id': parameterId + '_TO_' + discToId + '_TYPE_INPUT OF',
-                    'source': parameterId,
-                    'target': discToId,
-                    'Type': 'INPUT_TO',
-                    'Size': 3,
-                    'ancestors': get_ancestors(treeNodesDict, discToId),
-                    'active': 0
+                    "id": parameterId + "_TO_" + discToId + "_TYPE_INPUT OF",
+                    "source": parameterId,
+                    "target": discToId,
+                    "Type": "INPUT_TO",
+                    "Size": 3,
+                    "ancestors": get_ancestors(treeNodesDict, discToId),
+                    "active": 0,
                 }))
 
                 for link in rowLinks:
                     couplingLinks.append(link)
 
                 # Create an entry for the grouped links
-                id = discFromId + '_TO_' + \
-                    discToId + '_TYPE_GROUPLINK'
+                id = discFromId + "_TO_" + \
+                    discToId + "_TYPE_GROUPLINK"
 
                 if id in groupedLinksDict:
-                    groupedLinksDict[id]['Size'] += 1
-                    groupedLinksDict[id]['parameterList'].append(
-                        {'id': parameterId, 'Name': parametersDict.get(parameterId, {}).get('label', '')}),
-                    groupedLinksDict[id]['groupedLinks'] += rowLinks,
-                    groupedLinksDict[id]['groupedNodes'].append(
+                    groupedLinksDict[id]["Size"] += 1
+                    groupedLinksDict[id]["parameterList"].append(
+                        {"id": parameterId, "Name": parametersDict.get(parameterId, {}).get("label", "")}),
+                    groupedLinksDict[id]["groupedLinks"] += rowLinks,
+                    groupedLinksDict[id]["groupedNodes"].append(
                         parameterId)
                 else:
                     groupedLinksDict[id] = dict({
-                        'id': id,
-                        'source': discFromId,
-                        'sourceLabel': treeNodesDict[discFromId]['Name'],
-                        'target': discToId,
-                        'targetLabel': treeNodesDict[discToId]['Name'],
-                        'Type': 'parameterExchange',
-                        'Size': 1,
-                        'parameterList': [{'id': parameterId, 'Name': parametersDict.get(parameterId, {}).get('label', '')}],
-                        'sourceAncestors': get_ancestors(treeNodesDict, discFromId),
-                        'targetAncestors': get_ancestors(treeNodesDict, discToId),
-                        'groupedLinks': rowLinks,
-                        'groupedNodes': [parameterId],
-                        'active': 1
+                        "id": id,
+                        "source": discFromId,
+                        "sourceLabel": treeNodesDict[discFromId]["Name"],
+                        "target": discToId,
+                        "targetLabel": treeNodesDict[discToId]["Name"],
+                        "Type": "parameterExchange",
+                        "Size": 1,
+                        "parameterList": [{"id": parameterId, "Name": parametersDict.get(parameterId, {}).get("label", "")}],
+                        "sourceAncestors": get_ancestors(treeNodesDict, discFromId),
+                        "targetAncestors": get_ancestors(treeNodesDict, discToId),
+                        "groupedLinks": rowLinks,
+                        "groupedNodes": [parameterId],
+                        "active": 1,
                     })
 
             else:
@@ -113,55 +111,55 @@ def get_couplings_force_graph(couplingMatrix_df, treeNodes, parameterNodes, hier
             inLinks = []
             outLinks = []
             for row in couplingMatrixDict.values():
-                discFromId = row['disc_1']
-                discToId = row['disc_2']
-                parameterId = row['var_name']
-                if p['id'] == parameterId:
-                    outLinks.append({'link':
-                                     discFromId + '_TO_' + parameterId + '_TYPE_OUTPUT OF', 'node': discFromId})
-                    inLinks.append({'link':
-                                    parameterId + '_TO_' + discToId + '_TYPE_INPUT OF', 'node': discToId})
-            p['inLinks'] = inLinks
-            p['outLinks'] = outLinks
+                discFromId = row["disc_1"]
+                discToId = row["disc_2"]
+                parameterId = row["var_name"]
+                if p["id"] == parameterId:
+                    outLinks.append({"link":
+                                     discFromId + "_TO_" + parameterId + "_TYPE_OUTPUT OF", "node": discFromId})
+                    inLinks.append({"link":
+                                    parameterId + "_TO_" + discToId + "_TYPE_INPUT OF", "node": discToId})
+            p["inLinks"] = inLinks
+            p["outLinks"] = outLinks
     else:
-        logger.info(f'Coupling Matrix is empty')
+        logger.info("Coupling Matrix is empty")
 
     # adding the list of parameters linked to each children for each node
     for node in treeNodes:
         inParameterList = []
         outParameterList = []
 
-        idList = node['childrenIDs'] + [node['id']]
+        idList = node["childrenIDs"] + [node["id"]]
 
         for p in couplingLinks:
-            if p['Type'] == 'OUTPUT_OF':
-                if p['source'] in idList:
-                    outParameterList.append(p['id'])
-            elif p['Type'] == 'INPUT_TO':
-                if p['target'] in idList:
-                    inParameterList.append(p['id'])
+            if p["Type"] == "OUTPUT_OF":
+                if p["source"] in idList:
+                    outParameterList.append(p["id"])
+            elif p["Type"] == "INPUT_TO":
+                if p["target"] in idList:
+                    inParameterList.append(p["id"])
 
-        node['inParameterList'] = inParameterList
-        node['outParameterList'] = outParameterList
+        node["inParameterList"] = inParameterList
+        node["outParameterList"] = outParameterList
 
-    couplingMatrixDict = dict({'nodes': treeNodes + parameterNodes,
-                               'links': hierarchyLinks + couplingLinks,
-                               'treeNodes': treeNodes,
-                               'parameterNodes': parameterNodes,
-                               'hierarchyLinks': hierarchyLinks,
-                               'couplingLinks': couplingLinks,
-                               'groupedLinks': hierarchyLinks + list(groupedLinksDict.values())
+    couplingMatrixDict = dict({"nodes": treeNodes + parameterNodes,
+                               "links": hierarchyLinks + couplingLinks,
+                               "treeNodes": treeNodes,
+                               "parameterNodes": parameterNodes,
+                               "hierarchyLinks": hierarchyLinks,
+                               "couplingLinks": couplingLinks,
+                               "groupedLinks": hierarchyLinks + list(groupedLinksDict.values()),
                                })
     logger.info(
-        f'Couplings graph data generated with {len(treeNodes+parameterNodes)} nodes and {len(hierarchyLinks+couplingLinks)} links in {time.time() - start_time} seconds')
+        f"Couplings graph data generated with {len(treeNodes+parameterNodes)} nodes and {len(hierarchyLinks+couplingLinks)} links in {time.time() - start_time} seconds")
 
     return couplingMatrixDict
 
 
 def get_ancestors(treeview, startingId):
     ancestors = []
-    parentID = treeview[startingId]['Parent Node']
-    while parentID != '':
+    parentID = treeview[startingId]["Parent Node"]
+    while parentID != "":
         ancestors.append(parentID)
-        parentID = treeview[parentID]['Parent Node']
+        parentID = treeview[parentID]["Parent Node"]
     return ancestors

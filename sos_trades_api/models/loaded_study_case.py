@@ -14,29 +14,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Class that represent a study case with its logical treeview loaded
-"""
-import os
-from sos_trades_api.tools.chart_tools import load_post_processing
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 import json
-from sos_trades_api.models.database_models import UserStudyPreference, StudyCase, StudyCoeditionUser
+
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sqlalchemy import and_
 
-from sos_trades_api.server.base_server import db, app
-
-import time
+from sos_trades_api.models.database_models import (
+    StudyCase,
+    StudyCoeditionUser,
+    UserStudyPreference,
+)
 from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.chart_tools import load_post_processing
 
+"""
+Class that represent a study case with its logical treeview loaded
+"""
 
 class LoadStatus:
-    NONE = 'none'
-    IN_PROGESS = 'in_progress'
-    READ_ONLY_MODE = 'read_only_mode'
-    LOADED = 'loaded'
-    IN_ERROR = 'in_error'
+    NONE = "none"
+    IN_PROGESS = "in_progress"
+    READ_ONLY_MODE = "read_only_mode"
+    LOADED = "loaded"
+    IN_ERROR = "in_error"
 
 
 class LoadedStudyCase:
@@ -50,7 +51,7 @@ class LoadedStudyCase:
         self.no_data = no_data
         self.read_only = read_only
         self.treenode = {}
-        self.study_case.execution_status = ''
+        self.study_case.execution_status = ""
         self.post_processings = {}
         self.plotly = {}
         self.n2_diagram = {}
@@ -88,7 +89,8 @@ class LoadedStudyCase:
                 study_case_manager.execution_engine, load_post_proc)
 
     def __load_user_study_preference(self, user_id):
-        """ Load study preferences for the given user
+        """
+        Load study preferences for the given user
         :params: user_id, user identification of the preferences
         :type: integer
         """
@@ -106,12 +108,13 @@ class LoadedStudyCase:
                     new_preference = UserStudyPreference()
                     new_preference.user_id = user_id
                     new_preference.study_case_id = self.study_case.id
-                    new_preference.preference = ''
+                    new_preference.preference = ""
                     db.session.add(new_preference)
                     db.session.commit()
 
     def __load_user_execution_authorised(self, user_id):
-        """ Load user authorised for execution
+        """
+        Load user authorised for execution
         :params: user_id, user identification of the preferences
         :type: integer
         """
@@ -162,20 +165,21 @@ class LoadedStudyCase:
         return user_id_exec_auth
 
     def serialize(self):
-        """ json serializer for dto purpose
+        """
+        json serializer for dto purpose
         """
         return {
-            'study_case': self.study_case,
-            'treenode': self.treenode,
-            'post_processings': self.post_processings,
-            'plotly': self.plotly,
-            'n2_diagram': self.n2_diagram,
-            'user_id_execution_authorized': self.user_id_execution_authorized,
-            'no_data': self.no_data,
-            'read_only': self.read_only,
-            'preference': self.preference,
-            'can_reload': self.can_reload,
-            'load_status': self.load_status,
-            'dashboard': self.dashboard
+            "study_case": self.study_case,
+            "treenode": self.treenode,
+            "post_processings": self.post_processings,
+            "plotly": self.plotly,
+            "n2_diagram": self.n2_diagram,
+            "user_id_execution_authorized": self.user_id_execution_authorized,
+            "no_data": self.no_data,
+            "read_only": self.read_only,
+            "preference": self.preference,
+            "can_reload": self.can_reload,
+            "load_status": self.load_status,
+            "dashboard": self.dashboard,
 
         }

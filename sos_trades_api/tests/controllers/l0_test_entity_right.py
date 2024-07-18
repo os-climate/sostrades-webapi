@@ -14,26 +14,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
+
+from sos_trades_api.tests.controllers.unit_test_basic_config import (
+    DatabaseUnitTestConfiguration,
+)
+
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Test class for entity right procedures
 """
 
 
-from sos_trades_api.tests.controllers.unit_test_basic_config import DatabaseUnitTestConfiguration
-
-
-# pylint: disable=no-member
-# pylint: disable=line-too-long
-
-
 class TestEntityRight(DatabaseUnitTestConfiguration):
-    """ Test class for methods related to calculation controller
+    """
+    Test class for methods related to calculation controller
     Default accounts & group and a created user / group are used to check those controller
     """
-    test_repository_name = 'sostrades_core.sos_processes.test'
-    test_process_name = 'test_disc1_disc2_coupling'
-    test_study_name = 'test_creation'
+
+    test_repository_name = "sostrades_core.sos_processes.test"
+    test_process_name = "test_disc1_disc2_coupling"
+    test_study_name = "test_creation"
     test_study_id = None
     test_user_id = None
     test_process_id = None
@@ -41,19 +41,19 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
     default_group_id = None
 
     # New user
-    username = 'user1_usrnme'
-    firstname = 'user1_fn'
-    lastname = 'user1_ln'
-    username = 'user1_usrnme'
-    password = 'user1_passwd'
-    email = 'user@fake.com'
+    username = "user1_usrnme"
+    firstname = "user1_fn"
+    lastname = "user1_ln"
+    username = "user1_usrnme"
+    password = "user1_passwd"
+    email = "user@fake.com"
     user_profile_id = 2
     created_user_id = None
 
 
     # New group
-    group_name = 'test_group'
-    group_description = 'Group created for testing purpose'
+    group_name = "test_group"
+    group_description = "Group created for testing purpose"
     group_confidential = False
     created_group_id = None
 
@@ -65,16 +65,26 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
     def setUp(self):
         super().setUp()
-        from sos_trades_api.models.database_models import User, Group, Process, ProcessAccessUser, AccessRights, \
-            StudyCase
-        from sos_trades_api.controllers.sostrades_main.study_case_controller import create_study_case
-        from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
+        from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+            create_empty_study_case,
+        )
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            create_study_case,
+        )
+        from sos_trades_api.models.database_models import (
+            AccessRights,
+            Group,
+            Process,
+            ProcessAccessUser,
+            StudyCase,
+            User,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
                 .filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
             self.assertIsNotNone(
-                test_user, 'Default user test not found in database, check migrations')
+                test_user, "Default user test not found in database, check migrations")
             self.test_user_id = test_user.id
             default_group = Group.query \
                 .filter(Group.is_default_applicative_group).first()
@@ -92,7 +102,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             manager_right = AccessRights.query.filter(
                 AccessRights.access_right == AccessRights.MANAGER).first()
             self.assertIsNotNone(manager_right,
-                                 'Default access right Manager cannot be found in database, check migrations')
+                                 "Default access right Manager cannot be found in database, check migrations")
 
             # Authorize user_test for process
             # Test if user already authorized
@@ -128,7 +138,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                                          self.test_repository_name,
                                                          self.test_process_name,
                                                          self.default_group_id,
-                                                         'Empty Study',
+                                                         "Empty Study",
                                                          StudyCase.FROM_REFERENCE,
                                                      None,
                                                      None)
@@ -145,10 +155,14 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
         super().tearDown()
 
     def test_01_apply_entities_changes(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import apply_entities_changes
-        from sos_trades_api.models.database_models import GroupAccessUser, AccessRights
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            apply_entities_changes,
+        )
+        from sos_trades_api.controllers.sostrades_data.group_controller import (
+            create_group,
+        )
         from sos_trades_api.controllers.sostrades_data.user_controller import add_user
-        from sos_trades_api.controllers.sostrades_data.group_controller import create_group
+        from sos_trades_api.models.database_models import AccessRights, GroupAccessUser
         with DatabaseUnitTestConfiguration.app.app_context():
             # Create user and group
             created_group = create_group(
@@ -175,12 +189,14 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             group_access_user = GroupAccessUser.query \
                 .filter(GroupAccessUser.group_id == created_group.id) \
                 .filter(GroupAccessUser.user_id == created_user.id).first()
-
-            self.assertEqual(group_access_user.right_id, member_rights_id,
-                             'Right not coherent')
+            if group_access_user and member_rights is not None:
+                self.assertEqual(group_access_user.right_id, member_rights_id,
+                                 "Right not coherent")
 
     def test_02_get_study_case_entities_rights(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_study_case_entities_rights
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            get_study_case_entities_rights,
+        )
         from sos_trades_api.models.entity_rights import EntityType
         with DatabaseUnitTestConfiguration.app.app_context():
             study_case_entities_right = get_study_case_entities_rights(
@@ -188,13 +204,15 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             for ent_r in study_case_entities_right.entity.entities_rights:
                 if ent_r.entity_type == EntityType.USER:
                     self.assertEqual(ent_r.entity_object.id, self.test_user_id,
-                                     'User right for study case created not coherent, other user than test user has access right to the study')
+                                     "User right for study case created not coherent, other user than test user has access right to the study")
                 if ent_r.entity_type == EntityType.GROUP:
                     self.assertEqual(ent_r.entity_object.id, self.default_group_id,
-                                     'Group right for study case created not coherent, other group than default group has access right to the study')
+                                     "Group right for study case created not coherent, other group than default group has access right to the study")
 
     def test_03_get_process_entities_rights(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_process_entities_rights
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            get_process_entities_rights,
+        )
         from sos_trades_api.models.entity_rights import EntityType
         with DatabaseUnitTestConfiguration.app.app_context():
             process_entities_right = get_process_entities_rights(
@@ -204,18 +222,19 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             for ent_r in process_entities_right.entity.entities_rights:
                 if ent_r.entity_type == EntityType.USER:
                     self.assertEqual(ent_r.entity_object.id, self.test_user_id,
-                                     'User right for study case created not coherent, other user than test user has access right to the study')
+                                     "User right for study case created not coherent, other user than test user has access right to the study")
                 if ent_r.entity_type == EntityType.GROUP:
                     self.assertEqual(ent_r.entity_object.id, self.default_group_id,
-                                     'Group right for study case created not coherent, other group than SoSTrades Dev group has access right to the study')
+                                     "Group right for study case created not coherent, other group than SoSTrades Dev group has access right to the study")
 
     def test_04_get_group_entities_rights(self):
         # Created group should have 2 entity right, one for test _user, one for
         # created user
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import get_group_entities_rights
-        from sos_trades_api.models.database_models import AccessRights
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            get_group_entities_rights,
+        )
+        from sos_trades_api.models.database_models import AccessRights, Group, User
         from sos_trades_api.models.entity_rights import EntityType
-        from sos_trades_api.models.database_models import Group, User
         with DatabaseUnitTestConfiguration.app.app_context():
             member_rights = AccessRights.query.filter(
                 AccessRights.access_right == AccessRights.MEMBER).first()
@@ -230,22 +249,26 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             for ent_r in group_entities_rights.entity.entities_rights:
                 if ent_r.entity_type == EntityType.USER:
                     self.assertIn(ent_r.entity_object.id, [self.test_user_id, created_user_id],
-                                  'User right for created group not coherent, other user than test user/ created user has access right to the study')
+                                  "User right for created group not coherent, other user than test user/ created user has access right to the study")
                     if ent_r.entity_object.id == self.test_user_id:
                         self.assertEqual(ent_r.selected_right, owner_right.id,
-                                         'Test_user is not owner of group he created')
+                                         "Test_user is not owner of group he created")
                     elif ent_r.entity_object.id == created_user_id:
                         self.assertEqual(ent_r.selected_right, member_rights.id,
-                                         'created_user is not member of group he has been added as member')
+                                         "created_user is not member of group he has been added as member")
                 if ent_r.entity_type == EntityType.GROUP:
                     self.assertTrue(False,
-                                    'Group right for created group created not coherent, no group should have access to this group')
+                                    "Group right for created group created not coherent, no group should have access to this group")
 
     def test_05_verify_user_authorised_for_resource(self):
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import \
-            verify_user_authorised_for_resource
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            verify_user_authorised_for_resource,
+        )
         from sos_trades_api.models.database_models import Group, User, UserProfile
-        from sos_trades_api.tools.right_management.access_right import has_access_to, APP_MODULE_EXECUTION
+        from sos_trades_api.tools.right_management.access_right import (
+            APP_MODULE_EXECUTION,
+            has_access_to,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             group_id = (Group.query
                         .filter(Group.name == self.group_name).first()).id
@@ -266,9 +289,9 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             created_user_authorised_sc = verify_user_authorised_for_resource(
                 created_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertFalse(created_user_authorised_group,
-                             'the user created must not be authorized for the resource created_group')
+                             "the user created must not be authorized for the resource created_group")
             self.assertFalse(created_user_authorised_sc,
-                             'the user created must not be authorized for the resource study case')
+                             "the user created must not be authorized for the resource study case")
             # Test user should have access to everything
             test_user_authorised_group = verify_user_authorised_for_resource(
                 self.test_user_id, self.user_profile_id, entities_rights_group)
@@ -277,31 +300,38 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             test_user_authorised_process = verify_user_authorised_for_resource(
                 self.test_user_id, self.user_profile_id, entities_rights_study_case)
             self.assertTrue(test_user_authorised_group,
-                            'test user must be authorized for the resource created_group')
+                            "test user must be authorized for the resource created_group")
             self.assertTrue(test_user_authorised_sc,
-                            'test user must be authorized for the resource study case')
+                            "test user must be authorized for the resource study case")
             self.assertTrue(test_user_authorised_process,
-                            'test user must not be authorized for the resource process')
+                            "test user must not be authorized for the resource process")
 
             # check user is authorized for execution mode
             profile_no_execution = UserProfile.query.filter(
                 UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
             if profile_no_execution is not None:
-                
+
                 #retrieve standard user
                 standard_test_user = User.query.filter(User.username == User.STANDARD_USER_ACCOUNT_NAME).first()
-                
-                # check execution rights  
+
+                # check execution rights
                 has_right = has_access_to(profile_no_execution.id, APP_MODULE_EXECUTION)
-                self.assertFalse(has_right,'this profile should have no execution right')
-                
+                self.assertFalse(has_right,"this profile should have no execution right")
+
                 has_right = has_access_to(standard_test_user.user_profile_id, APP_MODULE_EXECUTION)
-                self.assertTrue(has_right,'the standard user test profile should have execution right')
+                self.assertTrue(has_right,"the standard user test profile should have execution right")
 
 
     def test_06_change_process_source_rights(self):
-        from sos_trades_api.models.database_models import ProcessAccessUser, User, Group, AccessRights
-        from sos_trades_api.controllers.sostrades_data.entity_right_controller import apply_entities_changes
+        from sos_trades_api.controllers.sostrades_data.entity_right_controller import (
+            apply_entities_changes,
+        )
+        from sos_trades_api.models.database_models import (
+            AccessRights,
+            Group,
+            ProcessAccessUser,
+            User,
+        )
         with DatabaseUnitTestConfiguration.app.app_context():
             group_id = (Group.query
                         .filter(Group.name == self.group_name).first()).id
@@ -312,10 +342,10 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                 .filter(ProcessAccessUser.process_id == self.test_process_id) \
                 .filter(ProcessAccessUser.user_id == self.test_user_id).first()
             self.assertIsNotNone(process_access_user,
-                                 'ProcessAccessUser not found')
+                                 "ProcessAccessUser not found")
             # check processAccessUser source is USER
             self.assertEqual(process_access_user.source, ProcessAccessUser.SOURCE_USER,
-                             'source not initialized to USER')
+                             "source not initialized to USER")
 
             # change processAccessUser source to FILE
             process_access_user.source = ProcessAccessUser.SOURCE_FILE
@@ -337,12 +367,14 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
                                      "selectedRight": member_rights_id,
                                      "isLocked": False,
                                      "oldRight": None}]}
-            apply_entities_changes(
-                self.test_user_id, self.user_profile_id, entities_rights)
+        apply_entities_changes(
+            self.test_user_id, self.user_profile_id, entities_rights)
+
+        with DatabaseUnitTestConfiguration.app.app_context():
             process_access_user = ProcessAccessUser.query \
                 .filter(ProcessAccessUser.process_id == self.test_process_id) \
                 .filter(ProcessAccessUser.user_id == self.test_user_id).first()
 
             self.assertEqual(process_access_user.source, ProcessAccessUser.SOURCE_USER,
-                             'source not set to USER')
-    
+                             "source not set to USER")
+

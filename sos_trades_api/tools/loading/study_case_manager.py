@@ -14,44 +14,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 import logging
-import time
-
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
-from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
-from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
-"""
-
-from sostrades_core.study_manager.base_study_manager import BaseStudyManager
-from sostrades_core.tools.tree.serializer import DataSerializer
-from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
-from sos_trades_api.models.database_models import (
-    StudyCase,
-    StudyCaseAccessGroup,
-    Group,
-    AccessRights,
-)
-from sos_trades_api.server.base_server import db, app
-from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump, CryptedLoadDump
-from sos_trades_api.config import Config
-from os.path import join
-
-
 import os
-
-from eventlet import sleep
-from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
+from os.path import join
 from pathlib import Path
 from shutil import copy
-import json
-from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
-from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 
+from eventlet import sleep
+from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
+from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
+from sostrades_core.tools.tree.serializer import DataSerializer
+
+from sos_trades_api.config import Config
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
+from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    StudyCase,
+    StudyCaseAccessGroup,
+)
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.file_tools import (
+    read_object_in_json_file,
+    write_object_in_json_file,
+)
+from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
+
+"""
+Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
+"""
 
 class StudyCaseError(Exception):
     """Base StudyCase Exception"""
@@ -60,7 +59,7 @@ class StudyCaseError(Exception):
         Exception.__init__(self, msg)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 class InvalidProcess(StudyCaseError):
@@ -112,7 +111,6 @@ class StudyCaseManager(BaseStudyManager):
             :param study_case: study case instance from which data will be copied
             :type study_case:  sos_trades_api.models.database_models.StudyCase
             """
-
             self.id = study_case.id
             self.group_id = study_case.group_id
             self.name = study_case.name
@@ -149,7 +147,7 @@ class StudyCaseManager(BaseStudyManager):
         self.__get_read_write_strategy()
 
         self.__root_dir = self.get_root_study_data_folder(
-            self.__study.group_id, self.__study.id
+            self.__study.group_id, self.__study.id,
         )
 
         super().__init__(
@@ -158,7 +156,7 @@ class StudyCaseManager(BaseStudyManager):
             self.__study.name,
             self.__root_dir,
             yield_method=sleep,
-            logger=logging.getLogger(f'{self.__study_identifier}.sostrades_core.ExecutionEngine'),
+            logger=logging.getLogger(f"{self.__study_identifier}.sostrades_core.ExecutionEngine"),
         )
 
         self.__study_database_logger = None
@@ -168,6 +166,11 @@ class StudyCaseManager(BaseStudyManager):
         # loading status in case of dataset import
         self.dataset_load_status = LoadStatus.NONE
         self.dataset_load_error = None
+
+        # export status in case of dataset export
+        # it is a dict with notification id in case multiple export at the same time
+        self.dataset_export_status_dict = {}
+        self.dataset_export_error_dict = {}
 
         self.n2_diagram = {}
         self.__error_message = ""
@@ -184,7 +187,6 @@ class StudyCaseManager(BaseStudyManager):
         """
         Return the current database logger handler used by the study
         """
-
         return self.__study_database_logger
 
     @property
@@ -192,18 +194,16 @@ class StudyCaseManager(BaseStudyManager):
         """
         Return the current error message
         """
-
         return self.__error_message
 
     def _init_exec_engine(self):
         """
         Overloaded method that initialize execution engine instance
         """
-
         super()._init_exec_engine()
 
     def raw_log_file_path_absolute(
-        self, specific_study_case_execution_identifier=None
+        self, specific_study_case_execution_identifier=None,
     ) -> str:
         """
         Build the raw log file path of the study
@@ -212,8 +212,7 @@ class StudyCaseManager(BaseStudyManager):
         the study case
         :type specific_study_case_execution_identifier: str/int
         """
-
-        file_path = ''
+        file_path = ""
 
         if self.__study is not None:
 
@@ -223,13 +222,13 @@ class StudyCaseManager(BaseStudyManager):
 
             file_path = os.path.join(
                 self.dump_directory,
-                f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log',
+                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
             )
 
         return file_path
 
     def raw_log_file_path_relative(
-        self, specific_study_case_execution_identifier=None
+        self, specific_study_case_execution_identifier=None,
     ) -> str:
         """
         Build the raw log file path of the study
@@ -237,8 +236,7 @@ class StudyCaseManager(BaseStudyManager):
         :param specific_study_case_execution_identifier: Optional, to retrieve execution which is not the current one in
         the study case
         """
-
-        file_path = ''
+        file_path = ""
 
         if self.__study is not None:
 
@@ -249,7 +247,7 @@ class StudyCaseManager(BaseStudyManager):
             file_path = os.path.join(
                 str(self.__study.group_id),
                 str(self.__study.id),
-                f'sc{self.__study.id}-sce{study_execution_identifier}-execution.log',
+                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
             )
 
         return file_path
@@ -262,7 +260,6 @@ class StudyCaseManager(BaseStudyManager):
         :param study_folder_path: location of pickle file to load (optional parameter)
         :type study_folder_path: str
         """
-
         study_folder = study_folder_path
         if study_folder_path is None:
             study_folder = self.__root_dir
@@ -280,7 +277,6 @@ class StudyCaseManager(BaseStudyManager):
 
         :return dictionary, {str: *}
         """
-
         study_folder = study_folder_path
         if study_folder_path is None:
             study_folder = self.__root_dir
@@ -296,7 +292,6 @@ class StudyCaseManager(BaseStudyManager):
         :param study_folder_path: location of pickle file to load (optional parameter)
         :type study_folder_path: str
         """
-
         study_folder = study_folder_path
         if study_folder_path is None:
             study_folder = self.__root_dir
@@ -314,13 +309,12 @@ class StudyCaseManager(BaseStudyManager):
         platform update
         :type disabled_study: boolean
         """
-
         self.load_status = LoadStatus.IN_ERROR
         self.__error_message = error_message
 
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == self.__study_identifier
+                StudyCase.id == self.__study_identifier,
             ).first()
             study_case.error = error_message
             study_case.disabled = disabled_study
@@ -332,7 +326,6 @@ class StudyCaseManager(BaseStudyManager):
         """
         Clear error on study case manager
         """
-
         self.load_status = LoadStatus.NONE
         self.__error_message = ""
 
@@ -340,7 +333,6 @@ class StudyCaseManager(BaseStudyManager):
         """
         Force update of the study object from database
         """
-
         self.__load_study_case_from_identifier()
 
     def reset(self):
@@ -376,7 +368,7 @@ class StudyCaseManager(BaseStudyManager):
             loaded_study_case = LoadedStudyCase(self, False, True, None, True)
             # Apply ontology
             process_metadata = load_processes_metadata(
-                [f'{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}'])
+                [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
 
             repository_metadata = load_repositories_metadata(
                 [loaded_study_case.study_case.repository])
@@ -413,7 +405,6 @@ class StudyCaseManager(BaseStudyManager):
         Methods that load a study case using the given study identifier
         from database
         """
-
         with app.app_context():
             study_cases = StudyCase.query.filter_by(id=self.__study_identifier)
 
@@ -425,19 +416,18 @@ class StudyCaseManager(BaseStudyManager):
 
             else:
                 raise InvalidStudy(
-                    f'Requested study case (identifier {self.__study_identifier}) does not exist in the database'
+                    f"Requested study case (identifier {self.__study_identifier}) does not exist in the database",
                 )
 
     def __get_read_write_strategy(self):
         """
         Methods that determine and instantiate physical strategy serialisation
         """
-
         self.rw_strategy = DirectLoadDump()
 
         # Retrieve group owner
         owner_right = AccessRights.query.filter(
-            AccessRights.access_right == AccessRights.OWNER
+            AccessRights.access_right == AccessRights.OWNER,
         ).first()
 
         if owner_right is not None:
@@ -465,7 +455,6 @@ class StudyCaseManager(BaseStudyManager):
             to flush data calling flush method at the end of the process
         :type bulk_transaction: boolean
         """
-
         if self.__study_database_logger is None and self.logger is not None:
 
             config = Config()
@@ -489,7 +478,6 @@ class StudyCaseManager(BaseStudyManager):
         """
         Detach database logger
         """
-
         if self.__study_database_logger is not None and self.logger is not None:
             self.logger.removeHandler(self.__study_database_logger)
 
@@ -499,12 +487,11 @@ class StudyCaseManager(BaseStudyManager):
         """
         Check that backup files exists
         """
-
         root_folder = Path(self.dump_directory)
 
         # check that there is backup files
         backup_files = list(
-            root_folder.rglob(f'*{StudyCaseManager.BACKUP_FILE_NAME}.*')
+            root_folder.rglob(f"*{StudyCaseManager.BACKUP_FILE_NAME}.*"),
         )
         return len(backup_files) > 0
 
@@ -512,19 +499,18 @@ class StudyCaseManager(BaseStudyManager):
         """
         Method that copy the study pickles into backup files
         """
-
         backup_done = False
         root_folder = Path(self.dump_directory)
 
         # check that there is no backup file already
-        backup_files = list(root_folder.rglob(f'*{self.BACKUP_FILE_NAME}.*'))
+        backup_files = list(root_folder.rglob(f"*{self.BACKUP_FILE_NAME}.*"))
         if len(backup_files) == 0:
             # get all files in directory
-            files = list(root_folder.glob(f'*.*'))
+            files = list(root_folder.glob("*.*"))
 
             for file in files:
                 # create backup file name
-                file_and_extension = file.name.split('.')
+                file_and_extension = file.name.split(".")
                 backup_file_name = (
                     file_and_extension[0]
                     + self.BACKUP_FILE_NAME
@@ -542,19 +528,18 @@ class StudyCaseManager(BaseStudyManager):
         """
         Method that copy the study pickles backup files in place of the study pickles
         """
-
         reload_done = False
         root_folder = Path(self.dump_directory)
 
         app.logger.warning(f"Reloading study case {self.__study_identifier}")
 
         # check that there is backup files
-        backup_files = list(root_folder.rglob(f'*{self.BACKUP_FILE_NAME}.*'))
+        backup_files = list(root_folder.rglob(f"*{self.BACKUP_FILE_NAME}.*"))
         if len(backup_files) > 0:
             for backup_file in backup_files:
                 # create backup file name
-                backup_file_and_extension = backup_file.name.split('.')
-                file_name = backup_file.name.replace(self.BACKUP_FILE_NAME, '')
+                backup_file_and_extension = backup_file.name.split(".")
+                file_name = backup_file.name.replace(self.BACKUP_FILE_NAME, "")
 
                 # copy backup file in place of pickle:
                 copy(root_folder.joinpath(backup_file),
@@ -675,7 +660,7 @@ class StudyCaseManager(BaseStudyManager):
     @staticmethod
     def copy_pkl_file(file_name, study_case_manager, study_manager_source):
         """
-            Load data from a file then dump them into a new file
+        Load data from a file then dump them into a new file
         """
         # Create the new study's directory
         if not os.path.exists(study_case_manager.dump_directory):
@@ -699,8 +684,7 @@ class StudyCaseManager(BaseStudyManager):
         :param study_case_id: optional id of the study_case
         :type study_case_id: int
         """
-
-        data_root_dir = join(Config().data_root_dir, 'study_case')
+        data_root_dir = join(Config().data_root_dir, "study_case")
         if group_id is not None:
             data_root_dir = join(data_root_dir, str(group_id))
             if study_case_id is not None:

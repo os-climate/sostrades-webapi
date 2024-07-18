@@ -6,55 +6,37 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `click (8.1.7) <https://palletsprojects.com/p/click/>`_
     BSD-3-Clause
 
-`dnspython (2.2.1) <https://www.dnspython.org>`_
-    ISC
-
-`python-dotenv (0.12.0) <https://github.com/theskumar/python-dotenv>`_
-    BSD-3-Clause
-
-`eventlet (0.33.3) <http://eventlet.net>`_
+`eventlet (0.36.1) <http://eventlet.net>`_
     MIT License
 
-`Flask (1.1.1) <https://flask.palletsprojects.com/>`_
+`Flask (2.3.3) <https://flask.palletsprojects.com/>`_
     BSD License
 
-`flask-jwt-extended (3.24.1) <https://github.com/vimalloc/flask-jwt-extended>`_
+`flask-jwt-extended (4.6.0) <https://github.com/vimalloc/flask-jwt-extended>`_
     MIT
 
-`flask_login (0.5.0) <https://github.com/maxcountryman/flask-login>`_
-    MIT
-
-`Flask-Migrate (2.5.2) <https://github.com/miguelgrinberg/flask-migrate>`_
+`Flask-Migrate (4.0.7) <https://github.com/miguelgrinberg/flask-migrate>`_
     MIT
 
 `flask-socketio (5.3.6) <https://github.com/miguelgrinberg/flask-socketio>`_
     MIT License
 
-`python-socketio (5.8.0) <https://github.com/miguelgrinberg/python-socketio>`_
-    MIT License
-
-`python-engineio (4.5.1) <https://github.com/miguelgrinberg/python-engineio>`_
-    MIT License
-
-`Flask-SQLAlchemy (2.4.1) <https://flask-sqlalchemy.palletsprojects.com>`_
+`Flask-SQLAlchemy (2.5.1) <https://flask-sqlalchemy.palletsprojects.com>`_
     BSD License
 
 `furl (2.1.3) <https://github.com/gruns/furl>`_
     Unlicense
 
-`graphviz (0.16) <https://github.com/xflr6/graphviz>`_
+`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
+    BSD
+
+`graphviz (0.20.3) <https://github.com/xflr6/graphviz>`_
     MIT
 
-`itsdangerous (2.0.1) <https://palletsprojects.com/p/itsdangerous/>`_
-    BSD-3-Clause
+`jinja2 (3.1.4) <https://pypi.org/project/Jinja2/>`_
+    BSD License
 
-`jinja2 (3.0.1) <https://palletsprojects.com/p/jinja/>`_
-    BSD-3-Clause
-
-`PyJWT (1.7.1) <https://github.com/jpadilla/pyjwt>`_
-    MIT
-
-`kubernetes (11.0.0) <https://github.com/kubernetes-client/python>`_
+`kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
 
 `mysqlclient (2.2.0) <https://mysqlclient.readthedocs.io/>`_
@@ -63,44 +45,53 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `numpy (1.24.4) <https://numpy.org>`_
     BSD License
 
-`pandas (1.3.0) <https://pandas.pydata.org>`_
+`pandas (2.2.2) <https://pandas.pydata.org>`_
     BSD License
 
 `plotly (5.3.0) <https://plotly.com/python/>`_
     MIT
 
-`psutil (5.9.5) <https://github.com/giampaolo/psutil>`_
+`psutil (6.0.0) <https://github.com/giampaolo/psutil>`_
     BSD-3-Clause
 
-`python-ldap (3.3.0) <https://www.python-ldap.org/>`_
+`PyJWT (2.8.0) <https://pypi.org/project/PyJWT/>`_
+    MIT
+
+`python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
+    BSD-3-Clause
+
+`python-ldap (3.4.0) <https://www.python-ldap.org/>`_
     Python style
+
+`python-keycloak (4.0.0) <https://pypi.org/project/python-keycloak/>`_
+    MIT License
 
 `python3-saml (1.9.0) <https://github.com/SAML-Toolkits/python3-saml>`_
     MIT
 
-`pytz (2023.3.post1) <http://pythonhosted.org/pytz>`_
+`python-engineio (4.5.1) <https://github.com/miguelgrinberg/python-engineio>`_
+    MIT License
+    
+`python-socketio (5.8.0) <https://github.com/miguelgrinberg/python-socketio>`_
+    MIT License
+
+`pytz (2024.1) <http://pythonhosted.org/pytz>`_
     MIT
 
 `PyYAML (6.0.1) <https://pyyaml.org/>`_
     MIT
 
-`requests (2.31.0) <https://requests.readthedocs.io>`_
+`requests (2.32.3) <https://requests.readthedocs.io>`_
     Apache 2.0
 
 `simplejson (3.19.2) <https://github.com/simplejson/simplejson>`_
     MIT License
 
-`SQLAlchemy (1.3.13) <https://www.sqlalchemy.org>`_
-    MIT
-
-`urllib3 (2.0.6) <https://urllib3.readthedocs.io>`_
+`SQLAlchemy (1.4.52) <https://pypi.org/project/SQLAlchemy/>`_
     MIT License
 
-`werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
+`urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
+    MIT License
+
+`werkzeug (2.3.8) <https://werkzeug.palletsprojects.com/>`_
     BSD License
-
-`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
-    BSD
-
-`nose2 (0.9.1) <https://docs.nose2.io/>`_
-    BSD-2-Clause

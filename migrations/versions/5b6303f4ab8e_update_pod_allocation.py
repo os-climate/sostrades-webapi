@@ -1,17 +1,18 @@
-"""update pod allocation
+"""
+update pod allocation
 
 Revision ID: 5b6303f4ab8e
 Revises: 5acd0bb7bad9
 Create Date: 2024-03-15 16:53:44.531536
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision = '5b6303f4ab8e'
-down_revision = '5acd0bb7bad9'
+revision = "5b6303f4ab8e"
+down_revision = "5acd0bb7bad9"
 branch_labels = None
 depends_on = None
 
@@ -58,9 +59,9 @@ def downgrade():
     mysql_default_charset='latin1',
     mysql_engine='InnoDB'
     )
-    op.create_index('kubernetes_pod_name', 'study_case_allocation', ['kubernetes_pod_name'], unique=False)
-    op.create_index('ix_study_case_allocation_study_case_id', 'study_case_allocation', ['study_case_id'], unique=False)
-    op.add_column('study_case_execution', sa.Column('kubernetes_pod_name', mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
-    op.add_column('reference_study', sa.Column('kubernete_pod_name', mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
-    op.drop_table('pod_allocation')
+    op.create_index("kubernetes_pod_name", "study_case_allocation", ["kubernetes_pod_name"], unique=False)
+    op.create_index("ix_study_case_allocation_study_case_id", "study_case_allocation", ["study_case_id"], unique=False)
+    op.add_column("study_case_execution", sa.Column("kubernetes_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
+    op.add_column("reference_study", sa.Column("kubernete_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
+    op.drop_table("pod_allocation")
     # ### end Alembic commands ###

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,29 +12,30 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
+from datetime import datetime, timezone
+
+from sos_trades_api.models.database_models import StudyCaseValidation
+from sos_trades_api.server.base_server import app, db
+
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Data and graph validation tools
 """
-from sos_trades_api.server.base_server import db, app
-from datetime import datetime, timezone
-from sos_trades_api.models.database_models import StudyCaseValidation
-
 
 def invalidate_namespace_after_save(study_case_id, user_fullname, user_department, namespace):
     """
-       If a variable has been changed, retrieve the node validation status, if the node was validated
-       that invalidate it. The user have to check changes.
+    If a variable has been changed, retrieve the node validation status, if the node was validated
+    that invalidate it. The user have to check changes.
 
-        :param: study_case_id, id of the studycase
-        :type: integer
-        :param: user_fullname, user's information that did the validation
-        :type: user
-        :param: user_department, user's information that did the validation
-        :type: user
-        :param: namespace, namespace of the data validated
-        :type: string
+     :param: study_case_id, id of the studycase
+     :type: integer
+     :param: user_fullname, user's information that did the validation
+     :type: user
+     :param: user_department, user's information that did the validation
+     :type: user
+     :param: namespace, namespace of the data validated
+     :type: string
 
     """
     with app.app_context():
@@ -51,7 +52,7 @@ def invalidate_namespace_after_save(study_case_id, user_fullname, user_departmen
             new_study_validation.validation_user_department = user_department
             new_study_validation.namespace = namespace
             new_study_validation.validation_state = StudyCaseValidation.NOT_VALIDATED
-            new_study_validation.validation_comment = 'Automatic invalidation after data change(s)'
+            new_study_validation.validation_comment = "Automatic invalidation after data change(s)"
             new_study_validation.validation_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
 
             db.session.add(new_study_validation)

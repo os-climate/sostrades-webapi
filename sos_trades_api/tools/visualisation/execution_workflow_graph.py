@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2023/11/03 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/06/24 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
+import logging
+import time
+
+from graphviz import Digraph
+
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 tooling to generate D3 js data structure for N2 matrix purpose
 """
-
-import time
-from graphviz import Digraph
-import logging
-
-#from sostrades_core.execution_engine.scatter_data import SoSScatterData
 
 
 class SoSExecutionWorkflow:
@@ -50,7 +49,7 @@ class SoSExecutionWorkflow:
         start_time = time.time()
         logger = logging.getLogger(__name__)
         self.construct_execution_workflow_graph(
-            GEMS_graph=self.GEMS_graph, level=0, parentId=None
+            GEMS_graph=self.GEMS_graph, level=0, parentId=None,
         )
 
         # test to simplify workflow by removing scatter data
@@ -64,10 +63,10 @@ class SoSExecutionWorkflow:
         self.create_dot_graph()
 
         logger.info(
-            f'Execution Workflow data generated in {time.time() - start_time} seconds'
+            f"Execution Workflow data generated in {time.time() - start_time} seconds",
         )
 
-        return ''
+        return ""
 
     def construct_execution_workflow_graph(self, GEMS_graph, level, parentId):
         root_disc_id = []
@@ -85,7 +84,7 @@ class SoSExecutionWorkflow:
                     disc = parallel_tasks[0][0]
 
                     disc_info = self.create_mono_disc_node(
-                        disc=disc, level=level, parentId=parentId, GEMS_graph=GEMS_graph
+                        disc=disc, level=level, parentId=parentId, GEMS_graph=GEMS_graph,
                     )
 
                 else:
@@ -106,35 +105,35 @@ class SoSExecutionWorkflow:
                     GEMS_graph=GEMS_graph,
                 )
 
-            root_disc_id.append(disc_info['id'])
+            root_disc_id.append(disc_info["id"])
         return root_disc_id
 
     def create_mono_disc_node(self, disc, level, parentId, GEMS_graph):
         disc_node_info = {}
-        disc_node_info['id'] = disc.disc_id
-        disc_node_info['type'] = 'DisciplineNode'
-        disc_node_info['disc_name'] = type(disc).__name__
+        disc_node_info["id"] = disc.disc_id
+        disc_node_info["type"] = "DisciplineNode"
+        disc_node_info["disc_name"] = type(disc).__name__
 
         disc_name = disc.get_disc_full_name()
         # remove study name from full name
-        disc_name = '.'.join(disc_name.split('.')[1:])
-        disc_node_info['label'] = disc_name
-        disc_node_info['status'] = disc.status
-        disc_node_info['level'] = level
-        disc_node_info['parent'] = parentId
-        disc_node_info['path'] = disc.get_module()
+        disc_name = ".".join(disc_name.split(".")[1:])
+        disc_node_info["label"] = disc_name
+        disc_node_info["status"] = disc.status
+        disc_node_info["level"] = level
+        disc_node_info["parent"] = parentId
+        disc_node_info["path"] = disc.get_module()
 
         # add discipline class to unique list. useful to retrieve ontology
         # information only once
-        if disc_node_info['path'] not in self.unique_disc:
-            self.unique_disc.add(disc_node_info['path'])
+        if disc_node_info["path"] not in self.unique_disc:
+            self.unique_disc.add(disc_node_info["path"])
 
         children = []
         # recursivity
-        if hasattr(disc, 'disciplines'):
-            if type(disc).__name__ == 'SoSCoupling':
+        if hasattr(disc, "disciplines"):
+            if type(disc).__name__ == "SoSCoupling":
                 # it is a Coupling
-                disc_node_info['type'] = 'CouplingNode'
+                disc_node_info["type"] = "CouplingNode"
                 sub_GEMS_graph = disc.coupling_structure.graph
 
                 # add missing links between graphs
@@ -146,12 +145,12 @@ class SoSExecutionWorkflow:
 
                 # construct workflow for sub graph
                 root_disc_id_list = self.construct_execution_workflow_graph(
-                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id
+                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id,
                 )
 
                 children = root_disc_id_list
 
-            if type(disc).__name__ == 'SoSOptimScenario':
+            if type(disc).__name__ == "SoSOptimScenario":
                 for disc_child in disc.disciplines:
                     children.append(disc_child.disc_id)
                     # it is an optim scenario
@@ -161,12 +160,12 @@ class SoSExecutionWorkflow:
                         parentId=disc.disc_id,
                         GEMS_graph=GEMS_graph,
                     )
-        elif hasattr(disc, 'sos_disciplines'):
+        elif hasattr(disc, "sos_disciplines"):
             if len(disc.sos_disciplines) == 1:
                 # we are probably in the case of an SoSEval equivalent.
                 # we need to retrieve sub coupling structure
                 sub_disc = disc.sos_disciplines[0]
-                disc_node_info['type'] = 'CouplingNode'
+                disc_node_info["type"] = "CouplingNode"
                 sub_GEMS_graph = sub_disc.coupling_structure.graph
 
                 # add missing links between graphs
@@ -178,20 +177,20 @@ class SoSExecutionWorkflow:
 
                 # construct workflow for sub graph
                 root_disc_id_list = self.construct_execution_workflow_graph(
-                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id
+                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id,
                 )
 
                 children = root_disc_id_list
             elif len(disc.sos_disciplines) > 1:
-                raise Exception('What do we do?')
+                raise Exception("What do we do?")
 
-        disc_node_info['children'] = children
+        disc_node_info["children"] = children
         self.nodes_dict[disc.disc_id] = disc_node_info
 
         return disc_node_info
 
     def add_links_from_sub_nodes_to_current_graph(
-        self, GEMS_graph, coupling_disc_id, sub_GEMS_graph
+        self, GEMS_graph, coupling_disc_id, sub_GEMS_graph,
     ):
         # retrieve links that we will need to recreate
         coupling_out_links = []
@@ -203,9 +202,9 @@ class SoSExecutionWorkflow:
             # re-created
             if disc_from_id == coupling_disc_id:
                 link = {
-                    'from': disc_from_id,
-                    'to': disc_to_id,
-                    'parameters': edge_parameters_list,
+                    "from": disc_from_id,
+                    "to": disc_to_id,
+                    "parameters": edge_parameters_list,
                 }
                 coupling_out_links.append(link)
 
@@ -218,9 +217,9 @@ class SoSExecutionWorkflow:
                 # the discipline has been found and all in links need to be
                 # re-created
                 link = {
-                    'from': disc_from_id,
-                    'to': disc_to_id,
-                    'parameters': edge_parameters_list,
+                    "from": disc_from_id,
+                    "to": disc_to_id,
+                    "parameters": edge_parameters_list,
                 }
                 coupling_in_links.append(link)
 
@@ -236,9 +235,9 @@ class SoSExecutionWorkflow:
             # for each parameter exchanged, we need to find which sub_nodes is
             # creating it as output
             new_link = {}
-            for out_param in out_link['parameters']:
+            for out_param in out_link["parameters"]:
                 emitter_disc = parameter_emitter_disc[out_param]
-                param_simple_name = out_param.split('.')[-1]
+                param_simple_name = out_param.split(".")[-1]
                 if emitter_disc in new_link:
                     new_link[emitter_disc].append(param_simple_name)
                 else:
@@ -248,11 +247,11 @@ class SoSExecutionWorkflow:
                 link_id = f'{emitter_disc}->{out_link["to"]}'
                 if link_id not in self.links_dict:
                     link = {
-                        'id': link_id,
-                        'from': emitter_disc,
-                        'to': out_link["to"],
-                        'parameters': {p for p in parameters_list},
-                        'type': 'couplingLink',
+                        "id": link_id,
+                        "from": emitter_disc,
+                        "to": out_link["to"],
+                        "parameters": {p for p in parameters_list},
+                        "type": "couplingLink",
                     }
                     self.links_dict[link_id] = link
 
@@ -271,9 +270,9 @@ class SoSExecutionWorkflow:
             # for each parameter exchanged, we need to find which sub_nodes is
             # receiving it as input
             new_link = {}
-            for in_param in in_link['parameters']:
+            for in_param in in_link["parameters"]:
                 receiver_discs = parameter_input_disc[in_param]
-                param_simple_name = in_param.split('.')[-1]
+                param_simple_name = in_param.split(".")[-1]
                 for receiver_disc in receiver_discs:
                     if receiver_disc in new_link:
                         new_link[receiver_disc].append(param_simple_name)
@@ -284,24 +283,24 @@ class SoSExecutionWorkflow:
                 link_id = f'{in_link["from"]}->{receiver_disc}'
                 if link_id not in self.links_dict:
                     link = {
-                        'id': link_id,
-                        'from': in_link["from"],
-                        'to': receiver_disc,
-                        'parameters': {p for p in parameters_list},
-                        'type': 'couplingLink',
+                        "id": link_id,
+                        "from": in_link["from"],
+                        "to": receiver_disc,
+                        "parameters": {p for p in parameters_list},
+                        "type": "couplingLink",
                     }
                     self.links_dict[link_id] = link
 
     def create_MDA_node(self, cycle_disc, level, parentId, GEMS_graph):
 
         self.mda_count += 1
-        mda_node_id = f'cycleDisc{self.mda_count}'
+        mda_node_id = f"cycleDisc{self.mda_count}"
         mda_node_info = dict(
             id=mda_node_id,
-            type='MDANode',
-            disc_name='',
-            label=f'MDA {self.mda_count}',
-            status='',
+            type="MDANode",
+            disc_name="",
+            label=f"MDA {self.mda_count}",
+            status="",
             level=level,
             parent=parentId,
             children=[],
@@ -309,10 +308,10 @@ class SoSExecutionWorkflow:
         )
 
         for disc in cycle_disc:
-            mda_node_info['children'].append(disc.disc_id)
+            mda_node_info["children"].append(disc.disc_id)
 
             self.create_mono_disc_node(
-                disc=disc, level=level + 1, parentId=mda_node_id, GEMS_graph=GEMS_graph
+                disc=disc, level=level + 1, parentId=mda_node_id, GEMS_graph=GEMS_graph,
             )
 
         self.nodes_dict[mda_node_id] = mda_node_info
@@ -320,13 +319,13 @@ class SoSExecutionWorkflow:
 
     def create_parallel_node(self, parallel_tasks, level, parentId, GEMS_graph):
         self.step_count += 1
-        parallel_node_id = f'parallelDiscs{self.step_count}'
+        parallel_node_id = f"parallelDiscs{self.step_count}"
         parallel_node_info = dict(
             id=parallel_node_id,
-            type='ParallelNode',
-            label=f'Parallel Nodes {self.step_count}',
-            status='',
-            disc_name='',
+            type="ParallelNode",
+            label=f"Parallel Nodes {self.step_count}",
+            status="",
+            disc_name="",
             level=level,
             parent=parentId,
             children=[],
@@ -341,7 +340,7 @@ class SoSExecutionWorkflow:
                     GEMS_graph=GEMS_graph,
                 )
 
-                parallel_node_info['children'].append(MDAnode['id'])
+                parallel_node_info["children"].append(MDAnode["id"])
             else:
                 disc = cycle_disc[0]
                 node = self.create_mono_disc_node(
@@ -351,7 +350,7 @@ class SoSExecutionWorkflow:
                     GEMS_graph=GEMS_graph,
                 )
 
-                parallel_node_info['children'].append(node['id'])
+                parallel_node_info["children"].append(node["id"])
 
         self.nodes_dict[parallel_node_id] = parallel_node_info
         return parallel_node_info
@@ -361,21 +360,21 @@ class SoSExecutionWorkflow:
         for (disc_from, disc_to, edge_parameters_list) in couplings:
             disc_from_id = disc_from.disc_id
             disc_to_id = disc_to.disc_id
-            link_id = f'{disc_from_id}->{disc_to_id}'
+            link_id = f"{disc_from_id}->{disc_to_id}"
             if link_id not in self.links_dict:
                 link = {
-                    'id': link_id,
-                    'from': disc_from_id,
-                    'to': disc_to_id,
-                    'parameters': set(),
-                    'type': 'couplingLink',
+                    "id": link_id,
+                    "from": disc_from_id,
+                    "to": disc_to_id,
+                    "parameters": set(),
+                    "type": "couplingLink",
                 }
                 self.links_dict[link_id] = link
                 for output_param in edge_parameters_list:
                     # param_name = output_param.split('.')[-1]
                     output_param_data = disc_from.ee.dm.get_data(output_param)
                     param_usage_name = f'{disc_from.get_module()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
-                    self.links_dict[link_id]['parameters'].add(
+                    self.links_dict[link_id]["parameters"].add(
                         param_usage_name)
                     self.unique_parameters.add(param_usage_name)
 
@@ -390,14 +389,14 @@ class SoSExecutionWorkflow:
             if last_outputs != []:
                 # create an invisible node
                 self.output_node_count += 1
-                output_node_id = f'outputNode{self.output_node_count}'
+                output_node_id = f"outputNode{self.output_node_count}"
                 output_node_info = dict(
                     id=output_node_id,
-                    type='OutputNode',
-                    disc_name='',
-                    label=f'Output {self.output_node_count}',
-                    status='',
-                    level='',
+                    type="OutputNode",
+                    disc_name="",
+                    label=f"Output {self.output_node_count}",
+                    status="",
+                    level="",
                     parent=None,
                     children=[],
                     is_MDA=False,
@@ -405,7 +404,7 @@ class SoSExecutionWorkflow:
                 self.nodes_dict[output_node_id] = output_node_info
 
                 # create an edge to an invisible node
-                link_id = f'{last_disc_id}->{output_node_id}'
+                link_id = f"{last_disc_id}->{output_node_id}"
                 parameters = set()
                 for output_param in last_outputs:
                     # param_name = p.split('.')[-1]
@@ -415,11 +414,11 @@ class SoSExecutionWorkflow:
                     self.unique_parameters.add(param_usage_name)
                 if link_id not in self.links_dict:
                     link = {
-                        'id': link_id,
-                        'from': last_disc_id,
-                        'to': output_node_id,
-                        'parameters': parameters,
-                        'type': 'outputLink',
+                        "id": link_id,
+                        "from": last_disc_id,
+                        "to": output_node_id,
+                        "parameters": parameters,
+                        "type": "outputLink",
                     }
                     self.links_dict[link_id] = link
 
@@ -434,9 +433,9 @@ class SoSExecutionWorkflow:
             disc_id: disc
             for (disc_id, disc) in self.nodes_dict.items()
             if (
-                disc['type'] == 'ParallelNode'
-                or disc['type'] == 'MDANode'
-                or disc['type'] == 'CouplingNode'
+                disc["type"] == "ParallelNode"
+                or disc["type"] == "MDANode"
+                or disc["type"] == "CouplingNode"
             )
         }
         for groupNodeId, groupNode in groupNodeList.items():
@@ -445,97 +444,97 @@ class SoSExecutionWorkflow:
             self.nodes_dict[groupNodeId] = groupNode_with_links
 
     def create_from_to_links_with_parents(self, node):
-        node['hasLinks'] = False
-        node['inLinks'] = []
-        node['outLinks'] = []
+        node["hasLinks"] = False
+        node["inLinks"] = []
+        node["outLinks"] = []
 
         inLinksDict = {
             link_id: link
             for (link_id, link) in self.links_dict.items()
-            if link['to'] == node['id']
+            if link["to"] == node["id"]
         }
         outLinksDict = {
             link_id: link
             for (link_id, link) in self.links_dict.items()
-            if link['from'] == node['id']
+            if link["from"] == node["id"]
         }
 
         inLinksList = list(inLinksDict.keys())
         outLinksList = list(outLinksDict.keys())
 
         if len(inLinksList) > 0 or len(outLinksList) > 0:
-            node['hasLinks'] = True
+            node["hasLinks"] = True
 
         # create out links to parent group nodes
         for outlink in outLinksDict.values():
-            discToId = outlink['to']
+            discToId = outlink["to"]
             discTo = self.nodes_dict[discToId]
-            parentId = discTo['parent']
+            parentId = discTo["parent"]
             while parentId is not None:
                 if outlink["from"] != parentId:
                     link_id = f'{outlink["from"]}->{parentId}'
                     if link_id not in self.links_dict:
                         # create links to parent node
                         link = {
-                            'id': link_id,
-                            'from': outlink["from"],
-                            'to': parentId,
-                            'parameters': outlink['parameters'],
-                            'type': outlink['type'],
+                            "id": link_id,
+                            "from": outlink["from"],
+                            "to": parentId,
+                            "parameters": outlink["parameters"],
+                            "type": outlink["type"],
                         }
                         self.links_dict[link_id] = link
                         outLinksList.append(link_id)
                     else:
-                        parameters = self.links_dict[link_id]['parameters'].union(
-                            outlink['parameters']
+                        parameters = self.links_dict[link_id]["parameters"].union(
+                            outlink["parameters"],
                         )
-                        self.links_dict[link_id]['parameters'] = parameters
+                        self.links_dict[link_id]["parameters"] = parameters
                 discToParent = self.nodes_dict[parentId]
-                parentId = discToParent['parent']
+                parentId = discToParent["parent"]
 
         # create in links to parent group nodes
         for inlink in inLinksDict.values():
-            discFromId = inlink['from']
+            discFromId = inlink["from"]
             discFrom = self.nodes_dict[discFromId]
-            parentId = discFrom['parent']
+            parentId = discFrom["parent"]
             while parentId is not None:
                 if inlink["to"] != parentId:
                     link_id = f'{parentId}->{inlink["to"]}'
                     if link_id not in self.links_dict:
                         # create links to parent node
                         link = {
-                            'id': link_id,
-                            'from': parentId,
-                            'to': inlink["to"],
-                            'parameters': inlink['parameters'],
-                            'type': inlink['type'],
+                            "id": link_id,
+                            "from": parentId,
+                            "to": inlink["to"],
+                            "parameters": inlink["parameters"],
+                            "type": inlink["type"],
                         }
                         self.links_dict[link_id] = link
                         inLinksList.append(link_id)
                     else:
-                        parameters = self.links_dict[link_id]['parameters'].union(
-                            inlink['parameters']
+                        parameters = self.links_dict[link_id]["parameters"].union(
+                            inlink["parameters"],
                         )
-                        self.links_dict[link_id]['parameters'] = parameters
+                        self.links_dict[link_id]["parameters"] = parameters
                 discFromParent = self.nodes_dict[parentId]
-                parentId = discFromParent['parent']
+                parentId = discFromParent["parent"]
 
-        node['inLinks'] = inLinksList
-        node['outLinks'] = outLinksList
+        node["inLinks"] = inLinksList
+        node["outLinks"] = outLinksList
 
         return node
 
     def create_dot_graph(self):
         dot = Digraph(
-            comment='Dependency graph', format='svg', graph_attr={'rankdir': 'LR'}
+            comment="Dependency graph", format="svg", graph_attr={"rankdir": "LR"},
         )
         drawn_nodes = set()
 
         for nodeId, node in self.nodes_dict.items():
-            if node['hasLinks'] == True and node['level'] == 1:
+            if node["hasLinks"] and node["level"] == 1:
                 dot.node(
                     name=str(nodeId),
-                    label='\n'.join([node['label'], node['type']]),
+                    label="\n".join([node["label"], node["type"]]),
                     tooltip=nodeId,
                 )
                 drawn_nodes.add(nodeId)
@@ -544,22 +543,22 @@ class SoSExecutionWorkflow:
         filtered_links = {
             linkId: link
             for (linkId, link) in self.links_dict.items()
-            if (link['from'] in drawn_nodes and link['to'] in drawn_nodes)
+            if (link["from"] in drawn_nodes and link["to"] in drawn_nodes)
         }
         for link in filtered_links.values():
-            dot.edge(str(link['from']), str(link['to']), label='')
+            dot.edge(str(link["from"]), str(link["to"]), label="")
         return dot
 
     def create_result(self):
         # convert set to list to avoid JSON parsing error
         for linkId, link in self.links_dict.items():
-            parameter_set = link['parameters']
+            parameter_set = link["parameters"]
             parameter_list = list(parameter_set)
-            self.links_dict[linkId]['parameters'] = parameter_list
+            self.links_dict[linkId]["parameters"] = parameter_list
         self.result = {
-            'nodes_list': list(self.nodes_dict.values()),
-            'links_list': list(self.links_dict.values()),
-            'dotString': self.create_dot_graph().source,
+            "nodes_list": list(self.nodes_dict.values()),
+            "links_list": list(self.links_dict.values()),
+            "dotString": self.create_dot_graph().source,
         }
         return self.result
 
@@ -627,29 +626,29 @@ class SoSExecutionWorkflow:
 #         print(f'Successfully removed {count} Scatter Data links')
 
     def replace_scatter_data_by_links(
-        self, sc_map_parameter_mapping, scatter_data_ids, l_scatter_dict
+        self, sc_map_parameter_mapping, scatter_data_ids, l_scatter_dict,
     ):
         links_to_delete = set()
-        if l_scatter_dict['from'] in scatter_data_ids:
+        if l_scatter_dict["from"] in scatter_data_ids:
             # out link of a scatter data
             # recreate all links using parameter exchanged and the mapping of
             # parameters
-            for param_out in l_scatter_dict['parameters']:
+            for param_out in l_scatter_dict["parameters"]:
                 # retrieve param_in from scatter_data mapping
                 param_mapping = [
                     param_mapping
                     for param_mapping in sc_map_parameter_mapping
-                    if param_mapping['discipline'] == l_scatter_dict['from']
-                    and param_mapping['output'] in param_out
+                    if param_mapping["discipline"] == l_scatter_dict["from"]
+                    and param_mapping["output"] in param_out
                 ][0]
-                param_in = param_mapping['input']
+                param_in = param_mapping["input"]
 
                 # look for all in links to the scatter data with this parameter
                 in_links = {
-                    l_id: l
-                    for l_id, l in self.links_dict.items()
-                    if l['to'] == param_mapping['discipline']
-                    and param_in in l['parameters']
+                    l_id: link_aux
+                    for l_id, link_aux in self.links_dict.items()
+                    if link_aux["to"] == param_mapping["discipline"]
+                    and param_in in link_aux["parameters"]
                 }
 
                 for l_in_id, l_dict in in_links.items():
@@ -657,51 +656,51 @@ class SoSExecutionWorkflow:
                     scatter_param_name = f'{param_in} -- split[{param_mapping["scatter_value"]}] --> {param_out}'
                     if new_link_id not in self.links_dict:
                         link = {
-                            'id': new_link_id,
-                            'from': l_dict["from"],
-                            'to': l_scatter_dict["to"],
-                            'parameters': {scatter_param_name},
+                            "id": new_link_id,
+                            "from": l_dict["from"],
+                            "to": l_scatter_dict["to"],
+                            "parameters": {scatter_param_name},
                             # 'type': 'scatterDataLink',
-                            'type': 'couplingLink',
+                            "type": "couplingLink",
                         }
                         self.links_dict[new_link_id] = link
                     else:
-                        self.links_dict[new_link_id]['parameters'].add(
-                            scatter_param_name
+                        self.links_dict[new_link_id]["parameters"].add(
+                            scatter_param_name,
                         )
 
                     # remove parameter from links
-                    self.links_dict[l_in_id]['parameters'].remove(param_in)
-                    if len(self.links_dict[l_in_id]['parameters']) == 0:
+                    self.links_dict[l_in_id]["parameters"].remove(param_in)
+                    if len(self.links_dict[l_in_id]["parameters"]) == 0:
                         links_to_delete.add(l_in_id)
                     print(scatter_param_name)
             # remove parameter from links
-            self.links_dict[l_scatter_dict['id']
-                            ]['parameters'].remove(param_out)
-            if len(self.links_dict[l_scatter_dict['id']]['parameters']) == 0:
-                links_to_delete.add(l_scatter_dict['id'])
+            self.links_dict[l_scatter_dict["id"]
+                            ]["parameters"].remove(param_out)
+            if len(self.links_dict[l_scatter_dict["id"]]["parameters"]) == 0:
+                links_to_delete.add(l_scatter_dict["id"])
 
-        elif l_scatter_dict['to'] in scatter_data_ids:
+        elif l_scatter_dict["to"] in scatter_data_ids:
             # in link of a scatter data
             # recreate all links using parameter exchanged and the mapping of
             # parameters
-            for param_in in l_scatter_dict['parameters']:
+            for param_in in l_scatter_dict["parameters"]:
                 # retrieve param_out from scatter_data mapping
                 param_mapping = [
                     param_mapping
                     for param_mapping in sc_map_parameter_mapping
-                    if param_mapping['discipline'] == l_scatter_dict['to']
-                    and param_mapping['input'] in param_in
+                    if param_mapping["discipline"] == l_scatter_dict["to"]
+                    and param_mapping["input"] in param_in
                 ][0]
-                param_out = param_mapping['output']
+                param_out = param_mapping["output"]
 
                 # look for all out links of the scatter data with this
                 # parameter
                 out_links = {
-                    l_id: l
-                    for l_id, l in self.links_dict.items()
-                    if l['from'] == param_mapping['discipline']
-                    and param_in in l['parameters']
+                    l_id: link_aux
+                    for l_id, link_aux in self.links_dict.items()
+                    if link_aux["from"] == param_mapping["discipline"]
+                    and param_in in link_aux["parameters"]
                 }
 
                 for l_out_id, l_dict in out_links.items():
@@ -709,28 +708,28 @@ class SoSExecutionWorkflow:
                     scatter_param_name = f'{param_in} -- split[{param_mapping["scatter_value"]}] --> {param_out}'
                     if new_link_id not in self.links_dict:
                         link = {
-                            'id': new_link_id,
-                            'from': l_scatter_dict["from"],
-                            'to': l_dict["to"],
-                            'parameters': {scatter_param_name},
+                            "id": new_link_id,
+                            "from": l_scatter_dict["from"],
+                            "to": l_dict["to"],
+                            "parameters": {scatter_param_name},
                             # 'type': 'scatterDataLink',
-                            'type': 'couplingLink',
+                            "type": "couplingLink",
                         }
                         self.links_dict[new_link_id] = link
                     else:
-                        self.links_dict[new_link_id]['parameters'].add(
-                            scatter_param_name
+                        self.links_dict[new_link_id]["parameters"].add(
+                            scatter_param_name,
                         )
 
                     # remove parameter from links
-                    self.links_dict[l_out_id]['parameters'].remove(param_out)
-                    if len(self.links_dict[l_out_id]['parameters']) == 0:
+                    self.links_dict[l_out_id]["parameters"].remove(param_out)
+                    if len(self.links_dict[l_out_id]["parameters"]) == 0:
                         links_to_delete.add(l_out_id)
                     print(scatter_param_name)
             # remove parameter from links
-            self.links_dict[l_scatter_dict['id']
-                            ]['parameters'].remove(param_in)
-            if len(self.links_dict[l_scatter_dict['id']]['parameters']) == 0:
-                links_to_delete.add(l_scatter_dict['id'])
+            self.links_dict[l_scatter_dict["id"]
+                            ]["parameters"].remove(param_in)
+            if len(self.links_dict[l_scatter_dict["id"]]["parameters"]) == 0:
+                links_to_delete.add(l_scatter_dict["id"])
 
         return links_to_delete

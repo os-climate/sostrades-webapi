@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2024/04/05 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/06/25 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,34 +14,50 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.tools.execution.execution_tools import update_study_case_execution_status
-from sos_trades_api.tools.allocation_management.allocation_management import create_and_load_allocation, delete_pod_allocation
-from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
-from sos_trades_api.tools.code_tools import file_tail
-
-"""
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
-Calculation case Functions
-"""
 import logging
-from datetime import datetime, timezone
 import os
 import signal
 import threading
-from sos_trades_api.models.calculation_dashboard import CalculationDashboard
-from sos_trades_api.models.database_models import PodAllocation, StudyCase, StudyCaseDisciplineStatus, \
-    StudyCaseExecutionLog, StudyCaseExecution, Process, StudyCaseLog
-from sos_trades_api.controllers.error_classes import InvalidStudy
-from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
-from sos_trades_api.tools.execution.execution_engine_subprocess import ExecutionEngineSubprocess
-from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_processes_metadata, \
-    load_repositories_metadata
-from sos_trades_api.config import Config
-from sos_trades_api.server.base_server import db, app
-from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sqlalchemy.sql.expression import and_
+from datetime import datetime, timezone
 
+from sos_trades_api.config import Config
+from sos_trades_api.controllers.error_classes import InvalidStudy
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_processes_metadata,
+    load_repositories_metadata,
+)
+from sos_trades_api.controllers.sostrades_data.study_case_controller import get_raw_logs
+from sos_trades_api.models.calculation_dashboard import CalculationDashboard
+from sos_trades_api.models.database_models import (
+    PodAllocation,
+    Process,
+    StudyCase,
+    StudyCaseDisciplineStatus,
+    StudyCaseExecution,
+    StudyCaseExecutionLog,
+    StudyCaseLog,
+)
+from sos_trades_api.models.loaded_study_case_execution_status import (
+    LoadedStudyCaseExecutionStatus,
+)
+from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.allocation_management.allocation_management import (
+    create_and_load_allocation,
+    delete_pod_allocation,
+)
+from sos_trades_api.tools.code_tools import file_tail
+from sos_trades_api.tools.execution.execution_engine_subprocess import (
+    ExecutionEngineSubprocess,
+)
+from sos_trades_api.tools.execution.execution_engine_thread import ExecutionEngineThread
+from sos_trades_api.tools.execution.execution_tools import (
+    update_study_case_execution_status,
+)
+from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+
+"""
+Calculation case Functions
+"""
 calculation_semaphore = threading.Semaphore()
 
 
@@ -52,22 +68,21 @@ class CalculationError(Exception):
         Exception.__init__(self, msg)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + Exception.__str__(self) + ')'
+        return self.__class__.__name__ + "(" + Exception.__str__(self) + ")"
 
 
 def execute_calculation(study_id, username):
     """
-        Given a study case identifier, prepare study execution
-        Check are done regarding execution of the study case (one at a time)
+    Given a study case identifier, prepare study execution
+    Check are done regarding execution of the study case (one at a time)
 
-        :param study_id: study case to run
-        :type int
+    :param study_id: study case to run
+    :type int
 
-        :param username: user that request execution
-        :type str
+    :param username: user that request execution
+    :type str
 
     """
-
     try:
         calculation_semaphore.acquire()
 
@@ -87,7 +102,7 @@ def execute_calculation(study_id, username):
                 study_case_execution.execution_status in [StudyCaseExecution.RUNNING, StudyCaseExecution.PENDING, StudyCaseExecution.POD_PENDING]:
                 calculation_semaphore.release()
                 raise CalculationError(
-                    'Study already submitted.\nIt must be stopped/terminated before running a new one.')
+                    "Study already submitted.\nIt must be stopped/terminated before running a new one.")
 
         # Create a new execution entry and associate it to the study
         new_study_case_execution = StudyCaseExecution()
@@ -113,8 +128,8 @@ def execute_calculation(study_id, username):
         # study_case_execution_id key)
         StudyCaseExecutionLog.query\
             .filter(StudyCaseExecutionLog.study_case_id == study_id)\
-            .filter(StudyCaseExecutionLog.study_case_execution_id == None)\
-            .delete()
+            .filter(StudyCaseExecutionLog.study_case_execution_id == None) \
+            .delete()  # noqa: E711
         db.session.commit()
 
         # Once the process is validated, then generate the corresponding data
@@ -124,17 +139,17 @@ def execute_calculation(study_id, username):
         # Create backup file if it does not exists
         study.study_case_manager_save_backup_files()
 
-        
+
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_relative()
         new_pod_allocation = create_and_load_allocation(study_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
-             
-        
+
+
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
             # Execution logs issue is here, stdout/stderr can't redirected to a file and contain information (outside of loggers).
             # Threaded mode is legacy, use subprocess instead
             # Initialize execution logger
-            execution_logger = logging.getLogger('sostrades_core')
+            execution_logger = logging.getLogger("sostrades_core")
 
             # If handlers has been define, link gems logger
             if execution_logger.hasHandlers():
@@ -157,23 +172,23 @@ def execute_calculation(study_id, username):
             pid = exec_subprocess.run()
             StudyCaseExecution.query.filter(StudyCaseExecution.id == current_execution_id).update({
                 "execution_type":StudyCaseExecution.EXECUTION_TYPE_PROCESS,
-                "process_identifier": pid
+                "process_identifier": pid,
             })
             db.session.commit()
-            
+
         elif config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
             StudyCaseExecution.query.filter(StudyCaseExecution.id == current_execution_id).update({
-                "execution_type":StudyCaseExecution.EXECUTION_TYPE_K8S
+                "execution_type":StudyCaseExecution.EXECUTION_TYPE_K8S,
             })
             db.session.commit()
 
         else:
             raise CalculationError(
-                f'Unknown calculation strategy : {config.execution_strategy}')
-        
+                f"Unknown calculation strategy : {config.execution_strategy}")
+
 
         app.logger.info(
-            f'Start execution request: successfully submit study case {study_id} using {config.execution_strategy} strategy')
+            f"Start execution request: successfully submit study case {study_id} using {config.execution_strategy} strategy")
 
         calculation_semaphore.release()
 
@@ -195,22 +210,21 @@ def execute_calculation(study_id, username):
                 db.session.commit()
 
         app.logger.exception(
-            f'Start execution request: failed to submit study case {study_id} using {config.execution_strategy} strategy')
+            f"Start execution request: failed to submit study case {study_id} using {config.execution_strategy} strategy")
 
         raise CalculationError(error)
 
 
 def stop_calculation(study_case_id, study_case_execution_id=None):
     """
-        Stop a running study case calculation
-        Stopping a study case is asynchronous, everything is up to date in database but regarding stop latency between
-        environment, the procedure does wait for the achievement of the stop
+    Stop a running study case calculation
+    Stopping a study case is asynchronous, everything is up to date in database but regarding stop latency between
+    environment, the procedure does wait for the achievement of the stop
 
-        :param study_case_id: study case to stop
-        :param study_case_execution_id: study case execution to stop specifically (if none the current one associated to
-        the study will be used)
+    :param study_case_id: study case to stop
+    :param study_case_execution_id: study case execution to stop specifically (if none the current one associated to
+    the study will be used)
     """
-
     # Once the process is validated, then generate the corresponding data
     # manager using execution engine class
 
@@ -225,7 +239,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
     # to stop
     if study_case is None:
         raise InvalidStudy(
-            f'Requested study case (identifier {study_case_id} does not exist in the database')
+            f"Requested study case (identifier {study_case_id} does not exist in the database")
 
     if study_case_execution_id is not None:
         # Retrieve execution object related to study to check status
@@ -234,11 +248,11 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
 
         if study_case_execution is not None:
             try:
-                
+
                 pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_id,
-                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION
+                                                            PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
                                                             ).first()
-                
+
                 if pod_allocation is not None:
                     delete_pod_allocation(pod_allocation, study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_K8S)
                 if study_case_execution.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
@@ -248,7 +262,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
                                 signal.SIGTERM)
                     except Exception as ex:
                         app.logger.exception(
-                            f'This error occurs when trying to kill process {study_case_execution.process_identifier}')
+                            f"This error occurs when trying to kill process {study_case_execution.process_identifier}")
 
                 # Update execution
                 study_case_execution.execution_status = StudyCaseExecution.STOPPED
@@ -296,18 +310,18 @@ def calculation_status(study_id):
                 disciplines_status_dict = {}
                 for sce in sce_list:
                     disciplines_status_dict[sce.discipline_key] = sce.status
-                
-                message = ''
+
+                message = ""
                 if study_case_execution.message is not None:
                     message = study_case_execution.message
 
                 return LoadedStudyCaseExecutionStatus(study_id, disciplines_status_dict, status, message,  cpu_usage, memory_usage)
 
-        return LoadedStudyCaseExecutionStatus(study_id, {}, '', '', '----', '----')
+        return LoadedStudyCaseExecutionStatus(study_id, {}, "", "", "----", "----")
 
     else:
         raise InvalidStudy(
-            f'Requested study case (identifier {study_id} does not exist in the database')
+            f"Requested study case (identifier {study_id} does not exist in the database")
 
 
 
@@ -329,7 +343,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
 
             if study_case is None:
                 raise InvalidStudy(
-                    f'Requested study case (identifier {study_case_id} does not exist in the database')
+                    f"Requested study case (identifier {study_case_id} does not exist in the database")
 
             file_path = get_raw_logs(study_case_id)
             if os.path.isfile(file_path):
@@ -345,7 +359,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
 
     else:
         raise InvalidStudy(
-            f'Requested study case (identifier {study_case_id} does not exist in the database')
+            f"Requested study case (identifier {study_case_id} does not exist in the database")
 
 
 def calculation_raw_logs(study_case_id, study_case_execution_id):
@@ -358,7 +372,7 @@ def calculation_raw_logs(study_case_id, study_case_execution_id):
     :return: str (local filepath)
     """
     if study_case_id is not None and study_case_execution_id is not None:
-        file_path = ''
+        file_path = ""
         try:
 
             study_case = StudyCase.query.filter(
@@ -366,7 +380,7 @@ def calculation_raw_logs(study_case_id, study_case_execution_id):
 
             if study_case is None:
                 raise InvalidStudy(
-                    f'Requested study case (identifier {study_case_id} does not exist in the database')
+                    f"Requested study case (identifier {study_case_id} does not exist in the database")
 
             if study_case_execution_id is None:
                 study_case_execution_id = study_case.current_execution_id
@@ -383,14 +397,13 @@ def calculation_raw_logs(study_case_id, study_case_execution_id):
 
     else:
         raise InvalidStudy(
-            f'Requested study case (identifier {study_case_id} does not exist in the database')
+            f"Requested study case (identifier {study_case_id} does not exist in the database")
 
 
 def get_calculation_dashboard():
     """
     Retrieve all the study cases, groups names running
     """
-
     # Get existing process name
     all_process = Process.query.all()
 
@@ -398,7 +411,7 @@ def get_calculation_dashboard():
     repository_names = []
 
     for process in all_process:
-        process_names.append(f'{process.process_path}.{process.name}')
+        process_names.append(f"{process.process_path}.{process.name}")
         repository_names.append(process.process_path)
 
     processes_metadata = load_processes_metadata(process_names)
@@ -416,11 +429,11 @@ def get_calculation_dashboard():
 
         repository_display_name = rs[4]
         if rs[4] in repository_metadata:
-            repository_display_name = repository_metadata[repository_display_name]['label']
+            repository_display_name = repository_metadata[repository_display_name]["label"]
 
-        process_display_name = f'{rs[4]}.{rs[5]}'
+        process_display_name = f"{rs[4]}.{rs[5]}"
         if repository_display_name in processes_metadata:
-            process_display_name = processes_metadata[repository_display_name]['label']
+            process_display_name = processes_metadata[repository_display_name]["label"]
 
         new_calculation_dashboard = CalculationDashboard(
             rs[0], rs[1], rs[2], rs[3], rs[4], rs[5], repository_display_name, process_display_name, rs[6], rs[7])
@@ -450,17 +463,17 @@ def delete_calculation_entry(study_case_id, study_case_execution_id):
                 .filter(StudyCaseExecution.id == study_case_execution_id)\
                 .filter(StudyCaseExecution.study_case_id == study_case_id)\
                 .delete()
-            
+
             #delete associated pod allocation
             PodAllocation.query\
                 .filter(PodAllocation.identifier == study_case_execution_id)\
                 .filter(PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION)\
                 .delete()
-            
+
             db.session.commit()
         else:
             raise InvalidStudy(
-                f'Study case execution (identifier {study_case_id}/{study_case_execution_id} does not exist in the database')
+                f"Study case execution (identifier {study_case_id}/{study_case_execution_id} does not exist in the database")
     else:
         raise InvalidStudy(
-            f'Study case execution (identifier {study_case_id}/{study_case_execution_id} does not exist in the database')
+            f"Study case execution (identifier {study_case_id}/{study_case_execution_id} does not exist in the database")

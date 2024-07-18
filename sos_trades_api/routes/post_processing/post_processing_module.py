@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-
+Modifications on 2024/06/07 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -12,20 +12,28 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 '''
-from flask import request, jsonify, make_response
+from flask import jsonify, make_response, request
+from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from werkzeug.exceptions import BadRequest
 
+from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import (
+    load_post_processing,
+    load_post_processing_graph_filters,
+)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.authentication.authentication import auth_required, get_authenticated_user
-from sos_trades_api.controllers.sostrades_post_processing.post_processing_controller import load_post_processing,\
-    load_post_processing_graph_filters
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
-from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
+from sos_trades_api.tools.authentication.authentication import (
+    auth_required,
+    get_authenticated_user,
+)
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
 
-@app.route(f'/api/post-processing/study-case/<int:study_id>/post-processing', methods=['POST'])
+@app.route("/api/post-processing/study-case/<int:study_id>/post-processing", methods=["POST"])
 @auth_required
 def get_post_processing(study_id):
 
@@ -37,27 +45,27 @@ def get_post_processing(study_id):
         study_case_access = StudyCaseAccess(user.id, study_id)
         if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
             raise BadRequest(
-                'You do not have the necessary rights to retrieve this study case post processing')
+                "You do not have the necessary rights to retrieve this study case post processing")
 
         # Proceeding after rights verification
-        if request.method == 'POST':
+        if request.method == "POST":
 
             # filters is not a mandatory parameter
-            filters = request.json.get('filters', None)
+            filters = request.json.get("filters", None)
 
             # Discipline key is a mandatory parameter
-            discipline_key = request.json.get('discipline_key', None)
+            discipline_key = request.json.get("discipline_key", None)
 
             # Module key is not a mandatory parameter
-            module_name = request.json.get('module_name', '')
+            module_name = request.json.get("module_name", "")
 
             missing_parameter = []
             if discipline_key is None:
                 missing_parameter.append(
-                    'Missing mandatory parameter: discipline_key')
+                    "Missing mandatory parameter: discipline_key")
 
             if len(missing_parameter) > 0:
-                return BadRequest('\n'.join(missing_parameter))
+                return BadRequest("\n".join(missing_parameter))
 
             object_filters = None
 
@@ -71,22 +79,22 @@ def get_post_processing(study_id):
                 jsonify(load_post_processing(study_id, discipline_key, object_filters, module_name)), 200)
             return resp
 
-    raise BadRequest('Missing mandatory parameter: study identifier in url')
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
-@app.route(f'/api/post-processing/study-case/<int:study_id>/filter/by/discipline', methods=['POST'])
+@app.route("/api/post-processing/study-case/<int:study_id>/filter/by/discipline", methods=["POST"])
 @auth_required
 def get_post_processing_filter(study_id):
 
-    discipline_key = request.json.get('discipline_key', None)
+    discipline_key = request.json.get("discipline_key", None)
 
     missing_parameter = []
     if discipline_key is None:
         missing_parameter.append(
-            'Missing mandatory parameter: discipline_key')
+            "Missing mandatory parameter: discipline_key")
 
     if len(missing_parameter) > 0:
-        return BadRequest('\n'.join(missing_parameter))
+        return BadRequest("\n".join(missing_parameter))
 
     # Checking if user can access study data
     user = get_authenticated_user()
@@ -95,7 +103,7 @@ def get_post_processing_filter(study_id):
     study_case_access = StudyCaseAccess(user.id, study_id)
     if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
         raise BadRequest(
-            'You do not have the necessary rights to retrieve this study case post processing filters')
+            "You do not have the necessary rights to retrieve this study case post processing filters")
 
     # Proceeding after rights verification
     resp = make_response(

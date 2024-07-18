@@ -14,44 +14,70 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
+from datetime import datetime
+from typing import Union
+
+import numpy as np
+from flask.json.provider import JSONProvider
+from pandas import DataFrame, Index, Series
+from simplejson import JSONEncoder
+from sostrades_core.execution_engine.namespace import Namespace
+from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
+from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import (
+    TwoAxesInstanciatedChart,
+)
+from sostrades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import (
+    InstantiatedPlotlyNativeChart,
+)
+from sostrades_core.tools.post_processing.post_processing_bundle import (
+    PostProcessingBundle,
+)
+from sostrades_core.tools.post_processing.tables.instanciated_table import (
+    InstanciatedTable,
+)
+from sostrades_core.tools.post_processing.tables.table_style import TableStyles
+
+from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
+from sos_trades_api.models.calculation_dashboard import CalculationDashboard
+from sos_trades_api.models.database_models import (
+    AccessRights,
+    Group,
+    GroupAccessUser,
+    Link,
+    News,
+    PodAllocation,
+    ReferenceStudy,
+    StudyCase,
+    StudyCaseChange,
+    StudyCaseExecutionLog,
+    StudyCaseLog,
+    StudyCaseValidation,
+    User,
+    UserProfile,
+)
+from sos_trades_api.models.entity_rights import (
+    EntityRight,
+    EntityRights,
+    GroupEntityRights,
+    ProcessEntityRights,
+    StudyCaseEntityRights,
+)
+from sos_trades_api.models.loaded_group import LoadedGroup
+from sos_trades_api.models.loaded_process import LoadedProcess
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase
+from sos_trades_api.models.loaded_study_case_execution_status import (
+    LoadedStudyCaseExecutionStatus,
+)
+from sos_trades_api.models.model_status import ModelStatus
+from sos_trades_api.models.study_case_dto import StudyCaseDto
+from sos_trades_api.models.study_notification import StudyNotification
+from sos_trades_api.models.user_application_right import UserApplicationRight
 from sos_trades_api.models.user_dto import UserDto
 
 """
-mode: python; py-indent-offset: 4; tab-width: 4; coding: utf-8
 Class overlad defaut json encoder to manage our class
 """
-
-from simplejson import JSONEncoder
-from datetime import datetime
-
-from pandas import DataFrame, Index, Series
-import numpy as np
-
-from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
-from sostrades_core.execution_engine.namespace import Namespace
-from sostrades_core.tools.post_processing.tables.table_style import TableStyles
-from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
-from sostrades_core.tools.post_processing.tables.instanciated_table import InstanciatedTable
-from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import TwoAxesInstanciatedChart
-from sostrades_core.tools.post_processing.plotly_native_charts.instantiated_plotly_native_chart import \
-    InstantiatedPlotlyNativeChart
-
-from sos_trades_api.models.loaded_group import LoadedGroup
-from sos_trades_api.models.entity_rights import EntityRight, \
-    ProcessEntityRights, EntityRights, GroupEntityRights, StudyCaseEntityRights
-from sos_trades_api.models.loaded_process import LoadedProcess
-from sos_trades_api.models.loaded_study_case import LoadedStudyCase
-from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.models.calculation_dashboard import CalculationDashboard
-from sos_trades_api.models.user_application_right import UserApplicationRight
-from sos_trades_api.models.model_status import ModelStatus
-from sos_trades_api.models.database_models import PodAllocation, StudyCase, Group, User, GroupAccessUser, \
-    StudyCaseExecutionLog, ReferenceStudy, StudyCaseValidation, Link, News
-from sos_trades_api.models.database_models import UserProfile, StudyCaseChange, AccessRights, StudyCaseLog
-from sos_trades_api.models.loaded_study_case_execution_status import LoadedStudyCaseExecutionStatus
-from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sostrades_core.tools.post_processing.post_processing_bundle import PostProcessingBundle
-
 
 class CustomJsonEncoder(JSONEncoder):
     def __init__(self, *args, **kwargs):
@@ -60,71 +86,19 @@ class CustomJsonEncoder(JSONEncoder):
 
     def default(self, o):  # pylint: disable=E0202
 
-        if isinstance(o, LoadedStudyCase):
-            return o.serialize()
-        elif isinstance(o, StudyNotification):
-            return o.serialize()
-        elif isinstance(o, AccessRightsSelectable):
-            return o.serialize()
-        elif isinstance(o, ModelStatus):
-            return o.serialize()
-        elif isinstance(o, ReferenceStudy):
-            return o.serialize()
-        elif isinstance(o, EntityRights):
-            return o.serialize()
-        elif isinstance(o, StudyCaseLog):
-            return o.serialize()
-        elif isinstance(o, EntityRight):
-            return o.serialize()
-        elif isinstance(o, LoadedProcess):
-            return o.serialize()
-        elif isinstance(o, StudyCaseChange):
-            return o.serialize()
-        elif isinstance(o, StudyCaseValidation):
-            return o.serialize()
-        elif isinstance(o, UserApplicationRight):
-            return o.serialize()
-        elif isinstance(o, CalculationDashboard):
-            return o.serialize()
-        elif isinstance(o, LoadedGroup):
-            return o.serialize()
-        elif isinstance(o, GroupAccessUser):
-            return o.serialize()
-        elif isinstance(o, User):
-            return o.serialize()
-        elif isinstance(o, UserDto):
-            return o.serialize()
-        elif isinstance(o, UserProfile):
-            return o.serialize()
-        elif isinstance(o, Group):
-            return o.serialize()
-        elif isinstance(o, StudyCase):
-            return o.serialize()
-        elif isinstance(o, LoadedStudyCaseExecutionStatus):
-            return o.serialize()
-        elif isinstance(o, Link):
-            return o.serialize()
-        elif isinstance(o, PodAllocation):
-            return o.serialize()
-        elif isinstance(o, News):
+        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile)):
             return o.serialize()
         elif isinstance(o, DataFrame):
-            return '://dataframe'
+            return "://dataframe"
         elif isinstance(o, Index):
-            return '://index'
+            return "://index"
         elif isinstance(o, np.ndarray):
-            return '://ndarray'
+            return "://ndarray"
         elif isinstance(o, Series):
             return list(o)
         elif isinstance(o, type):
             return str(o).lower()
-        elif isinstance(o, TwoAxesInstanciatedChart):
-            return o.to_dict()
-        elif isinstance(o, InstanciatedTable):
-            return o.to_dict()
-        elif isinstance(o, TableStyles):
-            return o.to_dict()
-        elif isinstance(o, ChartFilter):
+        elif isinstance(o, (ChartFilter, InstanciatedTable, TableStyles, TwoAxesInstanciatedChart)):
             return o.to_dict()
         elif isinstance(o, np.integer):
             return int(o)
@@ -132,23 +106,13 @@ class CustomJsonEncoder(JSONEncoder):
             return float(o)
         elif isinstance(o, complex):
             return o.real
-        elif isinstance(o, datetime):
-            return str(o)
-        elif isinstance(o, np.dtype):
+        elif isinstance(o, (datetime, np.dtype)):
             return str(o)
         elif isinstance(o, StudyCaseExecutionLog):
             return o.serialize()
         elif isinstance(o, Namespace):
             return o.to_dict()
-        elif isinstance(o, StudyCaseDto):
-            return o.serialize()
-        elif isinstance(o, AccessRights):
-            return o.serialize()
-        elif isinstance(o, StudyCaseEntityRights):
-            return o.serialize()
-        elif isinstance(o, ProcessEntityRights):
-            return o.serialize()
-        elif isinstance(o, GroupEntityRights):
+        elif isinstance(o, (AccessRights, GroupEntityRights, ProcessEntityRights, StudyCaseDto, StudyCaseEntityRights)):
             return o.serialize()
         elif isinstance(o, PostProcessingBundle):
             return o.to_dict()
@@ -160,3 +124,16 @@ class CustomJsonEncoder(JSONEncoder):
         # default, if not one of the specified object. Caller's problem if this is not
         # serializable.
         return JSONEncoder.default(self, o)
+
+
+class CustomJsonProvider(JSONProvider):
+    """
+    Custom json provider class
+    """
+
+    def dumps(self, obj, **kwargs):
+        kwargs["cls"] = CustomJsonEncoder
+        return json.dumps(obj, **kwargs)
+
+    def loads(self, s: Union[str, bytes], **kwargs):
+        return json.loads(s, **kwargs)

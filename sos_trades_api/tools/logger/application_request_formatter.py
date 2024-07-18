@@ -15,8 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging
-from sos_trades_api.tools.authentication.authentication import get_authenticated_user
+
 from flask import has_request_context, request
+
+from sos_trades_api.tools.authentication.authentication import get_authenticated_user
+
 
 class ApplicationRequestFormatter(logging.Formatter):
     def format(self, record):
