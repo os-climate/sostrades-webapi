@@ -1,5 +1,4 @@
-"""
-update pod allocation
+"""update pod allocation
 
 Revision ID: 5b6303f4ab8e
 Revises: 5acd0bb7bad9
