@@ -426,7 +426,6 @@ class Config:
         """
         if self.__sql_alchemy_full_uri is None:
             database_uri_not_formatted = self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI']
-            print(self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI'])
 
             # Retrieve env vars
             uri_env_vars = self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI_ENV_VARS']
