@@ -21,6 +21,7 @@ from os.path import dirname, join
 from tempfile import gettempdir
 
 from dotenv import load_dotenv
+from sqlalchemy.engine.url import make_url
 
 from sos_trades_api import __file__ as root_file
 
@@ -49,12 +50,37 @@ with open(configuration_filepath) as server_conf_file:
 
 # Get the current database name and add a random part
 unique_identifier = str(uuid.uuid4())[:8]
-test_database_name = f"{configuration_data['SQL_ALCHEMY_DATABASE']['DATABASE_NAME']}-{unique_identifier}"
-test_log_database_name = f"{configuration_data['LOGGING_DATABASE']['DATABASE_NAME']}-{unique_identifier}"
+def append_suffix_to_database_uri(database_uri:str, suffix:str) -> str:
+    """
+    Appends a suffix to the database name in the URI.
+
+    Args:
+        database_uri (str): The original database URI.
+        suffix (str): The suffix to append to the database name.
+
+    Returns:
+        str: The updated database URI with the appended suffix.
+    """
+    url = make_url(database_uri)
+    
+    # Extract the current database name
+    database_name = url.database
+
+    if database_name.endswith(".db"):
+        database_name = database_name[:-3]
+        return database_uri.replace(database_name, database_name + suffix)
+    elif database_name.endswith(".sqlite"):
+        database_name = database_name[:-7]
+        return database_uri.replace(database_name, database_name + suffix)
+    else:
+        return database_uri.replace(database_name, database_name + suffix)
+
+test_database_uri = append_suffix_to_database_uri(configuration_data['SQL_ALCHEMY_DATABASE']['URI'], f"-{unique_identifier}")
+test_log_database_uri = append_suffix_to_database_uri(configuration_data['LOGGING_DATABASE']['URI'], f"-{unique_identifier}")
 
 # Overwrite test database name
-configuration_data["SQL_ALCHEMY_DATABASE"]["DATABASE_NAME"] = test_database_name
-configuration_data["LOGGING_DATABASE"]["DATABASE_NAME"] = test_log_database_name
+configuration_data["SQL_ALCHEMY_DATABASE"]["URI"] = test_database_uri
+configuration_data["LOGGING_DATABASE"]["URI"] = test_log_database_uri
 
 # Save the new configuration (without overwrite the original one) and change the
 # associated environment variable
@@ -66,12 +92,12 @@ with open(test_configuration_file, "w") as outfile:
 os.environ["SOS_TRADES_SERVER_CONFIGURATION"] = test_configuration_file
 #os.environ['SAML_V2_METADATA_FOLDER'] = join(dirname(root_file), os.environ['SAML_V2_METADATA_FOLDER'])
 
-
 print(f"Configuration file used for test: {test_configuration_file}")
-print(f"Database used for test: {test_database_name}")
-print(f"Database used for test log: {test_log_database_name}")
+print(f"Database URI used for test: {test_database_uri}")
+print(f"Database URI used for test log: {test_log_database_uri}")
 
 # ruff: noqa: E402
+import sqlite3
 import unittest
 from builtins import classmethod
 
@@ -81,15 +107,38 @@ from sqlalchemy import text
 
 from sos_trades_api.config import Config
 
+
+def delete_everything_from_database(db_path):
+    """
+    Deletes all tables from the specified SQLite database.
+
+    Args:
+        db_path (str): Path to the SQLite database file.
+    """
+    # Connect to the SQLite database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Fetch all table names
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+
+    # Drop all tables
+    for table_name in tables:
+        if table_name[0] != "sqlite_sequence":
+            cursor.execute(f'DROP TABLE IF EXISTS "{table_name[0]}";')
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
 config = Config()
 
-database_server_uri = config.sql_alchemy_server_uri
-database_name = config.sql_alchemy_database_name
-log_database_name = config.logging_database_name
-
-# Create SSL argument
-ssl_arguments = {"ssl": config.sql_alchemy_database_ssl}
-print(f"SSL configuration {ssl_arguments}")
+database_server_uri = config.sql_alchemy_full_uri
+database_server_url = make_url(database_server_uri)
+logging_database_server_uri = config.logging_database_uri
+logging_database_server_url = make_url(logging_database_server_uri)
+connect_args = config.sql_alchemy_connect_args
 
 
 class DatabaseUnitTestConfiguration(unittest.TestCase):
@@ -108,24 +157,27 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         # Clean Database in case of previously bad issues
         DatabaseUnitTestConfiguration.tearDownClass()
 
-        # 'IF NOT EXISTS' instruction is MySql/MariaDB specific
-        create_database_sql_request = text(f"create database IF NOT EXISTS `{database_name}`;")
-        create_log_database_sql_request = text(f"create database IF NOT EXISTS `{log_database_name}`;")
-        use_database_sql_request = text(f"USE `{database_name}`;")
+        # Determine the database type
+        is_sqlite = database_server_url.get_backend_name() == 'sqlite'
+        
+        if not is_sqlite:
+            # 'IF NOT EXISTS' instruction is MySql/MariaDB specific
+            create_database_sql_request = text(f"create database IF NOT EXISTS `{database_server_url.database}`;")
+            create_log_database_sql_request = text(f"create database IF NOT EXISTS `{logging_database_server_url.database}`;")
+            use_database_sql_request = text(f"USE `{database_server_url.database}`;")
 
-        # Create server connection
-        engine = sqlalchemy.create_engine(
-            database_server_uri, connect_args=ssl_arguments)
+            # Create server connection
+            engine = sqlalchemy.create_engine(database_server_uri, connect_args=connect_args)
 
-        with engine.connect() as connection:
-            # Create database schema if not exist
-            connection.execute(create_database_sql_request)
+            with engine.connect() as connection:
+                # Create database schema if not exist
+                connection.execute(create_database_sql_request)
 
-            # Create log database schema if not exist
-            connection.execute(create_log_database_sql_request)
+                # Create log database schema if not exist
+                connection.execute(create_log_database_sql_request)
 
-            # Select by default this database to perform further request
-            connection.execute(use_database_sql_request)
+                # Select by default this database to perform further request
+                connection.execute(use_database_sql_request)
 
         # Now initialize database using SQLAlchemy ORM
         from sos_trades_api.server.base_server import app, db
@@ -139,8 +191,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
                               DatabaseUnitTestConfiguration.db)
 
             # get the migration folder
-            migration_folder = os.path.join(os.path.dirname(
-                os.path.dirname(root_file)), "migrations")
+            migration_folder = os.path.join(os.path.dirname(os.path.dirname(root_file)), "migrations")
             upgrade(directory=migration_folder)
 
             from sos_trades_api.controllers.sostrades_data.user_controller import (
@@ -153,20 +204,28 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         """
         Drop database used for tests
         """
-        # 'IF EXISTS' instruction is MySql/MariaDB specific
-        drop_database_sql_request = text(f"drop database IF EXISTS `{database_name}`;")
-        drop_log_database_sql_request = text(f"drop database IF EXISTS `{log_database_name}`;")
+        
+        # Determine the database type
+        is_sqlite = database_server_url.get_backend_name() == 'sqlite'
+        
+        if not is_sqlite:
+            # 'IF EXISTS' instruction is MySql/MariaDB specific
+            drop_database_sql_request = text(f"drop database IF EXISTS `{database_server_url.database}`;")
+            drop_log_database_sql_request = text(f"drop database IF EXISTS `{logging_database_server_url.database}`;")
 
-        # Create server connection
-        engine = sqlalchemy.create_engine(
-            database_server_uri, connect_args=ssl_arguments)
+            # Create server connection
+            engine = sqlalchemy.create_engine(
+                database_server_uri, connect_args=connect_args)
 
-        with engine.connect() as connection:
-            # Create database schema if not exist
-            connection.execute(drop_database_sql_request)
+            with engine.connect() as connection:
+                # Create database schema if not exist
+                connection.execute(drop_database_sql_request)
 
-            # Create log database schema if not exist
-            connection.execute(drop_log_database_sql_request)
+                # Create log database schema if not exist
+                connection.execute(drop_log_database_sql_request)
+        else:
+            delete_everything_from_database(database_server_url.database)
+            delete_everything_from_database(logging_database_server_url.database)
 
     def setUp(self):
         pass

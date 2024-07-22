@@ -42,6 +42,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_user_study_last_opened_study_case_id", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_user_study_last_opened_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 

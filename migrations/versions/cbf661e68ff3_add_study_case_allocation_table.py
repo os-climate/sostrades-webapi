@@ -43,6 +43,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_allocation_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("kubernetes_pod_name"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_study_case_allocation_study_case_id"), "study_case_allocation", ["study_case_id"], unique=True)
     # ### end Alembic commands ###

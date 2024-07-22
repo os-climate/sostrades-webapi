@@ -42,6 +42,7 @@ def upgrade():
     sa.Column("last_modification_date", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_news_user_id"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 

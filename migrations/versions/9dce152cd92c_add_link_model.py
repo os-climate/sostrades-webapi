@@ -43,6 +43,7 @@ def upgrade():
     sa.Column("last_modified", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_link_user_id"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_link_url"), "link", ["url"], unique=False)
     # ### end Alembic commands ###

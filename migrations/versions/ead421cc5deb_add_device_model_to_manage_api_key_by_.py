@@ -40,6 +40,7 @@ def upgrade():
     sa.Column("group_id", sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(["group_id"], ["group.id"], name="fk_device_group_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 

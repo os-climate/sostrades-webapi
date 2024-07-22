@@ -1,6 +1,5 @@
 '''
-Copyright 2022 Airbus SAS
-Modifications on 2024/06/07 Copyright 2024 Capgemini
+Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,36 +15,23 @@ limitations under the License.
 '''
 
 import time
-from contextlib import contextmanager
+from datetime import datetime
 from logging import Handler, _defaultFormatter
-from time import localtime, strftime
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 from sos_trades_api.models.database_models import StudyCaseLog
+from sos_trades_api.server.base_server import app, db
 
 TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
-class StudyCaseMySQLHandler(Handler):
+class StudyCaseSQLAlchemyHandler(Handler):
     """
     Logging handler for StudyCaseLog
     """
 
-    def __init__(self, sql_alchemy_database_name, sql_alchemy_server_uri, sql_alchemy_database_ssl, study_case_id,
-                 bulk_transaction=False):
+    def __init__(self, study_case_id, bulk_transaction=False):
         """
         Constructor
-        :param sql_alchemy_database_name: server database name
-        :type sql_alchemy_database_name: str
-
-        :param sql_alchemy_server_uri: server connection in sqlalchemy uri format
-        :type sql_alchemy_server_uri: str
-
-        :param sql_alchemy_server_ssl: server ssl setting in sqlalchemy format
-        :type sql_alchemy_server_ssl: dict
-
         :param study_case_id: identifier of the associated study case
         :type study_case_id: integer
 
@@ -61,37 +47,6 @@ class StudyCaseMySQLHandler(Handler):
         self.__inner_bulk_list = []
         self.__time = None
         self.__bulk_transaction = bulk_transaction
-        self.__sql_alchemy_server_uri = sql_alchemy_server_uri
-        self.__sql_alchemy_database_ssl = sql_alchemy_database_ssl
-        self.__sql_alchemy_database_name = sql_alchemy_database_name
-
-    @contextmanager
-    def __get_connection(self):
-        """
-        Manage to create a session on database for a 'with' statement
-        """
-        database_server_uri = f"{self.__sql_alchemy_server_uri}?charset=utf8"
-
-        # Create server connection
-        engine = create_engine(database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
-
-        use_database_sql_request = text(f"USE `{self.__sql_alchemy_database_name}`;")
-
-        with engine.connect() as connection:
-            # Select by default this database to perform further request
-            connection.execute(use_database_sql_request)
-
-        session_class = sessionmaker(engine)
-
-        session = session_class()
-        try:
-            yield session
-            session.commit()
-        except:
-            session.rollback()
-            raise
-        finally:
-            session.close()
 
     @property
     def bulk_transaction(self):
@@ -125,7 +80,7 @@ class StudyCaseMySQLHandler(Handler):
         self.format(record)
 
         # Set the database time up:
-        StudyCaseMySQLHandler.format_db_time(record)
+        StudyCaseSQLAlchemyHandler.format_db_time(record)
 
         if record.exc_info:
             record.exc_text = _defaultFormatter.formatException(
@@ -199,21 +154,19 @@ class StudyCaseMySQLHandler(Handler):
 
         if elapsed_time > 2.0 or flush is True:
             self.__time = None
-
             try:
-                with self.__get_connection() as session:
-                    for obj in self.__inner_bulk_list:
-                        session.merge(obj)
+                with app.app_context():
+                    db.session.bulk_save_objects(self.__inner_bulk_list)
+                    db.session.commit()
             except Exception as ex:
-                print(f"Study mysql handler: {ex!s}")
-            finally:
-                self.__inner_bulk_list = []
+                print(f"Study case SQLAlchemy handler: {ex!s}")
+            self.__inner_bulk_list = []
 
     @staticmethod
     def format_db_time(record):
         """
         Time formatter
-        :param record: Logger handler record
-        :type record: logger record object instance
+        @param record:
+        @return: nothing
         """
-        record.dbtime = strftime(TIME_FMT, localtime(record.created))
+        record.dbtime = datetime.fromtimestamp(record.created)

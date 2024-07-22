@@ -42,6 +42,7 @@ def upgrade():
     sa.Column("creation_date", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column("check_date", sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 

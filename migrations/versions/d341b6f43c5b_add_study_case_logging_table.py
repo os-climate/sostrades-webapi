@@ -43,6 +43,7 @@ def upgrade():
     sa.Column("exception", sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_log_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 

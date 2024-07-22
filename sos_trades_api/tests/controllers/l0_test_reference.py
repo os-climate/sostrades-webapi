@@ -190,5 +190,3 @@ class TestStudy(DatabaseUnitTestConfiguration):
             pod_allocations = PodAllocation.query.filter(PodAllocation.identifier == ref_id, \
                                                  PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE).all()
             self.assertTrue(len(pod_allocations) == 1)
-
-

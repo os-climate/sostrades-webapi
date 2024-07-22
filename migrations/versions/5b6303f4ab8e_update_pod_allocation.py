@@ -35,6 +35,7 @@ def upgrade():
     sa.Column("cpu_usage", sa.String(length=32), server_default="----", nullable=True),
     sa.Column("memory_usage", sa.String(length=32), server_default="----", nullable=True),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     if op.execute('PRAGMA index_info("kubernetes_pod_name")') is not None:
         op.drop_index("kubernetes_pod_name", table_name="study_case_allocation")
@@ -58,6 +59,7 @@ def downgrade():
     sa.PrimaryKeyConstraint("id"),
     mysql_default_charset="latin1",
     mysql_engine="InnoDB",
+    sqlite_autoincrement=True,
     )
     op.create_index("kubernetes_pod_name", "study_case_allocation", ["kubernetes_pod_name"], unique=False)
     op.create_index("ix_study_case_allocation_study_case_id", "study_case_allocation", ["study_case_id"], unique=False)

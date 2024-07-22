@@ -40,6 +40,7 @@ def upgrade():
     sa.Column("access_right", sa.String(length=64), nullable=True),
     sa.Column("description", sa.String(length=128), nullable=True),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_access_rights_access_right"), "access_rights", ["access_right"], unique=True)
     op.create_table("process",
@@ -48,6 +49,7 @@ def upgrade():
     sa.Column("process_path", sa.String(length=255), nullable=True),
     sa.Column("disabled", sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_process_name"), "process", ["name"], unique=False)
     op.create_table("user_profile",
@@ -56,6 +58,7 @@ def upgrade():
     sa.Column("description", sa.String(length=128), nullable=True),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("name"),
+    sqlite_autoincrement=True,
     )
     op.create_table("reference_study",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -70,6 +73,7 @@ def upgrade():
     sa.Column("disabled", sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(["process_id"], ["process.id"], name="fk_reference_study_process_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_reference_study_execution_status"), "reference_study", ["execution_status"], unique=False)
     op.create_index(op.f("ix_reference_study_name"), "reference_study", ["name"], unique=False)
@@ -92,6 +96,7 @@ def upgrade():
     sa.Column('last_password_reset_date', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["user_profile_id"], ["user_profile.id"], name="fk_user_user_profile_id"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_user_company"), "user", ["company"], unique=False)
     op.create_index(op.f("ix_user_department"), "user", ["department"], unique=False)
@@ -109,6 +114,7 @@ def upgrade():
     sa.Column("is_default_applicative_group", sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(["creator_id"], ["user.id"], name="fk_group_creator_id"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_group_name"), "group", ["name"], unique=True)
     op.create_table("process_access_user",
@@ -122,6 +128,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_process_access_user_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("user_id", "process_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("reference_study_execution_log",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -133,6 +140,7 @@ def upgrade():
     sa.Column("exception", sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(["reference_id"], ["reference_study.id"], name="fk_reference_study_execution_log_reference_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("group_access_group",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -145,6 +153,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["right_id"], ["access_rights.id"], name="fk_group_access_group_right_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("group_id", "group_member_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("group_access_user",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -156,6 +165,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_group_access_user_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("user_id", "group_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("process_access_group",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -168,6 +178,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["right_id"], ["access_rights.id"], name="fk_process_access_group_right_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("group_id", "process_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_case",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -185,6 +196,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["process_id"], ["process.id"], name="fk_study_case_process_id"),
     sa.ForeignKeyConstraint(["user_id_execution_authorised"], ["user.id"], name="fk_study_case_user_id_execution_authorised"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_study_case_name"), "study_case", ["name"], unique=False)
     op.create_index(op.f("ix_study_case_process"), "study_case", ["process"], unique=False)
@@ -198,6 +210,7 @@ def upgrade():
     sa.Column("created", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_notification_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_notification_author"), "notification", ["author"], unique=False)
     op.create_index(op.f("ix_notification_type"), "notification", ["type"], unique=False)
@@ -211,6 +224,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_access_group_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("group_id", "study_case_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_case_access_user",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -222,6 +236,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_study_case_access_user_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     sa.UniqueConstraint("user_id", "study_case_id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_case_execution",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -236,6 +251,7 @@ def upgrade():
     sa.Column("memory_usage", sa.String(length=32), server_default="----", nullable=True),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_execution_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_study_case_execution_execution_status"), "study_case_execution", ["execution_status"], unique=False)
     op.create_index(op.f("ix_study_case_execution_execution_type"), "study_case_execution", ["execution_type"], unique=False)
@@ -253,6 +269,7 @@ def upgrade():
     sa.Column("validation_user_department", sa.String(length=64), nullable=True),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_validation_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_coedition_user",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -261,6 +278,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_coedition_user_study_case_id", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_study_coedition_user_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("user_study_preference",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -270,6 +288,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_user_study_preference_study_case_id", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["user_id"], ["user.id"], name="fk_user_study_preference_user_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_case_change",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -283,6 +302,7 @@ def upgrade():
     sa.Column("last_modified", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["notification_id"], ["notification.id"], name="fk_study_case_change_notification_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_index(op.f("ix_study_case_change_change_type"), "study_case_change", ["change_type"], unique=False)
     op.create_index(op.f("ix_study_case_change_variable_type"), "study_case_change", ["variable_type"], unique=False)
@@ -295,6 +315,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_execution_id"], ["study_case_execution.id"], name="fk_study_case_discipline_status_study_case_execution_id", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_discipline_status_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     op.create_table("study_case_execution_log",
     sa.Column("id", sa.Integer(), nullable=False),
@@ -308,6 +329,7 @@ def upgrade():
     sa.ForeignKeyConstraint(["study_case_execution_id"], ["study_case_execution.id"], name="fk_study_case_execution_log_study_case_execution_id", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_execution_log_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
     # ### end Alembic commands ###
 
