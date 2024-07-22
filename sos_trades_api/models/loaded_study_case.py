@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sqlalchemy import and_
@@ -80,7 +79,6 @@ class LoadedStudyCase:
         self.post_processings = {}
         self.plotly = {}
         self.n2_diagram = study_case_manager.n2_diagram
-        self.__load_user_study_preference(user_id)
 
         # Loading charts if study is finished
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
@@ -100,17 +98,10 @@ class LoadedStudyCase:
                     and_(UserStudyPreference.user_id == user_id, UserStudyPreference.study_case_id == self.study_case.id)).all()
 
                 if len(preferences) > 0:
-                    preference = preferences[0].preference
-
-                    if len(preference) > 0:
-                        self.preference = json.loads(preference)
-                else:
-                    new_preference = UserStudyPreference()
-                    new_preference.user_id = user_id
-                    new_preference.study_case_id = self.study_case.id
-                    new_preference.preference = ""
-                    db.session.add(new_preference)
-                    db.session.commit()
+                    for preference in preferences:
+                        panel_id = preference.panel_identifier
+                        panel_opened = preference.panel_opened
+                        self.preference[panel_id] = panel_opened
 
     def __load_user_execution_authorised(self, user_id):
         """

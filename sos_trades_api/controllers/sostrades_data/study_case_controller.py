@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 import os
 import shutil
 from datetime import datetime, timedelta, timezone
@@ -982,9 +981,9 @@ def load_study_case_preference(study_case_identifier, user_identifier):
     :param user_identifier: user identifier corresponding to the requested preference
     :type user_identifier: int
 
-    :return: preference dictionary
+    :return: preference list
     """
-    result = {}
+    result = []
 
     with app.app_context():
         preferences = UserStudyPreference.query.filter(
@@ -995,15 +994,12 @@ def load_study_case_preference(study_case_identifier, user_identifier):
         ).all()
 
         if len(preferences) > 0:
-            preference = preferences[0].preference
-
-            if len(preference) > 0:
-                result = json.loads(preference)
+            result = preferences
 
     return result
 
 
-def save_study_case_preference(study_case_identifier, user_identifier, preference):
+def save_study_case_preference(study_case_identifier, user_identifier, panel_identifier, panel_opened):
     """
     Load study preferences for the given user
 
@@ -1011,10 +1007,11 @@ def save_study_case_preference(study_case_identifier, user_identifier, preferenc
     :type study_case_identifier: int
     :param user_identifier: user identifier corresponding to the requested preference
     :type user_identifier: int
-    :param preference: user study preference
-    :type preference: int
+    :param panel_identifier: id of the panel opened
+    :type panel_identifier: str
+    param panel_opened: treenode section preference
+    :type panel_opened: boolean
     """
-    result = {}
 
     with app.app_context():
         preferences = UserStudyPreference.query.filter(
@@ -1025,19 +1022,28 @@ def save_study_case_preference(study_case_identifier, user_identifier, preferenc
         ).all()
 
         current_preference = None
-        if len(preferences) > 0:
-            current_preference = preferences[0]
-            current_preference.preference = json.dumps(preference)
-        else:
+
+        # Check if the preferences list is not empty
+        if preferences:
+            for preference in preferences:
+                # Update existing preference if the panel_identifier matches
+                if preference.panel_identifier == panel_identifier:
+                    preference.panel_opened = panel_opened
+                    current_preference = preference
+                    break
+
+        # If no matching preference was found, create a new preference
+        if not current_preference:
             current_preference = UserStudyPreference()
             current_preference.user_id = user_identifier
             current_preference.study_case_id = study_case_identifier
-            current_preference.preference = json.dumps(preference)
+            current_preference.panel_identifier = panel_identifier
+            current_preference.panel_opened = panel_opened
 
         db.session.add(current_preference)
         db.session.commit()
 
-    return result
+        return current_preference
 
 
 def set_user_authorized_execution(study_case_identifier, user_identifier):
