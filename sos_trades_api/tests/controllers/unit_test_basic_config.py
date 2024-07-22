@@ -16,9 +16,9 @@ limitations under the License.
 '''
 import json
 import os
+import tempfile
 import uuid
 from os.path import dirname, join
-from tempfile import gettempdir
 
 from dotenv import load_dotenv
 from sqlalchemy.engine.url import make_url
@@ -50,33 +50,39 @@ with open(configuration_filepath) as server_conf_file:
 
 # Get the current database name and add a random part
 unique_identifier = str(uuid.uuid4())[:8]
-def append_suffix_to_database_uri(database_uri:str, suffix:str) -> str:
+
+
+def generate_temp_database_uri(database_uri: str, suffix: str) -> str:
     """
-    Appends a suffix to the database name in the URI.
+    Generates a new database URI with an appended suffix to the database name.
+
+    This function handles both MySQL and SQLite database URIs. For MySQL, it appends the specified suffix to the database name.
+    For SQLite, it parses the original URI to extract the directory and file name, replaces the directory with a temporary 
+    directory, and appends the suffix to the database file name.
 
     Args:
         database_uri (str): The original database URI.
         suffix (str): The suffix to append to the database name.
 
     Returns:
-        str: The updated database URI with the appended suffix.
+        str: The updated database URI with the appended suffix to the database name.
     """
     url = make_url(database_uri)
     
     # Extract the current database name
     database_name = url.database
 
-    if database_name.endswith(".db"):
-        database_name = database_name[:-3]
-        return database_uri.replace(database_name, database_name + suffix)
-    elif database_name.endswith(".sqlite"):
-        database_name = database_name[:-7]
-        return database_uri.replace(database_name, database_name + suffix)
+    if url.get_backend_name() == 'sqlite':
+        # Parse the database name to identify folder and file name
+        temp_dir = tempfile.mkdtemp()
+        db_file_name = os.path.basename(database_name)
+        new_database_path = os.path.join(temp_dir, db_file_name + suffix + ".db")
+        return str(url.set(database=new_database_path))
     else:
         return database_uri.replace(database_name, database_name + suffix)
 
-test_database_uri = append_suffix_to_database_uri(configuration_data['SQL_ALCHEMY_DATABASE']['URI'], f"-{unique_identifier}")
-test_log_database_uri = append_suffix_to_database_uri(configuration_data['LOGGING_DATABASE']['URI'], f"-{unique_identifier}")
+test_database_uri = generate_temp_database_uri(configuration_data['SQL_ALCHEMY_DATABASE']['URI'], f"-{unique_identifier}")
+test_log_database_uri = generate_temp_database_uri(configuration_data['LOGGING_DATABASE']['URI'], f"-{unique_identifier}")
 
 # Overwrite test database name
 configuration_data["SQL_ALCHEMY_DATABASE"]["URI"] = test_database_uri
@@ -84,7 +90,7 @@ configuration_data["LOGGING_DATABASE"]["URI"] = test_log_database_uri
 
 # Save the new configuration (without overwrite the original one) and change the
 # associated environment variable
-test_configuration_file = join(gettempdir(), f"test_configuration-{uuid.uuid4()!s}.json")
+test_configuration_file = join(tempfile.gettempdir(), f"test_configuration-{uuid.uuid4()!s}.json")
 with open(test_configuration_file, "w") as outfile:
     json.dump(configuration_data, outfile)
 
