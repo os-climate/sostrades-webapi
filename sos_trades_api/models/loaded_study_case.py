@@ -79,6 +79,7 @@ class LoadedStudyCase:
         self.post_processings = {}
         self.plotly = {}
         self.n2_diagram = study_case_manager.n2_diagram
+        self.__load_user_study_preference(user_id)
 
         # Loading charts if study is finished
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
