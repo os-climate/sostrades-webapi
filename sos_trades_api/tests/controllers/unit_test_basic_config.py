@@ -140,8 +140,9 @@ def delete_everything_from_database(db_path):
 
 config = Config()
 
-database_server_uri = config.sql_alchemy_full_uri
-database_server_url = make_url(database_server_uri)
+data_database_uri = config.sql_alchemy_full_uri
+data_database_url = make_url(data_database_uri)
+server_url = make_url(data_database_uri.replace(data_database_url.database, ""))
 logging_database_server_uri = config.logging_database_uri
 logging_database_server_url = make_url(logging_database_server_uri)
 connect_args = config.sql_alchemy_connect_args
@@ -164,16 +165,16 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         DatabaseUnitTestConfiguration.tearDownClass()
 
         # Determine the database type
-        is_sqlite = database_server_url.get_backend_name() == 'sqlite'
+        is_sqlite = data_database_url.get_backend_name() == 'sqlite'
         
         if not is_sqlite:
             # 'IF NOT EXISTS' instruction is MySql/MariaDB specific
-            create_database_sql_request = text(f"create database IF NOT EXISTS `{database_server_url.database}`;")
+            create_database_sql_request = text(f"create database IF NOT EXISTS `{data_database_url.database}`;")
             create_log_database_sql_request = text(f"create database IF NOT EXISTS `{logging_database_server_url.database}`;")
-            use_database_sql_request = text(f"USE `{database_server_url.database}`;")
+            use_database_sql_request = text(f"USE `{data_database_url.database}`;")
 
             # Create server connection
-            engine = sqlalchemy.create_engine(database_server_uri, connect_args=connect_args)
+            engine = sqlalchemy.create_engine(server_url, connect_args=connect_args)
 
             with engine.connect() as connection:
                 # Create database schema if not exist
@@ -212,16 +213,15 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
         """
         
         # Determine the database type
-        is_sqlite = database_server_url.get_backend_name() == 'sqlite'
+        is_sqlite = data_database_url.get_backend_name() == 'sqlite'
         
         if not is_sqlite:
             # 'IF EXISTS' instruction is MySql/MariaDB specific
-            drop_database_sql_request = text(f"drop database IF EXISTS `{database_server_url.database}`;")
+            drop_database_sql_request = text(f"drop database IF EXISTS `{data_database_url.database}`;")
             drop_log_database_sql_request = text(f"drop database IF EXISTS `{logging_database_server_url.database}`;")
 
             # Create server connection
-            engine = sqlalchemy.create_engine(
-                database_server_uri, connect_args=connect_args)
+            engine = sqlalchemy.create_engine(server_url, connect_args=connect_args)
 
             with engine.connect() as connection:
                 # Create database schema if not exist
@@ -230,7 +230,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
                 # Create log database schema if not exist
                 connection.execute(drop_log_database_sql_request)
         else:
-            delete_everything_from_database(database_server_url.database)
+            delete_everything_from_database(data_database_url.database)
             delete_everything_from_database(logging_database_server_url.database)
 
     def setUp(self):

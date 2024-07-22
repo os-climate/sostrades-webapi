@@ -29,16 +29,16 @@ Base = declarative_base()
 class Log(Base):
     __tablename__ = 'log'
     Id = Column(Integer, Sequence('log_id_seq'), primary_key=True)
-    Created = Column(String)
-    Name = Column(String)
+    Created = Column(Text)
+    Name = Column(Text)
     LogLevel = Column(Integer)
-    LogLevelName = Column(String)
+    LogLevelName = Column(Text)
     Message = Column(Text)
     Exception = Column(Text)
-    User = Column(String)
-    RemoteAddr = Column(String)
-    RemotePort = Column(String)
-    UserAgent = Column(String)
+    User = Column(Text)
+    RemoteAddr = Column(Text)
+    RemotePort = Column(Text)
+    UserAgent = Column(Text)
 
 
 class ApplicationSQLAlchemyHandler(Handler):

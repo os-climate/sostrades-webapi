@@ -37,8 +37,6 @@ def upgrade():
     sa.PrimaryKeyConstraint("id"),
     sqlite_autoincrement=True,
     )
-    if op.execute('PRAGMA index_info("kubernetes_pod_name")') is not None:
-        op.drop_index("kubernetes_pod_name", table_name="study_case_allocation")
     op.drop_table("study_case_allocation")
     op.drop_column("reference_study", "kubernete_pod_name")
     op.drop_column("study_case_execution", "kubernetes_pod_name")
@@ -61,7 +59,6 @@ def downgrade():
     mysql_engine="InnoDB",
     sqlite_autoincrement=True,
     )
-    op.create_index("kubernetes_pod_name", "study_case_allocation", ["kubernetes_pod_name"], unique=False)
     op.create_index("ix_study_case_allocation_study_case_id", "study_case_allocation", ["study_case_id"], unique=False)
     op.add_column("study_case_execution", sa.Column("kubernetes_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
     op.add_column("reference_study", sa.Column("kubernete_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
