@@ -76,7 +76,9 @@ try:
     from sos_trades_api.tools.logger.application_request_formatter import (
         ApplicationRequestFormatter,
     )
-    from sos_trades_api.tools.logger.application_sqlalchemy_handler import ApplicationSQLAlchemyHandler
+    from sos_trades_api.tools.logger.application_sqlalchemy_handler import (
+        ApplicationSQLAlchemyHandler,
+    )
 
     app.logger.info('Adding application logger handler')
     app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args)
