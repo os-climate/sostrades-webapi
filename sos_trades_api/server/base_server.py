@@ -73,16 +73,16 @@ try:
     from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import (
-        ApplicationMySQLHandler,
+    from sos_trades_api.tools.logger.application_request_formatter import (
         ApplicationRequestFormatter,
     )
+    from sos_trades_api.tools.logger.application_sqlalchemy_handler import (
+        ApplicationSQLAlchemyHandler,
+    )
 
-    app.logger.info("Adding application logger handler")
-    app_mysql_handler = ApplicationMySQLHandler(
-        db=config.logging_database_data)
-    app_mysql_handler.setFormatter(ApplicationRequestFormatter(
-        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info('Adding application logger handler')
+    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args)
+    app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
     app.logger.info("Configuring logger")
@@ -108,7 +108,6 @@ except Exception as error:
     app.logger.error(
         f"The following error occurs when trying to initialize server\n{error} ")
     raise error
-    exit(-1)
 
 # Register own class for studycase caching
 study_case_cache = StudyCaseCache(logger=app.logger)

@@ -46,7 +46,9 @@ from sos_trades_api.tools.file_tools import (
     read_object_in_json_file,
     write_object_in_json_file,
 )
-from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
+from sos_trades_api.tools.logger.study_case_sqlalchemy_handler import (
+    StudyCaseSQLAlchemyHandler,
+)
 
 """
 Implementation of abstract class AbstractStudyManager to manage study from object use into the WEBAPI
@@ -183,7 +185,7 @@ class StudyCaseManager(BaseStudyManager):
         return self.__study
 
     @property
-    def study_database_logger(self) -> StudyCaseMySQLHandler:
+    def study_database_logger(self) -> StudyCaseSQLAlchemyHandler:
         """
         Return the current database logger handler used by the study
         """
@@ -459,17 +461,9 @@ class StudyCaseManager(BaseStudyManager):
 
             config = Config()
 
-            ssl_configuration = {}
-
-            if config.sql_alchemy_database_ssl is not None:
-                ssl_configuration = {"ssl": config.sql_alchemy_database_ssl}
-
-            self.__study_database_logger = StudyCaseMySQLHandler(
-                config.sql_alchemy_database_name,
-                config.sql_alchemy_server_uri,
-                ssl_configuration,
-                self.__study_identifier,
-                bulk_transaction,
+            self.__study_database_logger = StudyCaseSQLAlchemyHandler(
+                study_case_id=self.__study_identifier,
+                bulk_transaction=bulk_transaction,
             )
 
             self.logger.addHandler(self.__study_database_logger)
