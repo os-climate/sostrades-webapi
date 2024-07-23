@@ -329,7 +329,8 @@ class UserStudyPreference(db.Model):
                                ondelete="CASCADE",
                                name="fk_user_study_preference_study_case_id"),
                            nullable=False)
-    preference = Column(TEXT, index=False, unique=False)
+    panel_identifier = Column(TEXT, index=False, unique=False, nullable=True)
+    panel_opened = Column(Boolean, index=False, unique=False, nullable=True)
 
     def serialize(self):
         """
@@ -339,7 +340,8 @@ class UserStudyPreference(db.Model):
             "id": self.id,
             "user_id": self.user_id,
             "study_case_id": self.study_case_id,
-            "preference": self.preference,
+            "panel_id": self.panel_identifier,
+            "panel_opened": self.panel_opened
         }
 
 
