@@ -34,6 +34,7 @@
         "migrations/versions/18d8890a5e5f_add_pod_flavors.py",
         "migrations/versions/81ddc6b58939_add_pod_status_monitoring.py",
         "migrations/versions/7df43d135e7c_adding_dataset_information_to_.py",
+        "./migrations/versions/6742a7abbc12_update_user_preference.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
