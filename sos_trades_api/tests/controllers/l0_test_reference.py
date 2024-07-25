@@ -55,7 +55,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            get_study_case,
+            create_study_case,
         )
         from sos_trades_api.models.database_models import (
             AccessRights,
@@ -118,9 +118,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      )
 
-            created_study = get_study_case(self.test_user_id,
+            created_study = create_study_case(self.test_user_id,
                                               new_study_case.id,
-                                              AccessRights.MANAGER)
+                                              None)
 
             self.test_study_id = created_study.study_case.id
 
