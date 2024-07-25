@@ -16,7 +16,6 @@ limitations under the License.
 
 import json
 from datetime import datetime
-from os import environ
 from os.path import dirname, exists, join
 
 import sos_trades_api
