@@ -176,7 +176,7 @@ if study_id is not None:
             save_study_last_active_date(study_id, datetime.now())
     
     # then load the study
-    #load_specific_study(study_id)
+    load_specific_study(study_id)
 
 def database_process_setup():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
