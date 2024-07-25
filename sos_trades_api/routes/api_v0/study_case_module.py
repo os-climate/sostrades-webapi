@@ -131,7 +131,7 @@ def copy_study_case_by_id(study_id):
                                                  source_study_case.process, group.id, study_id, StudyCase.FROM_STUDYCASE, source_study_case.study_pod_flavor, source_study_case.execution_pod_flavor)
 
             # Retrieve the source study
-            copy_study_identifier = copy_study_case(study_case.id, study_id, user.id)
+            copy_study_identifier = copy_study_case(study_case.id, study_id)
 
             # Proceeding after rights verification
             resp = make_response(jsonify(copy_study_identifier), 200)

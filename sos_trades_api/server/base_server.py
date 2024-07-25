@@ -153,7 +153,11 @@ def load_specific_study(study_identifier):
     )
 
     with app.app_context():
-        load_or_create_study_case(study_identifier)
+        load_or_create_study_case(
+            user_id=None, 
+            study_case_identifier=study_identifier,
+            study_access_right=None,
+            read_only_mode=False)
         
 
 # in case of study server, find the study server ID
