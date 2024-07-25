@@ -306,7 +306,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      )
 
             copy_study_case(new_study_case.id,
-                            study_test.id, self.test_user_id)
+                            study_test.id)
 
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
@@ -903,7 +903,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      )
 
             study_case_copy = copy_study_case(
-                new_study_case.id, study_test.id, self.test_user_id)
+                new_study_case.id, study_test.id)
             study_case_copy_id = study_case_copy.id
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
@@ -975,7 +975,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      )
 
             study_case_copy = copy_study_case(
-                new_study_case.id, study_test.id, self.test_user_id)
+                new_study_case.id, study_test.id)
             study_case_copy_id = study_case_copy.id
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)

@@ -160,23 +160,7 @@ def load_specific_study(study_identifier):
             read_only_mode=False)
         
 
-# in case of study server, find the study server ID
-study_id = get_study_id_for_study_server()
-if study_id is not None:
-    # in case of study server, save the active study file and load the study
-    from sos_trades_api.tools.active_study_management.active_study_management import (
-        ACTIVE_STUDY_FILE_NAME,
-        save_study_last_active_date,
-    )
-    # create the active study file if it doesn't exist
-    local_path = Config().local_folder_path
-    if local_path != "" and os.path.exists(local_path):
-        file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
-        if not os.path.exists(file_path):
-            save_study_last_active_date(study_id, datetime.now())
-    
-    # then load the study
-    load_specific_study(study_id)
+
 
 def database_process_setup():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -955,6 +939,24 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     if app is not None and db is not None:
         migrate = Migrate(app, db, compare_type=False)
 
+        # in case of study server, find the study server ID
+        study_id = get_study_id_for_study_server()
+        if study_id is not None:
+            # in case of study server, save the active study file and load the study
+            from sos_trades_api.tools.active_study_management.active_study_management import (
+                ACTIVE_STUDY_FILE_NAME,
+                save_study_last_active_date,
+            )
+            # create the active study file if it doesn't exist
+            local_path = Config().local_folder_path
+            if local_path != "" and os.path.exists(local_path):
+                file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
+                if not os.path.exists(file_path):
+                    save_study_last_active_date(study_id, datetime.now())
+            
+            # then load the study
+            load_specific_study(study_id)
+            
     # Attention compare type find a difference in ReferenceGenerationStatus
     # if not app == None and not db == None:
     #     migrate = Migrate(app, db, compare_type=True)
