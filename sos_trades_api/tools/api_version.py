@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import json
 from datetime import datetime
-from os import environ
 from os.path import dirname, exists, join
 
 import sos_trades_api
@@ -37,7 +37,7 @@ def application_version():
 
     version = "Version not available"
 
-    if environ.get("FLASK_ENV") is None or environ["FLASK_ENV"] == "development":
+    if app.config['ENVIRONMENT'] is None or app.config['ENVIRONMENT'] == "DEVELOPMENT":
         return f'{datetime.now().strftime("%d.%m.%Y")}*' # id dev always give the last date
 
     try:
@@ -55,3 +55,17 @@ def application_version():
             "The following error occurs when trying to get the version")
 
     return version
+
+def git_commits_info():
+    """
+    Methods that retrieve all the repositories used by the platform last commits info
+    This info is in the following file:
+    git_commits_info_file_path = f"{platform_path}/sostrades-webapi/sos_trades_api/git_commits_info.json"
+    """
+
+    git_data = None
+    git_commits_info_file_path = join(dirname(sos_trades_api.__file__), "git_commits_info.json")
+    if exists(git_commits_info_file_path):
+        with open(git_commits_info_file_path, 'r') as json_file:
+            git_data = json.load(json_file)
+    return git_data

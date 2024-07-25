@@ -521,18 +521,23 @@ def load_study_case_preference_by_id(study_id):
             return resp
         elif request.method == "POST":
 
-            preference = request.json.get("preference", None)
+            panel_identifier = request.json.get("panel_identifier", None)
+            panel_opened = request.json.get("panel_opened", None)
 
             # Proceed after right verification
             missing_parameter = []
-            if preference is None:
+            if panel_identifier is None:
                 missing_parameter.append(
-                    "Missing mandatory parameter: preference")
+                    "Missing mandatory parameter: panel_identifier")
+
+            if panel_opened is None:
+                missing_parameter.append(
+                    "Missing mandatory parameter: panel_opened")
 
             if len(missing_parameter) > 0:
                 raise BadRequest("\n".join(missing_parameter))
 
-            save_study_case_preference(study_id, user.id, preference)
+            save_study_case_preference(study_id, user.id, panel_identifier, panel_opened)
 
             resp = make_response(jsonify("Preference saved"), 200)
             return resp

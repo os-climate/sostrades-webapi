@@ -6,42 +6,35 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `click (8.1.7) <https://palletsprojects.com/p/click/>`_
     BSD-3-Clause
 
-
-`eventlet (0.33.3) <http://eventlet.net>`_
+`eventlet (0.36.1) <http://eventlet.net>`_
     MIT License
 
-`Flask (1.1.1) <https://flask.palletsprojects.com/>`_
+`Flask (2.3.3) <https://flask.palletsprojects.com/>`_
     BSD License
 
-`flask-jwt-extended (3.24.1) <https://github.com/vimalloc/flask-jwt-extended>`_
+`flask-jwt-extended (4.6.0) <https://github.com/vimalloc/flask-jwt-extended>`_
     MIT
 
-`flask_login (0.5.0) <https://github.com/maxcountryman/flask-login>`_
-    MIT
-
-`Flask-Migrate (2.5.2) <https://github.com/miguelgrinberg/flask-migrate>`_
+`Flask-Migrate (4.0.7) <https://github.com/miguelgrinberg/flask-migrate>`_
     MIT
 
 `flask-socketio (5.3.6) <https://github.com/miguelgrinberg/flask-socketio>`_
     MIT License
 
-`Flask-SQLAlchemy (2.4.1) <https://flask-sqlalchemy.palletsprojects.com>`_
+`Flask-SQLAlchemy (2.5.1) <https://flask-sqlalchemy.palletsprojects.com>`_
     BSD License
 
 `furl (2.1.3) <https://github.com/gruns/furl>`_
     Unlicense
 
+`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
+    BSD
+
 `graphviz (0.20.3) <https://github.com/xflr6/graphviz>`_
     MIT
 
-`itsdangerous (2.0.1) <https://palletsprojects.com/p/itsdangerous/>`_
-    BSD-3-Clause
-
-`jinja2 (3.0.1) <https://palletsprojects.com/p/jinja/>`_
-    BSD-3-Clause
-
-`gitpython (3.1.43) <https://github.com/gitpython-developers/GitPython>`_
-    BSD
+`jinja2 (3.1.4) <https://pypi.org/project/Jinja2/>`_
+    BSD License
 
 `kubernetes (29.0.0) <https://github.com/kubernetes-client/python>`_
     Apache License Version 2.0
@@ -60,6 +53,9 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 
 `psutil (6.0.0) <https://github.com/giampaolo/psutil>`_
     BSD-3-Clause
+
+`PyJWT (2.8.0) <https://pypi.org/project/PyJWT/>`_
+    MIT
 
 `python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
     BSD-3-Clause
@@ -91,11 +87,11 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `simplejson (3.19.2) <https://github.com/simplejson/simplejson>`_
     MIT License
 
-`SQLAlchemy (1.3.13) <https://www.sqlalchemy.org>`_
-    MIT
+`SQLAlchemy (1.4.52) <https://pypi.org/project/SQLAlchemy/>`_
+    MIT License
 
 `urllib3 (2.2.2) <https://urllib3.readthedocs.io>`_
     MIT License
 
-`werkzeug (2.0.3) <https://werkzeug.palletsprojects.com/>`_
+`werkzeug (2.3.8) <https://werkzeug.palletsprojects.com/>`_
     BSD License

@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from logging import Handler, _defaultFormatter
 from time import localtime, strftime
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from sos_trades_api.models.database_models import StudyCaseExecutionLog
@@ -74,7 +74,7 @@ class ExecutionMySQLHandler(Handler):
         engine = create_engine(
             database_server_uri, connect_args=self.__sql_alchemy_database_ssl)
 
-        use_database_sql_request = f"USE `{self.__sql_alchemy_database_name}`;"
+        use_database_sql_request = text(f"USE `{self.__sql_alchemy_database_name}`;")
 
         with engine.connect() as connection:
             # Select by default this database to perform further request
@@ -209,7 +209,8 @@ class ExecutionMySQLHandler(Handler):
 
             try:
                 with self.__get_connection() as session:
-                    session.bulk_save_objects(self.__inner_bulk_list)
+                    for obj in self.__inner_bulk_list:
+                        session.merge(obj)
             except Exception as ex:
                 print(f"Execution mysql handler: {ex!s}")
             finally:

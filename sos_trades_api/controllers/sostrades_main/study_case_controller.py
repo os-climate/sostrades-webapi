@@ -159,107 +159,107 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_identifier).first()
 
-        if from_type == StudyCase.FROM_REFERENCE:
+            if from_type == StudyCase.FROM_REFERENCE:
 
-            # Get reference path
-            reference_path = f"{study_case.repository}.{study_case.process}.{reference}"
+                # Get reference path
+                reference_path = f"{study_case.repository}.{study_case.process}.{reference}"
 
-            # Generate execution status
-            reference_study = ReferenceStudy.query.filter(ReferenceStudy.name == reference) \
-                .filter(ReferenceStudy.reference_path == reference_path).first()
-            if reference_study is not None:
-                user = User.query.filter(User.id == user_id).first()
-                status = reference_study.execution_status
+                # Generate execution status
+                reference_study = ReferenceStudy.query.filter(ReferenceStudy.name == reference) \
+                    .filter(ReferenceStudy.reference_path == reference_path).first()
+                if reference_study is not None:
+                    user = User.query.filter(User.id == user_id).first()
+                    status = reference_study.execution_status
 
-                if reference_study.execution_status == ReferenceStudy.UNKNOWN:
-                    status = StudyCaseExecution.NOT_EXECUTED
+                    if reference_study.execution_status == ReferenceStudy.UNKNOWN:
+                        status = StudyCaseExecution.NOT_EXECUTED
 
-                new_study_case_execution = StudyCaseExecution()
-                new_study_case_execution.study_case_id = study_case.id
-                new_study_case_execution.execution_status = status
-                new_study_case_execution.creation_date = datetime.now().astimezone(timezone.utc).replace(
-                    tzinfo=None)
-                new_study_case_execution.requested_by = user.username
-                db.session.add(new_study_case_execution)
-                db.session.commit()
-                study_case.current_execution_id = new_study_case_execution.id
-                db.session.add(study_case)
-                db.session.commit()
+                    new_study_case_execution = StudyCaseExecution()
+                    new_study_case_execution.study_case_id = study_case.id
+                    new_study_case_execution.execution_status = status
+                    new_study_case_execution.creation_date = datetime.now().astimezone(timezone.utc).replace(
+                        tzinfo=None)
+                    new_study_case_execution.requested_by = user.username
+                    db.session.add(new_study_case_execution)
+                    db.session.commit()
+                    study_case.current_execution_id = new_study_case_execution.id
+                    db.session.add(study_case)
+                    db.session.commit()
 
-        # Persist data using the current persistence strategy
-        study_case_manager.dump_data(study_case_manager.dump_directory)
-        study_case_manager.dump_disciplines_data(
-            study_case_manager.dump_directory)
+            # Persist data using the current persistence strategy
+            study_case_manager.dump_data(study_case_manager.dump_directory)
+            study_case_manager.dump_disciplines_data(
+                study_case_manager.dump_directory)
 
-        # Loading data for study created empty
-        if reference is None:
-            study_case.creation_status = StudyCase.CREATION_DONE
-            db.session.add(study_case)
-            db.session.commit()
-            study_case_manager.load_status = LoadStatus.LOADED
-            study_case_manager.n2_diagram = {}
-            study_case_manager.execution_engine.dm.treeview = None
-            study_case_manager.execution_engine.get_treeview(False, False)
-
-        # Adding reference data and loading study data
-        elif from_type == StudyCase.FROM_REFERENCE:
-
-            reference_basepath = Config().reference_root_dir
-
-            # Build reference folder base on study process name and
-            # repository
-            reference_folder = join(
-                reference_basepath, study_case.repository, study_case.process, reference)
-
-            # Get ref generation ID associated to this ref
-            reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
-
-            if study_case_manager.load_status != LoadStatus.IN_PROGESS and study_case_manager.load_status != LoadStatus.LOADED:
-                study_case_manager.load_status = LoadStatus.IN_PROGESS
-
-                #set creation is done ()
+            # Loading data for study created empty
+            if reference is None:
                 study_case.creation_status = StudyCase.CREATION_DONE
                 db.session.add(study_case)
                 db.session.commit()
-                threading.Thread(
-                    target=study_case_manager_loading_from_reference,
-                    args=(study_case_manager, False, False, reference_folder, reference_identifier)).start()
+                study_case_manager.load_status = LoadStatus.LOADED
+                study_case_manager.n2_diagram = {}
+                study_case_manager.execution_engine.dm.treeview = None
+                study_case_manager.execution_engine.get_treeview(False, False)
 
-        elif from_type == "UsecaseData":
+            # Adding reference data and loading study data
+            elif from_type == StudyCase.FROM_REFERENCE:
 
-            if study_case_manager.load_status == LoadStatus.NONE:
-                study_case_manager.load_status = LoadStatus.IN_PROGESS
+                reference_basepath = Config().reference_root_dir
 
-                threading.Thread(
-                    target=study_case_manager_loading_from_usecase_data,
-                    args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
+                # Build reference folder base on study process name and
+                # repository
+                reference_folder = join(
+                    reference_basepath, study_case.repository, study_case.process, reference)
 
-        if study_case_manager.load_status == LoadStatus.IN_ERROR:
-            raise Exception(study_case_manager.error_message)
+                # Get ref generation ID associated to this ref
+                reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
 
-        loaded_study_case = LoadedStudyCase(
-            study_case_manager, False, False, user_id)
+                if study_case_manager.load_status != LoadStatus.IN_PROGESS and study_case_manager.load_status != LoadStatus.LOADED:
+                    study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-        process_metadata = load_processes_metadata(
-            [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
+                    #set creation is done ()
+                    study_case.creation_status = StudyCase.CREATION_DONE
+                    db.session.add(study_case)
+                    db.session.commit()
+                    threading.Thread(
+                        target=study_case_manager_loading_from_reference,
+                        args=(study_case_manager, False, False, reference_folder, reference_identifier)).start()
 
-        repository_metadata = load_repositories_metadata(
-            [loaded_study_case.study_case.repository])
+            elif from_type == "UsecaseData":
 
-        loaded_study_case.study_case.apply_ontology(
-            process_metadata, repository_metadata)
+                if study_case_manager.load_status == LoadStatus.NONE:
+                    study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-        # Update cache modification date and release study
-        study_case_cache.update_study_case_modification_date(
-            loaded_study_case.study_case.id, loaded_study_case.study_case.modification_date)
+                    threading.Thread(
+                        target=study_case_manager_loading_from_usecase_data,
+                        args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
 
-        # Modifying study case to add access right of creator (Manager)
-        loaded_study_case.study_case.is_manager = True
+            if study_case_manager.load_status == LoadStatus.IN_ERROR:
+                raise Exception(study_case_manager.error_message)
 
-        if not status:
-            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
-        else:
-            loaded_study_case.study_case.execution_status = status
+            loaded_study_case = LoadedStudyCase(
+                study_case_manager, False, False, user_id)
+
+            process_metadata = load_processes_metadata(
+                [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
+
+            repository_metadata = load_repositories_metadata(
+                [loaded_study_case.study_case.repository])
+
+            loaded_study_case.study_case.apply_ontology(
+                process_metadata, repository_metadata)
+
+            # Update cache modification date and release study
+            study_case_cache.update_study_case_modification_date(
+                loaded_study_case.study_case.id, loaded_study_case.study_case.modification_date)
+
+            # Modifying study case to add access right of creator (Manager)
+            loaded_study_case.study_case.is_manager = True
+
+            if not status:
+                loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+            else:
+                loaded_study_case.study_case.execution_status = status
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(

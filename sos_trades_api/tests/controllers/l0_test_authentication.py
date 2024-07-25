@@ -17,6 +17,8 @@ limitations under the License.
 
 from os.path import dirname, join
 
+from flask_jwt_extended.config import config
+
 from sos_trades_api import __file__ as sos_trades_api_file
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
@@ -66,7 +68,7 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
 
             decoded_token = decode_token(jwt_access)
 
-            self.assertEqual(decoded_token["identity"], User.STANDARD_USER_ACCOUNT_EMAIL,
+            self.assertEqual(decoded_token[config.identity_claim_key], User.STANDARD_USER_ACCOUNT_EMAIL,
                              "Test account user is not the same than the one stored into the jwt token")
 
     def test_login_failed(self):
