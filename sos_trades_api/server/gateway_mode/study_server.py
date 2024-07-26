@@ -17,6 +17,7 @@ limitations under the License.
 # Set server name
 from datetime import datetime
 import os
+import re
 
 os.environ["SERVER_NAME"] = "STUDY_SERVER"
 
