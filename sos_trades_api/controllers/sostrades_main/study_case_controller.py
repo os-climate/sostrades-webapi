@@ -194,6 +194,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
             # Loading data for study created empty
             if reference is None:
                 study_case.creation_status = StudyCase.CREATION_DONE
+                study_case_manager.study.creation_status = StudyCase.CREATION_DONE
                 db.session.add(study_case)
                 db.session.commit()
                 study_case_manager.load_status = LoadStatus.LOADED
@@ -219,6 +220,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
                     #set creation is done ()
                     study_case.creation_status = StudyCase.CREATION_DONE
+                    study_case_manager.study.creation_status = StudyCase.CREATION_DONE
                     db.session.add(study_case)
                     db.session.commit()
                     threading.Thread(
@@ -393,7 +395,9 @@ def launch_load_study_in_background(study_manager,  no_data, read_only):
     """
     Launch only the background thread
     """
-    if study_manager.load_status == LoadStatus.NONE and study_manager.study.creation_status == StudyCase.CREATION_DONE:
+    if study_manager.load_status == LoadStatus.NONE \
+        and (study_manager.study.creation_status == StudyCase.CREATION_DONE or \
+            study_manager.study.creation_status == ProxyDiscipline.STATUS_DONE):
         study_manager.load_status = LoadStatus.IN_PROGESS
         threading.Thread(
             target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
