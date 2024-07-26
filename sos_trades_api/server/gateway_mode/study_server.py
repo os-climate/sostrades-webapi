@@ -14,13 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
+
 # Set server name
+os.environ["SERVER_NAME"] = "STUDY_SERVER"
+
 from datetime import datetime
 import os
 import re
-
-os.environ["SERVER_NAME"] = "STUDY_SERVER"
-
 from sos_trades_api.server import base_server
 
 app = base_server.app
@@ -65,11 +66,7 @@ def load_specific_study(study_identifier):
         load_or_create_study_case,
     )
 
-    load_or_create_study_case(
-        user_id=None, 
-        study_case_identifier=study_identifier,
-        study_access_right=None,
-        read_only_mode=False)
+    load_or_create_study_case(study_identifier)
         
 # in case of study server, find the study server ID
 study_id = get_study_id_for_study_server()
