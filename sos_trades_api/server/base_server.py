@@ -151,15 +151,13 @@ def load_specific_study(study_identifier):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
         load_or_create_study_case,
     )
-    from threading import Thread
 
-    Thread(
-        target=load_or_create_study_case,
-        args=(None, study_identifier, None, False),
-    ).start()
+    load_or_create_study_case(
+        user_id=None, 
+        study_case_identifier=study_identifier,
+        study_access_right=None,
+        read_only_mode=False)
         
-
-
 
 
 
@@ -939,28 +937,25 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     # error
     if app is not None and db is not None:
         migrate = Migrate(app, db, compare_type=False)
+
+        # in case of study server, find the study server ID
+        study_id = get_study_id_for_study_server()
+        if study_id is not None:
+            # in case of study server, save the active study file and load the study
+            from sos_trades_api.tools.active_study_management.active_study_management import (
+                ACTIVE_STUDY_FILE_NAME,
+                save_study_last_active_date,
+            )
+            # create the active study file if it doesn't exist
+            local_path = Config().local_folder_path
+            if local_path != "" and os.path.exists(local_path):
+                file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
+                if not os.path.exists(file_path):
+                    save_study_last_active_date(study_id, datetime.now())
             
-    
-    # in case of study server, find the study server ID
-    study_id = get_study_id_for_study_server()
-    if study_id is not None:
-        # in case of study server, save the active study file and load the study
-        from sos_trades_api.tools.active_study_management.active_study_management import (
-            ACTIVE_STUDY_FILE_NAME,
-            save_study_last_active_date,
-        )
-        # create the active study file if it doesn't exist
-        local_path = Config().local_folder_path
-        if local_path != "" and os.path.exists(local_path):
-            file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
-            if not os.path.exists(file_path):
-                save_study_last_active_date(study_id, datetime.now())
-        
-        
-        # then load the study
-        load_specific_study(study_id)
-
-
+            # then load the study
+            load_specific_study(study_id)
+            
     # Attention compare type find a difference in ReferenceGenerationStatus
     # if not app == None and not db == None:
     #     migrate = Migrate(app, db, compare_type=True)
