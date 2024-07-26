@@ -528,9 +528,10 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         with app.app_context():
             study_case = StudyCase.query.filter(
                 StudyCase.id == study_case_manager.study.id).first()
-            study_case.creation_status = StudyCase.CREATION_ERROR
-            db.session.add(study_case)
-            db.session.commit()
+            if study_case is not None:
+                study_case.creation_status = StudyCase.CREATION_ERROR
+                db.session.add(study_case)
+                db.session.commit()
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
