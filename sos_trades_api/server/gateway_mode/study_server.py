@@ -15,13 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+from datetime import datetime
+import os
+import re
 
 # Set server name
 os.environ["SERVER_NAME"] = "STUDY_SERVER"
 
-from datetime import datetime
-import os
-import re
+
 from sos_trades_api.server import base_server
 
 app = base_server.app
