@@ -110,10 +110,9 @@ def load_or_create_study_case(user_id, study_case_identifier, study_access_right
     """
     loaded_study = None
     with app.app_context():
-        is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         study_case = StudyCase.query.filter(StudyCase.id.like(study_case_identifier)).first()
-        if not is_in_cache and (study_case.creation_status != StudyCase.CREATION_DONE and study_case.creation_status != ProxyDiscipline.STATUS_DONE):
+        if (study_case.creation_status != StudyCase.CREATION_DONE and study_case.creation_status != ProxyDiscipline.STATUS_DONE and study_case.creation_status != StudyCase.CREATION_IN_PROGRESS):
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
             db.session.add(study_case)
