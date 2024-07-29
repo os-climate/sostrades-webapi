@@ -114,21 +114,29 @@ def load_or_create_study_case(study_case_identifier):
     :type study_case_identifier: integer
     """
     with app.app_context():
+        
         is_in_cache = study_case_cache.is_study_case_cached(study_case_identifier)
-        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
+        # get the study case manager with lock and checkexpire
+        study_case_manager = study_case_cache.get_study_case(study_case_identifier, True, True)
 
+        app.logger.info(f"check loading of study {study_case_identifier}, load_status: {study_case_manager.load_status}")
         # get the studycase in database (created on data server side)
         study_case = StudyCase.query.filter(StudyCase.id.like(study_case_identifier)).first()
 
         # if the study is not loaded and the creation is not started or finished, create the study
         if not is_in_cache and (study_case.creation_status != StudyCase.CREATION_DONE and study_case.creation_status != ProxyDiscipline.STATUS_DONE):
             
-            # set creation status to in_progress
+            # set creation status to in_progress and loading status to inprogress
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
+            study_case_manager.load_status = LoadStatus.IN_PROGESS
             db.session.add(study_case)
             db.session.commit()
 
+            # Update cache modification date and release study
+            study_case_cache.update_study_case_modification_date(
+                study_case.id, study_case.modification_date)
+            
             # check if it is a from a copy or a usecase
             if study_case_manager.study.from_type == StudyCase.FROM_STUDYCASE:
                 # if it is a copy, get the source study in database
@@ -143,14 +151,18 @@ def load_or_create_study_case(study_case_identifier):
                     raise Exception("Source study case is not completely created. Load it again then copy it.")
                 
                 # copy the study from the source study
-                _copy_study_case(study_case_identifier, source_id)
+                _copy_study_case(study_case_manager, study_case_identifier, source_id)
             else:
                 # create the study case with all info in database
-                _create_study_case(study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
+                _create_study_case(study_case_manager, study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
         elif (study_case.creation_status == StudyCase.CREATION_DONE or study_case.creation_status == ProxyDiscipline.STATUS_DONE):
+            #release studycase manager lock
+            study_case_cache.release_study_case(study_case_identifier)
             # load the study case as it has already been created
             load_study_case(study_case_identifier)
-
+        else:
+            #release studycase manager lock
+            study_case_cache.release_study_case(study_case_identifier)
 
 def load_study_case(study_id, reload=False):
     """
@@ -164,13 +176,15 @@ def load_study_case(study_id, reload=False):
     :params: reload, indicates if the study must be reloaded, false by default
     :type: boolean
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, True)
 
     if reload:
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
 
     _launch_load_study_in_background(study_manager,  False, False)
+
+    study_case_cache.release_study_case(study_id)
 
 
 
@@ -210,7 +224,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
         # check if the study needs to be created or needs reload
         load_or_create_study_case(study_case_identifier)
 
-        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
+        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         study_is_created = study_case is not None and \
             (study_case.creation_status == StudyCase.CREATION_DONE or study_case.creation_status == ProxyDiscipline.STATUS_DONE)
@@ -320,15 +334,13 @@ def get_study_load_status(study_id):
     return status
 
 
-def _create_study_case(study_case_identifier, reference, from_type=None):
+def _create_study_case(study_case_manager, study_case_identifier, reference, from_type=None):
     """
     Create a study case for the user, adding reference data if specified, then launch loading in background from reference or usecase
     """
     status = StudyCaseExecution.NOT_EXECUTED
 
     try:
-
-        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
 
         study_case = None
         with app.app_context():
@@ -389,32 +401,20 @@ def _create_study_case(study_case_identifier, reference, from_type=None):
                 # Get ref generation ID associated to this ref
                 reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
 
-                if study_case_manager.load_status != LoadStatus.IN_PROGESS and study_case_manager.load_status != LoadStatus.LOADED:
-                    study_case_manager.load_status = LoadStatus.IN_PROGESS
-
-                    #set creation is done
-                    study_case.creation_status = StudyCase.CREATION_DONE
-                    db.session.add(study_case)
-                    db.session.commit()
-
-                    # then load data
-                    threading.Thread(
-                        target=study_case_manager_loading_from_reference,
-                        args=(study_case_manager, False, False, reference_folder, reference_identifier)).start()
+                
+                # then load data
+                threading.Thread(
+                    target=study_case_manager_loading_from_reference,
+                    args=(study_case_manager, False, False, reference_folder, reference_identifier)).start()
 
             elif from_type == "UsecaseData":
 
-                if study_case_manager.load_status == LoadStatus.NONE:
-                    study_case_manager.load_status = LoadStatus.IN_PROGESS
-                    
-                    # then load data
-                    threading.Thread(
-                        target=study_case_manager_loading_from_usecase_data,
-                        args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
+                # then load data
+                threading.Thread(
+                    target=study_case_manager_loading_from_usecase_data,
+                    args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
 
-            # Update cache modification date and release study
-            study_case_cache.update_study_case_modification_date(
-                study_case.id, study_case.modification_date)
+            
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -424,7 +424,7 @@ def _create_study_case(study_case_identifier, reference, from_type=None):
         raise Exception(study_case_manager.error_message)
 
 
-def _copy_study_case(study_id, source_study_case_identifier):
+def _copy_study_case(study_manager, study_id, source_study_case_identifier):
     """
     copy an existing study case with a new name
     :param study_id: study case identifier to modify
@@ -435,7 +435,7 @@ def _copy_study_case(study_id, source_study_case_identifier):
     :type user_id: integer
     """
     with app.app_context():
-        study_manager_source = study_case_cache.get_study_case(source_study_case_identifier, False)
+        study_manager_source = study_case_cache.get_study_case(source_study_case_identifier, False, False)
 
         # Copy the last study case execution and then update study_id, creation
         # date and request_by.
@@ -470,20 +470,14 @@ def _copy_study_case(study_id, source_study_case_identifier):
             db.session.commit()
 
         try:
-            study_manager = study_case_cache.get_study_case(study_case.id, False)
-
-            if study_manager.load_status == LoadStatus.NONE:
-                study_manager.load_status = LoadStatus.IN_PROGESS
-                threading.Thread(
-                    target=study_case_manager_loading_from_study,
-                    args=(study_manager, False, False, study_manager_source)).start()
+            threading.Thread(
+                target=study_case_manager_loading_from_study,
+                args=(study_manager, False, False, study_manager_source)).start()
 
             if study_manager.load_status == LoadStatus.IN_ERROR:
                 raise Exception(study_manager.error_message)
 
-            # Update cache modification date and release study
-            study_case_cache.update_study_case_modification_date(
-                study_case.id, study_case.modification_date)
+            
 
             # Copy log file from studyExecutionLog
             if study_execution is not None:
@@ -1046,7 +1040,7 @@ def get_study_data_file_path(study_id) -> str:
     :type study_id: integer
 
     """
-    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager = study_case_cache.get_study_case(study_id, False, False)
 
     try:
         data_file_path = study_manager.study_data_file_path
