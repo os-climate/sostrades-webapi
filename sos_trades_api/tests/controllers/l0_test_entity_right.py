@@ -69,7 +69,7 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            create_study_case,
+            get_study_case,
         )
         from sos_trades_api.models.database_models import (
             AccessRights,
@@ -145,9 +145,9 @@ class TestEntityRight(DatabaseUnitTestConfiguration):
 
                 self.test_study_id = new_study_case.id
 
-                created_study = create_study_case(self.test_user_id,
+                created_study = get_study_case(self.test_user_id,
                                                   self.test_study_id,
-                                                  None)
+                                                  AccessRights.MANAGER)
 
                 self.test_study_id = created_study.study_case.id
 
