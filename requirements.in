@@ -17,7 +17,7 @@ kubernetes==29.0.0 # Linked to kubernetes version deployed
 mysqlclient==2.2.0 # Issue when moving up due to https://stackoverflow.com/questions/76688014/error-connections-using-insecure-transport-are-prohibited-while-require-secur
 numpy==1.24.4
 pandas==2.2.2
-plotly==5.3.0
+plotly==5.22.0
 psutil==6.0.0
 PyJWT==2.8.0
 python-dotenv==1.0.1
