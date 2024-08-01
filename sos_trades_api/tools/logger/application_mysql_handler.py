@@ -162,7 +162,6 @@ class ApplicationMySQLHandler(Handler):
             conn = self.__get_connection()
         except MySQLError as error:
             raise Exception(error)
-            exit(-1)
         else:
             # Check if 'log' table in db already exists
             cur = conn.cursor()
