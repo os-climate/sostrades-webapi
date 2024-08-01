@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -108,7 +108,6 @@ except Exception as error:
     app.logger.error(
         f"The following error occurs when trying to initialize server\n{error} ")
     raise error
-    exit(-1)
 
 # Register own class for studycase caching
 study_case_cache = StudyCaseCache(logger=app.logger)
