@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/12/06-2023/12/13 Copyright 2023 Capgemini
+Modifications on 2023/12/06-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -318,7 +318,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                                 old_value = None
                                 new_value = None
                             except Exception as error:
-                                raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                                raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}') from error
                         else:
                             study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
                             new_value = str(param_chg.new_value)
