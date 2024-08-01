@@ -420,7 +420,7 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                         old_value = None
                         new_value = None
                     except Exception as error:
-                        raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                        raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}') from error
                 else:
                     study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
                     old_value = str(param_chg.old_value)
