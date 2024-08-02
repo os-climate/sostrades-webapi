@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/23-2023/12/04 Copyright 2023 Capgemini
+Modifications on 2023/05/23-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -187,8 +187,6 @@ def study_case_execution_raw_logs(study_case_id, study_case_execution_id):
     else:
         resp = make_response(jsonify("No logs found."), 404)
         return resp
-
-    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
 @app.route("/api/data/calculation/dashboard", methods=["GET"])

@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -946,8 +946,7 @@ def study_case_logs(study_case_identifier):
             )
         except Exception as ex:
             print(ex)
-        finally:
-            return result
+        return result
     else:
         raise InvalidStudy(
             f"Requested study case (identifier {study_case_identifier} does not exist in the database",

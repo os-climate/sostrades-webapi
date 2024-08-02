@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/05/12-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/05/12-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -354,8 +354,7 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
                     result = file_tail(file_path, 200, encoding="latin")
         except Exception as ex:
             print(ex)
-        finally:
-            return result
+        return result
 
     else:
         raise InvalidStudy(
@@ -392,8 +391,7 @@ def calculation_raw_logs(study_case_id, study_case_execution_id):
 
         except Exception as ex:
             print(ex)
-        finally:
-            return file_path
+        return file_path
 
     else:
         raise InvalidStudy(
