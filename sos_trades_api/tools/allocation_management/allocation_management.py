@@ -14,12 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 import yaml
 from jinja2 import Template
+from kubernetes import client
 
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import PodAllocation, StudyCase
@@ -30,11 +32,9 @@ from sos_trades_api.tools.kubernetes.kubernetes_service import (
     get_pod_status_and_reason_from_event,
     kubernetes_create_deployment_and_service,
     kubernetes_create_pod,
+    kubernetes_load_kube_config,
     watch_pod_events,
-    kubernetes_load_kube_config
 )
-from kubernetes import client
-import os
 
 
 def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, log_file_path:str=None)->PodAllocation:
@@ -204,7 +204,7 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
         # Allow to create study pod with the same image_id than the API server
         print(k8_conf)
         image_id=get_image_digest_from_api_pod()
-        if image_id is not None:
+        if image_id is not None and k8_conf["kind"]=="Deployment":
             k8_conf["spec"]["template"]["spec"]["containers"][0]["image"] = image_id
         print(k8_conf)
     return k8_conf
