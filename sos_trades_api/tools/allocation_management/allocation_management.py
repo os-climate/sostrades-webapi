@@ -184,8 +184,8 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
             print(k8_conf)
             # Allow to create eeb with the same image_id than the API server
             image_id=get_image_digest_from_api_pod()
-            if image_id.digest is not None:
-                k8_conf["spec"]["containers"][0]["image"] = image_id.digest
+            if image_id is not None:
+                k8_conf["spec"]["containers"][0]["image"] = image_id
             print(k8_conf)
     return k8_conf
 
@@ -204,8 +204,8 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
         # Allow to create study pod with the same image_id than the API server
         print(k8_conf)
         image_id=get_image_digest_from_api_pod()
-        if image_id.digest is not None:
-            k8_conf["spec"]["containers"][0]["image"] = image_id.digest
+        if image_id is not None:
+            k8_conf["spec"]["containers"][0]["image"] = image_id
         print(k8_conf)
     return k8_conf
 
