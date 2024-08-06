@@ -205,7 +205,7 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
         print(k8_conf)
         image_id=get_image_digest_from_api_pod()
         if image_id is not None:
-            k8_conf["spec"]["containers"][0]["image"] = image_id
+            k8_conf["spec"]["template"]["spec"]["containers"][0]["image"] = image_id
         print(k8_conf)
     return k8_conf
 
