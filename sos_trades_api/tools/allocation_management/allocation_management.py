@@ -152,6 +152,9 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
     return pod_allocation
 
 def get_image_digest_from_api_pod():
+    """
+    Get the image digest of the current pod. The result depends on the "K8S_NAMESPACE" and "HOSTNAME" environment variables within that pod. And we suppose that the pod has only one container
+    """
     kubernetes_load_kube_config() # Load kubeconfig rights
     v1 = client.CoreV1Api() # Create a client API
     namespace = os.getenv("K8S_NAMESPACE") # Get the current pod namespace
@@ -181,12 +184,11 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
             if pod_type == PodAllocation.TYPE_REFERENCE:
                 k8_conf["spec"]["containers"][0]["args"] = [
                 "--generate", str(identifier)]
-            print(k8_conf)
             # Allow to create eeb with the same image_id than the API server
             image_id=get_image_digest_from_api_pod()
             if image_id is not None:
-                k8_conf["spec"]["containers"][0]["image"] = image_id
-            print(k8_conf)
+                k8_conf["spec"]["containers"][0]["image"] = image_id # We suppose that the pod has only one container
+            app.logger.debug(k8_conf)
     return k8_conf
 
 def get_kubernetes_jinja_config(pod_name, file_path, flavor):
@@ -202,11 +204,10 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
             k8_tplt = k8_tplt.render(pod_name=pod_name)
         k8_conf = yaml.safe_load(k8_tplt)
         # Allow to create study pod with the same image_id than the API server
-        print(k8_conf)
         image_id=get_image_digest_from_api_pod()
         if image_id is not None and k8_conf["kind"]=="Deployment":
-            k8_conf["spec"]["template"]["spec"]["containers"][0]["image"] = image_id
-        print(k8_conf)
+            k8_conf["spec"]["template"]["spec"]["containers"][0]["image"] = image_id # We suppose that the pod has only one container
+        app.logger.debug(k8_conf)
     return k8_conf
 
 def get_pod_name(identifier, pod_type, execution_identifier):
