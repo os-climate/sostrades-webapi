@@ -14,12 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 import yaml
 from jinja2 import Template
+from kubernetes import client
 
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import PodAllocation, StudyCase
@@ -30,6 +32,7 @@ from sos_trades_api.tools.kubernetes.kubernetes_service import (
     get_pod_status_and_reason_from_event,
     kubernetes_create_deployment_and_service,
     kubernetes_create_pod,
+    kubernetes_load_kube_config,
     watch_pod_events,
 )
 
@@ -148,7 +151,16 @@ def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
 
     return pod_allocation
 
-
+def get_image_digest_from_api_pod():
+    """
+    Get the image digest of the current pod. The result depends on the "K8S_NAMESPACE" and "HOSTNAME" environment variables within that pod. And we suppose that the pod has only one container
+    """
+    kubernetes_load_kube_config() # Load kubeconfig rights
+    v1 = client.CoreV1Api() # Create a client API
+    namespace = os.getenv("K8S_NAMESPACE") # Get the current pod namespace
+    pod_name = os.getenv("HOSTNAME") # Get the current pod name
+    digest=v1.read_namespaced_pod(name=pod_name, namespace=namespace).status.container_statuses[0].image_id # Return the pod image digest used, depends on the current pod name and namepsace
+    return digest
 
 def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_path=None):
     """
@@ -156,7 +168,6 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
     """
     k8_conf = None
     eeb_k8_filepath = Config().eeb_filepath
-
     if Path(eeb_k8_filepath).exists():
         app.logger.debug("pod configuration file found")
         with open(eeb_k8_filepath) as f:
@@ -173,6 +184,11 @@ def get_kubernetes_config_eeb(pod_name, identifier, pod_type, flavor, log_file_p
             if pod_type == PodAllocation.TYPE_REFERENCE:
                 k8_conf["spec"]["containers"][0]["args"] = [
                 "--generate", str(identifier)]
+            # Allow to create eeb with the same image_id than the API server
+            image_id=get_image_digest_from_api_pod()
+            if image_id is not None:
+                k8_conf["spec"]["containers"][0]["image"] = image_id # We suppose that the pod has only one container
+            app.logger.debug(k8_conf)
     return k8_conf
 
 def get_kubernetes_jinja_config(pod_name, file_path, flavor):
@@ -187,6 +203,11 @@ def get_kubernetes_jinja_config(pod_name, file_path, flavor):
         else:
             k8_tplt = k8_tplt.render(pod_name=pod_name)
         k8_conf = yaml.safe_load(k8_tplt)
+        # Allow to create study pod with the same image_id than the API server
+        image_id=get_image_digest_from_api_pod()
+        if image_id is not None and k8_conf["kind"]=="Deployment":
+            k8_conf["spec"]["template"]["spec"]["containers"][0]["image"] = image_id # We suppose that the pod has only one container
+        app.logger.debug(k8_conf)
     return k8_conf
 
 def get_pod_name(identifier, pod_type, execution_identifier):
