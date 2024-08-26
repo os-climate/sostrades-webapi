@@ -19,6 +19,9 @@ import os
 
 os.environ["SERVER_NAME"] = "MESSAGE_SERVER"
 
+import eventlet
+eventlet.monkey_patch()
+
 from flask_socketio import SocketIO
 
 from sos_trades_api.server.base_server import app
