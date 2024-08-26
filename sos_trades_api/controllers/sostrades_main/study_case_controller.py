@@ -220,10 +220,10 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
     get a loaded studycase in read only if needed or not, launch load_or_create if it is not in cache
 
     """
+    
+    # check if the study needs to be created or needs reload
+    load_or_create_study_case(study_case_identifier)
     with app.app_context():
-        # check if the study needs to be created or needs reload
-        load_or_create_study_case(study_case_identifier)
-
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         study_is_created = study_case is not None and \
@@ -233,7 +233,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
         # retrieve study execution status
         is_read_only_possible = False
         if study_case is not None and study_is_created and study_case.current_execution_id is not None:
-            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(study_case.current_execution_id)).first()
             # check that the execution is finished to show the read only mode
             if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
                 is_read_only_possible = True
@@ -281,6 +281,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
 
                 #get execution status
                 if study_case_execution is not None:
+                    study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(study_case.current_execution_id)).first()
                     loaded_study_case.study_case.execution_status = study_case_execution.execution_status
                     loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
                     loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
