@@ -35,6 +35,8 @@
         "migrations/versions/81ddc6b58939_add_pod_status_monitoring.py",
         "migrations/versions/7df43d135e7c_adding_dataset_information_to_.py",
         "migrations/versions/6742a7abbc12_update_user_preference.py",
+        "migrations/versions/b4c65e383551_default_groups.py",
+        "migrations/versions/35ba4ee9fc53_add_error_management_on_study_object.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
