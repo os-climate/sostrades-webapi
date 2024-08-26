@@ -181,6 +181,7 @@ def load_study_case(study_id, reload=False):
     if reload:
         study_manager.study_case_manager_reload_backup_files()
         study_manager.reset()
+        study_manager.delete_loaded_study_case_in_json_file()
 
     _launch_load_study_in_background(study_manager,  False, False)
 
