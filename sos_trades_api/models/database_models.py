@@ -226,7 +226,7 @@ class StudyCase(db.Model):
                                  name="fk_study_case_group_id"),
                       nullable=False)
     name = Column(String(64), index=True, unique=False)
-    repository = Column(String(64), index=True, unique=False, server_default="test")
+    repository = Column(String(128), index=True, unique=False, server_default="test")
     process = Column(String(64), index=True, unique=False)
     process_id = Column(Integer,
                         ForeignKey(
