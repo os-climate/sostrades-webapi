@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/23 Copyright 2023 Capgemini
+Modifications on 2023/11/23-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -133,5 +133,4 @@ def reset_study_from_cache(study_id):
             return study_manager
 
     except Exception as ex:
-        raise f"Error during reset study from cache : {ex}"
-
+        raise Exception(f"Error during reset study from cache : {ex}") from ex

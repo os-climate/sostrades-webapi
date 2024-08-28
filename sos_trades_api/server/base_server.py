@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ try:
     # sos_trades_api dependencies
 
     app.logger.info("Importing dependencies")
-    from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
+    from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
     from sos_trades_api.tools.logger.application_mysql_handler import (
@@ -85,31 +85,29 @@ try:
         "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
-    os.environ["FLASK_ENV"] = app.config["ENVIRONMENT"]
-
     app.logger.info("Configuring logger")
-    if os.environ["FLASK_ENV"] == PRODUCTION:
-        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
+    if app.config["ENVIRONMENT"] == PRODUCTION:
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s")
 
         # Remove all trace
         logging.getLogger("engineio.server").setLevel(51)
     else:
-        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s")
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s")
         app.logger.setLevel(logging.DEBUG)
         logging.getLogger("engineio.server").setLevel(logging.DEBUG)
 
     for handler in logging.getLogger().handlers:
-        handler.setFormatter(logging.Formatter("[%(asctime)s] %(name)s %(levelname)s in %(module)s: %(message)s"))
-    app.logger.info(f'{os.environ["FLASK_ENV"]} environment configuration loaded')
+        handler.setFormatter(logging.Formatter("[%(asctime)s] [worker: %(process)d] %(name)s %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info(f'{app.config["ENVIRONMENT"]} environment configuration loaded')
     app.logger.info(f"Time elapsed since python beginning: {(time.time() - first_line_time):.2f} seconds")
 
     # Register own class encoder
-    app.json_encoder = CustomJsonEncoder
+    app.json_provider_class = CustomJsonProvider
+    app.json = CustomJsonProvider(app)
 except Exception as error:
     app.logger.error(
         f"The following error occurs when trying to initialize server\n{error} ")
     raise error
-    exit(-1)
 
 # Register own class for studycase caching
 study_case_cache = StudyCaseCache(logger=app.logger)
@@ -916,7 +914,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     # token attempts to access an endpoint
 
     @jwt.expired_token_loader
-    def my_expired_token_callback(expired_token):
+    def my_expired_token_callback(jwt_header, jwt_data):
         return jsonify({
             "statusCode": 401,
             "name": "Unauthorized",

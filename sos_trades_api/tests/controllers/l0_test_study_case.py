@@ -542,6 +542,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                 StudyCase.name == self.test_study_name).first()
             self.assertIsNotNone(study_test)
             studies_id_list_to_delete = [study_test.id]
+        with DatabaseUnitTestConfiguration.app.app_context():
             delete_study_cases(studies_id_list_to_delete)
 
             study_test_deleted = StudyCase.query.filter(
@@ -646,7 +647,6 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              "Copied study case repository does not match, test set up repository name used")
 
     def test_get_user_study_case_preference(self):
-        import json
 
         from sqlalchemy.sql.expression import and_
 
@@ -659,40 +659,41 @@ class TestStudy(DatabaseUnitTestConfiguration):
         # Load preference (will be empty)
         preference = load_study_case_preference(
             self.test_study_id, self.test_user_id)
-
         self.assertEqual(len(preference), 0,
                          "Initial preference data must be empty")
 
         # Set some preference data into the database
-        preference_data = {
-            "key1": 38,
-            "key2": "namespace value",
-            "key3": {
-                "sub_key": [1, 2, 3],
-            },
-        }
+        first_panel_identifier = "key1"
+        first_panel_opened = True
+        second_panel_identifier = "key2"
+        second_panel_opened = True
 
         save_study_case_preference(
-            self.test_study_id, self.test_user_id, preference_data)
+            self.test_study_id, self.test_user_id, first_panel_identifier, first_panel_opened)
+        save_study_case_preference(
+            self.test_study_id, self.test_user_id, second_panel_identifier, second_panel_opened)
 
         with DatabaseUnitTestConfiguration.app.app_context():
-            preferences = UserStudyPreference.query.filter(
+            preference = UserStudyPreference.query.filter(
                 and_(UserStudyPreference.user_id == self.test_user_id,
-                     UserStudyPreference.study_case_id == self.test_study_id)).all()
+                     UserStudyPreference.study_case_id == self.test_study_id,
+                     UserStudyPreference.panel_identifier == first_panel_identifier)).first()
 
-            self.assertEqual(len(preferences), 1,
-                             "It must have only one reference tuple into database")
+            self.assertIsNotNone(preference, f"The identifier '{first_panel_identifier}', not found in database")
 
-            loaded_preference = json.loads(preferences[0].preference)
+            preference_2 = UserStudyPreference.query.filter(
+                and_(UserStudyPreference.user_id == self.test_user_id,
+                     UserStudyPreference.study_case_id == self.test_study_id,
+                     UserStudyPreference.panel_identifier == second_panel_identifier)).first()
 
-            self.assertDictEqual(preference_data, loaded_preference,
-                                 "Direct read preference is not the same a the save one")
+            self.assertIsNotNone(preference_2, f"The identifier '{second_panel_identifier}', not found in database")
 
-            loaded_preference = load_study_case_preference(
-                self.test_study_id, self.test_user_id)
+        # Load preference
+        preference = load_study_case_preference(
+            self.test_study_id, self.test_user_id)
 
-            self.assertDictEqual(preference_data, loaded_preference,
-                                 "Controller read preference is not the same a the save one")
+        self.assertEqual(len(preference), 2,
+                         "Preference data must be have two new entries")
 
     def _test_clear_error_in_study_case_controller(self):
         from os.path import dirname, join

@@ -78,7 +78,7 @@
   "SOS_TRADES_ONTOLOGY_ENDPOINT": "",
 
   // List of additional modules to check for processes.
-  "SOS_TRADES_PROCESS_REPOSITORY": ["sos_trades_core.sos_processes.test"],
+  "SOS_TRADES_PROCESS_REPOSITORY": ["sostrades_core.sos_processes.test"],
 
   // Absolute path to the SSL certificate to communicate with the ontology server
   "INTERNAL_SSL_CERTIFICATE": "",
