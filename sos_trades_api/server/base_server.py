@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy()
+    db = SQLAlchemy(engine_options={"pool_pre_ping":True})
     db.init_app(app)
 
     # As flask application and database are initialized, then import

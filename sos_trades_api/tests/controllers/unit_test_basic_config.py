@@ -115,7 +115,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
 
         # Create server connection
         engine = sqlalchemy.create_engine(
-            database_server_uri, connect_args=ssl_arguments)
+            database_server_uri, connect_args=ssl_arguments, pool_pre_ping=True)
 
         with engine.connect() as connection:
             # Create database schema if not exist
@@ -159,7 +159,7 @@ class DatabaseUnitTestConfiguration(unittest.TestCase):
 
         # Create server connection
         engine = sqlalchemy.create_engine(
-            database_server_uri, connect_args=ssl_arguments)
+            database_server_uri, connect_args=ssl_arguments, pool_pre_ping=True)
 
         with engine.connect() as connection:
             # Create database schema if not exist
