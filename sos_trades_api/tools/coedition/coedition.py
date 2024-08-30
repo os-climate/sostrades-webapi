@@ -110,6 +110,16 @@ def remove_user_from_all_rooms(user_id):
             db.session.delete(utd)
         db.session.commit()
 
+def clear_all_users_from_all_rooms():
+    """
+    Clear table of StudyCoeditionUser
+    """
+    users_to_delete = StudyCoeditionUser.query.all()
+
+    if len(users_to_delete) > 0:
+        for utd in users_to_delete:
+            db.session.delete(utd)
+        db.session.commit()
 
 def get_user_list_in_room(study_case_id):
     """
