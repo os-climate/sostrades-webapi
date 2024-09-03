@@ -21,7 +21,6 @@ from copy import deepcopy
 from os.path import abspath, dirname, join
 from pathlib import Path
 
-
 """
 Flask and database configuration variable
 """
@@ -685,7 +684,10 @@ class Config:
                 raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
         
     def __sort_flavors(self, flavors:dict)->dict:
-        from sos_trades_api.tools.code_tools import convert_byte_into_byte_unit_targeted, extract_number_and_unit
+        from sos_trades_api.tools.code_tools import (
+            convert_byte_into_byte_unit_targeted,
+            extract_number_and_unit,
+        )
         """
         Sort the kubernetes flavors by memory limits and requests
         :param flavors: dict of flavors to sort
