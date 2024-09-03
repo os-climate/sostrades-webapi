@@ -140,6 +140,10 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
     mebibytes_to_gigabytes = 1024*1024/1000/1000/1000
     gibibytes_to_gigabytes = 1024*1024*1024/1000/1000/1000
 
+    # if source = converted unit, no need to convert
+    if unit_source.lower() == unit_bytes.lower():
+        return bytes_to_convert
+
     if unit_source.lower() == "byte":
         # Convert byte to Megabyte
         if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
@@ -148,6 +152,8 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert v to Gigabyte
         elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * bytes_to_gigabyte
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
@@ -159,6 +165,8 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert kibibyte to Gigabyte
         elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * kibibytes_to_gigabytes
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert / 1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
@@ -179,6 +187,8 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert Gigabyte to Gigabyte
         if unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * gibibytes_to_gigabytes
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert * 1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
