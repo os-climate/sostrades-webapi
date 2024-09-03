@@ -708,6 +708,8 @@ class StudyCaseChange(db.Model):
     dataset_connector_id = Column(TEXT, index=False, unique=False)
     dataset_id = Column(TEXT, index=False, unique=False)
     dataset_parameter_id = Column(TEXT, index=False, unique=False)
+    dataset_data_path=Column(TEXT, index=False, unique=False)
+    variable_key=Column(TEXT, index=False, unique=False)
 
     def serialize(self):
         """
@@ -727,6 +729,8 @@ class StudyCaseChange(db.Model):
             "dataset_connector_id": self.dataset_connector_id,
             "dataset_id": self.dataset_id,
             "dataset_parameter_id": self.dataset_parameter_id,
+            "dataset_data_path":self.dataset_data_path,
+            "variable_key": self.variable_key
         }
 
 class StudyCoeditionUser(db.Model):

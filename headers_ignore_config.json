@@ -24,6 +24,7 @@
         "toml"
     ],
     "files_to_ignore": [
+        "migrations/versions/9187d11fbebc_add_dataset_data_path_to_studycasechange.py",
         "migrations/versions/6fde15c1f0d5_default_group_v3.py",
         "migrations/versions/5e995cf0ba49_add_information_about_deleting_a_column_.py",
         "migrations/versions/224990fccd32_default_group_v2.py",

@@ -818,6 +818,8 @@ def get_study_case_notifications(study_identifier):
                             new_change.dataset_connector_id = ch.dataset_connector_id
                             new_change.dataset_id = ch.dataset_id
                             new_change.dataset_parameter_id = ch.dataset_parameter_id
+                            new_change.dataset_data_path = ch.dataset_data_path
+                            new_change.variable_key = ch.variable_key
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes
