@@ -129,6 +129,20 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         :rtype: float
     """
 
+    # if unit_source is m or M it is a multiplicator
+    if unit_source == "M":
+        bytes_to_convert = bytes_to_convert * 1e9
+        unit_source = ""
+    elif unit_source == "m":
+        bytes_to_convert = bytes_to_convert * 1e3
+        unit_source = ""
+    
+    # if no unit, it is bytes
+    if unit_source == "":
+        unit_source = "byte"
+    if unit_bytes == "":
+        unit_bytes = "byte"
+
     byte_converted = None
 
     # Conversion factors
@@ -140,11 +154,11 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
     mebibytes_to_gigabytes = 1024*1024/1000/1000/1000
     gibibytes_to_gigabytes = 1024*1024*1024/1000/1000/1000
 
+
     # if source = converted unit, no need to convert
     if unit_source.lower() == unit_bytes.lower():
-        return bytes_to_convert
-
-    if unit_source.lower() == "byte":
+        byte_converted = bytes_to_convert
+    elif unit_source.lower() == "byte":
         # Convert byte to Megabyte
         if unit_bytes.lower() == "mb" or unit_bytes.lower() == "megabyte":
             byte_converted = bytes_to_convert * bytes_to_megabyte
@@ -152,8 +166,18 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert v to Gigabyte
         elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * bytes_to_gigabyte
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert / 1024
         elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
             byte_converted = bytes_to_convert / 1024 / 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 /1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert / 1024 / 1024 /1024 /1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024 /1024 /1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024 /1024 /1024 / 1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
@@ -165,8 +189,19 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert kibibyte to Gigabyte
         elif unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * kibibytes_to_gigabytes
+
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024
         elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
             byte_converted = bytes_to_convert / 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert / 1024 / 1024 /1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024 /1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024 /1024 /1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
@@ -179,6 +214,21 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert Megabyte to Gigabyte
         elif unit_bytes == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * mebibytes_to_gigabytes
+
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024 * 1024
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert * 1024
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert / 1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert / 1024 / 1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024 /1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
@@ -187,11 +237,92 @@ def convert_byte_into_byte_unit_targeted(bytes_to_convert: float, unit_source: s
         # Convert Gigabyte to Gigabyte
         if unit_bytes.lower() == "gb" or unit_bytes.lower() == "gigabyte":
             byte_converted = bytes_to_convert * gibibytes_to_gigabytes
+        
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024
         elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
             byte_converted = bytes_to_convert * 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert / 1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024 / 1024
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+        
+    elif unit_source.lower() == "ti" or unit_source.lower() == "tebibytes":
+
+        # Convert Gigabyte to Gigabyte
+        if unit_bytes.lower() == "tb" or unit_bytes.lower() == "terabyte":
+            byte_converted = bytes_to_convert * gibibytes_to_gigabytes *1024/1000
+        
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert * 1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert / 1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024 / 1024
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
+    
+    elif unit_source.lower() == "pi" or unit_source.lower() == "pebibytes":
+
+        # Convert Pebibyte to Petabyte
+        if unit_bytes.lower() == "pb" or unit_bytes.lower() == "petabyte":
+            byte_converted = bytes_to_convert * gibibytes_to_gigabytes * (1024/1000)^2
+        
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024  * 1024
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert * 1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert 
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert / 1024
         else:
             raise ValueError(f'Unit {unit_bytes} is not handled')
 
+    elif unit_source.lower() == "ei" or unit_source.lower() == "exbibytes":
+
+        # Convert Pebibyte to Petabyte
+        if unit_bytes.lower() == "eb" or unit_bytes.lower() == "exabyte":
+            byte_converted = bytes_to_convert * gibibytes_to_gigabytes * (1024/1000)^3
+        
+        elif unit_bytes.lower() == "byte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "ki" or unit_bytes.lower() == "kibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "mi" or unit_bytes.lower() == "mebibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "gi" or unit_bytes.lower() == "gibibyte":
+            byte_converted = bytes_to_convert * 1024 * 1024 * 1024
+        elif unit_bytes.lower() == "ti" or unit_bytes.lower() == "tebibytes":
+            byte_converted = bytes_to_convert * 1024 * 1024
+        elif unit_bytes.lower() == "pi" or unit_bytes.lower() == "pebibyte":
+            byte_converted = bytes_to_convert * 1024
+        elif unit_bytes.lower() == "ei" or unit_bytes.lower() == "exbibyte":
+            byte_converted = bytes_to_convert
+        else:
+            raise ValueError(f'Unit {unit_bytes} is not handled')
 
     else:
         raise ValueError(f'Unit {unit_source} is not handled')
@@ -213,12 +344,20 @@ def extract_number_and_unit(input_string: str) -> tuple:
 
     # Use a regular expression to extract the number and the unit
     match = re.match(r"(\d+[\.,]?\d*)\s*([a-zA-Z]+)", input_string.strip())
-    if not match:
-        raise ValueError("The input string must contain both a number and a unit.")
+    if match:
+        # Replace comma with a dot to handle decimal numbers correctly
+        number = float(match.group(1).replace(',', '.'))
+        unit = match.group(2)
+    else:
+        # if no match, check if there is only number
+        nb_match = re.match(r"(\d+[\.,]?\d*)", input_string.strip())
 
-    # Replace comma with a dot to handle decimal numbers correctly
-    number = float(match.group(1).replace(',', '.'))
-    unit = match.group(2)
+        if nb_match:
+            # Replace comma with a dot to handle decimal numbers correctly
+            number = float(nb_match.group(1).replace(',', '.'))
+            unit = ""
+        else:
+            raise ValueError("The input string must contain at least a number")
 
     return number, unit
 
