@@ -164,7 +164,8 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
-                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
+                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id,
+                  dataset_data_path, variable_key):
     """
     Add study change to database
     """
@@ -190,6 +191,8 @@ def add_change_db(notification_id, variable_id, variable_type, deleted_columns, 
     new_change.dataset_connector_id = dataset_connector_id
     new_change.dataset_id = dataset_id
     new_change.dataset_parameter_id = dataset_parameter_id
+    new_change.dataset_data_path = dataset_data_path
+    new_change.variable_key = variable_key
 
     # Save change
     db.session.add(new_change)

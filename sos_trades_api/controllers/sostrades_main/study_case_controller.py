@@ -753,6 +753,8 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               datetime.now(),
                               None,
                               None,
+                              None,
+                              None,
                               None)
 
         values = {}
@@ -873,6 +875,8 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       str(parameter["oldValue"]),
                                       None,
                                       datetime.now(),
+                                      None,
+                                      None,
                                       None,
                                       None,
                                       None)
