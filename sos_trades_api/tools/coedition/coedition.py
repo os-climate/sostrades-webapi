@@ -16,6 +16,8 @@ limitations under the License.
 '''
 from datetime import datetime
 
+from sostrades_core.tools.base_functions.compute_size import compute_data_size_in_Mo
+
 from sos_trades_api.models.database_models import (
     Notification,
     StudyCase,
@@ -108,6 +110,16 @@ def remove_user_from_all_rooms(user_id):
             db.session.delete(utd)
         db.session.commit()
 
+def clear_all_users_from_all_rooms():
+    """
+    Clear table of StudyCoeditionUser
+    """
+    users_to_delete = StudyCoeditionUser.query.all()
+
+    if len(users_to_delete) > 0:
+        for utd in users_to_delete:
+            db.session.delete(utd)
+        db.session.commit()
 
 def get_user_list_in_room(study_case_id):
     """
@@ -152,7 +164,8 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
-                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
+                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id,
+                  dataset_data_path, variable_key):
     """
     Add study change to database
     """
@@ -162,14 +175,24 @@ def add_change_db(notification_id, variable_id, variable_type, deleted_columns, 
     new_change.variable_id = variable_id
     new_change.variable_type = variable_type
     new_change.change_type = change_type
-    new_change.new_value = new_value
-    new_change.old_value = old_value
-    new_change.old_value_blob = old_value_blob
+    # check the size to prevent saving too big values
+    if compute_data_size_in_Mo(new_value) < 2:
+        new_change.new_value = new_value
+    else:
+        new_change.new_value = "New data size exceeds 2Mo, it cannot be displayed"
+    if compute_data_size_in_Mo(old_value) < 2:
+        new_change.old_value = old_value
+    else:
+        new_change.old_value = "Old data size exceeds 2Mo, it cannot be displayed. Reset to this value is not possible"
+    if compute_data_size_in_Mo(old_value_blob) < 2:
+        new_change.old_value_blob = old_value_blob
     new_change.last_modified = last_modified
     new_change.deleted_columns = deleted_columns
     new_change.dataset_connector_id = dataset_connector_id
     new_change.dataset_id = dataset_id
     new_change.dataset_parameter_id = dataset_parameter_id
+    new_change.dataset_data_path = dataset_data_path
+    new_change.variable_key = variable_key
 
     # Save change
     db.session.add(new_change)

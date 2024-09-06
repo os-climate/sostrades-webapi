@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/22-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/11/22-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -108,7 +108,6 @@ except Exception as error:
     app.logger.error(
         f"The following error occurs when trying to initialize server\n{error} ")
     raise error
-    exit(-1)
 
 # Register own class for studycase caching
 study_case_cache = StudyCaseCache(logger=app.logger)
@@ -566,7 +565,16 @@ def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         clean_all_allocations_type_study,
     )
-    clean_all_allocations_type_study()
+    from sos_trades_api.tools.coedition.coedition import clear_all_users_from_all_rooms
+
+    with app.app_context():
+        app.logger.info("Start cleaning all pod allocations")
+        clean_all_allocations_type_study()
+        app.logger.info("End cleaning all pod allocations")
+        app.logger.info("Start cleaning all remaining coedition users connected to studies")
+        # then delete all coedition user that have not been deleted
+        clear_all_users_from_all_rooms()
+        app.logger.info("End cleaning all remaining coedition users connected to studies")
 
 def clean_inactive_study_pods():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (

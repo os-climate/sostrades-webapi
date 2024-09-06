@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/12/06-2023/12/13 Copyright 2023 Capgemini
+Modifications on 2023/12/06-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -318,7 +318,7 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                                 old_value = None
                                 new_value = None
                             except Exception as error:
-                                raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                                raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}') from error
                         else:
                             study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
                             new_value = str(param_chg.new_value)
@@ -339,6 +339,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                             param_chg.connector_id,
                             param_chg.dataset_id,
                             param_chg.dataset_parameter_id,
+                            param_chg.dataset_data_path,
+                            param_chg.variable_key
                         )
 
                     study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
@@ -420,7 +422,7 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                         old_value = None
                         new_value = None
                     except Exception as error:
-                        raise f'Error during conversion from {param_chg.variable_type} to byte" : {error}'
+                        raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}') from error
                 else:
                     study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
                     old_value = str(param_chg.old_value)
@@ -440,6 +442,8 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                     param_chg.connector_id,
                     param_chg.dataset_id,
                     param_chg.dataset_parameter_id,
+                    param_chg.dataset_data_path,
+                    param_chg.variable_key
                 )
                 
             study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.LOADED

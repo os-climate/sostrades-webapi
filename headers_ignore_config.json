@@ -24,6 +24,7 @@
         "toml"
     ],
     "files_to_ignore": [
+        "migrations/versions/9187d11fbebc_add_dataset_data_path_to_studycasechange.py",
         "migrations/versions/6fde15c1f0d5_default_group_v3.py",
         "migrations/versions/5e995cf0ba49_add_information_about_deleting_a_column_.py",
         "migrations/versions/224990fccd32_default_group_v2.py",
@@ -35,6 +36,9 @@
         "migrations/versions/81ddc6b58939_add_pod_status_monitoring.py",
         "migrations/versions/7df43d135e7c_adding_dataset_information_to_.py",
         "migrations/versions/6742a7abbc12_update_user_preference.py",
+        "migrations/versions/b4c65e383551_default_groups.py",
+        "migrations/versions/35ba4ee9fc53_add_error_management_on_study_object.py",
+        "migrations/versions/2db3dd3d7e5c_increase_size_of_repository.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
