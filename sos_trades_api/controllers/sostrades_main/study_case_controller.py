@@ -1206,16 +1206,13 @@ def check_study_is_still_active_or_kill_pod():
     """
     with app.app_context():
         config = Config()
-        app.logger.info("Start check on active study pod")
         last_hours = config.study_pod_delay
-        app.logger.info(f"Start check on active study pod since {last_hours} hour(s)")
-        app.logger.info(f"Server mode: {config.server_mode}")
+        app.logger.debug(f"Start check on active study pod since {last_hours} hour(s)")
 
         if config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
             #delete allocation in db
 
             inactive_studies = []
-            app.logger.info("Start check studies")
             try:
                 inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
             except Exception as ex:
