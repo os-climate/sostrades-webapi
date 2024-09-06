@@ -23,6 +23,10 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import local_only
 
 
+@app.route("/api/main/ping", methods=["GET"])
+def ping():
+    return make_response(jsonify("pong"), 200)
+
 @app.route("/api/main/check-study-is-active", methods=["GET"])
 @local_only
 def check_study_is_active():
