@@ -1010,6 +1010,8 @@ def ping():
     return make_response(jsonify("pong"), 200)
 
 from sos_trades_api.tools.authentication.authentication import local_only
+
+
 @app.route("/api/update-allocation-loop", methods=["GET"])
 @local_only
 def update_allocation_loop():
@@ -1017,7 +1019,9 @@ def update_allocation_loop():
     start a thread to check allocation pods status, route only accessible on local
     '''
     import threading
+
     from flask import jsonify, make_response
+
     from sos_trades_api.server.base_server import update_all_pod_status_loop_method
 
     threading.Thread(
