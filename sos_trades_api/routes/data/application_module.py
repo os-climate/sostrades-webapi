@@ -24,9 +24,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 """
 Application module
 """
-@app.route("/api/data/ping", methods=["GET"])
-def ping():
-    return make_response(jsonify("pong"), 200)
+
 
 @app.route("/api/data/application/infos", methods=["GET"])
 def application_info():
