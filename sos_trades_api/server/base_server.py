@@ -981,9 +981,11 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
 
-        app.logger.info(
-            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-        )
+        # show requets logs except for probe request
+        if request.path != "/api/ping":
+            app.logger.info(
+                f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
+            )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
@@ -1008,3 +1010,6 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return make_response(jsonify("pong"), 200)
+
+
+
