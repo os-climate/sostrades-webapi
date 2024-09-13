@@ -72,7 +72,7 @@ class ExecutionMySQLHandler(Handler):
 
         # Create server connection
         engine = create_engine(
-            database_server_uri, connect_args=self.__sql_alchemy_database_ssl, pool_pre_ping=True, pool_recycle=3600, echo_pool="debug")
+            database_server_uri, connect_args=self.__sql_alchemy_database_ssl, pool_pre_ping=True, pool_recycle=3600)
 
         use_database_sql_request = text(f"USE `{self.__sql_alchemy_database_name}`;")
 

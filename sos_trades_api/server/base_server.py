@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy(engine_options={"pool_pre_ping": True, "pool_recycle": 3600, "echo_pool": "debug"})
+    db = SQLAlchemy(engine_options={"pool_pre_ping": True, "pool_recycle": 3600})
     db.init_app(app)
 
     # As flask application and database are initialized, then import
@@ -941,10 +941,10 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         duration = 0
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
-
-        app.logger.info(
-            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-        )
+        if "kube-probe" not in request.environ.get("HTTP_USER_AGENT"):
+            app.logger.info(
+                f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
+            )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
