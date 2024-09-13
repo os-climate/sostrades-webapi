@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy(engine_options={"pool_pre_ping":True})
+    db = SQLAlchemy(engine_options={"pool_pre_ping": True, "pool_recycle": 3600, "echo_pool": "debug"})
     db.init_app(app)
 
     # As flask application and database are initialized, then import
@@ -565,7 +565,16 @@ def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         clean_all_allocations_type_study,
     )
-    clean_all_allocations_type_study()
+    from sos_trades_api.tools.coedition.coedition import clear_all_users_from_all_rooms
+
+    with app.app_context():
+        app.logger.info("Start cleaning all pod allocations")
+        clean_all_allocations_type_study()
+        app.logger.info("End cleaning all pod allocations")
+        app.logger.info("Start cleaning all remaining coedition users connected to studies")
+        # then delete all coedition user that have not been deleted
+        clear_all_users_from_all_rooms()
+        app.logger.info("End cleaning all remaining coedition users connected to studies")
 
 def clean_inactive_study_pods():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (

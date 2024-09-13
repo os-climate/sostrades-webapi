@@ -657,7 +657,8 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
                 current_execution = study_case_execution[0]
-                update_study_case_execution_status(user_study.id, current_execution)
+                if current_execution.execution_status != StudyCaseExecution.FINISHED:
+                    update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
@@ -704,7 +705,8 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
                 else:
                     current_execution = study_case_execution
-                    update_study_case_execution_status(user_study.id, current_execution)
+                    if current_execution.execution_status != StudyCaseExecution.FINISHED:
+                        update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
                 return user_study
@@ -816,6 +818,8 @@ def get_study_case_notifications(study_identifier):
                             new_change.dataset_connector_id = ch.dataset_connector_id
                             new_change.dataset_id = ch.dataset_id
                             new_change.dataset_parameter_id = ch.dataset_parameter_id
+                            new_change.dataset_data_path = ch.dataset_data_path
+                            new_change.variable_key = ch.variable_key
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes

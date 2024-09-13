@@ -339,6 +339,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                             param_chg.connector_id,
                             param_chg.dataset_id,
                             param_chg.dataset_parameter_id,
+                            param_chg.dataset_data_path,
+                            param_chg.variable_key
                         )
 
                     study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
@@ -440,6 +442,8 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                     param_chg.connector_id,
                     param_chg.dataset_id,
                     param_chg.dataset_parameter_id,
+                    param_chg.dataset_data_path,
+                    param_chg.variable_key
                 )
                 
             study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.LOADED
