@@ -983,9 +983,10 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
             duration = time.time() - session[START_TIME]
 
         # show requets logs except for probe request
-        app.logger.info(
+        if request.path != "/api/ping":
+            app.logger.info(
                 f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-        )
+            )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
@@ -1005,7 +1006,6 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         response.cache_control.must_revalidate = True
 
         return response
-
 
 
 @app.route("/api/ping", methods=["GET"])
