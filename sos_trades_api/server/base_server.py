@@ -136,6 +136,7 @@ if pod_name.startswith("sostrades-study-server-"):
                 save_study_last_active_date(study_id, datetime.now())
 
 
+
 def load_specific_study(study_identifier):
     """
     Load a specific study.
