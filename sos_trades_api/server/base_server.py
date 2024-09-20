@@ -941,10 +941,10 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         duration = 0
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
-        if "kube-probe" not in request.environ.get("HTTP_USER_AGENT"):
-            app.logger.info(
-                f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-            )
+       
+        app.logger.info(
+            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
+        )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
