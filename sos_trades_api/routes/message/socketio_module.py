@@ -156,7 +156,26 @@ def on_execute(data):
           "message": CoeditionMessage.EXECUTION,
           "submitted": submitted},
          room=room)
+    
 
+@socketio.on("stopped")
+@auth_refresh_required
+def on_stopped(data):
+    room = data["study_case_id"]
+    stopped = data["stopped"]
+    user = get_authenticated_user()
+
+    # Add notification to database
+    add_notification_db(data["study_case_id"], user, UserCoeditionAction.EXECUTION_STOPPED, CoeditionMessage.EXECUTION_STOPPED)
+
+    # Emit notification
+    emit("study-stopped",
+         {"author": f"{user.firstname} {user.lastname}",
+          "type": UserCoeditionAction.EXECUTION_STOPPED,
+          "message": CoeditionMessage.EXECUTION_STOPPED,
+          "stopped": stopped},
+         room=room)
+    
 
 @socketio.on("claim")
 @auth_refresh_required
