@@ -395,6 +395,7 @@ def get_markdown_documentation_by_study_case_id(study_id):
             jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
         
         return resp
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
 @app.route("/api/main/study-case/<int:study_id>/download/raw", methods=["POST"])
