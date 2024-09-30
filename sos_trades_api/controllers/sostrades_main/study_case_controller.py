@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import inspect
 import os
 import shutil
 import sys
@@ -99,6 +100,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
     study_case_manager_update_from_dataset_mapping,
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sostrades_core.tools.tree.treenode import TreeNode
 
 """
 Study case Functions
@@ -1229,3 +1231,11 @@ def check_study_is_still_active_or_kill_pod():
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
+
+
+def get_markdown_documentation(study_id, discipline_key):
+    study_manager = study_case_cache.get_study_case(study_id, False)
+
+    filepath = inspect.getfile(discipline_key)
+    markdown_data = TreeNode.get_markdown_documentation(filepath)
+    return markdown_data
