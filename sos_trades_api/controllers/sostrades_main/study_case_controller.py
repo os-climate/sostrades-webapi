@@ -27,6 +27,7 @@ from os import remove
 from os.path import join
 from shutil import rmtree
 from tempfile import gettempdir
+import importlib.util
 
 import pandas as pd
 from numpy import array
@@ -1235,7 +1236,8 @@ def check_study_is_still_active_or_kill_pod():
 
 def get_markdown_documentation(study_id, discipline_key):
     study_manager = study_case_cache.get_study_case(study_id, False)
-
-    filepath = inspect.getfile(discipline_key)
+    #filepath = inspect.getfile(discipline_key)
+    spec = importlib.util.find_spec(discipline_key)
+    filepath = spec.origin.split('.py')[0] # provides the absolute path including __init__.py at the end
     markdown_data = TreeNode.get_markdown_documentation(filepath)
     return markdown_data
