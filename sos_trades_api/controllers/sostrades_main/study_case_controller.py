@@ -42,6 +42,7 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.treenode import TreeNode
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 
@@ -100,7 +101,6 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
     study_case_manager_update_from_dataset_mapping,
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sostrades_core.tools.tree.treenode import TreeNode
 
 """
 Study case Functions
