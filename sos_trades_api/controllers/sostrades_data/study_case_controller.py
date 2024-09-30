@@ -246,7 +246,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
 
-
+  
 
     return study_case_allocation
 
@@ -500,6 +500,34 @@ def edit_study_execution_flavor(study_id,  new_execution_pod_flavor:str):
             db.session.add(study_to_update)
             db.session.commit()
             study_is_updated = True
+    return study_is_updated
+
+
+def edit_study_flavor(study_id,  new_pod_flavor:str, restartPod: bool):
+    """
+    Update pod size of a study
+    :param study_id: id of the study to load
+    :type study_id: integer
+    :param new_pod_flavor: execution pod flavor.
+    :type new_pod_flavor: str
+
+    """
+    study_is_updated = False
+
+    study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_to_update is not None and new_pod_flavor is not None:
+        update_flavor = study_to_update.study_pod_flavor != new_pod_flavor
+        if update_flavor:
+            study_to_update.study_pod_flavor = new_pod_flavor
+            db.session.add(study_to_update)
+            db.session.commit()
+            study_is_updated = True
+        if study_is_updated and restartPod:
+            pod_allocation = get_study_case_allocation(study_to_update.id)
+            app.logger.info("Retrieved status of pod of kubernetes from edit_study_flavor()")
+            if pod_allocation is not None:
+                # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
+                delete_study_server_services_and_deployments([pod_allocation])
     return study_is_updated
 
 

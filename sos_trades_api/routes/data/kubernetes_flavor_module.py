@@ -27,10 +27,7 @@ def get_flavors_config_study():
     retrieve flavors from the configuration
     """
     flavor_dict = Config().kubernetes_flavor_config_for_study
-    all_flavor_names = []
-    if flavor_dict is not None:
-        all_flavor_names = list(flavor_dict.keys())
-    return make_response(jsonify(all_flavor_names), 200)
+    return make_response(jsonify(flavor_dict), 200)
 
 @app.route("/api/data/flavors/exec", methods=["GET"])
 @auth_required
@@ -40,7 +37,4 @@ def get_flavors_config_exec():
     retrieve flavors from the configuration
     """
     flavor_dict = Config().kubernetes_flavor_config_for_exec
-    all_flavor_names = []
-    if flavor_dict is not None:
-        all_flavor_names = list(flavor_dict.keys())
-    return make_response(jsonify(all_flavor_names), 200)
+    return make_response(jsonify(flavor_dict), 200)
