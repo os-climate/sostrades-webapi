@@ -394,7 +394,7 @@ def get_markdown_documentation_by_study_case_id(study_id):
         resp = make_response(
             jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
         
-
+        return resp
 
 
 @app.route("/api/main/study-case/<int:study_id>/download/raw", methods=["POST"])

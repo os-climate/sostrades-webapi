@@ -332,7 +332,6 @@ def update_study_cases(study_id):
 
         group_id = request.json.get("group_id", None)
         study_name = request.json.get("new_study_name", None)
-        flavor = request.json.get("flavor", None)
 
         # Verify user has study case authorisation to update study (Manager)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -340,7 +339,7 @@ def update_study_cases(study_id):
             raise BadRequest(
                 "You do not have the necessary rights to update this study case")
 
-        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id, flavor)), 200)
+        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id)), 200)
         return response
     else:
         raise BadRequest("Missing mandatory parameter: study_id in url")
