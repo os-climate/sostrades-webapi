@@ -17,6 +17,7 @@ from flask import jsonify, make_response
 
 from sos_trades_api.server.base_server import Config, app
 from sos_trades_api.tools.authentication.authentication import auth_required
+from sos_trades_api.tools.code_tools import extract_unit_from_flavor
 
 
 @app.route("/api/data/flavors/study", methods=["GET"])
@@ -26,7 +27,8 @@ def get_flavors_config_study():
     
     retrieve flavors from the configuration
     """
-    flavor_dict = Config().kubernetes_flavor_config_for_study
+    flavor_from_config_dict = Config().kubernetes_flavor_config_for_study
+    flavor_dict = extract_unit_from_flavor(flavor_from_config_dict)
     return make_response(jsonify(flavor_dict), 200)
 
 @app.route("/api/data/flavors/exec", methods=["GET"])
@@ -36,5 +38,6 @@ def get_flavors_config_exec():
     
     retrieve flavors from the configuration
     """
-    flavor_dict = Config().kubernetes_flavor_config_for_exec
+    flavor_from_config_dict = Config().kubernetes_flavor_config_for_exec
+    flavor_dict = extract_unit_from_flavor(flavor_from_config_dict)
     return make_response(jsonify(flavor_dict), 200)
