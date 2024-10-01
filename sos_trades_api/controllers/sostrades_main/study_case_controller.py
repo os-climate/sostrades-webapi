@@ -1234,7 +1234,6 @@ def check_study_is_still_active_or_kill_pod():
 
 
 def get_markdown_documentation(study_id, discipline_key):
-    study_manager = study_case_cache.get_study_case(study_id, False)
     spec = importlib.util.find_spec(discipline_key)
     # for the doc of a process, spec.origin = process_folder\__init__.py
     if '__init__.py' in spec.origin:
