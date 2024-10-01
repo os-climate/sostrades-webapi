@@ -119,7 +119,8 @@ def create_empty_study_case(
             .join(GroupAccessUser)
             .filter(GroupAccessUser.user_id == user_identifier)
             .filter(Group.id == group_identifier)
-            .filter(StudyCase.disabled == False)
+            .filter(StudyCase.disabled == False) #noqa: E712
+            # Ruff fix causes regression that prevent the filter to work
             .all()
         )
 
@@ -394,7 +395,9 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                         Group).join(GroupAccessUser) \
                         .filter(GroupAccessUser.user_id == user_id) \
                         .filter(Group.id == new_group_id) \
-                        .filter(not StudyCase.disabled).all()
+                        .filter(StudyCase.disabled == False).all()#noqa: E712
+                        # Ruff fix causes regression that prevent the filter to work
+
 
                     for study in study_name_list:
                         if study.name == new_study_name:
