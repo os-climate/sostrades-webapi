@@ -20,6 +20,7 @@ import os
 import re
 from time import time
 from typing import Optional
+
 from sos_trades_api.server.base_server import app
 
 """
