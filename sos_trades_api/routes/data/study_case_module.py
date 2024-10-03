@@ -26,6 +26,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     delete_study_cases_and_allocation,
     edit_study,
     edit_study_execution_flavor,
+    edit_study_flavor,
     get_change_file_stream,
     get_last_study_case_changes,
     get_raw_logs,
@@ -260,6 +261,27 @@ def copy_study_case(study_id):
         raise BadRequest("Missing mandatory parameter: study_id in url")
 
 
+@app.route("/api/data/study-case/<int:study_id>/update-study-flavor", methods=["POST"])
+@auth_required
+def update_study_case_flavor(study_id):
+    if study_id is not None:
+        # Checking if user can access study data
+        user = session["user"]
+        flavor = request.json.get("flavor", None)
+        restart = request.json.get("restart", False)
+
+        # Verify user has study case authorisation to update study (Manager)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to update this study case")
+
+        response = make_response(jsonify(edit_study_flavor(study_id, flavor, restart)), 200)
+        return response
+    else:
+        raise BadRequest("Missing mandatory parameter: study_id in url")
+    
+
 @app.route("/api/data/study-case/<int:study_id>/update-execution-flavor", methods=["POST"])
 @auth_required
 def update_study_case_execution_flavor(study_id):
@@ -310,7 +332,6 @@ def update_study_cases(study_id):
 
         group_id = request.json.get("group_id", None)
         study_name = request.json.get("new_study_name", None)
-        flavor = request.json.get("flavor", None)
 
         # Verify user has study case authorisation to update study (Manager)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -318,7 +339,7 @@ def update_study_cases(study_id):
             raise BadRequest(
                 "You do not have the necessary rights to update this study case")
 
-        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id, flavor)), 200)
+        response = make_response(jsonify(edit_study(study_id, group_id, study_name, user.id)), 200)
         return response
     else:
         raise BadRequest("Missing mandatory parameter: study_id in url")

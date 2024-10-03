@@ -28,6 +28,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
+    get_markdown_documentation,
     get_study_data_file_path,
     get_study_data_stream,
     get_study_load_status,
@@ -371,6 +372,29 @@ def get_study_data_file_by_study_case_id(study_id):
         # Proceeding after rights verification
         file_path = get_study_data_stream(study_id)
         return send_file(file_path)
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+
+@app.route("/api/main/study-case/<int:study_id>/markdown-documentation", methods=["POST"])
+@auth_required
+def get_markdown_documentation_by_study_case_id(study_id):
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about study case")
+        
+        discipline_key = request.form.get("discipline_key", None)
+        if discipline_key is None:
+            raise BadRequest("Missing mandatory parameter: discipline key")
+        
+
+        resp = make_response(
+            jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
+        
+        return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 

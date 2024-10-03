@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import importlib.util
 import os
 import shutil
 import sys
@@ -41,6 +42,7 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.treenode import TreeNode
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 
@@ -1229,3 +1231,15 @@ def check_study_is_still_active_or_kill_pod():
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
+
+
+def get_markdown_documentation(study_id, discipline_key):
+    spec = importlib.util.find_spec(discipline_key)
+    # for the doc of a process, spec.origin = process_folder\__init__.py
+    if '__init__.py' in spec.origin:
+        filepath = spec.origin.split('__init__.py')[0]
+    else:
+        # for the doc of a discipline, spec.origin = discipline_folder\discipline_name.py
+        filepath = spec.origin.split('.py')[0]
+    markdown_data = TreeNode.get_markdown_documentation(filepath)
+    return markdown_data
