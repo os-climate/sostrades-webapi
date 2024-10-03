@@ -684,6 +684,10 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
+            # Display empty string if study pod flavor is None
+            if user_study.study_pod_flavor is None:
+                user_study.study_pod_flavor = ""
+
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
     return result
