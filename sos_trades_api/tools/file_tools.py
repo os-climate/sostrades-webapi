@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/06/07 Copyright 2024 Capgemini
+Modifications on 2024/06/07-2024/08/01 Copyright 2024 Capgemini
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -129,7 +129,7 @@ def get_lines_from_file(file_path: str) -> list:
                 else:
                     raise FileExistsError(f"The file '{file_path}' is empty.")
         else:
-            FileNotFoundError(f"The file '{file_path}' not found.")
+            raise FileNotFoundError(f"The file '{file_path}' not found.")
     else:
         raise ValueError("The path cannot be none or empty.")
 

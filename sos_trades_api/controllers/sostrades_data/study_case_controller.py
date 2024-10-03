@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/08/30-2024/06/25 Copyright 2023 Capgemini
+Modifications on 2023/08/30-2024/08/01 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -657,7 +657,8 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
             else:
                 current_execution = study_case_execution[0]
-                update_study_case_execution_status(user_study.id, current_execution)
+                if current_execution.execution_status != StudyCaseExecution.FINISHED:
+                    update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
@@ -704,7 +705,8 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = StudyCaseExecution.NOT_EXECUTED
                 else:
                     current_execution = study_case_execution
-                    update_study_case_execution_status(user_study.id, current_execution)
+                    if current_execution.execution_status != StudyCaseExecution.FINISHED:
+                        update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
                 return user_study
@@ -816,6 +818,8 @@ def get_study_case_notifications(study_identifier):
                             new_change.dataset_connector_id = ch.dataset_connector_id
                             new_change.dataset_id = ch.dataset_id
                             new_change.dataset_parameter_id = ch.dataset_parameter_id
+                            new_change.dataset_data_path = ch.dataset_data_path
+                            new_change.variable_key = ch.variable_key
                             notif_changes.append(new_change)
 
                         new_notif.changes = notif_changes
@@ -946,8 +950,7 @@ def study_case_logs(study_case_identifier):
             )
         except Exception as ex:
             print(ex)
-        finally:
-            return result
+        return result
     else:
         raise InvalidStudy(
             f"Requested study case (identifier {study_case_identifier} does not exist in the database",

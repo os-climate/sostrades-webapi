@@ -554,7 +554,7 @@ class Config:
 
             self.__validate_flavor(kubernetes_flavor["PodStudy"])
 
-            self.__kubernetes_flavor_for_study = kubernetes_flavor["PodStudy"]
+            self.__kubernetes_flavor_for_study = self.__sort_flavors(kubernetes_flavor["PodStudy"])
 
         return self.__kubernetes_flavor_for_study
 
@@ -579,7 +579,7 @@ class Config:
 
             self.__validate_flavor(kubernetes_flavor[self.CONFIG_FLAVOR_POD_EXECUTION])
 
-            self.__kubernetes_flavor_for_exec = kubernetes_flavor[self.CONFIG_FLAVOR_POD_EXECUTION]
+            self.__kubernetes_flavor_for_exec = self.__sort_flavors(kubernetes_flavor[self.CONFIG_FLAVOR_POD_EXECUTION])
 
         return self.__kubernetes_flavor_for_exec
 
@@ -615,6 +615,31 @@ class Config:
             # Check if 'memory' and 'cpu' are defined under 'limits'
             if not isinstance(limits, dict) or "memory" not in limits or "cpu" not in limits:
                 raise ValueError(f"'memory' and 'cpu' must be defined under 'limits' for flavor '{flavor}'")
+        
+    def __sort_flavors(self, flavors:dict)->dict:
+        from sos_trades_api.tools.code_tools import (
+            convert_byte_into_byte_unit_targeted,
+            extract_number_and_unit,
+        )
+        """
+        Sort the kubernetes flavors by memory limits and requests
+        :param flavors: dict of flavors to sort
+        :return: dict of flavors sorted by memory
+        """
+        def sort_by_memory(memory_limit, memory_request):
+            """
+            convert the memories in Mi and return them for sorted function
+            """
+            limit_value, limit_unit =  extract_number_and_unit(memory_limit)
+            request_value, request_unit =  extract_number_and_unit(memory_request)
+            limit_mi = convert_byte_into_byte_unit_targeted(limit_value, limit_unit, 'Mi')
+            request_mi = convert_byte_into_byte_unit_targeted(request_value, request_unit, 'Mi')
+            return (limit_mi, request_mi)
+
+        sorted_dict = dict(sorted(flavors.items(), key=lambda item:sort_by_memory(item[1]['limits']["memory"], item[1]['requests']["memory"])))
+        return sorted_dict
+        
+
     @property
     def pod_watcher_activated(self):
         return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)

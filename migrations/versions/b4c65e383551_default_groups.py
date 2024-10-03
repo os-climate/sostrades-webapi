@@ -1,5 +1,4 @@
-"""
-Default Groups
+"""Default Groups
 
 Revision ID: b4c65e383551
 Revises: 039eba317a4e
@@ -35,8 +34,8 @@ def upgrade():
 
         db.session.commit()
     except Exception as exc:
-        raise exc
         db.session.rollback()
+        raise exc
 
 
 def downgrade():

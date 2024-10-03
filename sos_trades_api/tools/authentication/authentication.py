@@ -118,6 +118,17 @@ def auth_required(func):
             abort(403)
     return wrapper
 
+def local_only(func):
+    """
+    View decorator - require localhost or 127.0.0.1 remote address
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if request.remote_addr != '127.0.0.1':
+            app.logger.error("authorization failed: %s", 'Access Denied: Only accessible from localhost')
+            abort(403)
+        return func(*args, **kwargs)
+    return wrapper
 
 def set_user_from_api_key(authorization):
     """
