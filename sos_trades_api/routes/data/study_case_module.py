@@ -19,6 +19,7 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_favorite_study_case,
+    check_study_already_exist,
     copy_study,
     create_empty_study_case,
     create_new_notification_after_update_parameter,
@@ -41,7 +42,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     remove_favorite_study_case,
     save_study_case_preference,
     set_user_authorized_execution,
-    study_case_logs, check_study_already_exist,
+    study_case_logs,
 )
 from sos_trades_api.models.database_models import (
     AccessRights,

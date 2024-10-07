@@ -72,6 +72,7 @@ from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+
 """
 Study case Functions
 """
