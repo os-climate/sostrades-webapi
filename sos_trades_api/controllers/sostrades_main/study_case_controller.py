@@ -156,11 +156,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         study_case = None
         with app.app_context():
-            study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_identifier).first()
+            study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+
 
             if from_type == StudyCase.FROM_REFERENCE:
-
                 # Get reference path
                 reference_path = f"{study_case.repository}.{study_case.process}.{reference}"
 
@@ -206,10 +205,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
                 reference_basepath = Config().reference_root_dir
 
+                db.session.add(study_case)
                 # Build reference folder base on study process name and
                 # repository
-                reference_folder = join(
-                    reference_basepath, study_case.repository, study_case.process, reference)
+                reference_folder = join(reference_basepath, study_case.repository, study_case.process, reference)
 
                 # Get ref generation ID associated to this ref
                 reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
