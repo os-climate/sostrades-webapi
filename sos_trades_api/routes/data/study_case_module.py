@@ -19,6 +19,7 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_favorite_study_case,
+    check_study_already_exist,
     copy_study,
     create_empty_study_case,
     create_new_notification_after_update_parameter,
@@ -617,4 +618,20 @@ def delete_favorite_study(study_id):
         raise BadRequest("Missing mandatory parameter: study_id")
 
     response = make_response(jsonify(remove_favorite_study_case(study_id, user.id)), 200)
+    return response
+
+
+@app.route("/api/data/study-case/exist", methods=["GET"])
+@auth_required
+def study_already_exist():
+    user = session["user"]
+    name = request.args.get("studyName")
+    group_id = request.args.get("groupId")
+    if name is None:
+        raise BadRequest("Missing mandatory parameter: name")
+    if group_id is None:
+        raise BadRequest("Missing mandatory parameter: group_id")
+
+    check_study_already_exist(user.id, group_id, name)
+    response = make_response(jsonify(check_study_already_exist(user.id, group_id, name)), 200)
     return response

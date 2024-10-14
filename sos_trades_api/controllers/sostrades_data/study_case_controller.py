@@ -113,22 +113,8 @@ def create_empty_study_case(
     :return: sos_trades_api.models.database_models.StudyCase
     """
     try:
-        study_name_list = (
-            StudyCase.query.join(StudyCaseAccessGroup)
-            .join(Group)
-            .join(GroupAccessUser)
-            .filter(GroupAccessUser.user_id == user_identifier)
-            .filter(Group.id == group_identifier)
-            .filter(StudyCase.disabled == False) #noqa: E712
-            # Ruff fix causes regression that prevent the filter to work
-            .all()
-        )
 
-        for snl in study_name_list:
-            if snl.name == name:
-                raise InvalidStudy(
-                    f'The following study case name "{name}" already exist in the database for the selected group',
-                )
+        check_study_already_exist(user_identifier, group_identifier, name)
 
         # Initialize the new study case object in database
         study_case = StudyCase()
@@ -754,7 +740,7 @@ def add_study_information_on_status(user_study: StudyCase):
             user_study.creation_status = StudyCase.CREATION_ERROR
             if allocation is not None:
                 if allocation.pod_status == PodAllocation.OOMKILLED:
-                    user_study.error = "An error occured while creation, pod had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
+                    user_study.error = f"An error occured while creation, pod (actual pod size {allocation.flavor}) had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
                 else:
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
 
@@ -1236,4 +1222,21 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
             raise ex
 
 
+def check_study_already_exist(user_identifier, group_identifier, name):
 
+    is_already_exist = False
+    study_name_list = (
+                StudyCase.query.join(StudyCaseAccessGroup)
+                .join(Group)
+                .join(GroupAccessUser)
+                .filter(GroupAccessUser.user_id == user_identifier)
+                .filter(Group.id == group_identifier)
+                .filter(StudyCase.disabled == False) #noqa: E712
+                # Ruff fix causes regression that prevent the filter to work
+                .all()
+            )
+
+    for snl in study_name_list:
+        if snl.name == name:
+            is_already_exist = True
+    return is_already_exist
