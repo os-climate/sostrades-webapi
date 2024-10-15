@@ -10,8 +10,6 @@ from alembic import op
 
 from sos_trades_api.server.base_server import db
 
-
-
 # revision identifiers, used by Alembic.
 revision = "35ba4ee9fc53"
 down_revision = "b4c65e383551"

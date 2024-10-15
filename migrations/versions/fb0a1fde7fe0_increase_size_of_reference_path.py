@@ -9,7 +9,6 @@ Create Date: 2022-09-21 11:28:43.480706
 from alembic import op
 from sqlalchemy.dialects import mysql
 
-
 # revision identifiers, used by Alembic.
 revision = "fb0a1fde7fe0"
 down_revision = "bcc99700bfe4"
