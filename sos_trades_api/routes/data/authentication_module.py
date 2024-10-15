@@ -299,7 +299,7 @@ def authenticate_with_keycloak():
 
     auth_url = keycloak_settings.auth_url()
 
-    return redirect(auth_url)
+    return make_response(jsonify(auth_url), 200)
 
 @app.route("/api/data/keycloak/oauth/available", methods=["GET"])
 def is_keycloak_available():
