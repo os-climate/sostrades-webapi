@@ -86,9 +86,14 @@ class ApplicationSQLAlchemyHandler(Handler):
         record.exc_text = _defaultFormatter.formatException(record.exc_info) if record.exc_info else ""
 
         try:
-            if "%" in message:
-                message = message % record.args
+            # Instanciate msg with argument format
+            if "%" in record.msg:
+                record.msg = record.msg % record.args
+        except:
+            pass
 
+        session = self.Session()
+        try:
             log_entry = Log(
                 Created=record.dbtime,
                 Name=record.name,
@@ -101,8 +106,6 @@ class ApplicationSQLAlchemyHandler(Handler):
                 RemotePort=getattr(record, 'remoteport', ''),
                 UserAgent=getattr(record, 'useragent', '')
             )
-
-            session = self.Session()
             session.add(log_entry)
             session.commit()
         except Exception as e:
