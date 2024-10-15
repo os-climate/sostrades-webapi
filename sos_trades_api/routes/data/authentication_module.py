@@ -33,7 +33,7 @@ from sos_trades_api.controllers.sostrades_data.authentication_controller import 
     deauthenticate_user,
     refresh_authentication,
 )
-from sos_trades_api.server.base_server import Config, app
+from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import (
     auth_refresh_required,
     auth_required,
