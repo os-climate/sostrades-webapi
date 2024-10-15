@@ -33,7 +33,7 @@ from sos_trades_api.controllers.sostrades_data.authentication_controller import 
     deauthenticate_user,
     refresh_authentication,
 )
-from sos_trades_api.server.base_server import app
+from sos_trades_api.server.base_server import Config, app
 from sos_trades_api.tools.authentication.authentication import (
     auth_refresh_required,
     auth_required,
@@ -292,14 +292,22 @@ def github_oauth():
     return redirect(url)
 
 
-@app.route("/api/data/keycloak/authenticate", methods=["GET"])
+@app.route("/api/data/keycloak/oauth/authenticate", methods=["GET"])
 def authenticate_with_keycloak():
-    # Get authorization URL
-    keycloak = KeycloakAuthenticator()
 
-    auth_url = keycloak.auth_url("https://revision.gpp-sostrades.com/api/data/keycloak/callback")
+    keycloak_settings = KeycloakAuthenticator()
+
+    auth_url = keycloak_settings.auth_url()
 
     return redirect(auth_url)
+
+@app.route("/api/data/keycloak/oauth/available", methods=["GET"])
+def is_keycloak_available():
+
+    keycloak_settings = KeycloakAuthenticator()
+
+    return make_response(jsonify(keycloak_settings.is_available), 200)
+
 
 
 @app.route("/api/data/keycloak/callback", methods=["GET"])
@@ -311,7 +319,7 @@ def callback():
     keycloak = KeycloakAuthenticator()
 
     code = request.args.get("code")
-    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    token = keycloak.token( code)
     userinfo = keycloak.user_info(token["access_token"])
 
     access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
@@ -328,9 +336,9 @@ def callback():
 def logout():
     keycloak = KeycloakAuthenticator()
     code = request.args.get("code")
-    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    token = keycloak.token( code)
     access_token = token["access_token"]
     keycloak.logout(access_token)
 
     deauthenticate_user()
-    return redirect("https://revision.gpp-sostrades.com")
+    return redirect(app.config["SOS_TRADES_FRONT_END_DNS"])
