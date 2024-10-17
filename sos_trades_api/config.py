@@ -437,7 +437,7 @@ class Config:
             if len(none_vars) > 0:
                 error_env_msg = "\n".join(
                     [
-                        f"Environment variable {var_name} not provided"
+                        f"Main database : Environment variable for {var_name} not provided"
                         for var_name in none_vars
                     ]
                 )
@@ -446,7 +446,7 @@ class Config:
             try:
                 self.__sql_alchemy_full_uri = database_uri_not_formatted.format(**uri_format_env_vars)
             except KeyError as e:
-                raise ValueError("Unable to format connection string, some parameters are missing in URI_ENV_VARS")
+                raise ValueError("Main database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
         return self.__sql_alchemy_full_uri
 
     @property
@@ -482,7 +482,7 @@ class Config:
             if len(none_vars) > 0:
                 error_env_msg = "\n".join(
                     [
-                        f"Environment variable {var_name} not provided"
+                        f"Logging database : Environment variable for {var_name} not provided"
                         for var_name in none_vars
                     ]
                 )
@@ -491,7 +491,7 @@ class Config:
             try:
                 self.__logging_database_uri = database_uri_not_formatted.format(**uri_format_env_vars)
             except KeyError as e:
-                raise ValueError("Unable to format connection string, some parameters are missing in URI_ENV_VARS")
+                raise ValueError("Logging database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
         return self.__logging_database_uri
 
     @property
