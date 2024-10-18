@@ -20,7 +20,7 @@ import os
 
 from keycloak import KeycloakOpenID
 
-from sos_trades_api.models.database_models import User
+from sos_trades_api.models.database_models import User, UserProfile
 from sos_trades_api.server.base_server import app
 
 """
@@ -33,10 +33,12 @@ KEYCLOAK_REDIRECT_URL = "KEYCLOAK_REDIRECT_URL"
 KEYCLOAK_REALM_NAME = "KEYCLOAK_REALM_NAME"
 KEYCLOAK_CLIENT_ID = "KEYCLOAK_CLIENT_ID"
 KEYCLOAK_CLIENT_SECRET = "KEYCLOAK_CLIENT_SECRET"
-
+# url of logout, format with keycloak server url, realm, client id, front url 
+KEYCLOAK_LOGOUT_URL = "{}/realms/{}/protocol/openid-connect/logout?client_id={}&post_logout_redirect_uri={}"
 
 
 class KeycloakAuthenticator:
+
     def __init__(self):
         """
         Constructor
@@ -47,6 +49,7 @@ class KeycloakAuthenticator:
         keycloak_client_id = ""
         keycloak_client_secret = ""
         self.__keycloak_oauth_settings = {}
+        
         
 
         if os.environ.get(KEYCLOAK_OAUTH_SETTINGS) is not None:
@@ -97,10 +100,11 @@ class KeycloakAuthenticator:
         return self.keycloak_openid.userinfo(token)
 
     def logout_url(self):
-        return self.keycloak_openid.logout_url(self.keycloak_redirect_url)
-
-    def logout(self, token):
-        return self.keycloak_openid.logout(token)
+        return KEYCLOAK_LOGOUT_URL.format(
+            self.__keycloak_oauth_settings[KEYCLOAK_AUTH_URL],
+            self.__keycloak_oauth_settings[KEYCLOAK_REALM_NAME],
+            self.__keycloak_oauth_settings[KEYCLOAK_CLIENT_ID],
+            app.config["SOS_TRADES_FRONT_END_DNS"])
 
     @staticmethod
     def create_user_from_userinfo(userinfo:dict):
@@ -125,6 +129,19 @@ class KeycloakAuthenticator:
         # If user has not set its profile information, then set username as firstname to avoid missing value
         if created_user.firstname is None or len(created_user.firstname) == 0:
             created_user.firstname = created_user.username
+
+        # check role and assign profile if it exists
+        roles = userinfo.get('realm_access',{}).get('roles',[])
+        if roles is not None:
+            if UserProfile.STUDY_MANAGER in roles:
+                manager_profile = UserProfile.query.filter(UserProfile.name == UserProfile.STUDY_MANAGER).first()
+                created_user.user_profile_id = manager_profile.id
+            elif UserProfile.STUDY_USER in roles:
+                user_profile = UserProfile.query.filter(UserProfile.name == UserProfile.STUDY_USER).first()
+                created_user.user_profile_id = user_profile.id
+            elif UserProfile.STUDY_USER_NO_EXECUTION in roles:
+                user_profile = UserProfile.query.filter(UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
+                created_user.user_profile_id = user_profile.id
 
         created_user.company = ""
         created_user.department = ""

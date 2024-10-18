@@ -192,7 +192,11 @@ def refresh_api():
     """
     try:
         app.logger.info("JWT access token refresh requested")
+        keycloak = KeycloakAuthenticator()
         access_token = refresh_authentication()
+        if keycloak.is_available:
+            keycloak.refresh_token(access_token)
+
         return make_response(jsonify({
             "accessToken": access_token,
         }))
@@ -332,13 +336,8 @@ def callback():
 
     return redirect(url)
 
-@app.route("/api/data/keycloak/logout", methods=["GET"])
-def logout():
+@app.route("/api/data/keycloak/oauth/logout-url", methods=["GET"])
+def logout_url():
     keycloak = KeycloakAuthenticator()
-    code = request.args.get("code")
-    token = keycloak.token( code)
-    access_token = token["access_token"]
-    keycloak.logout(access_token)
-
-    deauthenticate_user()
-    return redirect(app.config["SOS_TRADES_FRONT_END_DNS"])
+    
+    return make_response(jsonify(keycloak.logout_url()), 200)
