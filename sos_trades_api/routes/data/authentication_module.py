@@ -192,10 +192,7 @@ def refresh_api():
     """
     try:
         app.logger.info("JWT access token refresh requested")
-        keycloak = KeycloakAuthenticator()
         access_token = refresh_authentication()
-        if keycloak.is_available:
-            keycloak.refresh_token(access_token)
 
         return make_response(jsonify({
             "accessToken": access_token,
