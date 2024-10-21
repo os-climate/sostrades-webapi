@@ -39,6 +39,7 @@
         "migrations/versions/b4c65e383551_default_groups.py",
         "migrations/versions/35ba4ee9fc53_add_error_management_on_study_object.py",
         "migrations/versions/2db3dd3d7e5c_increase_size_of_repository.py",
+        "migrations/versions/6d471f14fb35_update_column_execution_message.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
