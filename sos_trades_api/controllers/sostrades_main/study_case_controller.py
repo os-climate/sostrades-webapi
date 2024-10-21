@@ -389,10 +389,6 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_id, user_id)
-        
-        # try pass the garbage collector
-        gc.collect()
-
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
