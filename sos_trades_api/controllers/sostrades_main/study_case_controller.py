@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import gc
 import importlib.util
 import linecache
 import os
@@ -306,6 +307,7 @@ def get_study_load_status(study_id):
 
     return status
 
+
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
     Retrieve all the study cases shared groups names list from user_id
@@ -318,7 +320,6 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     :params: reload, indicates if the study must be reloaded, false by default
     :type: boolean
     """
-    tracemalloc.start()
     start_time = time.time()
     study_manager = study_case_cache.get_study_case(study_id, False)
 
@@ -329,8 +330,6 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
-
-
 
     launch_load_study_in_background(study_manager,  no_data, read_only)
 
@@ -390,27 +389,15 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_id, user_id)
-        app.logger.info("Executing.")
-        app.logger.info("\nSNAPSHOT after loading study\n")
-        snapshot = tracemalloc.take_snapshot()
-        display_top(app.logger, snapshot, reload)
-    tracemalloc.stop()
+        
+        # try pass the garbage collector
+        gc.collect()
+
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
 
-def display_top(logger, snapshot, after_reload=False):
-    ''' This method allows to log the snapshot statistics with the provided logger.
-        (adapted from https://docs.python.org/3/library/tracemalloc.html)
-        It displays the 15 (by default) lines allocating the most memory.
-    '''
-    top_stats = snapshot.statistics('lineno')
-    if after_reload:
-        logger.info("tracemalloc after reload")
-    logger.info("[ Top 10 ]")
-    for stat in top_stats[:10]:
-        logger.info(f'{stat}')
-    logger.info("--------------------")
+
 
 def launch_load_study_in_background(study_manager,  no_data, read_only):
     """
