@@ -304,6 +304,7 @@ def get_study_load_status(study_id):
 
     return status
 
+
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
     Retrieve all the study cases shared groups names list from user_id
@@ -388,6 +389,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
+
 
 
 def launch_load_study_in_background(study_manager,  no_data, read_only):
