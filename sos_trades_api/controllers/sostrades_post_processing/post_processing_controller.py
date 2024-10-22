@@ -19,6 +19,9 @@ from sostrades_core.tools.post_processing.post_processing_factory import (
     PostProcessingFactory,
 )
 
+from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+    light_load_study_case,
+)
 from sos_trades_api.server.base_server import study_case_cache
 
 
@@ -47,7 +50,7 @@ def load_post_processing(study_id, namespace, filters, discipline_module=""):
 
     :return: tbd
     """
-    study_manager = study_case_cache.get_study_case(study_id, False, False)
+    study_manager = light_load_study_case(study_id)
 
     all_post_processing_data = []
     discipline_list = []
@@ -94,7 +97,7 @@ def load_post_processing_graph_filters(study_id, discipline_key):
     :params: discipline_key, key of the discipline to load
     :type: string
     """
-    study_manager = study_case_cache.get_study_case(study_id, False, False)
+    study_manager = light_load_study_case(study_id)
 
     if discipline_key in study_manager.execution_engine.dm.disciplines_dict:
         discipline = study_manager.execution_engine.dm.get_discipline(

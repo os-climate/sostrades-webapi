@@ -22,7 +22,6 @@ import traceback
 from datetime import datetime, timezone
 from importlib import import_module
 from time import time
-import tracemalloc
 
 import pandas
 from eventlet import sleep
@@ -123,20 +122,14 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         app.logger.info(f"Loading in background {study_case_manager.study.name}")
         study_case_manager.load_status = LoadStatus.IN_PROGESS
 
-        tracemalloc.start()
-        snapshot = tracemalloc.take_snapshot()
-        display_top(app.logger, snapshot, "\nSNAPSHOT before loading study\n")
         study_case_manager.load_study_case_from_source()
-        snapshot = tracemalloc.take_snapshot()
-        display_top(app.logger, snapshot, "\nSNAPSHOT after loading study\n")
         load_study_case_time = time()
 
         study_case_manager.execution_engine.dm.treeview = None
 
         study_case_manager.execution_engine.get_treeview(no_data, read_only)
         treeview_generation_time = time()
-        snapshot = tracemalloc.take_snapshot()
-        display_top(app.logger, snapshot, "\nSNAPSHOT after treeview\n")
+
 
         # if the study has been edited (change of study name), the readonly file has been deleted
         # at the end of the loading, if the readonly file has not been created
@@ -144,10 +137,7 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
                 and not study_case_manager.check_study_case_json_file_exists():
             study_case_manager.save_study_read_only_mode_in_file()
-            snapshot = tracemalloc.take_snapshot()
-            display_top(app.logger, snapshot, "\nSNAPSHOT after read only mode\n")
         
-        tracemalloc.stop()
 
         study_case_manager.load_status = LoadStatus.LOADED
 
@@ -179,19 +169,6 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         # Print log information, as it causes issue with DatabaseLogger
         print("Profiling Information:\n%s", profiling_output.getvalue())
 
-def display_top(logger, snapshot, title:str):
-    ''' This method allows to log the snapshot statistics with the provided logger.
-        (adapted from https://docs.python.org/3/library/tracemalloc.html)
-        It displays the 15 (by default) lines allocating the most memory.
-    '''
-    
-    top_stats = snapshot.statistics('lineno')
-    logger.info(title)
-    logger.info("[ Top 10 ]")
-    for stat in top_stats[:10]:
-        logger.info(f'{stat}')
-    logger.info("--------------------")
-        
 
 def study_case_manager_update(study_case_manager, values, no_data, read_only):
     """
