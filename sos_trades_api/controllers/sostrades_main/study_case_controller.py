@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import gc
 import importlib.util
-import linecache
 import os
 import shutil
 import sys
@@ -29,7 +27,6 @@ from os import remove
 from os.path import join
 from shutil import rmtree
 from tempfile import gettempdir
-import tracemalloc
 
 import pandas as pd
 from numpy import array
