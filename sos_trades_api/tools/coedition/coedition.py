@@ -39,6 +39,7 @@ class UserCoeditionAction:
     SAVE = "save"
     SUBMISSION = "submission"
     EXECUTION = "execution"
+    EXECUTION_STOPPED = "execution stopped"
     CLAIM = "claim"
     RELOAD = "reload"
     EDIT = "edit"
@@ -61,6 +62,7 @@ class CoeditionMessage:
     SAVE = "User just saved the study case."
     SUBMISSION = "User just submitted to execution the study case."
     EXECUTION = "Study case execution just started."
+    EXECUTION_STOPPED = "Study case execution has been stopped by user."
     CLAIM = "User just claimed the study case execution right."
     RELOAD = "User just reload the study case."
     IMPORT_DATASET = "User just updated parameter from dataset"
@@ -110,6 +112,16 @@ def remove_user_from_all_rooms(user_id):
             db.session.delete(utd)
         db.session.commit()
 
+def clear_all_users_from_all_rooms():
+    """
+    Clear table of StudyCoeditionUser
+    """
+    users_to_delete = StudyCoeditionUser.query.all()
+
+    if len(users_to_delete) > 0:
+        for utd in users_to_delete:
+            db.session.delete(utd)
+        db.session.commit()
 
 def get_user_list_in_room(study_case_id):
     """
@@ -154,7 +166,8 @@ def add_notification_db(study_case_id, user, coedition_type: UserCoeditionAction
 
 
 def add_change_db(notification_id, variable_id, variable_type, deleted_columns, change_type, new_value,
-                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id):
+                  old_value, old_value_blob, last_modified, dataset_connector_id, dataset_id, dataset_parameter_id,
+                  dataset_data_path, variable_key):
     """
     Add study change to database
     """
@@ -180,6 +193,8 @@ def add_change_db(notification_id, variable_id, variable_type, deleted_columns, 
     new_change.dataset_connector_id = dataset_connector_id
     new_change.dataset_id = dataset_id
     new_change.dataset_parameter_id = dataset_parameter_id
+    new_change.dataset_data_path = dataset_data_path
+    new_change.variable_key = variable_key
 
     # Save change
     db.session.add(new_change)

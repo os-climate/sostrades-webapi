@@ -26,6 +26,7 @@ from kubernetes import client
 from sos_trades_api.config import Config
 from sos_trades_api.models.database_models import PodAllocation, StudyCase
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.code_tools import time_function
 from sos_trades_api.tools.kubernetes import kubernetes_service
 from sos_trades_api.tools.kubernetes.kubernetes_service import (
     get_pod_name_from_event,
@@ -256,9 +257,6 @@ def get_allocation_status(pod_allocation:PodAllocation):
                     pod_phase, reason = kubernetes_service.kubernetes_service_pod_status(pod_allocation.kubernetes_pod_name, pod_allocation.kubernetes_pod_namespace, pod_allocation.pod_type != PodAllocation.TYPE_STUDY)
 
                     status, reason = get_status_from_pod_phase(pod_phase, reason)
-
-
-
                 except Exception as ex:
                     status = PodAllocation.IN_ERROR
                     reason = f"Error while retrieving status: {ex!s}"
@@ -335,7 +333,7 @@ def delete_pod_allocation(pod_allocation:PodAllocation, delete_pod_needed):
     db.session.commit()
     app.logger.info(f"PodAllocation {allocation_name} have been successfully deleted")
 
-
+@time_function()
 def update_all_pod_status():
     """
     For all allocations 
@@ -400,9 +398,11 @@ def update_all_pod_status():
             for allocation in all_allocations:
                 if allocation.pod_status in [PodAllocation.NOT_STARTED, PodAllocation.RUNNING, PodAllocation.PENDING]:
                     allocation.pod_status, allocation.message = get_allocation_status(allocation)
+                    
                     updated_allocation.append(allocation.kubernetes_pod_name)
                     db.session.add(allocation)
-            db.session.commit()
+                    db.session.commit()
+
             if len(updated_allocation) > 0:
                 app.logger.debug(f"Updated pod status: {', '.join(updated_allocation)}")
 

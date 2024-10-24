@@ -136,6 +136,7 @@ if pod_name.startswith("sostrades-study-server-"):
                 save_study_last_active_date(study_id, datetime.now())
 
 
+
 def load_specific_study(study_identifier):
     """
     Load a specific study.
@@ -604,7 +605,16 @@ def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         clean_all_allocations_type_study,
     )
-    clean_all_allocations_type_study()
+    from sos_trades_api.tools.coedition.coedition import clear_all_users_from_all_rooms
+
+    with app.app_context():
+        app.logger.info("Start cleaning all pod allocations")
+        clean_all_allocations_type_study()
+        app.logger.info("End cleaning all pod allocations")
+        app.logger.info("Start cleaning all remaining coedition users connected to studies")
+        # then delete all coedition user that have not been deleted
+        clear_all_users_from_all_rooms()
+        app.logger.info("End cleaning all remaining coedition users connected to studies")
 
 def clean_inactive_study_pods():
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -629,7 +639,11 @@ def update_all_pod_status_loop_method():
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
-            app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            try:
+                app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            except:
+                # May happen that there is an issue when logging, so we pass
+                pass
         if not Config().pod_watcher_activated:
             time.sleep(interval)
 
@@ -972,9 +986,11 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
 
-        app.logger.info(
-            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-        )
+        # show requets logs except for probe request
+        if request.path != "/api/ping":
+            app.logger.info(
+                f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
+            )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
@@ -999,3 +1015,6 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return make_response(jsonify("pong"), 200)
+
+
+

@@ -130,12 +130,14 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         study_case_manager.execution_engine.get_treeview(no_data, read_only)
         treeview_generation_time = time()
 
+
         # if the study has been edited (change of study name), the readonly file has been deleted
         # at the end of the loading, if the readonly file has not been created
         # and the status is DONE, create the file again
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
                 and not study_case_manager.check_study_case_json_file_exists():
             study_case_manager.save_study_read_only_mode_in_file()
+        
 
         study_case_manager.load_status = LoadStatus.LOADED
 
@@ -339,6 +341,8 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                             param_chg.connector_id,
                             param_chg.dataset_id,
                             param_chg.dataset_parameter_id,
+                            param_chg.dataset_data_path,
+                            param_chg.variable_key
                         )
 
                     study_case = StudyCase.query.filter(StudyCase.id.like(study_case_manager.study.id)).first()
@@ -440,6 +444,8 @@ def study_case_manager_export_from_dataset_mapping(study_case_manager, datasets_
                     param_chg.connector_id,
                     param_chg.dataset_id,
                     param_chg.dataset_parameter_id,
+                    param_chg.dataset_data_path,
+                    param_chg.variable_key
                 )
                 
             study_case_manager.dataset_export_status_dict[notification_id] = LoadStatus.LOADED

@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import importlib.util
 import os
 import shutil
 import sys
@@ -41,6 +42,7 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.treenode import TreeNode
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 
@@ -302,6 +304,7 @@ def get_study_load_status(study_id):
 
     return status
 
+
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
     Retrieve all the study cases shared groups names list from user_id
@@ -386,6 +389,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
+
 
 
 def launch_load_study_in_background(study_manager,  no_data, read_only):
@@ -753,6 +757,8 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                               datetime.now(),
                               None,
                               None,
+                              None,
+                              None,
                               None)
 
         values = {}
@@ -873,6 +879,8 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                                       str(parameter["oldValue"]),
                                       None,
                                       datetime.now(),
+                                      None,
+                                      None,
                                       None,
                                       None,
                                       None)
@@ -1202,16 +1210,13 @@ def check_study_is_still_active_or_kill_pod():
     """
     with app.app_context():
         config = Config()
-        app.logger.info("Start check on active study pod")
         last_hours = config.study_pod_delay
-        app.logger.info(f"Start check on active study pod since {last_hours} hour(s)")
-        app.logger.info(f"Server mode: {config.server_mode}")
+        app.logger.debug(f"Start check on active study pod since {last_hours} hour(s)")
 
         if config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
             #delete allocation in db
 
             inactive_studies = []
-            app.logger.info("Start check studies")
             try:
                 inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
             except Exception as ex:
@@ -1228,3 +1233,15 @@ def check_study_is_still_active_or_kill_pod():
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
+
+
+def get_markdown_documentation(study_id, discipline_key):
+    spec = importlib.util.find_spec(discipline_key)
+    # for the doc of a process, spec.origin = process_folder\__init__.py
+    if '__init__.py' in spec.origin:
+        filepath = spec.origin.split('__init__.py')[0]
+    else:
+        # for the doc of a discipline, spec.origin = discipline_folder\discipline_name.py
+        filepath = spec.origin.split('.py')[0]
+    markdown_data = TreeNode.get_markdown_documentation(filepath)
+    return markdown_data

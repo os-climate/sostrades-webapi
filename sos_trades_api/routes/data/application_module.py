@@ -25,6 +25,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 Application module
 """
 
+
 @app.route("/api/data/application/infos", methods=["GET"])
 def application_info():
     """
