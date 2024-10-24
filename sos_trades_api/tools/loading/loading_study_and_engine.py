@@ -15,10 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import cProfile
+import gc
 import io
 import pstats
 import sys
 import traceback
+import tracemalloc
 from datetime import datetime, timezone
 from importlib import import_module
 from time import time
@@ -41,6 +43,7 @@ from sos_trades_api.tools.coedition.coedition import add_change_db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
     clean_obsolete_data_validation_entries,
 )
+from memory_profiler import profile, memory_usage
 
 """
 tools methods to manage behaviour around StudyCase
@@ -130,7 +133,6 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         study_case_manager.execution_engine.get_treeview(no_data, read_only)
         treeview_generation_time = time()
 
-
         # if the study has been edited (change of study name), the readonly file has been deleted
         # at the end of the loading, if the readonly file has not been created
         # and the status is DONE, create the file again
@@ -140,7 +142,9 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         
 
         study_case_manager.load_status = LoadStatus.LOADED
-
+        gc.collect()
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory at end background loading: {mem_before} MB")
         app.logger.info(
             f"End background loading {study_case_manager.study.name}")
         app.logger.info("Elapsed time synthesis:")
@@ -502,6 +506,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         backup_rw_strategy = study_case_manager.rw_strategy
         study_case_manager.rw_strategy = DirectLoadDump()
 
+        
         study_case_manager.load_study_case_from_source(reference_folder)
 
         # Restore original strategy for dumping
