@@ -18,8 +18,8 @@ import json
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
-from werkzeug.exceptions import BadRequest, MethodNotAllowed
 from memory_profiler import memory_usage
+from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     copy_study_discipline_data,

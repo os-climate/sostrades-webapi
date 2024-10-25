@@ -20,13 +20,13 @@ import io
 import pstats
 import sys
 import traceback
-import tracemalloc
 from datetime import datetime, timezone
 from importlib import import_module
 from time import time
 
 import pandas
 from eventlet import sleep
+from memory_profiler import memory_usage
 from numpy import ndarray
 from sostrades_core.datasets.dataset_mapping import DatasetsMappingException
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
@@ -43,7 +43,6 @@ from sos_trades_api.tools.coedition.coedition import add_change_db
 from sos_trades_api.tools.data_graph_validation.data_graph_validation import (
     clean_obsolete_data_validation_entries,
 )
-from memory_profiler import profile, memory_usage
 
 """
 tools methods to manage behaviour around StudyCase

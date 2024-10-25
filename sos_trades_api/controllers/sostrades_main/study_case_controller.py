@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from memory_profiler import memory_usage
 import gc
 import importlib.util
 import os
@@ -30,6 +29,7 @@ from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
+from memory_profiler import memory_usage
 from numpy import array
 from sostrades_core.datasets.dataset_mapping import (
     DatasetsMapping,

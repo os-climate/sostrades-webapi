@@ -20,9 +20,9 @@ import os
 from os.path import join
 from pathlib import Path
 from shutil import copy
-from memory_profiler import memory_usage
 
 from eventlet import sleep
+from memory_profiler import memory_usage
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
 from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
@@ -47,7 +47,6 @@ from sos_trades_api.tools.file_tools import (
     read_object_in_json_file,
     write_object_in_json_file,
 )
-from memory_profiler import profile
 from sos_trades_api.tools.logger.study_case_mysql_handler import StudyCaseMySQLHandler
 
 """

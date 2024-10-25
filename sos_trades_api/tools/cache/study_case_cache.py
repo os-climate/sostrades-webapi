@@ -15,9 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import logging
-from memory_profiler import memory_usage
 import threading
 from datetime import datetime, timedelta
+
+from memory_profiler import memory_usage
 
 from sos_trades_api.tools.loading.loading_study_and_engine import (
     study_need_to_be_updated,
