@@ -14,7 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+import gc
+import importlib.util
 import os
 import shutil
 import sys
@@ -28,6 +29,7 @@ from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
+from memory_profiler import memory_usage
 from numpy import array
 from sostrades_core.datasets.dataset_mapping import (
     DatasetsMapping,
@@ -41,6 +43,7 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.treenode import TreeNode
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 
@@ -301,6 +304,7 @@ def get_study_load_status(study_id):
 
     return status
 
+
 def load_study_case(study_id, study_access_right, user_id, reload=False):
     """
     Retrieve all the study cases shared groups names list from user_id
@@ -316,10 +320,22 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     start_time = time.time()
     study_manager = study_case_cache.get_study_case(study_id, False)
 
+
     cache_duration = time.time() - start_time
     if reload:
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory before reload: {mem_before} MB")
         study_manager.study_case_manager_reload_backup_files()
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after reload backup: {mem_before} MB")
         study_manager.reset()
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after reset: {mem_before} MB")
+        # remove read only file
+        study_manager.delete_loaded_study_case_in_json_file()
+        gc.collect()
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after delete and gc: {mem_before} MB")
 
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
@@ -385,6 +401,7 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     # Return logical treeview coming from execution engine
     return loaded_study_case
+
 
 
 def launch_load_study_in_background(study_manager,  no_data, read_only):
@@ -1228,3 +1245,15 @@ def check_study_is_still_active_or_kill_pod():
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
+
+
+def get_markdown_documentation(study_id, discipline_key):
+    spec = importlib.util.find_spec(discipline_key)
+    # for the doc of a process, spec.origin = process_folder\__init__.py
+    if '__init__.py' in spec.origin:
+        filepath = spec.origin.split('__init__.py')[0]
+    else:
+        # for the doc of a discipline, spec.origin = discipline_folder\discipline_name.py
+        filepath = spec.origin.split('.py')[0]
+    markdown_data = TreeNode.get_markdown_documentation(filepath)
+    return markdown_data

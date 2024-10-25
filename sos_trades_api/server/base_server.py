@@ -639,7 +639,11 @@ def update_all_pod_status_loop_method():
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
-            app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            try:
+                app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            except:
+                # May happen that there is an issue when logging, so we pass
+                pass
         if not Config().pod_watcher_activated:
             time.sleep(interval)
 

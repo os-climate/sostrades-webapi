@@ -22,6 +22,7 @@ from pathlib import Path
 from shutil import copy
 
 from eventlet import sleep
+from memory_profiler import memory_usage
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
 from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
@@ -345,6 +346,7 @@ class StudyCaseManager(BaseStudyManager):
         self.clear_error()
         self.load_status = LoadStatus.NONE
 
+    
     def load_study_case_from_source(self, source_directory=None):
 
         if source_directory is None:
@@ -362,7 +364,10 @@ class StudyCaseManager(BaseStudyManager):
         """
         save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
         """
+
         with app.app_context():
+            mem_before = memory_usage()[0]
+            app.logger.info(f"Memory before save_study_read_only_mode_in_file: {mem_before} MB")
             # check study status is DONE
 
             #-------------------
@@ -401,6 +406,9 @@ class StudyCaseManager(BaseStudyManager):
                 dashboard_file_path = Path(self.dump_directory).joinpath(
                     self.DASHBOARD_FILE_NAME)
                 write_object_in_json_file(dashboard, dashboard_file_path)
+            
+            mem_after = memory_usage()[0]
+            app.logger.info(f"Memory after save_study_read_only_mode_in_file: {mem_after} MB")
 
     def __load_study_case_from_identifier(self):
         """

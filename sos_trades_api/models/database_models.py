@@ -783,7 +783,7 @@ class StudyCaseExecution(db.Model):
     requested_by = Column(String(64), index=True, unique=False, server_default="", nullable=False)
     cpu_usage = Column(String(32), index=False, unique=False, server_default="----", nullable=True)
     memory_usage = Column(String(32), index=False, unique=False, server_default="----", nullable=True)
-    message = Column(String(64), index=False, unique=False, server_default="", nullable=True)
+    message = Column(Text, index=False, unique=False, server_default="", nullable=True)
 
     def serialize(self):
         """

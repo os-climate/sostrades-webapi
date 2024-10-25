@@ -18,6 +18,8 @@ import logging
 import threading
 from datetime import datetime, timedelta
 
+from memory_profiler import memory_usage
+
 from sos_trades_api.tools.loading.loading_study_and_engine import (
     study_need_to_be_updated,
 )
@@ -148,6 +150,8 @@ class StudyCaseCache:
         :param study_case_identifier: identifier of the study to add to tha cache
         :type study_case_identifier: int
         """
+        mem_before = memory_usage()[0]
+        print(f"Memory before add study in cache: {mem_before} MB")
         study_case_manager = StudyCaseManager(study_case_identifier)
         study_case_manager.attach_logger()
 
@@ -157,6 +161,8 @@ class StudyCaseCache:
 
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
+        mem_before = memory_usage()[0]
+        print(f"Memory after add study in cache: {mem_before} MB")
 
     def get_study_case(self, study_case_identifier, with_lock, check_expire=True):
         """

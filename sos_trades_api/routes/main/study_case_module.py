@@ -18,6 +18,7 @@ import json
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
+from memory_profiler import memory_usage
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -28,6 +29,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
+    get_markdown_documentation,
     get_study_data_file_path,
     get_study_data_stream,
     get_study_load_status,
@@ -108,7 +110,8 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
-
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory before main_load: {mem_before} MB")
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -128,7 +131,8 @@ def main_load_study_case_by_id(study_id):
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
         loadedStudy = load_or_create_study_case(user.id, study_id, study_access_right)
-
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after main_load: {mem_before} MB")
         loadedStudy_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec")
@@ -374,6 +378,29 @@ def get_study_data_file_by_study_case_id(study_id):
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
+@app.route("/api/main/study-case/<int:study_id>/markdown-documentation", methods=["POST"])
+@auth_required
+def get_markdown_documentation_by_study_case_id(study_id):
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about study case")
+        
+        discipline_key = request.form.get("discipline_key", None)
+        if discipline_key is None:
+            raise BadRequest("Missing mandatory parameter: discipline key")
+        
+
+        resp = make_response(
+            jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
+        
+        return resp
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+
 @app.route("/api/main/study-case/<int:study_id>/download/raw", methods=["POST"])
 @auth_required
 def get_study_data_raw_file_by_study_case_id(study_id):
@@ -531,7 +558,11 @@ def check_study_is_loaded(study_id):
                 "You do not have the necessary rights to retrieve this information about this study case")
 
         # check studycase is loaded
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory before is_up_and_loaded: {mem_before} MB")
         loadedStatus = get_study_load_status(study_id)
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after is_up_and_loaded: {mem_before} MB")
         resp = make_response(jsonify(loadedStatus != LoadStatus.NONE),200)
         return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")
