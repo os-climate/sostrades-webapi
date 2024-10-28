@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 import os
 import os.path
 from builtins import classmethod
@@ -1071,3 +1072,5 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
+
+

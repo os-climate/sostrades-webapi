@@ -26,7 +26,6 @@ from time import time
 
 import pandas
 from eventlet import sleep
-from memory_profiler import memory_usage
 from numpy import ndarray
 from sostrades_core.datasets.dataset_mapping import DatasetsMappingException
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
@@ -142,8 +141,6 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
 
         study_case_manager.load_status = LoadStatus.LOADED
         gc.collect()
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory at end background loading: {mem_before} MB")
         app.logger.info(
             f"End background loading {study_case_manager.study.name}")
         app.logger.info("Elapsed time synthesis:")

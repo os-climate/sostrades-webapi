@@ -29,7 +29,6 @@ from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
-from memory_profiler import memory_usage
 from numpy import array
 from sostrades_core.datasets.dataset_mapping import (
     DatasetsMapping,
@@ -323,20 +322,12 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     cache_duration = time.time() - start_time
     if reload:
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory before reload: {mem_before} MB")
         study_manager.study_case_manager_reload_backup_files()
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory after reload backup: {mem_before} MB")
-        study_manager.reset()
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory after reset: {mem_before} MB")
-        # remove read only file
         study_manager.delete_loaded_study_case_in_json_file()
+        study_case_cache.delete_study_case_from_cache(study_id)
         gc.collect()
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory after delete and gc: {mem_before} MB")
-
+        study_manager = study_case_cache.get_study_case(study_id, False)
+        
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
