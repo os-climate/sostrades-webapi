@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 import os
 import os.path
 from builtins import classmethod
@@ -1068,3 +1069,73 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
+
+
+    def test_reload_study_case(self):
+        from memory_profiler import memory_usage
+
+        from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+            load_study_case,
+        )
+        from sos_trades_api.models.database_models import AccessRights, StudyCase
+        from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
+
+        with DatabaseUnitTestConfiguration.app.app_context():
+            study_test = StudyCase.query.filter(
+                StudyCase.name == self.test_study_name).first()
+            self.assertIsNotNone(
+                study_test, "Unable to retrieve study case created for test")
+
+            study_manager = study_case_cache.get_study_case(study_test.id, False)
+
+            mem_before = memory_usage()[0]
+            print(f"Memory before first loading: {mem_before} MB")
+            loaded_study = load_study_case(
+                study_test.id, AccessRights.MANAGER, self.test_user_id)
+
+            #  wait until study was updated (thread behind)
+            stop = False
+            counter = 0
+
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_update_study_parameters update study parameter too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+
+            self.assertEqual(loaded_study.study_case.name, self.test_study_name,
+                             "Created study case name does not match, test set up name used")
+            self.assertEqual(loaded_study.study_case.process, self.test_process_name,
+                             "Created study case process does not match, test set up process name used")
+            self.assertEqual(loaded_study.study_case.repository, self.test_repository_name,
+                             "Created study case repository does not match, test set up repository name used")
+            
+            mem_after = memory_usage()[0]
+            print(f"Memory after loading and before reload loading: {mem_after} MB")
+            print(f"Memory used by this block: {mem_after - mem_before} MB")
+            loaded_study = load_study_case(
+                study_test.id, AccessRights.MANAGER, self.test_user_id, reload=True)
+            
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_update_study_parameters update study parameter too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
+            mem_after_reload = memory_usage()[0]
+            print(f"Memory after reload loading: {mem_after_reload} MB")
+            print(f"Memory used by this block: {mem_after_reload - mem_after} MB")
+
+if __name__=='__main__':
+    study = TestStudy()
+    study.setUpClass()
+    study.setUp()
+    study.test_reload_study_case()

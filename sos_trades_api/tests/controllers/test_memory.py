@@ -2,28 +2,21 @@
 import argparse
 import os
 from os.path import dirname, join
-
-from dotenv import load_dotenv
-if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is None:
-    dotenv_path = join(dirname(__file__),"..", "..", "..", ".flaskenv")
-    print(dotenv_path)
-    load_dotenv(dotenv_path)
-
-
-from sos_trades_api.server.base_server import app
-from memory_profiler import memory_usage
-from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    load_study_case,
-)
-from sos_trades_api.models.database_models import AccessRights, StudyCase
-from sos_trades_api.models.loaded_study_case import LoadStatus
-from sos_trades_api.server.base_server import study_case_cache
 from time import sleep
 
 
-
 def test_reload_study_case(study_id, user_id ):
-        
+    """
+    Load a study and do a reload 10 times to see the memory flow
+    """
+    from memory_profiler import memory_usage
+
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+        load_study_case,
+    )
+    from sos_trades_api.models.database_models import AccessRights, StudyCase
+    from sos_trades_api.models.loaded_study_case import LoadStatus
+    from sos_trades_api.server.base_server import app, study_case_cache
 
     with app.app_context():
         study_test = StudyCase.query.filter(StudyCase.id == study_id).first()
@@ -69,6 +62,14 @@ def test_reload_study_case(study_id, user_id ):
             sleep(10)
 
 if __name__=='__main__':
+    from dotenv import load_dotenv
+    if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is None:
+        dotenv_path = join(dirname(__file__),"..", "..", "..", ".flaskenv")
+        print(dotenv_path)
+        load_dotenv(dotenv_path)
+
+
+    
     parser = argparse.ArgumentParser(description='test memory')
 
     parser.add_argument(

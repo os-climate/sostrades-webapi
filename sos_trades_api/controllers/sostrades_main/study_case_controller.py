@@ -324,25 +324,25 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
 
     cache_duration = time.time() - start_time
     if reload:
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory before reload: {mem_before} MB")
-        study_manager.study_case_manager_reload_backup_files()
-        study_manager.reset()
-        # remove read only file
-        study_manager.delete_loaded_study_case_in_json_file()
-        gc.collect()
-        mem_before = memory_usage()[0]
-        app.logger.info(f"Memory after reload: {mem_before} MB")
-
         # mem_before = memory_usage()[0]
         # app.logger.info(f"Memory before reload: {mem_before} MB")
         # study_manager.study_case_manager_reload_backup_files()
+        # study_manager.reset()
+        # # remove read only file
         # study_manager.delete_loaded_study_case_in_json_file()
-        # study_case_cache.delete_study_case_from_cache(study_id)
         # gc.collect()
-        # study_manager = study_case_cache.get_study_case(study_id, False)
         # mem_before = memory_usage()[0]
         # app.logger.info(f"Memory after reload: {mem_before} MB")
+
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory before reload: {mem_before} MB")
+        study_manager.study_case_manager_reload_backup_files()
+        study_manager.delete_loaded_study_case_in_json_file()
+        study_case_cache.delete_study_case_from_cache(study_id)
+        gc.collect()
+        study_manager = study_case_cache.get_study_case(study_id, False)
+        mem_before = memory_usage()[0]
+        app.logger.info(f"Memory after reload: {mem_before} MB")
 
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
