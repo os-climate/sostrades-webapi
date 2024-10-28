@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import gc
 import importlib.util
 import os
 import shutil
@@ -325,7 +324,6 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
         study_manager.study_case_manager_reload_backup_files()
         study_manager.delete_loaded_study_case_in_json_file()
         study_case_cache.delete_study_case_from_cache(study_id)
-        gc.collect()
         study_manager = study_case_cache.get_study_case(study_id, False)
         
     read_only = study_access_right == AccessRights.COMMENTER
