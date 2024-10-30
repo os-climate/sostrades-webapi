@@ -36,9 +36,14 @@ logger = logging.getLogger("alembic.env")
 # target_metadata = mymodel.Base.metadata
 from flask import current_app  # noqa: E402
 
-config.set_main_option(
-    "sqlalchemy.url", current_app.config.get(
-        "SQLALCHEMY_DATABASE_URI").replace("%", "%%"))
+url = current_app.config.get("SQLALCHEMY_DATABASE_URI").replace("%", "%%")
+
+# add connection args to URL
+parameters = current_app.config.get("SQLALCHEMY_ENGINE_OPTIONS").get("connect_args")
+parameters_string = '&'.join(f"{key}={value}" for key, value in parameters.items())
+full_url = f"{url}?{parameters_string}"
+config.set_main_option("sqlalchemy.url", full_url)
+
 target_metadata = current_app.extensions["migrate"].db.metadata
 
 # other values from the config, defined by the needs of env.py,

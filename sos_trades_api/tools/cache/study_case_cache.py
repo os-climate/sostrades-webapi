@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import gc
 import logging
 import threading
 from datetime import datetime, timedelta
@@ -111,6 +112,7 @@ class StudyCaseCache:
             del self.__study_case_dict[study_case_identifier]
             del self.__study_case_manager_dict[study_case_identifier]
             del self.__lock_cache[study_case_identifier]
+            gc.collect()
 
     def add_study_case_in_cache_from_values(self, study_case_manager):
         """
@@ -157,6 +159,7 @@ class StudyCaseCache:
 
         self.__study_case_manager_dict[study_case_manager.study.id] = study_case_manager
         self.__lock_cache[study_case_manager.study.id] = threading.Lock()
+        
 
     def get_study_case(self, study_case_identifier, with_lock, check_expire=True):
         """

@@ -361,3 +361,66 @@ def extract_number_and_unit(input_string: str) -> tuple:
 
     return number, unit
 
+
+def extract_unit_from_flavor(flavor_config: dict) -> dict:
+    """
+    Extract and convert memory units from the Kubernetes flavor configuration.
+
+    This function processes the Kubernetes flavor configuration, extracts the memory
+    specifications, and adds a new key with the converted memory unit.
+
+    Returns:
+        dict: The updated flavor configuration dictionary with added memory units.
+    """
+
+    unit_converted = ""
+    for flavor_name, flavor_specs in flavor_config.items():
+        for key, value in flavor_specs.items():
+            # Check if 'memory' is specified in the current spec
+            if "memory" in value:
+                # Extract the number and unit from the memory specification
+                number, unit = extract_number_and_unit(value["memory"])
+
+                # Convert the extracted unit to a standardized format
+                unit_converted = extract_complete_memory_unit(unit)
+                # Add the converted unit to the spec dictionary
+                value["memory_unit"] = unit_converted
+            if "cpu" in value:
+                # Extract the number and unit from the cpu specification
+                number, unit = extract_number_and_unit(value["cpu"])
+                if unit.lower() == "m":
+                    # Add the converted unit to the spec dictionary
+                    value["cpu_unit"] = "Millicores"
+                else:
+                    value["cpu_unit"] = "Core"
+
+    # Return the updated flavor configuration dictionary
+    return flavor_config
+
+
+def extract_complete_memory_unit(unit: str) -> str:
+    """
+    Convert various memory unit representations to a standardized format.
+
+    Args:
+        unit (str): The input memory unit string.
+
+    Returns:
+        str: The standardized memory unit string.
+    """
+    unit_complete = ""
+    unit_lower = unit.lower()
+
+    unit_mapping = {
+        "ki": "Kibibyte",
+        "mi": "Mebibyte",
+        "gi": "Gibibyte",
+        "ti": "Tebibytes",
+        "pi": "Pebibyte",
+        "ei": "Exbibyte",
+    }
+    unit_complete = unit_mapping.get(unit_lower, unit)
+    return unit_complete
+
+
+

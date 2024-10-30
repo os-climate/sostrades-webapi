@@ -73,16 +73,16 @@ try:
     from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import (
-        ApplicationMySQLHandler,
+    from sos_trades_api.tools.logger.application_request_formatter import (
         ApplicationRequestFormatter,
     )
+    from sos_trades_api.tools.logger.application_sqlalchemy_handler import (
+        ApplicationSQLAlchemyHandler,
+    )
 
-    app.logger.info("Adding application logger handler")
-    app_mysql_handler = ApplicationMySQLHandler(
-        db=config.logging_database_data)
-    app_mysql_handler.setFormatter(ApplicationRequestFormatter(
-        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info('Adding application logger handler')
+    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args)
+    app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
     app.logger.info("Configuring logger")
@@ -639,7 +639,11 @@ def update_all_pod_status_loop_method():
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
-            app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            try:
+                app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            except:
+                # May happen that there is an issue when logging, so we pass
+                pass
         if not Config().pod_watcher_activated:
             time.sleep(interval)
 

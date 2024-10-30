@@ -1,6 +1,7 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2024/06/07-2024/06/13 Copyright 2024 Capgemini
+Modifications on 23/07/2024 Copyright 2024 Capgemini
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,8 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+from datetime import datetime
 from logging import Handler, _defaultFormatter
-from time import localtime, strftime
 
 from sos_trades_api.models.database_models import ReferenceStudyExecutionLog
 from sos_trades_api.server.base_server import app, db
@@ -23,7 +24,7 @@ from sos_trades_api.server.base_server import app, db
 TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
-class ReferenceMySQLHandler(Handler):
+class ReferenceSQLAlchemyHandler(Handler):
     """
     Logging handler for StudyCaseExecutionLog
     """
@@ -39,13 +40,14 @@ class ReferenceMySQLHandler(Handler):
         self.__reference_identifier = reference_identifier
         self.__inner_bulk_list = []
 
-    def formatDBTime(self, record):
+    @staticmethod
+    def format_db_time(record):
         """
         Time formatter
         @param record:
         @return: nothing
         """
-        record.dbtime = strftime(TIME_FMT, localtime(record.created))
+        record.dbtime = datetime.fromtimestamp(record.created)
 
     def emit(self, record):
         """
@@ -57,7 +59,7 @@ class ReferenceMySQLHandler(Handler):
         self.format(record)
 
         # Set the database time up:
-        self.formatDBTime(record)
+        self.format_db_time(record)
 
         if record.exc_info:
             record.exc_text = _defaultFormatter.formatException(record.exc_info)
@@ -107,7 +109,7 @@ class ReferenceMySQLHandler(Handler):
                 ).delete()
                 db.session.commit()
         except Exception as ex:
-            print(f"Reference mysql handler: {ex!s}")
+            print(f"Reference SQLAlchemy handler: {ex!s}")
 
     def __write_into_database(self, flush=False):
         """
@@ -122,5 +124,5 @@ class ReferenceMySQLHandler(Handler):
                     db.session.bulk_save_objects(self.__inner_bulk_list)
                     db.session.commit()
             except Exception as ex:
-                print(f"Reference mysql handler: {ex!s}")
+                print(f"Reference SQLAlchemy handler: {ex!s}")
             self.__inner_bulk_list = []

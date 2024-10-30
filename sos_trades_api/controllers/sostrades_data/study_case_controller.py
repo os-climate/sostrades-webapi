@@ -112,59 +112,50 @@ def create_empty_study_case(
     :type from_type: str
     :return: sos_trades_api.models.database_models.StudyCase
     """
-    study_name_list = (
-        StudyCase.query.join(StudyCaseAccessGroup)
-        .join(Group)
-        .join(GroupAccessUser)
-        .filter(GroupAccessUser.user_id == user_identifier)
-        .filter(Group.id == group_identifier)
-        .filter(not StudyCase.disabled)
-        .all()
-    )
+    try:
 
-    for snl in study_name_list:
-        if snl.name == name:
-            raise InvalidStudy(
-                f'The following study case name "{name}" already exist in the database for the selected group',
-            )
+        check_study_already_exist(user_identifier, group_identifier, name)
 
-    # Initialize the new study case object in database
-    study_case = StudyCase()
-    study_case.group_id = group_identifier
-    study_case.repository = repository_name
-    study_case.name = name
-    study_case.process = process_name
-    study_case.creation_status = StudyCase.CREATION_PENDING
-    study_case.reference = reference
-    study_case.from_type = from_type
-    study_case.study_pod_flavor = study_pod_flavor
-    study_case.execution_pod_flavor = execution_pod_flavor
+        # Initialize the new study case object in database
+        study_case = StudyCase()
+        study_case.group_id = group_identifier
+        study_case.repository = repository_name
+        study_case.name = name
+        study_case.process = process_name
+        study_case.creation_status = StudyCase.CREATION_PENDING
+        study_case.reference = reference
+        study_case.from_type = from_type
+        study_case.study_pod_flavor = study_pod_flavor
+        study_case.execution_pod_flavor = execution_pod_flavor
 
-    # Save study_case
-    db.session.add(study_case)
-    db.session.commit()
-
-    # Add user as owner of the study case
-    owner_right = AccessRights.query.filter(
-        AccessRights.access_right == AccessRights.OWNER,
-    ).first()
-    if owner_right is not None:
-        new_user_access = StudyCaseAccessUser()
-        new_user_access.right_id = owner_right.id
-        new_user_access.study_case_id = study_case.id
-        new_user_access.user_id = user_identifier
-        db.session.add(new_user_access)
+        # Save study_case
+        db.session.add(study_case)
         db.session.commit()
 
-        # Add study to corresponding group as owner
-        new_group_access = StudyCaseAccessGroup()
-        new_group_access.group_id = group_identifier
-        new_group_access.study_case_id = study_case.id
-        new_group_access.right_id = owner_right.id
-        db.session.add(new_group_access)
-        db.session.commit()
+        # Add user as owner of the study case
+        owner_right = AccessRights.query.filter(
+            AccessRights.access_right == AccessRights.OWNER,
+        ).first()
+        if owner_right is not None:
+            new_user_access = StudyCaseAccessUser()
+            new_user_access.right_id = owner_right.id
+            new_user_access.study_case_id = study_case.id
+            new_user_access.user_id = user_identifier
+            db.session.add(new_user_access)
+            db.session.commit()
 
-    return study_case
+            # Add study to corresponding group as owner
+            new_group_access = StudyCaseAccessGroup()
+            new_group_access.group_id = group_identifier
+            new_group_access.study_case_id = study_case.id
+            new_group_access.right_id = owner_right.id
+            db.session.add(new_group_access)
+            db.session.commit()
+
+        return study_case
+    except Exception as ex:
+        db.session.rollback()
+        raise ex
 
 
 def create_study_case_allocation(study_case_identifier:int, flavor:str=None)-> PodAllocation:
@@ -246,7 +237,7 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
 
-
+  
 
     return study_case_allocation
 
@@ -348,7 +339,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
             raise ex
 
 
-def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
+def edit_study(study_id, new_group_id, new_study_name, user_id):
     """
     Update the group and the study_name for a study case
     :param study_id: id of the study to load
@@ -359,8 +350,6 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
     :type new_study_name: string
     :param user_id: id of the current user.
     :type user_id: integer
-    :param new_flavor: study pod flavor.
-    :type new_flavor: str
 
     """
     study_is_updated = False
@@ -378,12 +367,12 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
         update_study_name = study_case_manager.study.name != new_study_name
         update_group_id = study_case_manager.study.group_id != new_group_id
-        update_flavor = study_case_manager.study.study_pod_flavor != new_flavor
+
         # ---------------------------------------------------------------
         # First make update operation on data's (database and filesystem)
 
         # Perform database update
-        if update_study_name or update_group_id or update_flavor:
+        if update_study_name or update_group_id:
             study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
             if study_to_update is not None:
                 if update_study_name:
@@ -392,7 +381,9 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                         Group).join(GroupAccessUser) \
                         .filter(GroupAccessUser.user_id == user_id) \
                         .filter(Group.id == new_group_id) \
-                        .filter(not StudyCase.disabled).all()
+                        .filter(StudyCase.disabled == False).all()#noqa: E712
+                        # Ruff fix causes regression that prevent the filter to work
+
 
                     for study in study_name_list:
                         if study.name == new_study_name:
@@ -407,9 +398,6 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
                 try:
                     if update_study_name:
                         study_to_update.name = new_study_name
-
-                    if update_flavor:
-                        study_to_update.study_pod_flavor = new_flavor
 
                     if update_group_id:
 
@@ -430,14 +418,6 @@ def edit_study(study_id, new_group_id, new_study_name, user_id, new_flavor:str):
 
                     db.session.add(study_to_update)
                     db.session.commit()
-
-                    if update_flavor:
-                        pod_allocation = get_study_case_allocation(study_to_update.id)
-                        app.logger.info("Retrieved status of pod of kubernetes from edit_study()")
-                        if pod_allocation is not None:
-                            # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
-                            delete_study_server_services_and_deployments([pod_allocation])
-
 
                 except Exception as ex:
                     db.session.rollback()
@@ -500,6 +480,34 @@ def edit_study_execution_flavor(study_id,  new_execution_pod_flavor:str):
             db.session.add(study_to_update)
             db.session.commit()
             study_is_updated = True
+    return study_is_updated
+
+
+def edit_study_flavor(study_id,  new_pod_flavor:str, restartPod: bool):
+    """
+    Update pod size of a study
+    :param study_id: id of the study to load
+    :type study_id: integer
+    :param new_pod_flavor: execution pod flavor.
+    :type new_pod_flavor: str
+
+    """
+    study_is_updated = False
+
+    study_to_update = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_to_update is not None and new_pod_flavor is not None:
+        update_flavor = study_to_update.study_pod_flavor != new_pod_flavor
+        if update_flavor:
+            study_to_update.study_pod_flavor = new_pod_flavor
+            db.session.add(study_to_update)
+            db.session.commit()
+            study_is_updated = True
+        if study_is_updated and restartPod:
+            pod_allocation = get_study_case_allocation(study_to_update.id)
+            app.logger.info("Retrieved status of pod of kubernetes from edit_study_flavor()")
+            if pod_allocation is not None:
+                # if study pod flavor has changed, the pod needs to be reloaded with new flavor in deployment
+                delete_study_server_services_and_deployments([pod_allocation])
     return study_is_updated
 
 
@@ -662,6 +670,10 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
 
+            # Display empty string if study pod flavor is None
+            if user_study.study_pod_flavor is None:
+                user_study.study_pod_flavor = ""
+
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
     return result
@@ -728,7 +740,7 @@ def add_study_information_on_status(user_study: StudyCase):
             user_study.creation_status = StudyCase.CREATION_ERROR
             if allocation is not None:
                 if allocation.pod_status == PodAllocation.OOMKILLED:
-                    user_study.error = "An error occured while creation, pod had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
+                    user_study.error = f"An error occured while creation, pod (actual pod size {allocation.flavor}) had not enough resources, you may need to choose a bigger pod size before reloading the study to finalize the creation"
                 else:
                     user_study.error = "An error occured while creation, please reload the study to finalize the creation"
 
@@ -1210,4 +1222,21 @@ def add_last_opened_study_case(study_case_identifier, user_identifier):
             raise ex
 
 
+def check_study_already_exist(user_identifier, group_identifier, name):
 
+    is_already_exist = False
+    study_name_list = (
+                StudyCase.query.join(StudyCaseAccessGroup)
+                .join(Group)
+                .join(GroupAccessUser)
+                .filter(GroupAccessUser.user_id == user_identifier)
+                .filter(Group.id == group_identifier)
+                .filter(StudyCase.disabled == False) #noqa: E712
+                # Ruff fix causes regression that prevent the filter to work
+                .all()
+            )
+
+    for snl in study_name_list:
+        if snl.name == name:
+            is_already_exist = True
+    return is_already_exist
