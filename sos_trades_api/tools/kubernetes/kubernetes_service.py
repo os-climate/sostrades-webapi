@@ -431,6 +431,7 @@ def watch_pod_events(logger, namespace):
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
         #time out, the watcher will be restarted
+        logger.info("Expected timeout in stream to retrieve pod events.")
         pass
 
 
