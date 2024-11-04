@@ -460,8 +460,10 @@ class Config:
         :raise ValueError exception
         """
         if len(self.__main_database_engine_options.items()) == 0:
-            print(self.__server_config_file['SQL_ALCHEMY_DATABASE'])
-            self.__main_database_engine_options = self.__server_config_file['SQL_ALCHEMY_DATABASE']['ENGINE_OPTIONS']
+            if 'ENGINE_OPTIONS' in self.__server_config_file['SQL_ALCHEMY_DATABASE']:
+                self.__main_database_engine_options = self.__server_config_file['SQL_ALCHEMY_DATABASE']['ENGINE_OPTIONS']
+            else:
+                self.__main_database_engine_options = {}
 
         return self.__main_database_engine_options
 
@@ -519,7 +521,10 @@ class Config:
         :raise ValueError exception
         """
         if len(self.__logging_database_engine_options.items()) == 0:
-            self.__logging_database_engine_options = self.__server_config_file['LOGGING_DATABASE']['ENGINE_OPTIONS']
+            if 'ENGINE_OPTIONS' in self.__server_config_file['LOGGING_DATABASE']:
+                self.__logging_database_engine_options = self.__server_config_file['LOGGING_DATABASE']['ENGINE_OPTIONS']
+            else:
+                self.__logging_database_engine_options = {}
 
         return self.__logging_database_engine_options
 
