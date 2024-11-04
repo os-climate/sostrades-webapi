@@ -96,8 +96,10 @@ class Config:
 
         self.__logging_database_connect_args = {}
         self.__logging_database_uri = None
-        self.__sql_alchemy_connect_args = {}
-        self.__sql_alchemy_full_uri = None
+        self.__logging_database_engine_options = {}
+        self.__main_database_connect_args = {}
+        self.__main_database_uri = None
+        self.__main_database_engine_options = {}
         self.__secret_key = ""
 
         self.__study_pod_delay = None
@@ -404,27 +406,27 @@ class Config:
         return self.__local_folder_path
 
     @property
-    def sql_alchemy_connect_args(self):
+    def main_database_connect_args(self):
         """
         sql alchemy database connect args key property get
 
         :return dict (sql alchemy database connect args dict)
         :raise ValueError exception
         """
-        if len(self.__sql_alchemy_connect_args.items()) == 0:
-            self.__sql_alchemy_connect_args = self.__server_config_file['SQL_ALCHEMY_DATABASE']['CONNECT_ARGS']
+        if len(self.__main_database_connect_args.items()) == 0:
+            self.__main_database_connect_args = self.__server_config_file['SQL_ALCHEMY_DATABASE']['CONNECT_ARGS']
 
-        return self.__sql_alchemy_connect_args
+        return self.__main_database_connect_args
 
     @property
-    def sql_alchemy_full_uri(self):
+    def main_database_uri(self):
         """
         sql alchemy full uri, key property get
 
         :return string (sql alchemy full uri)
         :raise ValueError exception
         """
-        if self.__sql_alchemy_full_uri is None:
+        if self.__main_database_uri is None:
             database_uri_not_formatted = self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI']
 
             # Retrieve env vars
@@ -444,10 +446,24 @@ class Config:
                 raise ValueError(error_env_msg)
             
             try:
-                self.__sql_alchemy_full_uri = database_uri_not_formatted.format(**uri_format_env_vars)
+                self.__main_database_uri = database_uri_not_formatted.format(**uri_format_env_vars)
             except KeyError as e:
                 raise ValueError("Main database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
-        return self.__sql_alchemy_full_uri
+        return self.__main_database_uri
+    
+    @property
+    def main_database_engine_options(self):
+        """
+        main database engine options key property get
+
+        :return dict (main database engine options dict)
+        :raise ValueError exception
+        """
+        if len(self.__main_database_engine_options.items()) == 0:
+            print(self.__server_config_file['SQL_ALCHEMY_DATABASE'])
+            self.__main_database_engine_options = self.__server_config_file['SQL_ALCHEMY_DATABASE']['ENGINE_OPTIONS']
+
+        return self.__main_database_engine_options
 
     @property
     def logging_database_connect_args(self):
@@ -493,6 +509,19 @@ class Config:
             except KeyError as e:
                 raise ValueError("Logging database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
         return self.__logging_database_uri
+    
+    @property
+    def logging_database_engine_options(self):
+        """
+        logging database engine options key property get
+
+        :return dict (logging database engine options dict)
+        :raise ValueError exception
+        """
+        if len(self.__logging_database_engine_options.items()) == 0:
+            self.__logging_database_engine_options = self.__server_config_file['LOGGING_DATABASE']['ENGINE_OPTIONS']
+
+        return self.__logging_database_engine_options
 
     @property
     def secret_key(self):
@@ -519,8 +548,8 @@ class Config:
         flask_config_dict = deepcopy(self.__server_config_file)
 
         # Set sql alchemy uri
-        flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.sql_alchemy_full_uri})
-        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": {'connect_args': self.sql_alchemy_connect_args}})
+        flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.main_database_uri})
+        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": {'connect_args': self.main_database_connect_args}})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 

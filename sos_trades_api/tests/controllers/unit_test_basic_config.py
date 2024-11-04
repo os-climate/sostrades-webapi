@@ -140,12 +140,12 @@ def delete_everything_from_database(db_path):
 
 config = Config()
 
-data_database_uri = config.sql_alchemy_full_uri
+data_database_uri = config.main_database_uri
 data_database_url = make_url(data_database_uri)
 server_url = make_url(data_database_uri.replace(data_database_url.database, ""))
 logging_database_server_uri = config.logging_database_uri
 logging_database_server_url = make_url(logging_database_server_uri)
-connect_args = config.sql_alchemy_connect_args
+connect_args = config.main_database_connect_args
 
 
 class DatabaseUnitTestConfiguration(unittest.TestCase):

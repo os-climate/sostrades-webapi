@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy()
+    db = SQLAlchemy(engine_options=config.main_database_engine_options)
     db.init_app(app)
 
     # As flask application and database are initialized, then import
@@ -81,7 +81,7 @@ try:
     )
 
     app.logger.info('Adding application logger handler')
-    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args)
+    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args, engine_options=config.logging_database_engine_options)
     app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 

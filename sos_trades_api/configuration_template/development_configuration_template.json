@@ -6,6 +6,7 @@
 
   // Application data are stored in MySQL database using python SqlAchemy ORM
   "SQL_ALCHEMY_DATABASE": {
+    "ENGINE_OPTIONS": {},// Options to create engine in sqlalchemy
     "CONNECT_ARGS": {
       // "ssl":true
       // "charset": "utf8mb4"
@@ -23,6 +24,7 @@
   // Logging data are stored in a separated database.
   // This database is not access using the ORM, the following information must be set:
   "LOGGING_DATABASE": {
+    "ENGINE_OPTIONS": {},// Options to create engine in sqlalchemy
     "CONNECT_ARGS": {
       // "ssl":true
       // "charset": "utf8mb4"
