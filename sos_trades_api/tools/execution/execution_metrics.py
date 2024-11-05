@@ -63,12 +63,20 @@ class ExecutionMetrics:
         # Infinite loop
         # The database connection is kept open
         while self.__started:
-            # Add an exception manager to ensure that database eoor will not
+            # Add an exception manager to ensure that database error will not
             # shut down calculation
             try:
                 # Open a database context
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
+
+                    if study_case_execution is None:
+                        # Study case does not exist, it was deleted from db
+                        # so we stop thread
+                        app.logger.warning("Study case execution not found in db, stopping metring refresh thread")
+                        self.__started = False
+                        return
+                    
                     config = Config()
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
                         study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
