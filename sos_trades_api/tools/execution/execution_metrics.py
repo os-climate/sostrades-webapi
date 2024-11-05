@@ -69,13 +69,6 @@ class ExecutionMetrics:
                 # Open a database context
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
-
-                    if study_case_execution is None:
-                        # Study case does not exist, it was deleted from db
-                        # so we stop thread
-                        app.logger.warning("Study case execution not found in db, stopping metring refresh thread")
-                        self.__started = False
-                        return
                     
                     config = Config()
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
@@ -132,6 +125,10 @@ class ExecutionMetrics:
                         memory_usage = round(psutil.virtual_memory()[3] / (1024 * 1024 * 1024), 2)
                         memory_metric = f"{memory_usage}/{memory_count} [GB]"
 
+                    if study_case_execution is None:
+                        # Study case does not exist, it was deleted from db
+                        app.logger.error("Study case execution not found in db, unable to store metrics")
+                        
                     study_case_execution.cpu_usage = cpu_metric
                     study_case_execution.memory_usage = memory_metric
 
