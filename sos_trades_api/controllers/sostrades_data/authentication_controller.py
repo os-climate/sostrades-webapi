@@ -17,7 +17,8 @@ limitations under the License.
 
 from flask_jwt_extended import create_access_token, create_refresh_token
 
-from sos_trades_api.models.database_models import User
+from sos_trades_api.controllers.sostrades_data.group_controller import add_group_access_from_keycloak
+from sos_trades_api.models.database_models import User, Group
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.authentication.authentication import (
     AuthenticationError,
@@ -204,9 +205,27 @@ def authenticate_user_keycloak(userinfo: dict):
     if userinfo:
 
         # Placeholder: Créez ou mettez à jour l'utilisateur dans votre système en fonction des informations obtenues de Keycloak
-        keycloak_user, return_url = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
+        keycloak_user, return_url, group_list_associated = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
+        if group_list_associated is not None:
+            for group_name in group_list_associated:
+                # Check if group is already on database
+                group_from_database = Group.query.filter(Group.name == group_name).first()
+                if group_from_database is None:
+                    try:
+                        group_from_database = Group()
+                        group_from_database.name = group_name
+                        group_from_database.description = group_name
+                        group_from_database.confidential = False
 
+                        # Creation of the group
+                        db.session.add(group_from_database)
+                        db.session.commit()
+                    except Exception as ex:
+                        db.session.rollback()
+                        raise f"Error adding group from keycloak in database: {ex}"
+
+                add_group_access_from_keycloak(user.id, group_from_database)
 
         if is_new_user:
             send_new_user_mail(user)

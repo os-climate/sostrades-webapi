@@ -35,6 +35,7 @@ KEYCLOAK_CLIENT_ID = "KEYCLOAK_CLIENT_ID"
 KEYCLOAK_CLIENT_SECRET = "KEYCLOAK_CLIENT_SECRET"
 # url of logout, format with keycloak server url, realm, client id, front url 
 KEYCLOAK_LOGOUT_URL = "{}/realms/{}/protocol/openid-connect/logout?client_id={}&post_logout_redirect_uri={}"
+KEYCLOAK_ACCOUNT_URL = "{}/realms/{}/account/#/personal-info"
 
 
 class KeycloakAuthenticator:
@@ -106,6 +107,13 @@ class KeycloakAuthenticator:
             self.__keycloak_oauth_settings[KEYCLOAK_CLIENT_ID],
             app.config["SOS_TRADES_FRONT_END_DNS"])
 
+    def account_url(self):
+        url = KEYCLOAK_ACCOUNT_URL.format(
+            self.__keycloak_oauth_settings[KEYCLOAK_AUTH_URL],
+            self.__keycloak_oauth_settings[KEYCLOAK_REALM_NAME],
+            app.config["SOS_TRADES_FRONT_END_DNS"])
+        return url
+
     @staticmethod
     def create_user_from_userinfo(userinfo:dict):
         """
@@ -147,4 +155,6 @@ class KeycloakAuthenticator:
         created_user.department = ""
 
         return_url = app.config["SOS_TRADES_FRONT_END_DNS"]
-        return created_user, return_url
+        group_list_associated_path = userinfo.get("groups")
+        group_list_associated = [group.strip('/') for group in group_list_associated_path]
+        return created_user, return_url, group_list_associated

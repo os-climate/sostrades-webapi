@@ -216,3 +216,18 @@ def edit_group(group_id, name, description,user_id):
     return group
 
 
+def add_group_access_from_keycloak(user_id, group):
+        if group is not None:
+            # Add member right
+            member_right = AccessRights.query.filter(
+                AccessRights.access_right == AccessRights.MEMBER).first()
+            group_access = GroupAccessUser.query.filter(GroupAccessUser.group_id == group.id,
+                                                        GroupAccessUser.user_id == user_id).first()
+            if member_right is not None and group_access is None:
+                group_access_user = GroupAccessUser()
+                group_access_user.group_id = group.id
+                group_access_user.user_id = user_id
+                group_access_user.right_id = member_right.id
+                db.session.add(group_access_user)
+                db.session.commit()
+
