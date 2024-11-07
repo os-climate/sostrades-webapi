@@ -338,3 +338,11 @@ def logout_url():
     keycloak = KeycloakAuthenticator()
     
     return make_response(jsonify(keycloak.logout_url()), 200)
+
+
+@app.route("/api/data/keycloak/oauth/profile", methods=["GET"])
+@auth_required
+def change_profile():
+    keycloak = KeycloakAuthenticator()
+
+    return make_response(jsonify(keycloak.account_url()), 200)

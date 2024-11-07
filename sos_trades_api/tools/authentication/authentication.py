@@ -342,12 +342,12 @@ def manage_user(logged_user, logger):
         is_new = True
 
     else:
-
-        temp_department = logged_user.department
-        temp_company = logged_user.company
         managed_user = users.first()
-        managed_user.department = temp_department
-        managed_user.company = temp_company
+        managed_user.email = logged_user.email
+        managed_user.firstname = logged_user.firstname
+        managed_user.lastname = logged_user.lastname
+        managed_user.department = logged_user.department
+        managed_user.company = logged_user.company
 
         #assign profile from logged user
         user_profile = UserProfile.query.filter(UserProfile.id == logged_user.user_profile_id).first()
