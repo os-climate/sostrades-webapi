@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import importlib.util
 import os
 import shutil
@@ -158,11 +157,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
         study_case = None
         with app.app_context():
-            study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_identifier).first()
+            study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+
 
             if from_type == StudyCase.FROM_REFERENCE:
-
                 # Get reference path
                 reference_path = f"{study_case.repository}.{study_case.process}.{reference}"
 
@@ -208,10 +206,10 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
                 reference_basepath = Config().reference_root_dir
 
+                db.session.add(study_case)
                 # Build reference folder base on study process name and
                 # repository
-                reference_folder = join(
-                    reference_basepath, study_case.repository, study_case.process, reference)
+                reference_folder = join(reference_basepath, study_case.repository, study_case.process, reference)
 
                 # Get ref generation ID associated to this ref
                 reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
@@ -320,11 +318,14 @@ def load_study_case(study_id, study_access_right, user_id, reload=False):
     start_time = time.time()
     study_manager = study_case_cache.get_study_case(study_id, False)
 
+
     cache_duration = time.time() - start_time
     if reload:
         study_manager.study_case_manager_reload_backup_files()
-        study_manager.reset()
-
+        study_manager.delete_loaded_study_case_in_json_file()
+        study_case_cache.delete_study_case_from_cache(study_id)
+        study_manager = study_case_cache.get_study_case(study_id, False)
+        
     read_only = study_access_right == AccessRights.COMMENTER
     no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 

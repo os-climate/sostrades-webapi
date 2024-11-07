@@ -333,7 +333,7 @@ def delete_pod_allocation(pod_allocation:PodAllocation, delete_pod_needed):
     db.session.commit()
     app.logger.info(f"PodAllocation {allocation_name} have been successfully deleted")
 
-@time_function()
+@time_function(app.logger)
 def update_all_pod_status():
     """
     For all allocations 

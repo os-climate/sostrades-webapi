@@ -109,7 +109,6 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
-
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -129,7 +128,6 @@ def main_load_study_case_by_id(study_id):
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
         loadedStudy = load_or_create_study_case(user.id, study_id, study_access_right)
-
         loadedStudy_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec")
