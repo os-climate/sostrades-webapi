@@ -216,18 +216,57 @@ def edit_group(group_id, name, description,user_id):
     return group
 
 
-def add_group_access_from_keycloak(user_id, group):
-        if group is not None:
-            # Add member right
-            member_right = AccessRights.query.filter(
-                AccessRights.access_right == AccessRights.MEMBER).first()
-            group_access = GroupAccessUser.query.filter(GroupAccessUser.group_id == group.id,
-                                                        GroupAccessUser.user_id == user_id).first()
-            if member_right is not None and group_access is None:
-                group_access_user = GroupAccessUser()
-                group_access_user.group_id = group.id
-                group_access_user.user_id = user_id
-                group_access_user.right_id = member_right.id
-                db.session.add(group_access_user)
-                db.session.commit()
+def add_group_access_user_member(user_id, group):
+    """
+    Add a user as a member to a specific group.
 
+    This function grants member access rights to a user for a given group.
+    If the user already has access to the group, no action is taken.
+
+    Args:
+        user_id : The ID of the user to be added as a member.
+        group : The group object to which the user will be added.
+
+    """
+    if group is not None:
+        # Retrieve the member access right
+        member_right = AccessRights.query.filter(
+            AccessRights.access_right == AccessRights.MEMBER).first()
+
+        # Check if the user already has access to the group
+        group_access = GroupAccessUser.query.filter(GroupAccessUser.group_id == group.id,
+                                                    GroupAccessUser.user_id == user_id).first()
+
+        # If member right exists and user doesn't have access, grant access
+        if member_right is not None and group_access is None:
+            group_access_user = GroupAccessUser()
+            group_access_user.group_id = group.id
+            group_access_user.user_id = user_id
+            group_access_user.right_id = member_right.id
+
+            # Add the new group access to the database session
+            db.session.add(group_access_user)
+            db.session.commit()
+
+
+def remove_group_access_user(user_id, group):
+    """
+    Remove a user's access from a specific group.
+
+    This function removes any existing access rights a user has for a given group.
+
+    Args:
+        user_id : The ID of the user whose access is to be removed.
+        group : The group object from which the user's access will be removed.
+
+    """
+    if group is not None:
+        # Find the user's access entry for the group
+        group_access = GroupAccessUser.query.filter(GroupAccessUser.group_id == group.id,
+                                                    GroupAccessUser.user_id == user_id).first()
+
+        # If an access entry exists, remove it
+        if group_access is not None:
+            # Delete the group access from the database session
+            db.session.delete(group_access)
+            db.session.commit()
