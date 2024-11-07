@@ -106,6 +106,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.config import Config
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
+            stop_calculation
         )
         from sos_trades_api.controllers.sostrades_data.study_case_controller import (
             create_empty_study_case,
@@ -149,7 +150,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                               self.test_uc_name,
                                               from_type=StudyCase.FROM_REFERENCE)
 
-            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "thread"
+            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
             execute_calculation(created_study.study_case.id,
                                 User.STANDARD_USER_ACCOUNT_NAME)
             time.sleep(10.0)
@@ -176,6 +177,11 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             self.assertTrue(len(allocations) == 1, "There is more than one allocation for this execution")
             self.assertIsNotNone(allocations[0], "Allocation not found")
             self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,"Allocation has not the Running status")
+
+            # stop the computation
+            stop_calculation(sc.id)
+
+
 
     def test_02_calculation_status(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
@@ -207,14 +213,14 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
             stop_calculation(sc.id)
-            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "thread"
+            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
             execute_calculation(sc.id, User.STANDARD_USER_ACCOUNT_NAME)
             calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.PENDING, get_calculation_dashboard()))
             self.assertTrue(len(calc_dashboard) >= 1, "At least one study should be running.")
             self.assertEqual(calc_dashboard[0].study_case_id, sc.id, f"Study running should be study with id { sc.id }")
 
-            # Wait for process calculation end
-            time.sleep(50.0)
+            # end the computation
+            stop_calculation(sc.id)
 
     def test_04_stop_calculation(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
