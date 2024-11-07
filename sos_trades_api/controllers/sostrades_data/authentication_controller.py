@@ -213,17 +213,18 @@ def authenticate_user_keycloak(userinfo: dict):
             # Get the list of Keycloak groups from the configuration
             groups_keycloak_from_config = app.config["KEYCLOAK_GROUP_LIST"]
 
-            # Identify groups that need to have their access removed
-            groups_to_delete_access = [group_config for group_config in groups_keycloak_from_config if
-                                       group_config not in group_list_associated]
+            if len(groups_keycloak_from_config) > 0:
+                # Identify groups that need to have their access removed
+                groups_to_delete_access = [group_config for group_config in groups_keycloak_from_config if
+                                           group_config not in group_list_associated]
 
-            # Remove user access for groups no longer associated
-            if groups_to_delete_access:
-                for group in groups_to_delete_access:
-                    # Find the group object in the database
-                    group_to_remove_access = Group.query.filter(Group.name == group).first()
-                    # Remove user's access to this group
-                    remove_group_access_user(user.id, group_to_remove_access)
+                # Remove user access for groups no longer associated
+                if groups_to_delete_access:
+                    for group in groups_to_delete_access:
+                        # Find the group object in the database
+                        group_to_remove_access = Group.query.filter(Group.name == group).first()
+                        # Remove user's access to this group
+                        remove_group_access_user(user.id, group_to_remove_access)
 
             # Process each group in the associated list
             for group_name in group_list_associated:
