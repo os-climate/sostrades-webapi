@@ -22,6 +22,7 @@ from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
 
+
 """
 Test class for authentication procedures
 """
@@ -174,12 +175,17 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                     PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
                                                     ).all()
 
+            self.assertTrue(sce.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
+                        sce.process_identifier > 0, "pb execution")
             self.assertTrue(len(allocations) == 1, "There is more than one allocation for this execution")
             self.assertIsNotNone(allocations[0], "Allocation not found")
             self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,"Allocation has not the Running status")
 
-            # stop the computation
-            stop_calculation(sc.id)
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
 
 
 
@@ -219,8 +225,11 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             self.assertTrue(len(calc_dashboard) >= 1, "At least one study should be running.")
             self.assertEqual(calc_dashboard[0].study_case_id, sc.id, f"Study running should be study with id { sc.id }")
 
-            # end the computation
-            stop_calculation(sc.id)
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
 
     def test_04_stop_calculation(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
@@ -230,9 +239,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
-            stop_calculation(sc.id)
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
 
             sc_status = calculation_status(sc.id)
             self.assertEqual(sc_status.study_case_execution_status, StudyCaseExecution.STOPPED,
                              "Study case status not stopped while stop_calculation was called")
-
