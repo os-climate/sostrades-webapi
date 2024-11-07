@@ -22,7 +22,6 @@ from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
 
-
 """
 Test class for authentication procedures
 """
@@ -107,7 +106,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.config import Config
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
-            stop_calculation
+            stop_calculation,
         )
         from sos_trades_api.controllers.sostrades_data.study_case_controller import (
             create_empty_study_case,
@@ -176,7 +175,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                     ).all()
 
             self.assertTrue(sce.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
-                        sce.process_identifier > 0, "pb execution")
+                        sce.process_identifier > 0, f"Execution type is {sce.execution_type} and process identifier is: {sce.process_identifier}")
             self.assertTrue(len(allocations) == 1, "There is more than one allocation for this execution")
             self.assertIsNotNone(allocations[0], "Allocation not found")
             self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,"Allocation has not the Running status")
@@ -204,7 +203,6 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
     def test_03_get_calculation_dashboard(self):
         import os
-        import time
 
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
