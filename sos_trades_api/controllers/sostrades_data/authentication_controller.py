@@ -213,7 +213,7 @@ def authenticate_user_keycloak(userinfo: dict):
             # Get the list of Keycloak groups from the configuration
             groups_keycloak_from_config = app.config["KEYCLOAK_GROUP_LIST"]
 
-            if len(groups_keycloak_from_config) > 0:
+            if groups_keycloak_from_config is not None and len(groups_keycloak_from_config) > 0:
                 # Identify groups that need to have their access removed
                 groups_to_delete_access = [group_config for group_config in groups_keycloak_from_config if
                                            group_config not in group_list_associated]
