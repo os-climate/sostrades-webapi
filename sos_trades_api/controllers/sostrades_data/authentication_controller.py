@@ -215,8 +215,8 @@ def authenticate_user_keycloak(userinfo: dict):
 
             if groups_keycloak_from_config is not None and len(groups_keycloak_from_config) > 0:
                 # Identify groups that need to have their access removed
-                groups_to_delete_access = [group_config for group_config in groups_keycloak_from_config if
-                                           group_config not in group_list_associated]
+                groups_to_delete_access = [group_config for group_config in group_list_associated if
+                                           group_config not in groups_keycloak_from_config]
 
                 # Remove user access for groups no longer associated
                 if groups_to_delete_access:
@@ -227,7 +227,7 @@ def authenticate_user_keycloak(userinfo: dict):
                         remove_group_access_user(user.id, group_to_remove_access)
 
             # Process each group in the associated list
-            for group_name in group_list_associated:
+            for group_name in groups_keycloak_from_config:
                 # Check if the group already exists in the database
                 group = Group.query.filter(Group.name == group_name).first()
 
