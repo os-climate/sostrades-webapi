@@ -17,6 +17,7 @@ limitations under the License.
 
 from flask_jwt_extended import create_access_token, create_refresh_token
 
+from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data.group_controller import (
     add_group_access_user_member,
     remove_group_access_user,
@@ -211,7 +212,8 @@ def authenticate_user_keycloak(userinfo: dict):
         user, is_new_user = manage_user(keycloak_user, app.logger)
         if group_list_associated is not None:
             # Get the list of Keycloak groups from the configuration
-            groups_keycloak_from_config = app.config["KEYCLOAK_GROUP_LIST"]
+            config = Config()
+            groups_keycloak_from_config = config.keycloak_group_list
 
             if groups_keycloak_from_config is not None and len(groups_keycloak_from_config) > 0:
 
@@ -224,17 +226,6 @@ def authenticate_user_keycloak(userinfo: dict):
 
                 # Identify groups that need to have their access added
                 groups_to_add_access = group_set_associated & group_set_keycloak
-
-                # Identify groups in Keycloak config that are not in the associated list
-                groups_in_keycloak_config_not_associated = group_set_keycloak - group_set_associated
-                if groups_in_keycloak_config_not_associated:
-                    count = len(groups_in_keycloak_config_not_associated)
-                    if count == 1:
-                        app.logger.warn(
-                            f'The group "{groups_in_keycloak_config_not_associated}" from "KEYCLOAK_GROUP_LIST" is not present in Keycloak groups')
-                    else:
-                        app.logger.warn(
-                            f'These groups "{groups_in_keycloak_config_not_associated}" from "KEYCLOAK_GROUP_LIST" are not present in Keycloak groups')
 
                 # Remove user access for groups no longer associated
                 if groups_to_delete_access:
@@ -272,9 +263,7 @@ def authenticate_user_keycloak(userinfo: dict):
                         add_group_access_user_member(user.id, group)
 
                 else:
-                    app.logger.warn(f'There are no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak')
-            else:
-                app.logger.error(f'There are no groups in "KEYCLOAK_GROUP_LIST" in configuration')
+                    app.logger.warn(f'There are no common groups between "KEYCLOAK_GROUP_LIST" configuration and user {user.id} groups from keycloak')
 
 
         if is_new_user:
