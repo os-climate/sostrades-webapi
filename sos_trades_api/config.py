@@ -65,6 +65,7 @@ class Config:
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
     CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
     CONFIG_FLAVOR_POD_EXECUTION = "PodExec"
+    CONFIG_KEYCLOAK_GROUP_LIST = "KEYCLOAK_GROUP_LIST"
 
     def __init__(self):
         """
@@ -106,6 +107,7 @@ class Config:
         self.__local_folder_path = ""
         self.__kubernetes_flavor_for_study = None
         self.__kubernetes_flavor_for_exec = None
+        self.__keycloak_groups = []
 
         if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is not None:
             with open(os.environ["SOS_TRADES_SERVER_CONFIGURATION"]) as server_conf_file:
@@ -677,3 +679,11 @@ class Config:
     @property
     def pod_watcher_activated(self):
         return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)
+
+    @property
+    def keycloak_group_list(self):
+        keycloak_groups_config = self.__server_config_file.get(self.CONFIG_KEYCLOAK_GROUP_LIST, False)
+        if keycloak_groups_config:
+            self.__keycloak_groups = keycloak_groups_config
+        return self.__keycloak_groups
+
