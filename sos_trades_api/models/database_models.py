@@ -173,7 +173,6 @@ class Group(db.Model):
     description = Column(String(255))
     confidential = Column(Boolean, default=False)
     is_default_applicative_group = Column(Boolean, default=False)
-    is_keycloak_group = Column(Boolean, server_default=sqlalchemy.sql.false())
 
     def serialize(self):
         """
@@ -187,7 +186,6 @@ class Group(db.Model):
             "description": self.description,
             "confidential": self.confidential,
             "is_default_applicative_group": self.is_default_applicative_group,
-            "is_keycloak_group": self.is_keycloak_group,
         }
 
 
