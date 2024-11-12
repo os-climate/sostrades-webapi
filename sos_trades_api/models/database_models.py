@@ -18,7 +18,6 @@ import uuid
 from datetime import datetime
 
 import pytz
-import sqlalchemy
 from sqlalchemy import (
     Boolean,
     Column,
