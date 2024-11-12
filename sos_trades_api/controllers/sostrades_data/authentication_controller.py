@@ -248,7 +248,7 @@ def authenticate_user_keycloak(userinfo: dict):
                             group.name = group_name
                             group.description = group_name
                             group.confidential = False
-                            group.is_keycloak_group = True
+
 
                             # Add the new group to the database
                             db.session.add(group)
