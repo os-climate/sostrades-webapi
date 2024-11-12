@@ -74,7 +74,7 @@ class ExecutionEngineObserver:
         execution
         """
         # Send a status to update into the queue
-        if isinstance(discipline, SoSDiscipline):
+        if isinstance(discipline, SoSMDODiscipline):
 
             # Send update to the queue
             self.__queue.put([discipline.name, discipline.status])
