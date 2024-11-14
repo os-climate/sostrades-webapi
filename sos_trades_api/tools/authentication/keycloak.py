@@ -155,6 +155,8 @@ class KeycloakAuthenticator:
         created_user.department = ""
 
         return_url = app.config["SOS_TRADES_FRONT_END_DNS"]
+        group_list_associated = []
         group_list_associated_path = userinfo.get("groups")
-        group_list_associated = [group.strip('/') for group in group_list_associated_path]
+        if group_list_associated_path:
+            group_list_associated = [group.strip('/') for group in group_list_associated_path]
         return created_user, return_url, group_list_associated

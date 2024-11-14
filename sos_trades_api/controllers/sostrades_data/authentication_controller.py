@@ -210,7 +210,7 @@ def authenticate_user_keycloak(userinfo: dict):
 
         keycloak_user, return_url, group_list_associated = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
-        if group_list_associated is not None:
+        if len(group_list_associated) > 0:
             # Get the list of Keycloak groups from the configuration
             config = Config()
             groups_keycloak_from_config = config.keycloak_group_list
@@ -263,6 +263,8 @@ def authenticate_user_keycloak(userinfo: dict):
 
             else:
                 app.logger.warn(f'There are no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
+        else:
+            app.logger.info(f"There any groups from keycloak")
 
 
         if is_new_user:
