@@ -227,6 +227,7 @@ def create_study_case(user_id, study_case_identifier, reference, from_type=None)
 
             elif from_type == "UsecaseData":
 
+                db.session.add(study_case)
                 if study_case_manager.load_status == LoadStatus.NONE:
                     study_case_manager.load_status = LoadStatus.IN_PROGESS
 
