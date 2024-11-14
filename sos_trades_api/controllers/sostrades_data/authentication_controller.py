@@ -262,9 +262,9 @@ def authenticate_user_keycloak(userinfo: dict):
                     add_group_access_user_member(user.id, group)
 
             else:
-                app.logger.warn(f'There are no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
+                app.logger.warn(f'They are no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
         else:
-            app.logger.info(f"There any groups from keycloak")
+            app.logger.info(f"They are any groups from keycloak")
 
 
         if is_new_user:
