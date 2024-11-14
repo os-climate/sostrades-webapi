@@ -17,7 +17,12 @@ limitations under the License.
 
 from flask_jwt_extended import create_access_token, create_refresh_token
 
-from sos_trades_api.models.database_models import User
+from sos_trades_api.config import Config
+from sos_trades_api.controllers.sostrades_data.group_controller import (
+    add_group_access_user_member,
+    remove_group_access_user,
+)
+from sos_trades_api.models.database_models import Group, User
 from sos_trades_api.server.base_server import app, db
 from sos_trades_api.tools.authentication.authentication import (
     AuthenticationError,
@@ -203,9 +208,61 @@ def authenticate_user_keycloak(userinfo: dict):
     """
     if userinfo:
 
-        # Placeholder: Créez ou mettez à jour l'utilisateur dans votre système en fonction des informations obtenues de Keycloak
-        keycloak_user, return_url = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
+        keycloak_user, return_url, group_list_associated = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
+        if group_list_associated is not None:
+            # Get the list of Keycloak groups from the configuration
+            config = Config()
+            groups_keycloak_from_config = config.keycloak_group_list
+
+            # Convert lists to sets for more efficient operations
+            group_set_associated = set(group_list_associated)
+            group_set_keycloak = set(groups_keycloak_from_config)
+
+            # Identify groups that need to have their access removed
+            groups_to_delete_access = group_set_associated - group_set_keycloak
+
+            # Identify groups that need to have their access added
+            groups_to_add_access = group_set_associated & group_set_keycloak
+
+            # Remove user access for groups no longer associated
+            if groups_to_delete_access:
+                for group in groups_to_delete_access:
+                    # Find the group object in the database
+                    group_to_remove_access = Group.query.filter(Group.name == group).first()
+
+                    # Remove user's access to this group
+                    remove_group_access_user(user.id, group_to_remove_access)
+
+            # Process each group in the associated list
+            if groups_to_add_access:
+                for group_name in groups_to_add_access:
+                    # Check if the group already exists in the database
+                    group = Group.query.filter(Group.name == group_name).first()
+
+                    # If the group doesn't exist, create it
+                    if group is None:
+                        try:
+                            # Initialize a new Group object
+                            group = Group()
+                            group.name = group_name
+                            group.description = group_name
+                            group.confidential = False
+
+
+                            # Add the new group to the database
+                            db.session.add(group)
+                            db.session.commit()
+                        except Exception as ex:
+                            # If an error occurs, rollback the session and raise an exception
+                            db.session.rollback()
+                            raise Exception(f"Error adding group from Keycloak to database: {ex}")
+
+                    # Add or ensure the user has member access to this group
+                    add_group_access_user_member(user.id, group)
+
+            else:
+                app.logger.warn(f'There are no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
 
 
         if is_new_user:
