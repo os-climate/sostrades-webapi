@@ -248,9 +248,24 @@ def check_identity_provider_availability():
         settings_json_file = os.environ["GITHUB_OAUTH_SETTINGS"]
         if not os.path.exists(settings_json_file):
             app.logger.info(
-                "GitHub IdP/oauth settings.json file not found, SSO will be disabled")
+                "GitHub IdP/oauth settings.json file not found, Github IdP/oauth will be disabled")
         else:
             app.logger.info("GitHub IdP/oauth settings.json file found")
+
+    # -------- Keycloak oauth provider
+    if os.environ.get("KEYCLOAK_OAUTH_SETTINGS") is None:
+        app.logger.info(
+            "KEYCLOAK_OAUTH_SETTINGS configuration not found, Keycloak IdP/oauth will be disabled")
+    else:
+        app.logger.info("KEYCLOAK_OAUTH_SETTINGS environment variable found")
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ["KEYCLOAK_OAUTH_SETTINGS"]
+        if not os.path.exists(settings_json_file):
+            app.logger.info(
+                "Keycloak IdP/oauth settings.json file not found, Keycloak IdP/oauth will be disabled")
+        else:
+            app.logger.info("Keycloak IdP/oauth settings.json file found")
 
 
 def database_check_study_case_state(with_deletion=False):
