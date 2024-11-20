@@ -63,7 +63,6 @@ class Config:
     CONFIG_STUDY_POD_DELAY = "SOS_TRADES_STUDY_POD_INACTIVATE_DELAY_HOUR"
     CONFIG_LOCAL_FOLDER_PATH = "SOS_TRADES_LOCAL_FOLDER"
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
-    CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
     CONFIG_FLAVOR_POD_EXECUTION = "PodExec"
     CONFIG_KEYCLOAK_GROUP_LIST = "KEYCLOAK_GROUP_LIST"
 
@@ -675,11 +674,6 @@ class Config:
         sorted_dict = dict(sorted(flavors.items(), key=lambda item:sort_by_memory(item[1]['limits']["memory"], item[1]['requests']["memory"])))
         return sorted_dict
         
-
-    @property
-    def pod_watcher_activated(self):
-        return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)
-
     @property
     def keycloak_group_list(self):
         keycloak_groups_config = self.__server_config_file.get(self.CONFIG_KEYCLOAK_GROUP_LIST, False)
