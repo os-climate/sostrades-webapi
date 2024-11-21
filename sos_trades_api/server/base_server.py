@@ -648,7 +648,6 @@ def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         update_all_pod_status,
     )
-    interval = 15 #seconds
     while True:
         try:
             update_all_pod_status()
@@ -659,8 +658,6 @@ def update_all_pod_status_loop_method():
             except:
                 # May happen that there is an issue when logging, so we pass
                 pass
-        if not Config().pod_watcher_activated:
-            time.sleep(interval)
 
 if app.config["ENVIRONMENT"] != UNIT_TEST:
 
