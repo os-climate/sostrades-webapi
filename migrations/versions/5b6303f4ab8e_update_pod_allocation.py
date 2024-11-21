@@ -1,5 +1,4 @@
-"""
-update pod allocation
+"""update pod allocation
 
 Revision ID: 5b6303f4ab8e
 Revises: 5acd0bb7bad9
@@ -31,13 +30,12 @@ def upgrade():
     sa.Column("cpu_limit", sa.Integer(), nullable=True),
     sa.Column("memory_limit", sa.Integer(), nullable=True),
     sa.Column("message", sa.Text(), nullable=True),
-    sa.Column("creation_date", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+    sa.Column("creation_date", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column("cpu_usage", sa.String(length=32), server_default="----", nullable=True),
     sa.Column("memory_usage", sa.String(length=32), server_default="----", nullable=True),
     sa.PrimaryKeyConstraint("id"),
+    sqlite_autoincrement=True,
     )
-
-    op.drop_index("kubernetes_pod_name", table_name="study_case_allocation")
     op.drop_table("study_case_allocation")
     op.drop_column("reference_study", "kubernete_pod_name")
     op.drop_column("study_case_execution", "kubernetes_pod_name")
@@ -53,13 +51,13 @@ def downgrade():
     sa.Column("status", mysql.VARCHAR(length=64), server_default=sa.text("''"), nullable=True),
     sa.Column("kubernetes_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True),
     sa.Column("message", mysql.TEXT(), nullable=True),
-    sa.Column("creation_date", mysql.DATETIME(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=True),
+    sa.Column("creation_date", mysql.DATETIME(), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(["study_case_id"], ["study_case.id"], name="fk_study_case_allocation_study_case_id", ondelete="CASCADE"),
     sa.PrimaryKeyConstraint("id"),
     mysql_default_charset="latin1",
     mysql_engine="InnoDB",
+    sqlite_autoincrement=True,
     )
-    op.create_index("kubernetes_pod_name", "study_case_allocation", ["kubernetes_pod_name"], unique=False)
     op.create_index("ix_study_case_allocation_study_case_id", "study_case_allocation", ["study_case_id"], unique=False)
     op.add_column("study_case_execution", sa.Column("kubernetes_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))
     op.add_column("reference_study", sa.Column("kubernete_pod_name", mysql.VARCHAR(length=128), server_default=sa.text("''"), nullable=True))

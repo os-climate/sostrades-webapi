@@ -115,7 +115,7 @@ def reload_study_case_by_id(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
         # set the study case in the cache
-        study_manager = light_load_study_case(study_id, True)
+        study_manager = light_load_study_case(study_id, False)
         if study_manager is None:
             resp = make_response(
                 jsonify(True), 200)

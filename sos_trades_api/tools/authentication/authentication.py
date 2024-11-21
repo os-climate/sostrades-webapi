@@ -297,8 +297,10 @@ def manage_user(logged_user, logger):
         # Retrieve user profile : "Study user without execution"
         study_profile = UserProfile.query.filter(
             UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
-
-        if study_profile is not None:
+        user_profile = UserProfile.query.filter(UserProfile.id == logged_user.user_profile_id).first()
+        if user_profile is not None:
+            managed_user.user_profile_id = logged_user.user_profile_id
+        elif study_profile is not None:
             managed_user.user_profile_id = study_profile.id
         else:
             logger.error(
@@ -340,13 +342,18 @@ def manage_user(logged_user, logger):
         is_new = True
 
     else:
-
-        temp_department = logged_user.department
-        temp_company = logged_user.company
         managed_user = users.first()
-        managed_user.department = temp_department
-        managed_user.company = temp_company
+        managed_user.email = logged_user.email
+        managed_user.firstname = logged_user.firstname
+        managed_user.lastname = logged_user.lastname
+        managed_user.department = logged_user.department
+        managed_user.company = logged_user.company
 
+        #assign profile from logged user
+        user_profile = UserProfile.query.filter(UserProfile.id == logged_user.user_profile_id).first()
+        if user_profile is not None:
+            managed_user.user_profile_id = logged_user.user_profile_id
+        
         # Update user state (and information from previous else block if needed)
         managed_user.last_login_date = datetime.now().astimezone(pytz.UTC)
         managed_user.is_logged = True

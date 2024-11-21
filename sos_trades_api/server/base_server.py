@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy()
+    db = SQLAlchemy(engine_options=config.main_database_engine_options)
     db.init_app(app)
 
     # As flask application and database are initialized, then import
@@ -73,16 +73,16 @@ try:
     from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import (
-        ApplicationMySQLHandler,
+    from sos_trades_api.tools.logger.application_request_formatter import (
         ApplicationRequestFormatter,
     )
+    from sos_trades_api.tools.logger.application_sqlalchemy_handler import (
+        ApplicationSQLAlchemyHandler,
+    )
 
-    app.logger.info("Adding application logger handler")
-    app_mysql_handler = ApplicationMySQLHandler(
-        db=config.logging_database_data)
-    app_mysql_handler.setFormatter(ApplicationRequestFormatter(
-        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info('Adding application logger handler')
+    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args, engine_options=config.logging_database_engine_options)
+    app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
     app.logger.info("Configuring logger")
@@ -248,9 +248,24 @@ def check_identity_provider_availability():
         settings_json_file = os.environ["GITHUB_OAUTH_SETTINGS"]
         if not os.path.exists(settings_json_file):
             app.logger.info(
-                "GitHub IdP/oauth settings.json file not found, SSO will be disabled")
+                "GitHub IdP/oauth settings.json file not found, Github IdP/oauth will be disabled")
         else:
             app.logger.info("GitHub IdP/oauth settings.json file found")
+
+    # -------- Keycloak oauth provider
+    if os.environ.get("KEYCLOAK_OAUTH_SETTINGS") is None:
+        app.logger.info(
+            "KEYCLOAK_OAUTH_SETTINGS configuration not found, Keycloak IdP/oauth will be disabled")
+    else:
+        app.logger.info("KEYCLOAK_OAUTH_SETTINGS environment variable found")
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ["KEYCLOAK_OAUTH_SETTINGS"]
+        if not os.path.exists(settings_json_file):
+            app.logger.info(
+                "Keycloak IdP/oauth settings.json file not found, Keycloak IdP/oauth will be disabled")
+        else:
+            app.logger.info("Keycloak IdP/oauth settings.json file found")
 
 
 def database_check_study_case_state(with_deletion=False):

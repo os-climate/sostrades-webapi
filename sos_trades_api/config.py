@@ -65,6 +65,7 @@ class Config:
     CONFIG_FLAVOR_KUBERNETES = "CONFIG_FLAVOR_KUBERNETES"
     CONFIG_ACTIVATE_POD_WATCHER = "ACTIVATE_POD_WATCHER"
     CONFIG_FLAVOR_POD_EXECUTION = "PodExec"
+    CONFIG_KEYCLOAK_GROUP_LIST = "KEYCLOAK_GROUP_LIST"
 
     def __init__(self):
         """
@@ -94,19 +95,19 @@ class Config:
         self.__rsa_public_key = ""
         self.__rsa_private_key = ""
 
-        self.__logging_database_data = {}
-        self.__logging_database_name = ""
-        self.__main_database_data = {}
-        self.__sql_alchemy_database_name = ""
-        self.__sql_alchemy_database_ssl = None
-        self.__sql_alchemy_server_uri = ""
-        self.__sql_alchemy_full_uri = ""
+        self.__logging_database_connect_args = {}
+        self.__logging_database_uri = None
+        self.__logging_database_engine_options = {}
+        self.__main_database_connect_args = {}
+        self.__main_database_uri = None
+        self.__main_database_engine_options = {}
         self.__secret_key = ""
 
         self.__study_pod_delay = None
         self.__local_folder_path = ""
         self.__kubernetes_flavor_for_study = None
         self.__kubernetes_flavor_for_exec = None
+        self.__keycloak_groups = []
 
         if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is not None:
             with open(os.environ["SOS_TRADES_SERVER_CONFIGURATION"]) as server_conf_file:
@@ -407,158 +408,127 @@ class Config:
         return self.__local_folder_path
 
     @property
-    def sql_alchemy_database_name(self):
+    def main_database_connect_args(self):
         """
-        sql alchemy database name, key property get
+        sql alchemy database connect args key property get
 
-        :return string (sql alchemy database name)
+        :return dict (sql alchemy database connect args dict)
         :raise ValueError exception
         """
-        if len(self.__sql_alchemy_database_name) == 0:
-            self.__sql_alchemy_database_name = self.__server_config_file["SQL_ALCHEMY_DATABASE"]["DATABASE_NAME"]
-        return self.__sql_alchemy_database_name
+        if len(self.__main_database_connect_args.items()) == 0:
+            self.__main_database_connect_args = self.__server_config_file['SQL_ALCHEMY_DATABASE']['CONNECT_ARGS']
+
+        return self.__main_database_connect_args
 
     @property
-    def sql_alchemy_server_uri(self):
-        """
-        sql alchemy server uri, key property get
-
-        :return string (sql alchemy server uri)
-        :raise ValueError exception
-        """
-        if len(self.__sql_alchemy_server_uri) == 0:
-            error_env_msgs = []
-
-            sql_alchemy_user = os.environ.get(self.__server_config_file["SQL_ALCHEMY_DATABASE"]["USER_ENV_VAR"])
-            if sql_alchemy_user is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['SQL_ALCHEMY_DATABASE']['USER_ENV_VAR']} not provided")
-
-            sql_alchemy_password = os.environ.get(self.__server_config_file["SQL_ALCHEMY_DATABASE"]["PASSWORD_ENV_VAR"])
-            if sql_alchemy_password is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['SQL_ALCHEMY_DATABASE']['PASSWORD_ENV_VAR']} not provided")
-
-            if len(error_env_msgs) > 0:
-                raise ValueError("\n".join(error_env_msgs))
-
-            # Set SQL Alchemy database URI
-            self.__sql_alchemy_server_uri = f'mysql+mysqldb://{sql_alchemy_user}:{sql_alchemy_password}@' \
-                                               f'{self.__server_config_file["SQL_ALCHEMY_DATABASE"]["HOST"]}:' \
-                                               f'{self.__server_config_file["SQL_ALCHEMY_DATABASE"]["PORT"]}/'
-
-        return self.__sql_alchemy_server_uri
-
-    @property
-    def sql_alchemy_database_ssl(self):
-        """
-        sql alchemy database ssl, key property get
-
-        :return dict (sql alchemy database ssl)
-        :raise ValueError exception
-        """
-        if self.__sql_alchemy_database_ssl is None:
-            self.__sql_alchemy_database_ssl = self.__server_config_file["SQL_ALCHEMY_DATABASE"]["SSL"]
-
-        return self.__sql_alchemy_database_ssl
-
-    @property
-    def sql_alchemy_full_uri(self):
+    def main_database_uri(self):
         """
         sql alchemy full uri, key property get
 
         :return string (sql alchemy full uri)
         :raise ValueError exception
         """
-        # Add charset to have unicode 7 support from mysql
-        uri_suffix = "?charset=utf8mb4"
-        if len(self.__sql_alchemy_full_uri) == 0:
-            uri_suffix = f"{uri_suffix}&ssl=true" if self.sql_alchemy_database_ssl is True else ""
+        if self.__main_database_uri is None:
+            database_uri_not_formatted = self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI']
 
-            self.__sql_alchemy_full_uri = f"{self.sql_alchemy_server_uri}{self.sql_alchemy_database_name}{uri_suffix}"
-        return self.__sql_alchemy_full_uri
-
+            # Retrieve env vars
+            uri_env_vars = self.__server_config_file['SQL_ALCHEMY_DATABASE']['URI_ENV_VARS']
+            uri_format_env_vars = {
+                key: os.environ.get(env_var) for key, env_var in uri_env_vars.items()
+            }
+            # Check if env vars are set
+            none_vars = {var_name for var_name, var_value in uri_format_env_vars.items() if var_value is None}
+            if len(none_vars) > 0:
+                error_env_msg = "\n".join(
+                    [
+                        f"Main database : Environment variable for {var_name} not provided"
+                        for var_name in none_vars
+                    ]
+                )
+                raise ValueError(error_env_msg)
+            
+            try:
+                self.__main_database_uri = database_uri_not_formatted.format(**uri_format_env_vars)
+            except KeyError as e:
+                raise ValueError("Main database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
+        return self.__main_database_uri
+    
     @property
-    def main_database_data(self):
+    def main_database_engine_options(self):
         """
-        main database data key property get
+        main database engine options key property get
 
-        :return dict (main database data dict)
+        :return dict (main database engine options dict)
         :raise ValueError exception
         """
-        if len(self.__main_database_data.items()) == 0:
-            error_env_msgs = []
+        if len(self.__main_database_engine_options.items()) == 0:
+            if 'ENGINE_OPTIONS' in self.__server_config_file['SQL_ALCHEMY_DATABASE']:
+                self.__main_database_engine_options = self.__server_config_file['SQL_ALCHEMY_DATABASE']['ENGINE_OPTIONS']
+            else:
+                self.__main_database_engine_options = {}
 
-            main_database_user = os.environ.get(self.__server_config_file["SQL_ALCHEMY_DATABASE"]["USER_ENV_VAR"])
-            if main_database_user is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['SQL_ALCHEMY_DATABASE']['USER_ENV_VAR']} not provided")
-
-            main_database_password = os.environ.get(
-                self.__server_config_file["SQL_ALCHEMY_DATABASE"]["PASSWORD_ENV_VAR"])
-            if main_database_password is None:
-                error_env_msgs.append(f"Environment variable {self.__server_config_file['SQL_ALCHEMY_DATABASE']['PASSWORD_ENV_VAR']} not provided")
-
-            if len(error_env_msgs) > 0:
-                raise ValueError("\n".join(error_env_msgs))
-
-            # Deepcopy
-            self.__main_database_data = deepcopy(self.__server_config_file["SQL_ALCHEMY_DATABASE"])
-            # Set user and password keys
-            self.__main_database_data["USER"] = main_database_user
-            self.__main_database_data["PASSWORD"] = main_database_password
-            # Removing construction keys
-            del self.__main_database_data["USER_ENV_VAR"]
-            del self.__main_database_data["PASSWORD_ENV_VAR"]
-
-        return self.__main_database_data
+        return self.__main_database_engine_options
 
     @property
-    def logging_database_data(self):
+    def logging_database_connect_args(self):
         """
-        logging database data key property get
+        logging database connect args key property get
 
-        :return dict (logging database data dict)
+        :return dict (logging database connect args dict)
         :raise ValueError exception
         """
-        if len(self.__logging_database_data.items()) == 0:
-            error_env_msgs = []
+        if len(self.__logging_database_connect_args.items()) == 0:
+            self.__logging_database_connect_args = self.__server_config_file['LOGGING_DATABASE']['CONNECT_ARGS']
 
-            logging_database_user = os.environ.get(self.__server_config_file["LOGGING_DATABASE"]["USER_ENV_VAR"])
-            if logging_database_user is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['LOGGING_DATABASE']['USER_ENV_VAR']} not provided")
-
-            logging_database_password = os.environ.get(self.__server_config_file["LOGGING_DATABASE"]["PASSWORD_ENV_VAR"])
-            if logging_database_password is None:
-                error_env_msgs.append(f"Environment variable "
-                                      f"'{self.__server_config_file['LOGGING_DATABASE']['PASSWORD_ENV_VAR']} not provided")
-
-            if len(error_env_msgs) > 0:
-                raise ValueError("\n".join(error_env_msgs))
-
-            # Deepcopy
-            self.__logging_database_data = deepcopy(self.__server_config_file["LOGGING_DATABASE"])
-            # Set user and password keys
-            self.__logging_database_data["USER"] = logging_database_user
-            self.__logging_database_data["PASSWORD"] = logging_database_password
-            # Removing construction keys
-            del self.__logging_database_data["USER_ENV_VAR"]
-            del self.__logging_database_data["PASSWORD_ENV_VAR"]
-
-        return self.__logging_database_data
+        return self.__logging_database_connect_args
 
     @property
-    def logging_database_name(self):
-        """
-        logging database name, key property get
+    def logging_database_uri(self):
+        """logging database uri, key property get
 
-        :return string (logging database name)
+        :return string
         :raise ValueError exception
         """
-        if len(self.__logging_database_name) == 0:
-            self.__logging_database_name = self.logging_database_data["DATABASE_NAME"]
-        return self.__logging_database_name
+        if self.__logging_database_uri is None:
+            database_uri_not_formatted = self.__server_config_file['LOGGING_DATABASE']['URI']
+
+            # Retrieve env vars
+            uri_env_vars = self.__server_config_file['LOGGING_DATABASE']['URI_ENV_VARS']
+            uri_format_env_vars = {
+                key: os.environ.get(env_var) for key, env_var in uri_env_vars.items()
+            }
+            # Check if env vars are set
+            none_vars = {var_name for var_name, var_value in uri_format_env_vars.items() if var_value is None}
+            if len(none_vars) > 0:
+                error_env_msg = "\n".join(
+                    [
+                        f"Logging database : Environment variable for {var_name} not provided"
+                        for var_name in none_vars
+                    ]
+                )
+                raise ValueError(error_env_msg)
+            
+            try:
+                self.__logging_database_uri = database_uri_not_formatted.format(**uri_format_env_vars)
+            except KeyError as e:
+                raise ValueError("Logging database : Unable to format connection string, some parameters are missing in URI_ENV_VARS") from e
+        return self.__logging_database_uri
+    
+    @property
+    def logging_database_engine_options(self):
+        """
+        logging database engine options key property get
+
+        :return dict (logging database engine options dict)
+        :raise ValueError exception
+        """
+        if len(self.__logging_database_engine_options.items()) == 0:
+            if 'ENGINE_OPTIONS' in self.__server_config_file['LOGGING_DATABASE']:
+                self.__logging_database_engine_options = self.__server_config_file['LOGGING_DATABASE']['ENGINE_OPTIONS']
+            else:
+                self.__logging_database_engine_options = {}
+
+        return self.__logging_database_engine_options
 
     @property
     def secret_key(self):
@@ -585,9 +555,8 @@ class Config:
         flask_config_dict = deepcopy(self.__server_config_file)
 
         # Set sql alchemy uri
-        flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.sql_alchemy_full_uri})
-        # Set logging database data
-        flask_config_dict.update({"LOGGING_DATABASE": self.logging_database_data})
+        flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.main_database_uri})
+        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": {'connect_args': self.main_database_connect_args}})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 
@@ -710,3 +679,11 @@ class Config:
     @property
     def pod_watcher_activated(self):
         return self.__server_config_file.get(self.CONFIG_ACTIVATE_POD_WATCHER, False)
+
+    @property
+    def keycloak_group_list(self):
+        keycloak_groups_config = self.__server_config_file.get(self.CONFIG_KEYCLOAK_GROUP_LIST, False)
+        if keycloak_groups_config:
+            self.__keycloak_groups = keycloak_groups_config
+        return self.__keycloak_groups
+

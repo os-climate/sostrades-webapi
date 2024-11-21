@@ -128,7 +128,7 @@ class User(db.Model):
         """
         Set the password and encode it
         """
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method="pbkdf2")
 
     def check_password(self, password):
         """
