@@ -19,7 +19,7 @@ import threading
 import time
 from copy import deepcopy
 
-from sos_ontology.core.sos_entities.sos_discipline import SoSDiscipline
+from sostrades_core.execution_engine.sos_discipline import SoSDiscipline
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
 from sos_trades_api.server.base_server import app, db
 
