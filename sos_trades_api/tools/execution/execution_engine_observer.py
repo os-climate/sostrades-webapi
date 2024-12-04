@@ -20,6 +20,7 @@ import time
 from copy import deepcopy
 
 from sostrades_core.execution_engine.sos_discipline import SoSDiscipline
+
 from sos_trades_api.models.database_models import StudyCaseDisciplineStatus
 from sos_trades_api.server.base_server import app, db
 
