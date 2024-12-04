@@ -319,7 +319,7 @@ def get_reference_status_from_allocation(reference, pod_allocation):
         error_msg = " - Regeneration status not coherent."
         if pod_allocation.message is not None and pod_allocation.message != "":
             if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                error_msg = f" - pod error message: The pod had not enough resources (actual pod size {pod_allocation.flavor}), you may need to choose a bigger pod size for this reference"
+                error_msg = f" - pod error message: The pod had not enough resources (current size {pod_allocation.flavor}), you may need to choose a bigger pod size for this reference"
             else:
                 error_msg = f" - pod error message: {pod_allocation.message}"
 

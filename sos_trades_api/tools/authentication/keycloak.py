@@ -147,7 +147,7 @@ class KeycloakAuthenticator:
             elif UserProfile.STUDY_USER in roles:
                 user_profile = UserProfile.query.filter(UserProfile.name == UserProfile.STUDY_USER).first()
                 created_user.user_profile_id = user_profile.id
-            elif UserProfile.STUDY_USER_NO_EXECUTION in roles:
+            else:
                 user_profile = UserProfile.query.filter(UserProfile.name == UserProfile.STUDY_USER_NO_EXECUTION).first()
                 created_user.user_profile_id = user_profile.id
 
