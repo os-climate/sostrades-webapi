@@ -105,7 +105,7 @@ class InterfaceDiagramGenerator:
                     self.couplings_list = self.couplings_list + discipline_coupling_list
                 classname = disc_dict.get("classname", None)
                 if classname == "ProxyDiscipline":
-                    classname = type(disc.mdo_discipline_wrapp.wrapper).__name__
+                    classname = type(disc.discipline_wrapp.wrapper).__name__
                 if classname not in ["SoSCoupling", "ProxyCoupling"]:
                     disc_id = ".".join(ns_node.split(".")[1:]) + "." + classname
                     if disc_id not in unique_disc_ids:
@@ -140,7 +140,7 @@ class InterfaceDiagramGenerator:
                 disc_from_classname = type(disc_from).__name__
                 if disc_from_classname == "ProxyDiscipline":
                     disc_from_classname = type(
-                        disc_from.mdo_discipline_wrapp.wrapper,
+                        disc_from.discipline_wrapp.wrapper,
                     ).__name__
                 disc_from_id = (
                     ".".join(disc_from.get_disc_full_name().split(".")[1:])
@@ -149,7 +149,7 @@ class InterfaceDiagramGenerator:
                 )
                 disc_to_classname = type(disc_to).__name__
                 if disc_to_classname == "ProxyDiscipline":
-                    disc_to_classname = type(disc_to.mdo_discipline_wrapp.wrapper).__name__
+                    disc_to_classname = type(disc_to.discipline_wrapp.wrapper).__name__
                 disc_to_id = (
                     ".".join(disc_to.get_disc_full_name().split(".")[1:])
                     + "."
