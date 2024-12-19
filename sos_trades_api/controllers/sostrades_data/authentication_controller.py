@@ -219,20 +219,25 @@ def authenticate_user_keycloak(userinfo: dict):
             group_set_associated = set(group_list_associated)
             group_set_keycloak = set(groups_keycloak_from_config)
 
-            # Identify groups that need to have their access removed
-            groups_to_delete_access = group_set_associated - group_set_keycloak
+            # Groups to remove access (not associated but in keycloak)
+            groups_delete_access_not_associated = group_set_associated - group_set_keycloak
+            # Groups to remove access (associated but not in keycloak)
+            groups_delete_access_not_in_keycloak = group_set_keycloak - group_set_associated
 
-            # Identify groups that need to have their access added
-            groups_to_add_access = group_set_associated & group_set_keycloak
+            # List of all groups to remove access
+            all_different_groups = list(groups_delete_access_not_associated.union(groups_delete_access_not_in_keycloak))
 
             # Remove user access for groups no longer associated
-            if groups_to_delete_access:
-                for group in groups_to_delete_access:
+            if all_different_groups:
+                for group in all_different_groups:
                     # Find the group object in the database
                     group_to_remove_access = Group.query.filter(Group.name == group).first()
 
                     # Remove user's access to this group
                     remove_group_access_user(user.id, group_to_remove_access)
+
+            # Identify groups that need to have their access added
+            groups_to_add_access = group_set_associated & group_set_keycloak
 
             # Process each group in the associated list
             if groups_to_add_access:
@@ -248,7 +253,6 @@ def authenticate_user_keycloak(userinfo: dict):
                             group.name = group_name
                             group.description = group_name
                             group.confidential = False
-
 
                             # Add the new group to the database
                             db.session.add(group)
