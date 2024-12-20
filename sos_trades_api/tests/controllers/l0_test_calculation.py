@@ -18,7 +18,6 @@ limitations under the License.
 
 from importlib import import_module
 
-
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
@@ -107,15 +106,15 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.config import Config
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
+            stop_calculation,
         )
         from sos_trades_api.controllers.sostrades_data.study_case_controller import (
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            get_study_case,
+            create_study_case,
         )
         from sos_trades_api.models.database_models import (
-            AccessRights,
             PodAllocation,
             StudyCase,
             StudyCaseExecution,
@@ -146,11 +145,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
             self.test_study_id = new_study_case.id
 
-            created_study = get_study_case(self.test_user_id,
+            created_study = create_study_case(self.test_user_id,
                                               self.test_study_id,
-                                              AccessRights.MANAGER)
+                                              self.test_uc_name,
+                                              from_type=StudyCase.FROM_REFERENCE)
 
-            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "thread"
+            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
             execute_calculation(created_study.study_case.id,
                                 User.STANDARD_USER_ACCOUNT_NAME)
             time.sleep(10.0)
@@ -174,9 +174,19 @@ class TestCalculation(DatabaseUnitTestConfiguration):
                                                     PodAllocation.pod_type == PodAllocation.TYPE_EXECUTION,
                                                     ).all()
 
+            self.assertTrue(sce.execution_type == StudyCaseExecution.EXECUTION_TYPE_PROCESS and \
+                        sce.process_identifier > 0, f"Execution type is {sce.execution_type} and process identifier is: {sce.process_identifier}")
             self.assertTrue(len(allocations) == 1, "There is more than one allocation for this execution")
             self.assertIsNotNone(allocations[0], "Allocation not found")
             self.assertEqual(allocations[0].pod_status, PodAllocation.RUNNING,"Allocation has not the Running status")
+
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
+
+
 
     def test_02_calculation_status(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
@@ -193,7 +203,6 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
     def test_03_get_calculation_dashboard(self):
         import os
-        import time
 
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
             execute_calculation,
@@ -208,14 +217,17 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
             stop_calculation(sc.id)
-            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "thread"
+            os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
             execute_calculation(sc.id, User.STANDARD_USER_ACCOUNT_NAME)
             calc_dashboard = list(filter(lambda cd: cd.execution_status == StudyCaseExecution.PENDING, get_calculation_dashboard()))
             self.assertTrue(len(calc_dashboard) >= 1, "At least one study should be running.")
             self.assertEqual(calc_dashboard[0].study_case_id, sc.id, f"Study running should be study with id { sc.id }")
 
-            # Wait for process calculation end
-            time.sleep(50.0)
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
 
     def test_04_stop_calculation(self):
         from sos_trades_api.controllers.sostrades_data.calculation_controller import (
@@ -225,9 +237,12 @@ class TestCalculation(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import StudyCase, StudyCaseExecution
         with DatabaseUnitTestConfiguration.app.app_context():
             sc = StudyCase.query.filter(StudyCase.name == self.test_study_name).first()
-            stop_calculation(sc.id)
+            # stop all the computations
+            study_case_executions = StudyCaseExecution.query.filter(
+                StudyCaseExecution.study_case_id == sc.id).all()
+            for execution in study_case_executions:
+                stop_calculation(sc.id, execution.id)
 
             sc_status = calculation_status(sc.id)
             self.assertEqual(sc_status.study_case_execution_status, StudyCaseExecution.STOPPED,
                              "Study case status not stopped while stop_calculation was called")
-

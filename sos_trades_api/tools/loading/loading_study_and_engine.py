@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import cProfile
+import gc
 import io
 import pstats
 import sys
@@ -136,9 +137,10 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
                 and not study_case_manager.check_study_case_json_file_exists():
             study_case_manager.save_study_read_only_mode_in_file()
+        
 
         study_case_manager.load_status = LoadStatus.LOADED
-
+        gc.collect()
         app.logger.info(
             f"End background loading {study_case_manager.study.name}")
         app.logger.info("Elapsed time synthesis:")
@@ -500,6 +502,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         backup_rw_strategy = study_case_manager.rw_strategy
         study_case_manager.rw_strategy = DirectLoadDump()
 
+        
         study_case_manager.load_study_case_from_source(reference_folder)
 
         # Restore original strategy for dumping

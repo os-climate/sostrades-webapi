@@ -193,6 +193,7 @@ def refresh_api():
     try:
         app.logger.info("JWT access token refresh requested")
         access_token = refresh_authentication()
+
         return make_response(jsonify({
             "accessToken": access_token,
         }))
@@ -292,14 +293,22 @@ def github_oauth():
     return redirect(url)
 
 
-@app.route("/api/data/keycloak/authenticate", methods=["GET"])
+@app.route("/api/data/keycloak/oauth/authenticate", methods=["GET"])
 def authenticate_with_keycloak():
-    # Get authorization URL
-    keycloak = KeycloakAuthenticator()
 
-    auth_url = keycloak.auth_url("https://revision.gpp-sostrades.com/api/data/keycloak/callback")
+    keycloak_settings = KeycloakAuthenticator()
 
-    return redirect(auth_url)
+    auth_url = keycloak_settings.auth_url()
+
+    return make_response(jsonify(auth_url), 200)
+
+@app.route("/api/data/keycloak/oauth/available", methods=["GET"])
+def is_keycloak_available():
+
+    keycloak_settings = KeycloakAuthenticator()
+
+    return make_response(jsonify(keycloak_settings.is_available), 200)
+
 
 
 @app.route("/api/data/keycloak/callback", methods=["GET"])
@@ -311,7 +320,7 @@ def callback():
     keycloak = KeycloakAuthenticator()
 
     code = request.args.get("code")
-    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
+    token = keycloak.token( code)
     userinfo = keycloak.user_info(token["access_token"])
 
     access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
@@ -324,13 +333,16 @@ def callback():
 
     return redirect(url)
 
-@app.route("/api/data/keycloak/logout", methods=["GET"])
-def logout():
+@app.route("/api/data/keycloak/oauth/logout-url", methods=["GET"])
+def logout_url():
     keycloak = KeycloakAuthenticator()
-    code = request.args.get("code")
-    token = keycloak.token("https://revision.gpp-sostrades.com/api/data/keycloak/callback", code)
-    access_token = token["access_token"]
-    keycloak.logout(access_token)
+    
+    return make_response(jsonify(keycloak.logout_url()), 200)
 
-    deauthenticate_user()
-    return redirect("https://revision.gpp-sostrades.com")
+
+@app.route("/api/data/keycloak/oauth/profile", methods=["GET"])
+@auth_required
+def change_profile():
+    keycloak = KeycloakAuthenticator()
+
+    return make_response(jsonify(keycloak.account_url()), 200)

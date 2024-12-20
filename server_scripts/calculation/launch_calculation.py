@@ -134,7 +134,7 @@ def launch_generate_reference(reference_identifier):
     generation_log.setLevel(DEBUG)
 
     # Instantiate and attach database logger
-    generation_log_handler = ReferenceMySQLHandler(reference_identifier)
+    generation_log_handler = ReferenceSQLAlchemyHandler(reference_identifier)
     generation_log_handler.clear_reference_database_logs()
     generation_log.addHandler(generation_log_handler)
 
@@ -327,8 +327,8 @@ if __name__ == '__main__':
     # correctly server  executing environment
     from sos_trades_api.server.split_mode import main_server
     from sos_trades_api.config import Config
-    from sos_trades_api.tools.logger.reference_mysql_handler import (
-        ReferenceMySQLHandler,
+    from sos_trades_api.tools.logger.reference_sqlalchemy_handler import (
+        ReferenceSQLAlchemyHandler,
     )
     from sos_trades_api.models.database_models import ReferenceStudy, StudyCaseExecution
     from importlib import import_module

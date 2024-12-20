@@ -1,6 +1,3 @@
-from sos_trades_api.models.database_models import Group, GroupAccessUser
-from sos_trades_api.server.base_server import db
-
 """Default Groups
 
 Revision ID: b4c65e383551
@@ -8,6 +5,9 @@ Revises: 039eba317a4e
 Create Date: 2021-10-05 17:54:14.072536
 
 """
+from sos_trades_api.models.database_models import Group, GroupAccessUser
+from sos_trades_api.server.base_server import db
+
 # revision identifiers, used by Alembic.
 revision = "b4c65e383551"
 down_revision = "039eba317a4e"

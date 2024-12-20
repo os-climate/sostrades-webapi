@@ -186,9 +186,24 @@ class TestStudy(DatabaseUnitTestConfiguration):
             ref_id_2 = generate_reference(self.test_repository_name, self.test_process_name, self.test_usecase_name, self.test_user_id)
             self.assertEqual(ref_id, ref_id_2, "A new reference have been created")
 
+            # wait for reference to end generating before moving on, to avoid the thread / subprocess making errors
+            # check reference exists
+            references = ReferenceStudy.query.filter(ReferenceStudy.id == ref_id_2).all()
+            self.assertTrue(len(references) == 1)
+            reference = references[0]
+
             # check only one allocation
             pod_allocations = PodAllocation.query.filter(PodAllocation.identifier == ref_id, \
                                                  PodAllocation.pod_type == PodAllocation.TYPE_REFERENCE).all()
             self.assertTrue(len(pod_allocations) == 1)
-
-
+            
+            # wait end of generation
+            while reference.execution_status in [
+                    ReferenceStudy.RUNNING,
+                    ReferenceStudy.PENDING]:
+                time.sleep(10.0)
+                reference = ReferenceStudy.query.filter(ReferenceStudy.id == ref_id).first()
+                reference = get_generation_status(reference)
+            
+            # wait some more so the reference logger has time to flush
+            time.sleep(5)

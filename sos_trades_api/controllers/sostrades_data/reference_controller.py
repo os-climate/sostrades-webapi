@@ -218,6 +218,7 @@ def get_all_references(user_id, logger):
         new_usecase.regeneration_id = proc_ref.id
         new_usecase.regeneration_status = proc_ref.execution_status
         new_usecase.error = proc_ref.generation_logs
+        new_usecase.generation_pod_flavor = proc_ref.generation_pod_flavor
 
     result = [elem[1] for elem in all_references_proc_ref_tuple_list]
 
@@ -318,7 +319,7 @@ def get_reference_status_from_allocation(reference, pod_allocation):
         error_msg = " - Regeneration status not coherent."
         if pod_allocation.message is not None and pod_allocation.message != "":
             if pod_allocation.pod_status == PodAllocation.OOMKILLED:
-                error_msg = " - pod error message: The pod had not enough resources, you may need to choose a bigger pod size for this reference"
+                error_msg = f" - pod error message: The pod had not enough resources (current size {pod_allocation.flavor}), you may need to choose a bigger pod size for this reference"
             else:
                 error_msg = f" - pod error message: {pod_allocation.message}"
 

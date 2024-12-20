@@ -20,6 +20,7 @@ import os
 os.environ["SERVER_NAME"] = "MESSAGE_SERVER"
 
 import eventlet
+
 eventlet.monkey_patch()
 
 from flask_socketio import SocketIO
