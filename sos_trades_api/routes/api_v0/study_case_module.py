@@ -25,7 +25,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_raw_logs,
 )
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    get_study_case,
+    copy_study_case,
     get_file_stream,
     light_load_study_case,
     load_study_case,
@@ -131,15 +131,7 @@ def copy_study_case_by_id(study_id):
                                                  source_study_case.process, group.id, study_id, StudyCase.FROM_STUDYCASE, source_study_case.study_pod_flavor, source_study_case.execution_pod_flavor)
 
             # Retrieve the source study
-            copy_study_identifier = get_study_case(study_case.id)
-            while copy_study_identifier.load_status != LoadStatus.LOADED or copy_study_identifier.load_status != LoadStatus.IN_ERROR:
-
-                copy_study_identifier = get_study_case(study_case.id)
-
-                if copy_study_identifier.load_status == LoadStatus.LOADED:
-                    break
-                else:
-                    time.sleep(1)
+            copy_study_identifier = copy_study_case(study_case.id, study_id, user.id)
 
             # Proceeding after rights verification
             resp = make_response(jsonify(copy_study_identifier), 200)
@@ -273,5 +265,3 @@ def get_study_case_raw_logs(study_id):
     else:
         resp = make_response(jsonify("No logs found."), 404)
         return resp
-
-

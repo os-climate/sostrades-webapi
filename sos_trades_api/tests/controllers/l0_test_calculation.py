@@ -18,7 +18,6 @@ limitations under the License.
 
 from importlib import import_module
 
-
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
@@ -113,10 +112,9 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            get_study_case,
+            create_study_case,
         )
         from sos_trades_api.models.database_models import (
-            AccessRights,
             PodAllocation,
             StudyCase,
             StudyCaseExecution,
@@ -147,9 +145,10 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
             self.test_study_id = new_study_case.id
 
-            created_study = get_study_case(self.test_user_id,
+            created_study = create_study_case(self.test_user_id,
                                               self.test_study_id,
-                                              AccessRights.MANAGER)
+                                              self.test_uc_name,
+                                              from_type=StudyCase.FROM_REFERENCE)
 
             os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
             execute_calculation(created_study.study_case.id,
