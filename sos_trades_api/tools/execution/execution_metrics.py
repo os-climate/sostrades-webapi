@@ -63,12 +63,13 @@ class ExecutionMetrics:
         # Infinite loop
         # The database connection is kept open
         while self.__started:
-            # Add an exception manager to ensure that database eoor will not
+            # Add an exception manager to ensure that database error will not
             # shut down calculation
             try:
                 # Open a database context
                 with app.app_context():
                     study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id.like(self.__study_case_execution_id)).first()
+                    
                     config = Config()
                     if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_K8S:
                         study_case_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_execution.study_case_id).filter(
@@ -124,6 +125,10 @@ class ExecutionMetrics:
                         memory_usage = round(psutil.virtual_memory()[3] / (1024 * 1024 * 1024), 2)
                         memory_metric = f"{memory_usage}/{memory_count} [GB]"
 
+                    if study_case_execution is None:
+                        # Study case does not exist, it was deleted from db
+                        app.logger.error("Study case execution not found in db, unable to store metrics")
+                        
                     study_case_execution.cpu_usage = cpu_metric
                     study_case_execution.memory_usage = memory_metric
 

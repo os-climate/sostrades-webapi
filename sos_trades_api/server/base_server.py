@@ -63,7 +63,7 @@ try:
 
     app.logger.info("Connecting to database")
     # Register database on app
-    db = SQLAlchemy(engine_options={"pool_pre_ping": True, "pool_recycle": 3600})
+    db = SQLAlchemy(engine_options=config.main_database_engine_options)
     db.init_app(app)
 
     # As flask application and database are initialized, then import
@@ -73,16 +73,16 @@ try:
     from sos_trades_api.models.custom_json_encoder import CustomJsonProvider
     from sos_trades_api.models.database_models import Group, User, UserProfile
     from sos_trades_api.tools.cache.study_case_cache import StudyCaseCache
-    from sos_trades_api.tools.logger.application_mysql_handler import (
-        ApplicationMySQLHandler,
+    from sos_trades_api.tools.logger.application_request_formatter import (
         ApplicationRequestFormatter,
     )
+    from sos_trades_api.tools.logger.application_sqlalchemy_handler import (
+        ApplicationSQLAlchemyHandler,
+    )
 
-    app.logger.info("Adding application logger handler")
-    app_mysql_handler = ApplicationMySQLHandler(
-        db=config.logging_database_data)
-    app_mysql_handler.setFormatter(ApplicationRequestFormatter(
-        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app.logger.info('Adding application logger handler')
+    app_mysql_handler = ApplicationSQLAlchemyHandler(connection_string=config.logging_database_uri, connect_args=config.logging_database_connect_args, engine_options=config.logging_database_engine_options)
+    app_mysql_handler.setFormatter(ApplicationRequestFormatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
     app.logger.addHandler(app_mysql_handler)
 
     app.logger.info("Configuring logger")
@@ -114,6 +114,46 @@ study_case_cache = StudyCaseCache(logger=app.logger)
 
 # Create authentication token (JWT) manager
 jwt = JWTManager(app)
+
+# in case of study server, save the active study file
+pod_name =os.environ.get("HOSTNAME", "")
+if pod_name.startswith("sostrades-study-server-"):
+    #retreive study id
+    match = re.search(r"(?<=sostrades-study-server-)\d+", pod_name)
+    if match:
+        #the number represents the study id
+        study_id = int(match.group(0))
+
+        from sos_trades_api.tools.active_study_management.active_study_management import (
+            ACTIVE_STUDY_FILE_NAME,
+            save_study_last_active_date,
+        )
+        # create the active study file if it doesn't exist
+        local_path = Config().local_folder_path
+        if local_path != "" and os.path.exists(local_path):
+            file_path = os.path.join(local_path, f"{ACTIVE_STUDY_FILE_NAME}{study_id}.txt")
+            if not os.path.exists(file_path):
+                save_study_last_active_date(study_id, datetime.now())
+
+
+
+def load_specific_study(study_identifier):
+    """
+    Load a specific study.
+    Generally used when a specific study is launched to manage an unique study at startup
+    :param study_identifier: database identifier of the study to load
+    :type study_identifier: integer
+
+    """
+    from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+        study_case_manager_loading,
+    )
+
+    with app.app_context():
+        study_manager = study_case_cache.get_study_case(study_identifier, False)
+        study_case_manager_loading(study_manager, False, False)
+        study_manager.loaded = True
+        study_manager.load_in_progress = False
 
 
 def database_process_setup():
@@ -208,9 +248,24 @@ def check_identity_provider_availability():
         settings_json_file = os.environ["GITHUB_OAUTH_SETTINGS"]
         if not os.path.exists(settings_json_file):
             app.logger.info(
-                "GitHub IdP/oauth settings.json file not found, SSO will be disabled")
+                "GitHub IdP/oauth settings.json file not found, Github IdP/oauth will be disabled")
         else:
             app.logger.info("GitHub IdP/oauth settings.json file found")
+
+    # -------- Keycloak oauth provider
+    if os.environ.get("KEYCLOAK_OAUTH_SETTINGS") is None:
+        app.logger.info(
+            "KEYCLOAK_OAUTH_SETTINGS configuration not found, Keycloak IdP/oauth will be disabled")
+    else:
+        app.logger.info("KEYCLOAK_OAUTH_SETTINGS environment variable found")
+
+        # Check that the settings.json file is present:
+        settings_json_file = os.environ["KEYCLOAK_OAUTH_SETTINGS"]
+        if not os.path.exists(settings_json_file):
+            app.logger.info(
+                "Keycloak IdP/oauth settings.json file not found, Keycloak IdP/oauth will be disabled")
+        else:
+            app.logger.info("Keycloak IdP/oauth settings.json file found")
 
 
 def database_check_study_case_state(with_deletion=False):
@@ -593,15 +648,16 @@ def update_all_pod_status_loop_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         update_all_pod_status,
     )
-    interval = 15 #seconds
     while True:
         try:
             update_all_pod_status()
             app.logger.info("Retrieved status of pod of kubernetes from launch_thread_update_pod_allocation_status()")
         except Exception as ex:
-            app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
-        if not Config().pod_watcher_activated:
-            time.sleep(interval)
+            try:
+                app.logger.exception("Exception while updating pod allocation status", exc_info=ex)
+            except:
+                # May happen that there is an issue when logging, so we pass
+                pass
 
 if app.config["ENVIRONMENT"] != UNIT_TEST:
 
@@ -941,10 +997,12 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         duration = 0
         if START_TIME in session:
             duration = time.time() - session[START_TIME]
-       
-        app.logger.info(
-            f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
-        )
+
+        # show requets logs except for probe request
+        if request.path != "/api/ping":
+            app.logger.info(
+                f"{request.remote_addr}, {request.method}, {request.scheme}, {request.full_path}, {response.status}, {duration} sec.",
+            )
 
         # Enable CORS requests for local development
         # The following will allow the local angular-cli development environment to
@@ -969,3 +1027,6 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return make_response(jsonify("pong"), 200)
+
+
+

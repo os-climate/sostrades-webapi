@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+import importlib.util
 import os
 import shutil
 import sys
@@ -41,6 +41,7 @@ from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
 from sostrades_core.tools.rw.load_dump_dm_data import DirectLoadDump
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
+from sostrades_core.tools.tree.treenode import TreeNode
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 
@@ -346,11 +347,10 @@ def _create_study_case(study_case_manager, study_case_identifier, reference, fro
 
         study_case = None
         with app.app_context():
-            study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_identifier).first()
+            study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+
 
             if from_type == StudyCase.FROM_REFERENCE:
-
                 # Get reference path
                 reference_path = f"{study_case.repository}.{study_case.process}.{reference}"
 
@@ -395,10 +395,10 @@ def _create_study_case(study_case_manager, study_case_identifier, reference, fro
 
                 reference_basepath = Config().reference_root_dir
 
+                db.session.add(study_case)
                 # Build reference folder base on study process name and
                 # repository
-                reference_folder = join(
-                    reference_basepath, study_case.repository, study_case.process, reference)
+                reference_folder = join(reference_basepath, study_case.repository, study_case.process, reference)
 
                 # Get ref generation ID associated to this ref
                 reference_identifier = f"{study_case.repository}.{study_case.process}.{reference}"
@@ -411,10 +411,9 @@ def _create_study_case(study_case_manager, study_case_identifier, reference, fro
 
             elif from_type == "UsecaseData":
 
-                # then load data
-                threading.Thread(
-                    target=study_case_manager_loading_from_usecase_data,
-                    args=(study_case_manager, False, False, study_case.repository, study_case.process, reference)).start()
+                db.session.add(study_case)
+                if study_case_manager.load_status == LoadStatus.NONE:
+                    study_case_manager.load_status = LoadStatus.IN_PROGESS
 
             
     except:
@@ -426,7 +425,178 @@ def _create_study_case(study_case_manager, study_case_identifier, reference, fro
         raise Exception(study_case_manager.error_message)
 
 
-def _copy_study_case(study_manager, study_id, source_study_case_identifier):
+def light_load_study_case(study_id, reload=False):
+    """
+    Launch only the load study in cache
+    :params: study_id, id of the study to load
+    :type: integer
+    :params: study_access_right, information about the access right needed for the study
+    :type: AccessRights enum
+    """
+    study_manager = study_case_cache.get_study_case(study_id, False)
+    study_manager.detach_logger()
+    if reload:
+        study_manager.study_case_manager_reload_backup_files()
+        study_manager.reset()
+
+    if study_manager.load_status == LoadStatus.NONE:
+        study_case_manager_loading(study_manager, False, False)
+
+    study_manager.attach_logger()
+    return study_manager
+
+def get_study_load_status(study_id):
+    """
+    Check study case is in cache and return its status
+    """
+    isLoaded = study_case_cache.is_study_case_cached(study_id)
+    status = LoadStatus.NONE
+    if isLoaded:
+        study_manager = study_case_cache.get_study_case(study_id, False, False)
+        status = study_manager.load_status
+
+    return status
+
+
+def load_study_case(study_id, study_access_right, user_id, reload=False):
+    """
+    Retrieve all the study cases shared groups names list from user_id
+    :params: study_id, id of the study to load
+    :type: integer
+    :params: study_access_right, information about the access right needed for the study
+    :type: AccessRights enum
+    :params: user_id, user id that want to access the study (to get preferences)
+    :type: integer
+    :params: reload, indicates if the study must be reloaded, false by default
+    :type: boolean
+    """
+    start_time = time.time()
+    study_manager = study_case_cache.get_study_case(study_id, False)
+
+
+    cache_duration = time.time() - start_time
+    if reload:
+        study_manager.study_case_manager_reload_backup_files()
+        study_manager.delete_loaded_study_case_in_json_file()
+        study_case_cache.delete_study_case_from_cache(study_id)
+        study_manager = study_case_cache.get_study_case(study_id, False)
+        
+    read_only = study_access_right == AccessRights.COMMENTER
+    no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+
+    launch_load_study_in_background(study_manager,  no_data, read_only)
+
+    if study_manager.load_status == LoadStatus.IN_ERROR:
+        raise Exception(study_manager.error_message)
+
+
+    loaded_study_case = LoadedStudyCase(
+        study_manager, no_data, read_only, user_id)
+    loading_duration = time.time() - start_time
+
+    #get execution status
+    study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
+    if study_case is not None and study_case.current_execution_id is not None:
+
+        study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
+        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+        loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+        loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
+
+
+    app.logger.info(f"load_study_case {study_id}, get cache: {cache_duration}")
+    app.logger.info(f"load_study_case {study_id}, loading:{loading_duration} ")
+
+    # 22-09-2022: Update: add Read_only_mode as it is loaded so that after a study creation,
+    # if the study is DONE, the study is opened in read only
+    if study_manager.load_status == LoadStatus.LOADED:
+        process_metadata = load_processes_metadata(
+            [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
+
+        repository_metadata = load_repositories_metadata(
+            [loaded_study_case.study_case.repository])
+
+        loaded_study_case.study_case.apply_ontology(
+            process_metadata, repository_metadata)
+
+        if study_access_right == AccessRights.MANAGER:
+            loaded_study_case.study_case.is_manager = True
+        elif study_access_right == AccessRights.CONTRIBUTOR:
+            loaded_study_case.study_case.is_contributor = True
+        elif study_access_right == AccessRights.COMMENTER:
+            loaded_study_case.study_case.is_commenter = True
+        else:
+            loaded_study_case.study_case.is_restricted_viewer = True
+        end_loading_duration = time.time() - start_time
+
+        # Read dashboard and set it to the loaded studycase
+        # If the root process is at done
+        if study_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
+            loaded_study_case.dashboard = get_study_dashboard_in_file(study_id)
+
+        end_dashboard_duration = time.time() - start_time
+        app.logger.info(
+            f"load_study_case {study_id}, end loading:{end_loading_duration} ")
+        app.logger.info(
+            f"load_study_case {study_id}, dashboard:{end_dashboard_duration} ")
+
+        # Add this study in last study opened in database
+        add_last_opened_study_case(study_id, user_id)
+
+    # Return logical treeview coming from execution engine
+    return loaded_study_case
+
+
+
+def launch_load_study_in_background(study_manager,  no_data, read_only):
+    """
+    Launch only the background thread
+    """
+    if study_manager.load_status == LoadStatus.NONE:
+        study_manager.load_status = LoadStatus.IN_PROGESS
+        threading.Thread(
+            target=study_case_manager_loading, args=(study_manager, no_data, read_only)).start()
+
+
+def load_study_case_with_read_only_mode(study_id, study_access_right, user_id):
+     # Proceeding after rights verification
+    # Get readonly file, in case of a restricted viewer get with no_data
+    study_json = get_study_in_read_only_mode(
+        study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
+
+    # check in read only file that the study status is DONE
+    if study_json is not None and study_json != "null":
+        study_case_value = study_json.get("study_case")
+        if study_case_value is not None:
+            # launch the loading in background
+            study_manager = study_case_cache.get_study_case(study_id, False)
+            read_only = study_access_right == AccessRights.COMMENTER
+            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+            launch_load_study_in_background(
+                study_manager,  no_data, read_only)
+            # set study access rights
+            if study_access_right == AccessRights.MANAGER:
+                study_json["study_case"]["is_manager"] = True
+            elif study_access_right == AccessRights.CONTRIBUTOR:
+                study_json["study_case"]["is_contributor"] = True
+            elif study_access_right == AccessRights.COMMENTER:
+                study_json["study_case"]["is_commenter"] = True
+            else:
+                study_json["study_case"]["is_restricted_viewer"] = True
+
+            # Add this study in last study opened in database
+            add_last_opened_study_case(study_id, user_id)
+
+            return study_json
+
+    # If the study is not in read only mode, it is normally loaded
+    loaded_study = load_study_case(study_id, study_access_right, user_id)
+
+    return loaded_study
+
+
+
+def copy_study_case(study_id, source_study_case_identifier, user_id):
     """
     copy an existing study case with a new name
     :param study_id: study case identifier to modify
@@ -1181,16 +1351,13 @@ def check_study_is_still_active_or_kill_pod():
     """
     with app.app_context():
         config = Config()
-        app.logger.info("Start check on active study pod")
         last_hours = config.study_pod_delay
-        app.logger.info(f"Start check on active study pod since {last_hours} hour(s)")
-        app.logger.info(f"Server mode: {config.server_mode}")
+        app.logger.debug(f"Start check on active study pod since {last_hours} hour(s)")
 
         if config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
             #delete allocation in db
 
             inactive_studies = []
-            app.logger.info("Start check studies")
             try:
                 inactive_studies =  check_studies_last_active_date(last_hours, app.logger)
             except Exception as ex:
@@ -1207,3 +1374,15 @@ def check_study_is_still_active_or_kill_pod():
                 allocations_to_delete.append(allocation)
             #delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
+
+
+def get_markdown_documentation(study_id, discipline_key):
+    spec = importlib.util.find_spec(discipline_key)
+    # for the doc of a process, spec.origin = process_folder\__init__.py
+    if '__init__.py' in spec.origin:
+        filepath = spec.origin.split('__init__.py')[0]
+    else:
+        # for the doc of a discipline, spec.origin = discipline_folder\discipline_name.py
+        filepath = spec.origin.split('.py')[0]
+    markdown_data = TreeNode.get_markdown_documentation(filepath)
+    return markdown_data

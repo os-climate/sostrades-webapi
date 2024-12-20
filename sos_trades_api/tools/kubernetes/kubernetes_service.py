@@ -431,6 +431,7 @@ def watch_pod_events(logger, namespace):
         logger.info("Finished namespace stream.")
     except urllib3.exceptions.ReadTimeoutError as exception:
         #time out, the watcher will be restarted
+        logger.info("Expected timeout in stream to retrieve pod events.")
         pass
 
 
@@ -449,6 +450,11 @@ def get_pod_status_and_reason_from_event(event):
         if container_status.get("ready") is False:
             waiting_state = container_status.get("state").get("waiting")
             terminated_state = container_status.get("state").get("terminated")
+            running_state = container_status.get("state").get("running")
+
+            if running_state is not None:
+                # the container is up but the server is not ready
+                status_phase = "Pending"
 
             # if status in error get the reason
             if waiting_state is not None and waiting_state.get("reason") is not None:

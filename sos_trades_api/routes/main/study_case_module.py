@@ -28,7 +28,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
-    get_study_case,
+    get_markdown_documentation,
     get_study_data_file_path,
     get_study_data_stream,
     get_study_load_status,
@@ -86,7 +86,6 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
-
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -105,8 +104,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loadedStudy = get_study_case(user.id, study_id, study_access_right, False)
-
+        loadedStudy = load_or_create_study_case(user.id, study_id, study_access_right)
         loadedStudy_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec")
@@ -317,6 +315,29 @@ def get_study_data_file_by_study_case_id(study_id):
         # Proceeding after rights verification
         file_path = get_study_data_stream(study_id)
         return send_file(file_path)
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+
+@app.route("/api/main/study-case/<int:study_id>/markdown-documentation", methods=["POST"])
+@auth_required
+def get_markdown_documentation_by_study_case_id(study_id):
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about study case")
+        
+        discipline_key = request.form.get("discipline_key", None)
+        if discipline_key is None:
+            raise BadRequest("Missing mandatory parameter: discipline key")
+        
+
+        resp = make_response(
+            jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
+        
+        return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 

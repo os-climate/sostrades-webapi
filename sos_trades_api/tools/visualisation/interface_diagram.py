@@ -58,28 +58,31 @@ class InterfaceDiagramGenerator:
             )
 
     def generate_interface_diagram_data(self):
-        discipline_node_list = self.generate_disciplines_data()
-        parameter_nodes_list, links_list = self.generate_parameters_and_links_data(
-            discipline_node_list=discipline_node_list,
-        )
-        parameter_nodes_list = self.add_ontology_metadata_to_parameter(
-            parameter_nodes_list,
-        )
-        discipline_node_list = self.filter_discipline_with_no_exchanges(
-            discipline_node_list=discipline_node_list, links_list=links_list,
-        )
-        digraph = self.create_dot_graph(
-            discipline_node_list=discipline_node_list,
-            parameter_nodes_list=parameter_nodes_list,
-            links_list=links_list,
-        )
-        self.interface_diagram_data = {
-            "discipline_nodes": discipline_node_list,
-            "parameter_nodes": parameter_nodes_list,
-            "links": links_list,
-            "dotString": digraph.source,
-        }
-        return self.interface_diagram_data
+        try:
+            discipline_node_list = self.generate_disciplines_data()
+            parameter_nodes_list, links_list = self.generate_parameters_and_links_data(
+                discipline_node_list=discipline_node_list,
+            )
+            parameter_nodes_list = self.add_ontology_metadata_to_parameter(
+                parameter_nodes_list,
+            )
+            discipline_node_list = self.filter_discipline_with_no_exchanges(
+                discipline_node_list=discipline_node_list, links_list=links_list,
+            )
+            digraph = self.create_dot_graph(
+                discipline_node_list=discipline_node_list,
+                parameter_nodes_list=parameter_nodes_list,
+                links_list=links_list,
+            )
+            self.interface_diagram_data = {
+                "discipline_nodes": discipline_node_list,
+                "parameter_nodes": parameter_nodes_list,
+                "links": links_list,
+                "dotString": digraph.source,
+            }
+            return self.interface_diagram_data
+        except Exception as ex:
+            raise ex
 
     def generate_disciplines_data(self) -> list:
         discipline_node_list = []
@@ -102,7 +105,7 @@ class InterfaceDiagramGenerator:
                     self.couplings_list = self.couplings_list + discipline_coupling_list
                 classname = disc_dict.get("classname", None)
                 if classname == "ProxyDiscipline":
-                    classname = type(disc.mdo_discipline_wrapp.wrapper).__name__
+                    classname = type(disc.discipline_wrapp.wrapper).__name__
                 if classname not in ["SoSCoupling", "ProxyCoupling"]:
                     disc_id = ".".join(ns_node.split(".")[1:]) + "." + classname
                     if disc_id not in unique_disc_ids:
@@ -126,133 +129,136 @@ class InterfaceDiagramGenerator:
                         discipline_node_list.append(disc_node_info)
         return discipline_node_list
 
-    def generate_parameters_and_links_data(self, discipline_node_list: list) -> list:
+    def generate_parameters_and_links_data(self, discipline_node_list: list) -> tuple:
         links_list = []
         parameters_list = []
         unique_links_ids = set()
         unique_parameters_ids = set()
         parameters_node_info = None
-        for (disc_from, disc_to, edge_parameters_list) in self.couplings_list:
-            disc_from_classname = type(disc_from).__name__
-            if disc_from_classname == "ProxyDiscipline":
-                disc_from_classname = type(
-                    disc_from.mdo_discipline_wrapp.wrapper,
-                ).__name__
-            disc_from_id = (
-                ".".join(disc_from.get_disc_full_name().split(".")[1:])
-                + "."
-                + disc_from_classname
-            )
-            disc_to_classname = type(disc_to).__name__
-            if disc_to_classname == "ProxyDiscipline":
-                disc_to_classname = type(disc_to.mdo_discipline_wrapp.wrapper).__name__
-            disc_to_id = (
-                ".".join(disc_to.get_disc_full_name().split(".")[1:])
-                + "."
-                + disc_to_classname
-            )
-            disc_from_namespace_list = [
-                d["namespace"] for d in discipline_node_list if d["id"] == disc_from_id
-            ]
-            disc_from_namespace = (
-                disc_from_namespace_list[0]
-                if disc_from_namespace_list
-                else disc_from_id
-            )
+        try:
+            for (disc_from, disc_to, edge_parameters_list) in self.couplings_list:
+                disc_from_classname = type(disc_from).__name__
+                if disc_from_classname == "ProxyDiscipline":
+                    disc_from_classname = type(
+                        disc_from.discipline_wrapp.wrapper,
+                    ).__name__
+                disc_from_id = (
+                    ".".join(disc_from.get_disc_full_name().split(".")[1:])
+                    + "."
+                    + disc_from_classname
+                )
+                disc_to_classname = type(disc_to).__name__
+                if disc_to_classname == "ProxyDiscipline":
+                    disc_to_classname = type(disc_to.discipline_wrapp.wrapper).__name__
+                disc_to_id = (
+                    ".".join(disc_to.get_disc_full_name().split(".")[1:])
+                    + "."
+                    + disc_to_classname
+                )
+                disc_from_namespace_list = [
+                    d["namespace"] for d in discipline_node_list if d["id"] == disc_from_id
+                ]
+                disc_from_namespace = (
+                    disc_from_namespace_list[0]
+                    if disc_from_namespace_list
+                    else disc_from_id
+                )
 
-            disc_to_namespace_list = [
-                d["namespace"] for d in discipline_node_list if d["id"] == disc_to_id
-            ]
-            disc_to_namespace = (
-                disc_to_namespace_list[0] if disc_to_namespace_list else disc_to_id
-            )
+                disc_to_namespace_list = [
+                    d["namespace"] for d in discipline_node_list if d["id"] == disc_to_id
+                ]
+                disc_to_namespace = (
+                    disc_to_namespace_list[0] if disc_to_namespace_list else disc_to_id
+                )
 
-            for output_param in edge_parameters_list:
-                param_id = ".".join(output_param.split(".")[1:])
-                output_param_data = disc_from.ee.dm.get_data(output_param)
-                parameter_name = output_param_data.get("var_name", "")
-                parameter_type = output_param_data.get("type", "")
-                descriptor = None
-                value = output_param_data.get("value", None)
-                if value is not None:
-                    if parameter_type == "dataframe":
-                        descriptor = list(value.columns)
-                    elif parameter_type == "dict":
-                        descriptor = list(value.keys())
+                for output_param in edge_parameters_list:
+                    param_id = ".".join(output_param.split(".")[1:])
+                    output_param_data = disc_from.ee.dm.get_data(output_param)
+                    parameter_name = output_param_data.get("var_name", "")
+                    parameter_type = output_param_data.get("type", "")
+                    descriptor = None
+                    value = output_param_data.get("value", None)
+                    if value is not None:
+                        if parameter_type == "dataframe":
+                            descriptor = list(value.columns)
+                        elif parameter_type == "dict":
+                            descriptor = list(value.keys())
 
-                # by default, we retrieve the namespace of the discipline outputting this parameter
-                parameter_namespace = disc_from_namespace
+                    # by default, we retrieve the namespace of the discipline outputting this parameter
+                    parameter_namespace = disc_from_namespace
 
-                # check if disc_from is a coupling
-                if type(disc_from).__name__ == "SoSCoupling":
-                    # in that case, we will try to found the real discipline from which the parameter is outputting
-                    disc_origin_uuid = self.study.ee.dm.get_data(output_param)[
-                        "model_origin"
-                    ]
-                    disc_origin = self.study.ee.dm.get_discipline(disc_origin_uuid)
-                    disc_from_id = (
-                        ".".join(disc_origin.get_disc_full_name().split(".")[1:])
-                        + "."
-                        + type(disc_origin).__name__
-                    )
-                    disc_origin_namespace_list = [
-                        d["namespace"]
-                        for d in discipline_node_list
-                        if d["id"] == disc_from_id
-                    ]
-                    parameter_namespace = (
-                        disc_origin_namespace_list[0]
-                        if disc_origin_namespace_list
-                        else disc_from_id
-                    )
-                if type(disc_to).__name__ == "SoSCoupling":
-                    # case that is not yet taken into account
-                    print("parameter going to a SoSCouling, not taken care of")
+                    # check if disc_from is a coupling
+                    if type(disc_from).__name__ == "SoSCoupling":
+                        # in that case, we will try to found the real discipline from which the parameter is outputting
+                        disc_origin_uuid = self.study.ee.dm.get_data(output_param)[
+                            "model_origin"
+                        ]
+                        disc_origin = self.study.ee.dm.get_discipline(disc_origin_uuid)
+                        disc_from_id = (
+                            ".".join(disc_origin.get_disc_full_name().split(".")[1:])
+                            + "."
+                            + type(disc_origin).__name__
+                        )
+                        disc_origin_namespace_list = [
+                            d["namespace"]
+                            for d in discipline_node_list
+                            if d["id"] == disc_from_id
+                        ]
+                        parameter_namespace = (
+                            disc_origin_namespace_list[0]
+                            if disc_origin_namespace_list
+                            else disc_from_id
+                        )
+                    if type(disc_to).__name__ == "SoSCoupling":
+                        # case that is not yet taken into account
+                        print("parameter going to a SoSCouling, not taken care of")
 
-                # add parameter node if does not exists
-                if param_id not in unique_parameters_ids:
-                    unique_parameters_ids.add(param_id)
-                    parameters_node_info = {
-                        "id": param_id,
-                        "namespace": parameter_namespace,
-                        "type": "ParameterNode",
-                        "parameter_name": parameter_name,
-                        "datatype": parameter_type,
-                        "unit": output_param_data.get("unit", ""),
-                        "descriptor": descriptor,
-                    }
-                parameters_list.append(parameters_node_info)
+                    # add parameter node if does not exists
+                    if param_id not in unique_parameters_ids:
+                        unique_parameters_ids.add(param_id)
+                        parameters_node_info = {
+                            "id": param_id,
+                            "namespace": parameter_namespace,
+                            "type": "ParameterNode",
+                            "parameter_name": parameter_name,
+                            "datatype": parameter_type,
+                            "unit": output_param_data.get("unit", ""),
+                            "descriptor": descriptor,
+                        }
+                    parameters_list.append(parameters_node_info)
 
-                # add link from out disc to parameter and from parameter to in
-                # disc
-                out_link_id = f"{disc_from_id}->{param_id}"
-                in_link_id = f"{param_id}->{disc_to_id}"
-                weight = 0
-                if out_link_id not in unique_links_ids:
-                    unique_links_ids.add(out_link_id)
-                    out_link_info = {
-                        "id": out_link_id,
-                        "from": disc_from_id,
-                        "to": param_id,
-                        "constraint": "false",
-                        "weight": weight,
-                    }
-                    links_list.append(out_link_info)
-                if in_link_id not in unique_links_ids:
-                    unique_links_ids.add(in_link_id)
-                    constraint = "true"
-                    if disc_from_namespace == disc_to_namespace:
-                        constraint = "false"
-                        weight = 3
-                    in_link_info = {
-                        "id": in_link_id,
-                        "from": param_id,
-                        "to": disc_to_id,
-                        "constraint": constraint,
-                        "weight": weight,
-                    }
-                    links_list.append(in_link_info)
-        return parameters_list, links_list
+                    # add link from out disc to parameter and from parameter to in
+                    # disc
+                    out_link_id = f"{disc_from_id}->{param_id}"
+                    in_link_id = f"{param_id}->{disc_to_id}"
+                    weight = 0
+                    if out_link_id not in unique_links_ids:
+                        unique_links_ids.add(out_link_id)
+                        out_link_info = {
+                            "id": out_link_id,
+                            "from": disc_from_id,
+                            "to": param_id,
+                            "constraint": "false",
+                            "weight": weight,
+                        }
+                        links_list.append(out_link_info)
+                    if in_link_id not in unique_links_ids:
+                        unique_links_ids.add(in_link_id)
+                        constraint = "true"
+                        if disc_from_namespace == disc_to_namespace:
+                            constraint = "false"
+                            weight = 3
+                        in_link_info = {
+                            "id": in_link_id,
+                            "from": param_id,
+                            "to": disc_to_id,
+                            "constraint": constraint,
+                            "weight": weight,
+                        }
+                        links_list.append(in_link_info)
+            return parameters_list, links_list
+        except Exception as ex:
+            raise ex
 
     def create_dot_graph(
         self, discipline_node_list: list, parameter_nodes_list: list, links_list: list,

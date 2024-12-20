@@ -6,15 +6,17 @@
 
   // Application data are stored in MySQL database using python SqlAchemy ORM
   "SQL_ALCHEMY_DATABASE": {
-    "HOST" : "", //server network IP
-    "PORT" : ,//server_port
-    "USER_ENV_VAR": "SQL_ACCOUNT",//Name of the environment variable that will store username used for connection
-    "PASSWORD_ENV_VAR": "SQL_PASSWORD",//Name of the environment variable that will store password used for connection
-    "DATABASE_NAME": "",// database name
-    // Enable or not SSL settings to connect to database (true or false)
-    "SSL": true
+    "ENGINE_OPTIONS": {},// Options to create engine in sqlalchemy
+    "CONNECT_ARGS": {
+      // "ssl":true
+      // "charset": "utf8mb4"
+    },
+    "URI": "sqlite:///my-path-to/sostrades-data.db", // connection uri for database, can be sqlite:///path_to_file or mysql+mysqldb://{USER}:{PASSWORD}@HOST:PORT/sostrades-data
+    "URI_ENV_VARS" : { // used to configure uri with environment variable
+      // "USER": "SQL_ACCOUNT"
+      // "PASSWORD": "SQL_PASSWORD"
+    }
   },
-
   // Enable signals to get notified before and after changes are committed to the database.
   // Set to False (for performance reason)
   "SQLALCHEMY_TRACK_MODIFICATIONS": false,
@@ -22,13 +24,16 @@
   // Logging data are stored in a separated database.
   // This database is not access using the ORM, the following information must be set:
   "LOGGING_DATABASE": {
-    "HOST": "", //server network IP
-    "PORT": ,// server_port
-    "USER_ENV_VAR": "LOG_USER", //Name of the environment variable that will store username use for connection,
-    "PASSWORD_ENV_VAR": "LOG_PASSWORD", //Name of the environment variable that will store password use for connection
-    "DATABASE_NAME": "",
-    // Enable or not SSL settings to connect to database (true or false)
-    "SSL": true
+    "ENGINE_OPTIONS": {},// Options to create engine in sqlalchemy
+    "CONNECT_ARGS": {
+      // "ssl":true
+      // "charset": "utf8mb4"
+    },
+    "URI": "sqlite:///my-path-to/sostrades-log.db", // connection uri for database, can be sqlite:///path_to_file or mysql+mysqldb://{USER}:{PASSWORD}@HOST:PORT/sostrades-log
+    "URI_ENV_VARS" : { // used to configure uri with environment variable
+      // "USER": "LOG_USER"
+      // "PASSWORD": "LOG_PASSWORD"
+    }
   },
 
   // Token management section

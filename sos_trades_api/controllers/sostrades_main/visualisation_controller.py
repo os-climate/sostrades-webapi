@@ -72,14 +72,17 @@ def get_n2_diagram_graph_data(study_id):
 
     return generate_n2_matrix(study_case_manager)
 
+
 def get_interface_diagram_data(study_id):
     """
     Retrieve study case, interface diagram data
     """
     study = study_case_cache.get_study_case(study_id, False, False)
+    try:
+        # interface diagram generation
+        interface_diagram = InterfaceDiagramGenerator(study)
+        result = interface_diagram.generate_interface_diagram_data()
 
-    # interface diagram generation
-    interface_diagram= InterfaceDiagramGenerator(study)
-    result =interface_diagram.generate_interface_diagram_data()
-
-    return result
+        return result
+    except Exception as ex:
+        raise ex

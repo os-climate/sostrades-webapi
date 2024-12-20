@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 import os
 import os.path
 from builtins import classmethod
@@ -335,6 +336,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                              "Copied study case process does not match, test set up process name used")
             self.assertEqual(study_case_copied.repository, self.test_repository_name,
                              "Copied study case repository does not match, test set up repository name used")
+            
+            # Add some delay for the execution to end to avoid issues in logs after database cleanup
+            sleep(20)
 
     def test_update_study_parameters(self):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -1097,7 +1101,3 @@ class TestStudy(DatabaseUnitTestConfiguration):
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
 
-if __name__=='__main__':
-    cls = TestStudy()
-    cls.setUp()
-    cls.test_copy_study_case()
