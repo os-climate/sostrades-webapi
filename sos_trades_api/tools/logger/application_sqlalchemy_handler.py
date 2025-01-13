@@ -18,7 +18,7 @@ from logging import Handler, LogRecord, _defaultFormatter
 from time import localtime, strftime
 
 from flask import has_request_context, request
-from sqlalchemy import Column, Integer, Sequence, Text, create_engine
+from sqlalchemy import Column, Integer, Sequence, Text, create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -64,9 +64,9 @@ class ApplicationSQLAlchemyHandler(Handler):
         try:
             with self.engine.connect() as connection:
                 if connection.closed:
-                    raise RuntimeError("Connection is closed")
+                    print("Connection is closed")
                 # Test with a simple request
-                connection.execute("SELECT 1")
+                connection.execute(text("SELECT 1"))
         except Exception as e:
             raise RuntimeError(f"Failed to verify database connection: {e}")
     
