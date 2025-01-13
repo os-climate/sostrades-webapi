@@ -64,7 +64,8 @@ try:
     app.logger.info("Connecting to database")
     # Register database on app
     db = SQLAlchemy(engine_options=config.main_database_engine_options)
-    db.init_app(app)
+    with app.app_context():
+        db.init_app(app)
 
     # As flask application and database are initialized, then import
     # sos_trades_api dependencies
