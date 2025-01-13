@@ -48,20 +48,27 @@ class ApplicationSQLAlchemyHandler(Handler):
     This handler writes log records to a MySQL database using SQLAlchemy.
     """
 
-    def __init__(self, connection_string:str, connect_args:dict, engine_options:dict):
-        """
-        Initialize the handler with the database connection details.
-
-        Args:
-            connection_string (str): The database connection URL.
-            connect_args (dict): Additional arguments to be passed to the database engine.
-            engine_options (dict): Additional arguments to be passed when creating engine.
-        """
+    def __init__(self, connection_string: str, connect_args: dict, engine_options: dict):
         super().__init__()
 
-        self.engine = create_engine(url=connection_string, connect_args=connect_args, **engine_options)
-        Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
+        try:
+            self.engine = create_engine(url=connection_string, connect_args=connect_args, **engine_options)
+            self._verify_connection()
+            Base.metadata.create_all(self.engine)
+            self.Session = sessionmaker(bind=self.engine)
+        except Exception as ex:
+            raise RuntimeError(f'Error during handler initialization: {ex}')
+
+    def _verify_connection(self):
+        """Check if the connexion is valid"""
+        try:
+            with self.engine.connect() as connection:
+                if connection.closed:
+                    raise RuntimeError("Connection is closed")
+                # Test with a simple request
+                connection.execute("SELECT 1")
+        except Exception as e:
+            raise RuntimeError(f"Failed to verify database connection: {e}")
     
     def format_db_time(self, record:LogRecord):
         """
