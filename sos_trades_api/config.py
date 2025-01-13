@@ -1,6 +1,6 @@
 '''
 Copyright 2022 Airbus SAS
-Modifications on 2023/11/24 Copyright 2023 Capgemini
+Modifications on 2023/11/24-2025/01/13 Copyright 2023 Capgemini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -555,7 +555,8 @@ class Config:
 
         # Set sql alchemy uri
         flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.main_database_uri})
-        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": {'connect_args': self.main_database_connect_args}})
+        main_engine_options = self.__main_database_engine_options | {'connect_args': self.main_database_connect_args}
+        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": main_engine_otpions})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 
