@@ -556,7 +556,7 @@ class Config:
         # Set sql alchemy uri
         flask_config_dict.update({"SQLALCHEMY_DATABASE_URI": self.main_database_uri})
         main_engine_options = self.__main_database_engine_options | {'connect_args': self.main_database_connect_args}
-        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": main_engine_otpions})
+        flask_config_dict.update({"SQLALCHEMY_ENGINE_OPTIONS": main_engine_options})
         # Set Secret key
         flask_config_dict.update({"SECRET_KEY": self.secret_key})
 
