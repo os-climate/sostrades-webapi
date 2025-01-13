@@ -64,9 +64,10 @@ class ApplicationSQLAlchemyHandler(Handler):
         try:
             with self.engine.connect() as connection:
                 if connection.closed:
-                    print("Connection is closed")
+                    print("Connexion is closed")
                 # Test with a simple request
                 connection.execute(text("SELECT 1"))
+                print("Connexion is established")
         except Exception as e:
             raise RuntimeError(f"Failed to verify database connection: {e}")
     
