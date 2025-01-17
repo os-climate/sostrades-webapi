@@ -30,11 +30,11 @@ class SoSExecutionWorkflow:
     Class to construct an execution workflow from GEMS execution sequence
     """
 
-    def __init__(self, GEMS_graph=None):
+    def __init__(self, gems_graph=None):
         """
         Constructor
         """
-        self.GEMS_graph = GEMS_graph
+        self.gems_graph = gems_graph
         self.nodes_dict = {}
         self.links_dict = {}
         self.unique_disc = set()
@@ -49,7 +49,7 @@ class SoSExecutionWorkflow:
         start_time = time.time()
         logger = logging.getLogger(__name__)
         self.construct_execution_workflow_graph(
-            GEMS_graph=self.GEMS_graph, level=0, parentId=None,
+            gems_graph=self.gems_graph, level=0, parent_id=None,
         )
 
         # test to simplify workflow by removing scatter data
@@ -68,13 +68,13 @@ class SoSExecutionWorkflow:
 
         return ""
 
-    def construct_execution_workflow_graph(self, GEMS_graph, level, parentId):
+    def construct_execution_workflow_graph(self, gems_graph, level, parent_id):
         root_disc_id = []
         # create initial links between leaf nodes
-        self.get_initial_links(GEMS_graph=GEMS_graph)
+        self.get_initial_links(gems_graph=gems_graph)
 
         # go through the sequence to create nodes
-        for parallel_tasks in GEMS_graph.get_execution_sequence():
+        for parallel_tasks in gems_graph.get_execution_sequence():
             if len(parallel_tasks) == 1:
                 # it is a sequence composed of only one discipline or MDA
                 # no need to create a dedicated node for it
@@ -84,16 +84,16 @@ class SoSExecutionWorkflow:
                     disc = parallel_tasks[0][0]
 
                     disc_info = self.create_mono_disc_node(
-                        disc=disc, level=level, parentId=parentId, GEMS_graph=GEMS_graph,
+                        disc=disc, level=level, parent_id=parent_id, gems_graph=gems_graph,
                     )
 
                 else:
                     # it is a sequence composed on one MDA
-                    disc_info = self.create_MDA_node(
+                    disc_info = self.create_mda_node(
                         cycle_disc=parallel_tasks[0],
                         level=level,
-                        parentId=parentId,
-                        GEMS_graph=GEMS_graph,
+                        parent_id=parent_id,
+                        gems_graph=gems_graph,
                     )
 
             else:
@@ -101,14 +101,14 @@ class SoSExecutionWorkflow:
                 disc_info = self.create_parallel_node(
                     parallel_tasks=parallel_tasks,
                     level=level,
-                    parentId=parentId,
-                    GEMS_graph=GEMS_graph,
+                    parent_id=parent_id,
+                    gems_graph=gems_graph,
                 )
 
             root_disc_id.append(disc_info["id"])
         return root_disc_id
 
-    def create_mono_disc_node(self, disc, level, parentId, GEMS_graph):
+    def create_mono_disc_node(self, disc, level, parent_id, gems_graph):
         disc_node_info = {}
         disc_node_info["id"] = disc.disc_id
         disc_node_info["type"] = "DisciplineNode"
@@ -120,7 +120,7 @@ class SoSExecutionWorkflow:
         disc_node_info["label"] = disc_name
         disc_node_info["status"] = disc.status
         disc_node_info["level"] = level
-        disc_node_info["parent"] = parentId
+        disc_node_info["parent"] = parent_id
         disc_node_info["path"] = disc.get_module()
 
         # add discipline class to unique list. useful to retrieve ontology
@@ -134,18 +134,18 @@ class SoSExecutionWorkflow:
             if type(disc).__name__ == "SoSCoupling":
                 # it is a Coupling
                 disc_node_info["type"] = "CouplingNode"
-                sub_GEMS_graph = disc.coupling_structure.graph
+                sub_gems_graph = disc.coupling_structure.graph
 
                 # add missing links between graphs
                 self.add_links_from_sub_nodes_to_current_graph(
-                    GEMS_graph=GEMS_graph,
+                    gems_graph=gems_graph,
                     coupling_disc_id=disc.disc_id,
-                    sub_GEMS_graph=sub_GEMS_graph,
+                    sub_gems_graph=sub_gems_graph,
                 )
 
                 # construct workflow for sub graph
                 root_disc_id_list = self.construct_execution_workflow_graph(
-                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id,
+                    gems_graph=sub_gems_graph, level=level + 1, parent_id=disc.disc_id,
                 )
 
                 children = root_disc_id_list
@@ -157,8 +157,8 @@ class SoSExecutionWorkflow:
                     self.create_mono_disc_node(
                         disc=disc_child,
                         level=level + 1,
-                        parentId=disc.disc_id,
-                        GEMS_graph=GEMS_graph,
+                        parent_id=disc.disc_id,
+                        gems_graph=gems_graph,
                     )
         elif hasattr(disc, "sos_disciplines"):
             if len(disc.sos_disciplines) == 1:
@@ -166,18 +166,18 @@ class SoSExecutionWorkflow:
                 # we need to retrieve sub coupling structure
                 sub_disc = disc.sos_disciplines[0]
                 disc_node_info["type"] = "CouplingNode"
-                sub_GEMS_graph = sub_disc.coupling_structure.graph
+                sub_gems_graph = sub_disc.coupling_structure.graph
 
                 # add missing links between graphs
                 self.add_links_from_sub_nodes_to_current_graph(
-                    GEMS_graph=GEMS_graph,
+                    gems_graph=gems_graph,
                     coupling_disc_id=disc.disc_id,
-                    sub_GEMS_graph=sub_GEMS_graph,
+                    sub_gems_graph=sub_gems_graph,
                 )
 
                 # construct workflow for sub graph
                 root_disc_id_list = self.construct_execution_workflow_graph(
-                    GEMS_graph=sub_GEMS_graph, level=level + 1, parentId=disc.disc_id,
+                    gems_graph=sub_gems_graph, level=level + 1, parent_id=disc.disc_id,
                 )
 
                 children = root_disc_id_list
@@ -190,11 +190,11 @@ class SoSExecutionWorkflow:
         return disc_node_info
 
     def add_links_from_sub_nodes_to_current_graph(
-        self, GEMS_graph, coupling_disc_id, sub_GEMS_graph,
+        self, gems_graph, coupling_disc_id, sub_gems_graph,
     ):
         # retrieve links that we will need to recreate
         coupling_out_links = []
-        couplings = GEMS_graph.get_disciplines_couplings()
+        couplings = gems_graph.get_disciplines_couplings()
         for (disc_from, disc_to, edge_parameters_list) in couplings:
             disc_from_id = disc_from.disc_id
             disc_to_id = disc_to.disc_id
@@ -225,7 +225,7 @@ class SoSExecutionWorkflow:
 
         # creating a dictionary of parameter and emitter discipline id
         parameter_emitter_disc = {}
-        for disc in sub_GEMS_graph.disciplines:
+        for disc in sub_gems_graph.disciplines:
             out_parameters = disc.get_output_data_names()
             for out_param in out_parameters:
                 parameter_emitter_disc[out_param] = disc.disc_id
@@ -257,7 +257,7 @@ class SoSExecutionWorkflow:
 
         # creating a dictionary of parameter and emitter discipline id
         parameter_input_disc = {}
-        for disc in sub_GEMS_graph.disciplines:
+        for disc in sub_gems_graph.disciplines:
             in_parameters = disc.get_input_data_names()
             for in_param in in_parameters:
                 if in_param in parameter_input_disc:
@@ -291,7 +291,7 @@ class SoSExecutionWorkflow:
                     }
                     self.links_dict[link_id] = link
 
-    def create_MDA_node(self, cycle_disc, level, parentId, GEMS_graph):
+    def create_mda_node(self, cycle_disc, level, parent_id, gems_graph):
 
         self.mda_count += 1
         mda_node_id = f"cycleDisc{self.mda_count}"
@@ -302,7 +302,7 @@ class SoSExecutionWorkflow:
             label=f"MDA {self.mda_count}",
             status="",
             level=level,
-            parent=parentId,
+            parent=parent_id,
             children=[],
             is_MDA=True,
         )
@@ -311,13 +311,13 @@ class SoSExecutionWorkflow:
             mda_node_info["children"].append(disc.disc_id)
 
             self.create_mono_disc_node(
-                disc=disc, level=level + 1, parentId=mda_node_id, GEMS_graph=GEMS_graph,
+                disc=disc, level=level + 1, parent_id=mda_node_id, gems_graph=gems_graph,
             )
 
         self.nodes_dict[mda_node_id] = mda_node_info
         return mda_node_info
 
-    def create_parallel_node(self, parallel_tasks, level, parentId, GEMS_graph):
+    def create_parallel_node(self, parallel_tasks, level, parent_id, gems_graph):
         self.step_count += 1
         parallel_node_id = f"parallelDiscs{self.step_count}"
         parallel_node_info = dict(
@@ -327,17 +327,17 @@ class SoSExecutionWorkflow:
             status="",
             disc_name="",
             level=level,
-            parent=parentId,
+            parent=parent_id,
             children=[],
             is_MDA=False,
         )
         for cycle_disc in parallel_tasks:
             if len(cycle_disc) > 1:
-                MDAnode = self.create_MDA_node(
+                MDAnode = self.create_mda_node(
                     cycle_disc=cycle_disc,
                     level=level + 1,
-                    parentId=parallel_node_id,
-                    GEMS_graph=GEMS_graph,
+                    parent_id=parallel_node_id,
+                    gems_graph=gems_graph,
                 )
 
                 parallel_node_info["children"].append(MDAnode["id"])
@@ -346,8 +346,8 @@ class SoSExecutionWorkflow:
                 node = self.create_mono_disc_node(
                     disc=disc,
                     level=level + 1,
-                    parentId=parallel_node_id,
-                    GEMS_graph=GEMS_graph,
+                    parent_id=parallel_node_id,
+                    gems_graph=gems_graph,
                 )
 
                 parallel_node_info["children"].append(node["id"])
@@ -355,8 +355,8 @@ class SoSExecutionWorkflow:
         self.nodes_dict[parallel_node_id] = parallel_node_info
         return parallel_node_info
 
-    def get_initial_links(self, GEMS_graph):
-        couplings = GEMS_graph.get_disciplines_couplings()
+    def get_initial_links(self, gems_graph):
+        couplings = gems_graph.get_disciplines_couplings()
         for (disc_from, disc_to, edge_parameters_list) in couplings:
             disc_from_id = disc_from.disc_id
             disc_to_id = disc_to.disc_id
@@ -371,7 +371,6 @@ class SoSExecutionWorkflow:
                 }
                 self.links_dict[link_id] = link
                 for output_param in edge_parameters_list:
-                    # param_name = output_param.split('.')[-1]
                     output_param_data = disc_from.ee.dm.get_data(output_param)
                     param_usage_name = f'{disc_from.get_module()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
                     self.links_dict[link_id]["parameters"].add(
@@ -380,12 +379,11 @@ class SoSExecutionWorkflow:
 
     def create_study_output_links(self):
         # retrieve last disciplines run
-        last_tasks = self.GEMS_graph.get_execution_sequence()[-1]
+        last_tasks = self.gems_graph.get_execution_sequence()[-1]
         for last_task in last_tasks:
             last_disc = last_task[0]
             last_disc_id = last_disc.disc_id
             last_outputs = last_disc.get_output_data_names()
-            # last_outputs = [n.split('.')[-1] for n in last_outputs]  # PBX
             if last_outputs != []:
                 # create an invisible node
                 self.output_node_count += 1
@@ -407,7 +405,6 @@ class SoSExecutionWorkflow:
                 link_id = f"{last_disc_id}->{output_node_id}"
                 parameters = set()
                 for output_param in last_outputs:
-                    # param_name = p.split('.')[-1]
                     output_param_data = last_disc.ee.dm.get_data(output_param)
                     param_usage_name = f'{last_disc.get_module()}_{output_param_data.get("io_type","")}put_{output_param_data.get("var_name","")}'
                     parameters.add(param_usage_name)
@@ -469,16 +466,16 @@ class SoSExecutionWorkflow:
         for outlink in outLinksDict.values():
             discToId = outlink["to"]
             discTo = self.nodes_dict[discToId]
-            parentId = discTo["parent"]
-            while parentId is not None:
-                if outlink["from"] != parentId:
-                    link_id = f'{outlink["from"]}->{parentId}'
+            parent_id = discTo["parent"]
+            while parent_id is not None:
+                if outlink["from"] != parent_id:
+                    link_id = f'{outlink["from"]}->{parent_id}'
                     if link_id not in self.links_dict:
                         # create links to parent node
                         link = {
                             "id": link_id,
                             "from": outlink["from"],
-                            "to": parentId,
+                            "to": parent_id,
                             "parameters": outlink["parameters"],
                             "type": outlink["type"],
                         }
@@ -489,22 +486,22 @@ class SoSExecutionWorkflow:
                             outlink["parameters"],
                         )
                         self.links_dict[link_id]["parameters"] = parameters
-                discToParent = self.nodes_dict[parentId]
-                parentId = discToParent["parent"]
+                discToParent = self.nodes_dict[parent_id]
+                parent_id = discToParent["parent"]
 
         # create in links to parent group nodes
         for inlink in inLinksDict.values():
             discFromId = inlink["from"]
             discFrom = self.nodes_dict[discFromId]
-            parentId = discFrom["parent"]
-            while parentId is not None:
-                if inlink["to"] != parentId:
-                    link_id = f'{parentId}->{inlink["to"]}'
+            parent_id = discFrom["parent"]
+            while parent_id is not None:
+                if inlink["to"] != parent_id:
+                    link_id = f'{parent_id}->{inlink["to"]}'
                     if link_id not in self.links_dict:
                         # create links to parent node
                         link = {
                             "id": link_id,
-                            "from": parentId,
+                            "from": parent_id,
                             "to": inlink["to"],
                             "parameters": inlink["parameters"],
                             "type": inlink["type"],
@@ -516,8 +513,8 @@ class SoSExecutionWorkflow:
                             inlink["parameters"],
                         )
                         self.links_dict[link_id]["parameters"] = parameters
-                discFromParent = self.nodes_dict[parentId]
-                parentId = discFromParent["parent"]
+                discFromParent = self.nodes_dict[parent_id]
+                parent_id = discFromParent["parent"]
 
         node["inLinks"] = inLinksList
         node["outLinks"] = outLinksList
@@ -566,7 +563,7 @@ class SoSExecutionWorkflow:
 #     def generate_scatter_data_mapping(self):
 #         sc_map_parameter_mapping = []
 #         scatter_data_ids = set()
-#         for sc_disc in self.GEMS_graph.disciplines:
+#         for sc_disc in self.gems_graph.disciplines:
 #             if isinstance(sc_disc, SoSScatterData):
 #                 scatter_data_ids.add(sc_disc.disc_id)
 #                 sc_map = sc_disc.sc_map.map
