@@ -63,8 +63,7 @@ def kubernetes_create_pod(k8_conf):
     app.logger.debug(f"K8 api config time : {elapsed_time}")
 
     start_time = time.time()
-    resp = api_instance.create_namespaced_pod(body=k8_conf,
-                                                namespace=pod_namespace)
+    api_instance.create_namespaced_pod(body=k8_conf, namespace=pod_namespace)
     elapsed_time = time.time() - start_time
     app.logger.debug(f"K8 api pod submission : {elapsed_time}")
 
@@ -131,15 +130,13 @@ def kubernetes_service_create(k8_service_conf, core_api_instance):
         current_waiting_s = 0
         while current_waiting_s < max_s:
             try:
-                service = core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
+                core_api_instance.read_namespaced_service_status(name=pod_name, namespace=namespace)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
                     app.logger.info("Service not found")
                 else:
                     raise api_exception
-            #if service.status.phase != 'Pending':
-            #        break
             time.sleep(interval_s)
             current_waiting_s += interval_s
     else:
@@ -161,7 +158,7 @@ def kubernetes_deployment_create(k8_deploy_conf, apps_api_instance):
     # check deployment existance
     deployement_found = False
     try:
-        dplmt = apps_api_instance.read_namespaced_deployment(name=pod_name, namespace=namespace)
+        apps_api_instance.read_namespaced_deployment(name=pod_name, namespace=namespace)
         deployement_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
@@ -171,14 +168,14 @@ def kubernetes_deployment_create(k8_deploy_conf, apps_api_instance):
 
     # create deployment
     if not deployement_found:
-        resp = apps_api_instance.create_namespaced_deployment(body=k8_deploy_conf, namespace=namespace)
+        apps_api_instance.create_namespaced_deployment(body=k8_deploy_conf, namespace=namespace)
         # wait while deployment is created
         interval_s = 1
         max_s = 600
         current_waiting_s = 0
         while current_waiting_s < max_s:
             try:
-                resp = apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
+                apps_api_instance.read_namespaced_deployment_status(name=pod_name, namespace=namespace)
                 break
             except client.rest.ApiException as api_exception:
                 if api_exception.status == 404:
@@ -384,7 +381,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     # check service existance
     service_found = False
     try:
-        resp = core_api_instance.read_namespaced_service(name=pod_name, namespace=pod_namespace)
+        core_api_instance.read_namespaced_service(name=pod_name, namespace=pod_namespace)
         service_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
@@ -400,7 +397,7 @@ def kubernetes_delete_deployment_and_service(pod_name, pod_namespace):
     # check deployment existance
     deployement_found = False
     try:
-        dplmt = apps_api_instance.read_namespaced_deployment(name=pod_name, namespace=pod_namespace)
+        apps_api_instance.read_namespaced_deployment(name=pod_name, namespace=pod_namespace)
         deployement_found = True
     except client.rest.ApiException as api_exception:
         if api_exception.status == 404:
@@ -429,7 +426,7 @@ def watch_pod_events(logger, namespace):
                 yield event
 
         logger.info("Finished namespace stream.")
-    except urllib3.exceptions.ReadTimeoutError as exception:
+    except urllib3.exceptions.ReadTimeoutError:
         #time out, the watcher will be restarted
         logger.info("Expected timeout in stream to retrieve pod events.")
         pass
