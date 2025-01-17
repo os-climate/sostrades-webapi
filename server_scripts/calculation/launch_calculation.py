@@ -54,8 +54,6 @@ def launch_calculation_study(study_identifier):
     # Initialize execution logger
     execution_logger = logging.getLogger(__name__)
 
-    study_case = None
-    exec_engine = None
 
     execution_logger.debug(
         f'Start batch execution of study case {args["execute"]} at {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}'
@@ -111,7 +109,7 @@ def launch_calculation_study(study_identifier):
 
         except Exception as ex:
             execution_logger.exception(
-                'An exception occurs during study case execution'
+                f'An exception occurs during study case execution: {ex}'
             )
 
         # disable execution handler

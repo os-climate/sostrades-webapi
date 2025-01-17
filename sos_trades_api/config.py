@@ -89,8 +89,6 @@ class Config:
 
         self.__server_mode = ""
 
-        self.__rsa_root_dir = ""
-
         self.__rsa_public_key = ""
         self.__rsa_private_key = ""
 
@@ -208,7 +206,7 @@ class Config:
                 raise ValueError(
                     f"Configuration variable '{self.CONFIG_EXECUTION_STRATEGY}' not provided")
 
-            if not len(self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY)) > 0:
+            if len(self.__server_config_file.get(self.CONFIG_EXECUTION_STRATEGY)) == 0:
                 raise ValueError(
                     f"Configuration variable '{self.CONFIG_EXECUTION_STRATEGY}' has no value, any of the following is intended : {self.__available_strategies}")
 
@@ -310,7 +308,7 @@ class Config:
                 raise ValueError(
                     f"Configuration variable '{self.CONFIG_SERVER_MODE}' not provided")
 
-            if not len(self.__server_config_file.get(self.CONFIG_SERVER_MODE)) > 0:
+            if len(self.__server_config_file.get(self.CONFIG_SERVER_MODE)) == 0:
                 raise ValueError(
                     f"Configuration variable '{self.CONFIG_SERVER_MODE}' has no value, any of the following is intended : {self.__available_server_modes}")
 
