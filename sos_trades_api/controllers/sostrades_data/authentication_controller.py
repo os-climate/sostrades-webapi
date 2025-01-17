@@ -213,10 +213,8 @@ def authenticate_user_keycloak(userinfo: dict):
         keycloak_user, return_url, group_list_associated = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
         
-        if len(group_list_associated) > 0:
-            manage_keycloak_groups(user, group_list_associated)
-        else:
-            app.logger.info("There is any groups from keycloak")
+        manage_keycloak_groups(user, group_list_associated)
+        
 
         send_email_to_new_user_if_necessary(is_new_user, user)
 
