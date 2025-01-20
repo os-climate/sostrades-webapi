@@ -28,6 +28,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
+    get_study_case,
     get_markdown_documentation,
     get_study_data_file_path,
     get_study_data_stream,
@@ -53,7 +54,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 def study_cases(study_id):
     if request.method == "POST":
         user = session["user"]
-
+        # TODO: delete this method that should not be used any more
         study_case_identifier = request.json.get("studyCaseIdentifier", None)
 
         # Verify user has process authorisation to create study
@@ -127,7 +128,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loadedStudy = load_or_create_study_case(user.id, study_id, study_access_right)
+        loadedStudy = get_study_case(user.id, study_id, study_access_right, False)
         loadedStudy_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec")
@@ -233,6 +234,7 @@ def get_export_study_in_datasets_error(study_id, notification_id):
 
     raise BadRequest("Missing mandatory parameter: study or notification identifier in url")
 
+
 @app.route("/api/main/study-case/<int:study_id>/import-datasets-error-message", methods=["GET"])
 @auth_required
 def get_datasets_import_error_message(study_id):
@@ -254,7 +256,7 @@ def get_datasets_import_error_message(study_id):
 @app.route("/api/main/study-case/<int:study_id>/copy", methods=["POST"])
 @auth_required
 def copy_study_case_by_id(study_id):
-
+    # TODO: delete this function that should not be used anymore
     if study_id is not None:
         user = session["user"]
 
@@ -276,8 +278,7 @@ def copy_study_case_by_id(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
 
-        resp = make_response(jsonify(load_or_create_study_case(
-            user.id, study_id, study_access_right)), 200)
+        resp = make_response(jsonify(load_or_create_study_case(study_id)), 200)
 
         return resp
 
@@ -471,7 +472,7 @@ def copy_study_discipline_data_by_study_case_id(study_id):
 @auth_required
 def reload_study_discipline_data_by_study_case_id(study_id):
     if study_id is not None:
-
+        # TODO: to test!
         user = session["user"]
 
         # Verify user has study case authorisation to load study (Restricted
@@ -483,11 +484,11 @@ def reload_study_discipline_data_by_study_case_id(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
 
-        loadedStudy = load_study_case(study_id, study_access_right, user.id, True)
+        load_study_case(study_id, True)
 
         # Proceeding after rights verification
         resp = make_response(
-            jsonify(loadedStudy), 200)
+            jsonify(True), 200)
 
         return resp
 
@@ -496,7 +497,7 @@ def reload_study_discipline_data_by_study_case_id(study_id):
 
 @app.route("/api/main/study-case/<int:study_id>/read-only-mode", methods=["GET"])
 @auth_required
-def load_study_data_in_read_only_mode_or_not(study_id):
+def load_study_data_in_read_only_mode(study_id):
     """
     Retreive the study in read only mode, return none if no read only mode found
     """
@@ -510,7 +511,7 @@ def load_study_data_in_read_only_mode_or_not(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        loadedStudyJson = load_or_create_study_case(user.id, study_id, study_access_right, read_only_mode=True)
+        loadedStudyJson = get_study_case(user.id, study_id, study_access_right, read_only_mode=True)
         resp = make_response(jsonify(loadedStudyJson), 200)
         return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")
