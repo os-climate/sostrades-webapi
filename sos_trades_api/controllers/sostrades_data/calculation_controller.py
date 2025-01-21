@@ -142,7 +142,7 @@ def execute_calculation(study_id, username):
 
         #create pod allocation, launch pod in case of kubernetes strategy
         log_file = study.raw_log_file_path_relative()
-        new_pod_allocation = create_and_load_allocation(study_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
+        create_and_load_allocation(study_id, PodAllocation.TYPE_EXECUTION, study_case.execution_pod_flavor, log_file)
 
 
         if config.execution_strategy == Config.CONFIG_EXECUTION_STRATEGY_THREAD:
@@ -260,7 +260,7 @@ def stop_calculation(study_case_id, study_case_execution_id=None):
                     try:
                         os.kill(study_case_execution.process_identifier,
                                 signal.SIGTERM)
-                    except Exception as ex:
+                    except Exception:
                         app.logger.exception(
                             f"This error occurs when trying to kill process {study_case_execution.process_identifier}")
 
@@ -346,6 +346,9 @@ def calculation_logs(study_case_id, study_case_execution_id=None):
                     f"Requested study case (identifier {study_case_id} does not exist in the database")
 
             file_path = get_raw_logs(study_case_id)
+            if study_case_execution_id:
+                file_path = calculation_raw_logs(study_case_id, study_case_execution_id)
+
             if os.path.isfile(file_path):
                 try:
                     result = file_tail(file_path, 200)
