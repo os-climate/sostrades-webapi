@@ -144,10 +144,10 @@ def get_couplings_force_graph(coupling_matrix_df, tree_nodes, parameter_nodes, h
 
     coupling_matrix_dict = dict({"nodes": tree_nodes + parameter_nodes,
                                "links": hierarchy_links + coupling_links,
-                               "tree_nodes": tree_nodes,
-                               "parameter_nodes": parameter_nodes,
-                               "hierarchy_links": hierarchy_links,
-                               "coupling_links": coupling_links,
+                               "treeNodes": tree_nodes,
+                               "parameterNodes": parameter_nodes,
+                               "hierarchyLinks": hierarchy_links,
+                               "couplingLinks": coupling_links,
                                "groupedLinks": hierarchy_links + list(grouped_links_dict.values()),
                                })
     logger.info(
