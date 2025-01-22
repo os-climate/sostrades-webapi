@@ -60,11 +60,12 @@ def authenticate_user_standard(username, password):
     mail_send = False
     # - Check user credential using airbus AD
     user = None
+    INCORRECT_LOGIN_MSG = 'login or password is incorrect'
 
     # Create the list of non ldap user authentication
     users_list = []
 
-    if app.config["CREATE_STANDARD_USER_ACCOUNT"] is True:
+    if app.config["CREATE_STANDARD_USER_ACCOUNT"]:
         users_list.append(User.STANDARD_USER_ACCOUNT_NAME)
 
     try:
@@ -80,30 +81,27 @@ def authenticate_user_standard(username, password):
                 # Check that user is not on a reset password procedure
                 if found_user.reset_uuid is not None:
                     raise PasswordResetRequested()
-
-                if found_user.check_password(password):
+                elif found_user.check_password(password):
                     user = found_user
                 else:
                     app.logger.error(
-                        f'"{username}" login or password is incorrect (with local database)')
+                        f'"{username}" {INCORRECT_LOGIN_MSG} (with local database)')
                     raise InvalidCredentials(
-                        "User login or password is incorrect")
+                        f"User {INCORRECT_LOGIN_MSG}")
         else:
             # Check credential using LDAP request
             user = check_credentials(username, password)
-    except LDAPException as ex:
+    except LDAPException:
         app.logger.exception(
-            f"{username} login or password is incorrect (with LDAP)")
+            f"{username} {INCORRECT_LOGIN_MSG} (with LDAP)")
         raise InvalidCredentials(
-            "User login or password is incorrect")
+            "User {INCORRECT_LOGIN_MSG}")
 
     if user:
-
         email = user.email
         user, is_new_user = manage_user(user, app.logger)
 
-        if is_new_user:
-            mail_send = send_new_user_mail(user)
+        mail_send = send_email_to_new_user_if_necessary(is_new_user, user)
 
         app.logger.info(f'"{username}" successfully logged (with LDAP)')
 
@@ -115,10 +113,15 @@ def authenticate_user_standard(username, password):
         )
 
     app.logger.error(
-        f'"{username}" login or password is incorrect (with LDAP)')
+        f'"{username}" {INCORRECT_LOGIN_MSG} (with LDAP)')
     raise InvalidCredentials(
-        "User login or password is incorrect")
+        f"User {INCORRECT_LOGIN_MSG}")
 
+def send_email_to_new_user_if_necessary(is_new_user, user):
+    mail_send = False
+    if is_new_user:
+        mail_send = send_new_user_mail(user)
+    return mail_send
 
 def authenticate_user_saml(flask_request):
     """
@@ -141,8 +144,7 @@ def authenticate_user_saml(flask_request):
         email = saml_user.email
         user, is_new_user = manage_user(saml_user, app.logger)
 
-        if is_new_user:
-            send_new_user_mail(user)
+        send_email_to_new_user_if_necessary(is_new_user, user)
 
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
@@ -177,8 +179,8 @@ def authenticate_user_github(github_api_user_response: dict, github_api_user_ema
 
         user, is_new_user = manage_user(github_user, app.logger)
 
-        if is_new_user:
-            send_new_user_mail(user)
+        mail_send = send_email_to_new_user_if_necessary(is_new_user, user)
+
 
         access_token = create_access_token(identity=github_user.email)
         refresh_token = create_refresh_token(identity=github_user.email)
@@ -210,69 +212,11 @@ def authenticate_user_keycloak(userinfo: dict):
 
         keycloak_user, return_url, group_list_associated = KeycloakAuthenticator.create_user_from_userinfo(userinfo)
         user, is_new_user = manage_user(keycloak_user, app.logger)
-        if len(group_list_associated) > 0:
-            # Get the list of Keycloak groups from the configuration
-            config = Config()
-            groups_keycloak_from_config = config.keycloak_group_list
+        
+        manage_keycloak_groups(user, group_list_associated)
+        
 
-            # Convert lists to sets for more efficient operations
-            group_set_associated = set(group_list_associated)
-            group_set_keycloak = set(groups_keycloak_from_config)
-
-            # Groups to remove access (not associated but in keycloak)
-            groups_delete_access_not_associated = group_set_associated - group_set_keycloak
-            # Groups to remove access (associated but not in keycloak)
-            groups_delete_access_not_in_keycloak = group_set_keycloak - group_set_associated
-
-            # List of all groups to remove access
-            all_different_groups = list(groups_delete_access_not_associated.union(groups_delete_access_not_in_keycloak))
-
-            # Remove user access for groups no longer associated
-            if all_different_groups:
-                for group in all_different_groups:
-                    # Find the group object in the database
-                    group_to_remove_access = Group.query.filter(Group.name == group).first()
-
-                    # Remove user's access to this group
-                    remove_group_access_user(user.id, group_to_remove_access)
-
-            # Identify groups that need to have their access added
-            groups_to_add_access = group_set_associated & group_set_keycloak
-
-            # Process each group in the associated list
-            if groups_to_add_access:
-                for group_name in groups_to_add_access:
-                    # Check if the group already exists in the database
-                    group = Group.query.filter(Group.name == group_name).first()
-
-                    # If the group doesn't exist, create it
-                    if group is None:
-                        try:
-                            # Initialize a new Group object
-                            group = Group()
-                            group.name = group_name
-                            group.description = group_name
-                            group.confidential = False
-
-                            # Add the new group to the database
-                            db.session.add(group)
-                            db.session.commit()
-                        except Exception as ex:
-                            # If an error occurs, rollback the session and raise an exception
-                            db.session.rollback()
-                            raise Exception(f"Error adding group from Keycloak to database: {ex}")
-
-                    # Add or ensure the user has member access to this group
-                    add_group_access_user_member(user.id, group)
-
-            else:
-                app.logger.warn(f'There is no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
-        else:
-            app.logger.info("There is any groups from keycloak")
-
-
-        if is_new_user:
-            send_new_user_mail(user)
+        send_email_to_new_user_if_necessary(is_new_user, user)
 
         # Placeholder: Créez un jeton d'accès et un jeton de rafraîchissement
         access_token = create_access_token(identity=user.email)
@@ -290,6 +234,69 @@ def authenticate_user_keycloak(userinfo: dict):
     app.logger.error("User login or password is incorrect (in Keycloak assertion)")
     raise InvalidCredentials(
         "User login or password is incorrect")
+
+def manage_keycloak_groups(user: User, group_list_associated:list[str]):
+    '''
+        Add user to keycloak group in sostrades if he has rights on keycloak
+        Remove user from sostrades groups if he is no more in keycloak groups
+    '''
+    # Get the list of Keycloak groups from the configuration
+    config = Config()
+    groups_keycloak_from_config = config.keycloak_group_list
+
+    # Convert lists to sets for more efficient operations
+    group_set_associated = set(group_list_associated)
+    group_set_keycloak = set(groups_keycloak_from_config)
+
+    # Groups to remove access (not associated but in keycloak)
+    groups_delete_access_not_associated = group_set_associated - group_set_keycloak
+    # Groups to remove access (associated but not in keycloak)
+    groups_delete_access_not_in_keycloak = group_set_keycloak - group_set_associated
+
+    # List of all groups to remove access
+    all_different_groups = list(groups_delete_access_not_associated.union(groups_delete_access_not_in_keycloak))
+
+    # Remove user access for groups no longer associated
+    if all_different_groups:
+        for group in all_different_groups:
+            # Find the group object in the database
+            group_to_remove_access = Group.query.filter(Group.name == group).first()
+
+            # Remove user's access to this group
+            remove_group_access_user(user.id, group_to_remove_access)
+
+    # Identify groups that need to have their access added
+    groups_to_add_access = group_set_associated & group_set_keycloak
+
+    # Process each group in the associated list
+    if groups_to_add_access:
+        for group_name in groups_to_add_access:
+            # Check if the group already exists in the database
+            group = Group.query.filter(Group.name == group_name).first()
+
+            # If the group doesn't exist, create it
+            if group is None:
+                try:
+                    # Initialize a new Group object
+                    group = Group()
+                    group.name = group_name
+                    group.description = group_name
+                    group.confidential = False
+
+                    # Add the new group to the database
+                    db.session.add(group)
+                    db.session.commit()
+                except Exception as ex:
+                    # If an error occurs, rollback the session and raise an exception
+                    db.session.rollback()
+                    raise Exception(f"Error adding group from Keycloak to database: {ex}")
+
+            # Add or ensure the user has member access to this group
+            add_group_access_user_member(user.id, group)
+
+    else:
+        app.logger.warn(f'There is no common groups between "KEYCLOAK_GROUP_LIST" configuration and groups from keycloak of "{user.username}"')
+
 
 def deauthenticate_user():
     """
