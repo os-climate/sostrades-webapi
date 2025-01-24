@@ -62,7 +62,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            create_study_case,
+            load_or_create_study_case,
         )
         from sos_trades_api.models.database_models import (
             AccessRights,
@@ -131,9 +131,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_id = new_study_case.id
 
-            created_study = create_study_case(self.test_user_id,
-                                              self.test_study_id,
-                                              None)
+            created_study = load_or_create_study_case( self.test_study_id)
 
             # Create test csv studycase
             new_study_case_csv = create_empty_study_case(self.test_user_id,
@@ -149,9 +147,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_csv_id = new_study_case_csv.id
 
-            created_csv_study = create_study_case(self.test_user_id,
-                                                  self.test_study_csv_id,
-                                                  None)
+            created_csv_study = load_or_create_study_case(self.test_study_csv_id)
 
             # Create  test clear_error studycase
             new_study_case_clear_error = create_empty_study_case(self.test_user_id,
@@ -167,9 +163,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_clear_error_id = new_study_case_clear_error.id
 
-            created_clear_error_study = create_study_case(self.test_user_id,
-                                                          self.test_study_clear_error_id,
-                                                          None)
+            created_clear_error_study = load_or_create_study_case(self.test_study_clear_error_id )
 
     def tearDown(self):
         super().tearDown()
@@ -227,7 +221,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
             load_study_case,
         )
-        from sos_trades_api.models.database_models import AccessRights, StudyCase
+        from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import study_case_cache
 
@@ -239,8 +233,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             study_manager = study_case_cache.get_study_case(study_test.id, False)
 
-            loaded_study = load_study_case(
-                study_test.id, AccessRights.MANAGER, self.test_user_id)
+            load_study_case(study_test.id)
 
             #  wait until study was updated (thread behind)
             stop = False
@@ -256,11 +249,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     counter = counter + 1
                     sleep(1)
 
-            self.assertEqual(loaded_study.study_case.name, self.test_study_name,
+            self.assertEqual(study_test.name, self.test_study_name,
                              "Created study case name does not match, test set up name used")
-            self.assertEqual(loaded_study.study_case.process, self.test_process_name,
+            self.assertEqual(study_test.process, self.test_process_name,
                              "Created study case process does not match, test set up process name used")
-            self.assertEqual(loaded_study.study_case.repository, self.test_repository_name,
+            self.assertEqual(study_test.repository, self.test_repository_name,
                              "Created study case repository does not match, test set up repository name used")
 
     def test_study_case_log(self):
@@ -285,7 +278,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            copy_study_case,
+            load_or_create_study_case,
         )
         from sos_trades_api.models.database_models import StudyCase
         with DatabaseUnitTestConfiguration.app.app_context():
@@ -306,8 +299,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      )
 
-            copy_study_case(new_study_case.id,
-                            study_test.id, self.test_user_id)
+            load_or_create_study_case(new_study_case.id)
 
             study_case_copied = StudyCase.query.filter(
                 StudyCase.name == study_copy_name).first()
@@ -880,9 +872,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            copy_study_case,
             delete_study_cases,
             get_study_in_read_only_mode,
+            load_or_create_study_case,
         )
         from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
@@ -906,9 +898,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      )
 
-            study_case_copy = copy_study_case(
-                new_study_case.id, study_test.id, self.test_user_id)
-            study_case_copy_id = study_case_copy.id
+            load_or_create_study_case(new_study_case.id)
+            study_case_copy_id = new_study_case.id
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
@@ -945,8 +936,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
             get_last_study_case_changes,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            copy_study_case,
             delete_study_cases,
+            load_or_create_study_case,
             update_study_parameters_from_datasets_mapping,
         )
         from sos_trades_api.models.database_models import (
@@ -978,9 +969,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      )
 
-            study_case_copy = copy_study_case(
-                new_study_case.id, study_test.id, self.test_user_id)
-            study_case_copy_id = study_case_copy.id
+            load_or_create_study_case(new_study_case.id)
+            study_case_copy_id = new_study_case.id
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
@@ -1029,7 +1019,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
-            parameter_changes = get_last_study_case_changes(study_case_copy.id)
+            parameter_changes = get_last_study_case_changes(new_study_case.id)
             self.assertTrue(len(parameter_changes) == 0)
 
             files_data = {
@@ -1062,7 +1052,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
-            parameter_changes = get_last_study_case_changes(study_case_copy.id)
+            parameter_changes = get_last_study_case_changes(new_study_case.id)
             for parameter in parameter_changes:
                 if parameter.variable_id == "test_study_for_dataset_mapping.test_disc1_disc2_coupling.Disc1.a":
                     self.assertIsNotNone(parameter.datase_id)

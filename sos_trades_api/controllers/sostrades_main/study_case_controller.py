@@ -19,7 +19,6 @@ import os
 import shutil
 import sys
 import threading
-import time
 import traceback
 from datetime import datetime, timezone
 from os import remove
@@ -68,10 +67,8 @@ from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseChange,
     StudyCaseExecution,
-    User,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
-from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, db, study_case_cache
 from sos_trades_api.tools.active_study_management.active_study_management import (
     check_studies_last_active_date,
@@ -108,6 +105,8 @@ Study case Functions
 """
 background loading section
 """
+
+
 def load_or_create_study_case(study_case_identifier):
     """
     Check creation status in database, if not_started: create the studycase, else load it

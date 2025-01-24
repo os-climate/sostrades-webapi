@@ -29,7 +29,7 @@ def test_reload_study_case(study_id, user_id ):
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
         load_study_case,
     )
-    from sos_trades_api.models.database_models import AccessRights, StudyCase
+    from sos_trades_api.models.database_models import StudyCase
     from sos_trades_api.models.loaded_study_case import LoadStatus
     from sos_trades_api.server.base_server import app, study_case_cache
 
@@ -40,8 +40,7 @@ def test_reload_study_case(study_id, user_id ):
 
         mem_before = memory_usage()[0]
         app.logger.info(f"Memory before first loading: {mem_before} MB")
-        loaded_study = load_study_case(
-            study_test.id, AccessRights.MANAGER, user_id)
+        loaded_study = load_study_case(study_test.id)
 
         #  wait until study was updated (thread behind)
         stop = False
@@ -60,8 +59,7 @@ def test_reload_study_case(study_id, user_id ):
         for i in range(0,10):
             mem_after = memory_usage()[0]
             app.logger.info(f"Memory before {i} reloading: {mem_after} MB")
-            loaded_study = load_study_case(
-                study_test.id, AccessRights.MANAGER, user_id, reload=True)
+            loaded_study = load_study_case(study_test.id, reload=True)
             
             while not stop:
                 if study_manager.load_status == LoadStatus.LOADED:
@@ -76,15 +74,14 @@ def test_reload_study_case(study_id, user_id ):
             app.logger.info(f"Memory used by this block: {mem_after_reload - mem_after} MB")
             sleep(10)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     from dotenv import load_dotenv
     if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is None:
-        dotenv_path = join(dirname(__file__),"..", "..", "..", ".flaskenv")
+        dotenv_path = join(dirname(__file__), "..", "..", "..", ".flaskenv")
         print(dotenv_path)
         load_dotenv(dotenv_path)
 
-
-    
     parser = argparse.ArgumentParser(description='test memory')
 
     parser.add_argument(

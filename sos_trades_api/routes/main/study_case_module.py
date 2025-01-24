@@ -18,7 +18,7 @@ import json
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
-from werkzeug.exceptions import BadRequest, MethodNotAllowed
+from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     copy_study_discipline_data,
@@ -28,12 +28,11 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_status,
     get_dataset_import_error_message,
     get_file_stream,
-    get_study_case,
     get_markdown_documentation,
+    get_study_case,
     get_study_data_file_path,
     get_study_data_stream,
     get_study_load_status,
-    load_or_create_study_case,
     load_study_case,
     save_study_is_active,
     set_study_data_file,
@@ -49,56 +48,29 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 
 
-@app.route("/api/main/study-case/<int:study_id>", methods=["POST", "DELETE"])
+@app.route("/api/main/study-case/<int:study_id>", methods=["DELETE"])
 @auth_required
-def study_cases(study_id):
-    if request.method == "POST":
-        user = session["user"]
-        # TODO: delete this method that should not be used any more
-        study_case_identifier = request.json.get("studyCaseIdentifier", None)
+def study_cases():
 
-        # Verify user has process authorisation to create study
-        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
-        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_case_identifier):
-            raise BadRequest(
-                "You do not have the necessary rights to create a study case from this process")
+    user = session["user"]
+    studies = request.json.get("studies")
 
-        # Proceed after right verification
-        missing_parameter = []
-        if study_case_identifier is None:
-            missing_parameter.append("Missing mandatory parameter: studyCaseIdentifier")
+    if studies is not None:
+        # Checking if user can access study data
+        for study_id in studies:
+            # Verify user has study case authorisation to delete study
+            # (Manager)
+            study_case_access = StudyCaseAccess(user.id, study_id)
+            if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+                raise BadRequest(
+                    "You do not have the necessary rights to delete this study case")
 
-        if len(missing_parameter) > 0:
-            raise BadRequest("\n".join(missing_parameter))
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
-
-        resp = make_response(jsonify(load_or_create_study_case(
-            user.id, study_case_identifier, study_access_right)), 200)
+        # Proceeding after rights verification
+        resp = make_response(
+            jsonify(delete_study_cases(studies)), 200)
         return resp
-    elif request.method == "DELETE":
-        user = session["user"]
-        studies = request.json.get("studies")
 
-        if studies is not None:
-            # Checking if user can access study data
-            for study_id in studies:
-                # Verify user has study case authorisation to delete study
-                # (Manager)
-                study_case_access = StudyCaseAccess(user.id, study_id)
-                if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
-                    raise BadRequest(
-                        "You do not have the necessary rights to delete this study case")
-
-            # Proceeding after rights verification
-            resp = make_response(
-                jsonify(delete_study_cases(studies)), 200)
-            return resp
-
-        raise BadRequest(
-            "Missing mandatory parameter: study identifier in url")
-    else:
-        raise MethodNotAllowed()
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
 @app.route("/api/main/study-case/<int:study_id>", methods=["GET"])
@@ -128,17 +100,17 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loadedStudy = get_study_case(user.id, study_id, study_access_right, False)
-        loadedStudy_duration = time.time()
+        loaded_study = get_study_case(user.id, study_id, study_access_right, False)
+        loaded_study_duration = time.time()
         app.logger.info(
-            f"User {user.id:<5} => loadedStudy_duration {loadedStudy_duration - study_access_right_duration :<5} sec")
+            f"User {user.id:<5} => loadedStudy_duration {loaded_study_duration - study_access_right_duration :<5} sec")
 
         # Proceeding after rights verification
         resp = make_response(
-            jsonify(loadedStudy), 200)
+            jsonify(loaded_study), 200)
         make_response_duration = time.time()
         app.logger.info(
-            f"User {user.id:<5} => make_response_duration {make_response_duration - loadedStudy_duration:<5} sec")
+            f"User {user.id:<5} => make_response_duration {make_response_duration - loaded_study_duration:<5} sec")
         return resp
 
     abort(403)
@@ -251,38 +223,6 @@ def get_datasets_import_error_message(study_id):
         return resp
 
     raise BadRequest("Missing mandatory parameter: study identifier in url")
-
-
-@app.route("/api/main/study-case/<int:study_id>/copy", methods=["POST"])
-@auth_required
-def copy_study_case_by_id(study_id):
-    # TODO: delete this function that should not be used anymore
-    if study_id is not None:
-        user = session["user"]
-
-        source_study_case = request.json.get("source_study_case", None)
-
-        missing_parameter = []
-        if source_study_case is None:
-            missing_parameter.append("Missing mandatory parameter: source_study_case")
-
-        if len(missing_parameter) > 0:
-            raise BadRequest("\n".join(missing_parameter))
-
-        # Verify user has study case authorisation to load study (Contributor)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to copy this study case")
-
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
-
-        resp = make_response(jsonify(load_or_create_study_case(study_id)), 200)
-
-        return resp
-
-    abort(403)
 
 
 @app.route("/api/main/study-case/<int:study_id>/parameters", methods=["POST"])
