@@ -22,14 +22,16 @@ tooling to generate D3 js data structure for N2 matrix purpose
 """
 
 
-def get_couplings_force_graph(coupling_matrix_df, tree_nodes, parameter_nodes, hierarchy_links):
+def get_couplings_force_graph(coupling_matrix_df, ontology_matrix_data):
+    tree_nodes = ontology_matrix_data["tree_nodes"]
+    parameter_nodes = ontology_matrix_data["parameter_nodes"]
+    hierarchy_links = ontology_matrix_data["hierarchy_links"]
 
     start_time = time.time()
     logger = logging.getLogger(__name__)
 
     coupling_links = []
     grouped_links_dict = {}
-
     # Create dictionaries to simplify access
     tree_nodes_dict = {element["id"]: element for element in tree_nodes}
     parameters_dict = {element["id"]: element for element in parameter_nodes}
