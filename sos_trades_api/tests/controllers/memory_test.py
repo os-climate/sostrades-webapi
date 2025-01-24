@@ -40,7 +40,7 @@ def test_reload_study_case(study_id, user_id ):
 
         mem_before = memory_usage()[0]
         app.logger.info(f"Memory before first loading: {mem_before} MB")
-        loaded_study = load_study_case(study_test.id)
+        load_study_case(study_test.id)
 
         #  wait until study was updated (thread behind)
         stop = False
@@ -59,7 +59,7 @@ def test_reload_study_case(study_id, user_id ):
         for i in range(0,10):
             mem_after = memory_usage()[0]
             app.logger.info(f"Memory before {i} reloading: {mem_after} MB")
-            loaded_study = load_study_case(study_test.id, reload=True)
+            load_study_case(study_test.id, reload=True)
             
             while not stop:
                 if study_manager.load_status == LoadStatus.LOADED:

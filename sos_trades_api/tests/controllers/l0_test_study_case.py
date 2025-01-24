@@ -131,7 +131,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_id = new_study_case.id
 
-            created_study = load_or_create_study_case( self.test_study_id)
+            load_or_create_study_case( self.test_study_id)
 
             # Create test csv studycase
             new_study_case_csv = create_empty_study_case(self.test_user_id,
@@ -147,7 +147,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_csv_id = new_study_case_csv.id
 
-            created_csv_study = load_or_create_study_case(self.test_study_csv_id)
+            load_or_create_study_case(self.test_study_csv_id)
 
             # Create  test clear_error studycase
             new_study_case_clear_error = create_empty_study_case(self.test_user_id,
@@ -163,7 +163,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             self.test_study_clear_error_id = new_study_case_clear_error.id
 
-            created_clear_error_study = load_or_create_study_case(self.test_study_clear_error_id )
+            load_or_create_study_case(self.test_study_clear_error_id)
 
     def tearDown(self):
         super().tearDown()
