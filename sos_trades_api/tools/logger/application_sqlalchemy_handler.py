@@ -18,7 +18,7 @@ from logging import Handler, LogRecord, _defaultFormatter
 from time import localtime, strftime
 
 from flask import has_request_context, request
-from sqlalchemy import Column, Integer, Sequence, Text, create_engine, text
+from sqlalchemy import Column, Integer, Sequence, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
