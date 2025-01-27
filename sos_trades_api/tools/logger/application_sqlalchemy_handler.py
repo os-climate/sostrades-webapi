@@ -50,26 +50,12 @@ class ApplicationSQLAlchemyHandler(Handler):
 
     def __init__(self, connection_string: str, connect_args: dict, engine_options: dict):
         super().__init__()
-
         try:
             self.engine = create_engine(url=connection_string, connect_args=connect_args, **engine_options)
-            self._verify_connection()
             Base.metadata.create_all(self.engine)
             self.Session = sessionmaker(bind=self.engine)
         except Exception as ex:
             raise RuntimeError(f'Error during handler initialization: {ex}')
-
-    def _verify_connection(self):
-        """Check if the connexion is valid"""
-        try:
-            with self.engine.connect() as connection:
-                if connection.closed:
-                    print("Connexion is closed")
-                # Test with a simple request
-                connection.execute(text("SELECT 1"))
-                print("Connexion is established")
-        except Exception as e:
-            raise RuntimeError(f"Failed to verify database connection: {e}")
     
     def format_db_time(self, record:LogRecord):
         """
