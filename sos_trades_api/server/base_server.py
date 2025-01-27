@@ -29,6 +29,8 @@ from flask.cli import with_appcontext
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.engine.url import make_url
 from werkzeug.exceptions import HTTPException
 
 from sos_trades_api.config import Config
@@ -64,8 +66,17 @@ try:
     app.logger.info("Connecting to database")
     # Register database on app
     db = SQLAlchemy(engine_options=config.main_database_engine_options)
-    with app.app_context():
-        db.init_app(app)
+    db.init_app(app)
+    
+    # Enable foreign key support in SQLite
+    url = make_url(config.main_database_uri)
+    if url.get_backend_name() == 'sqlite':
+        with app.app_context():
+            @event.listens_for(db.engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys = ON;")
+                cursor.close()
 
     # As flask application and database are initialized, then import
     # sos_trades_api dependencies

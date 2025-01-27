@@ -214,10 +214,11 @@ def launch_generate_reference(reference_identifier):
 
             trace_source_code(imported_usecase.dump_directory, generation_log)
         except Exception as e:
+            generation_log.error('Reference/Usecase error', exc_info=e)
             ReferenceStudy.query.filter(ReferenceStudy.id == reference_identifier).update(
                 {
                     'execution_status': ReferenceStudy.FAILED,
-                    'generation_logs': e,
+                    'generation_logs': str(e),
                     'creation_date': None,
                 }
             )
