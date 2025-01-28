@@ -112,7 +112,7 @@ class TestCalculation(DatabaseUnitTestConfiguration):
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-            create_study_case,
+            load_or_create_study_case,
         )
         from sos_trades_api.models.database_models import (
             PodAllocation,
@@ -145,13 +145,10 @@ class TestCalculation(DatabaseUnitTestConfiguration):
 
             self.test_study_id = new_study_case.id
 
-            created_study = create_study_case(self.test_user_id,
-                                              self.test_study_id,
-                                              self.test_uc_name,
-                                              from_type=StudyCase.FROM_REFERENCE)
+            load_or_create_study_case(self.test_study_id)
 
             os.environ["SOS_TRADES_EXECUTION_STRATEGY"] = "subprocess"
-            execute_calculation(created_study.study_case.id,
+            execute_calculation(self.test_study_id,
                                 User.STANDARD_USER_ACCOUNT_NAME)
             time.sleep(10.0)
             # Wait few seconds to be sure Object is created in db

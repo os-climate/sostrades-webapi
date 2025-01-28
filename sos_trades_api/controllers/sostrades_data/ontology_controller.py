@@ -25,9 +25,6 @@ from requests.exceptions import ConnectionError
 from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.models.model_status import ModelStatus
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.visualisation.couplings_force_graph import (
-    get_couplings_force_graph,
-)
 
 """
 Ontology Functions
@@ -598,38 +595,8 @@ def load_n2_matrix(treeview):
         app.logger.exception(
             "An exception occurs when trying to reach Ontology server")
 
-    return (
-        ontology_response_data["tree_nodes"],
-        ontology_response_data["parameter_nodes"],
-        ontology_response_data["hierarchy_links"],
-    )
+    return ontology_response_data
 
 
-def generate_n2_matrix(study_case_manager):
-    """
-    regarding the study case given as parameter , generate the N2 diagram
 
-    :params: study_case_manager
-    :type: sos_trades_api.tools.loading.study_case_manager.StudyCaseManager
 
-    :return: N2 diagram object
-    """
-    n2_diagram = {}
-    try:
-        couplings = study_case_manager.execution_engine.root_process.export_couplings()
-
-    except:
-        pass
-    try:
-        treeNodes, parameterNodes, hierarchyLinks = load_n2_matrix(
-            study_case_manager.execution_engine.get_treeview(),
-        )
-
-        n2_diagram = get_couplings_force_graph(
-            couplings, treeNodes, parameterNodes, hierarchyLinks,
-        )
-
-    except:
-        n2_diagram = {}
-
-    return n2_diagram
