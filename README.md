@@ -192,7 +192,7 @@ As the server configuration, tests need also a configuration file to initialize 
 Configuration file is in JSON format. A template of this file is available here:
 sostrades_webapi\configuration_template\development_configuration_template.json.
 
-The key regarding LDAP, JWT Token and SMTP server are optional.
+The key regarding JWT Token and SMTP server are optional.
 
 ### environment configuration
 As the server configuration some environment variable are needed

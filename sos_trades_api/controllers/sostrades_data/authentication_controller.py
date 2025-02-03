@@ -33,7 +33,6 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
-from sos_trades_api.tools.authentication.ldap import LDAPException, check_credentials
 from sos_trades_api.tools.authentication.saml import (
     SamlAuthenticationError,
     manage_saml_assertion,
@@ -47,7 +46,7 @@ Authentication Functions
 
 def authenticate_user_standard(username, password):
     """
-    Authenticate a user based on LDAP access or SoSTrades database
+    Authenticate a user based on SoSTrades database
 
     :params: username, username account login
     :type: string
@@ -68,34 +67,21 @@ def authenticate_user_standard(username, password):
     if app.config["CREATE_STANDARD_USER_ACCOUNT"]:
         users_list.append(User.STANDARD_USER_ACCOUNT_NAME)
 
-    try:
-        no_ldap = ldap_available() is False
-        is_builtin_user = username in users_list
+    users = User.query.filter_by(username=username)
 
-        if no_ldap or is_builtin_user:
-            users = User.query.filter_by(username=username)
+    if users is not None and users.count() > 0:
+        found_user = users.first()
 
-            if users is not None and users.count() > 0:
-                found_user = users.first()
-
-                # Check that user is not on a reset password procedure
-                if found_user.reset_uuid is not None:
-                    raise PasswordResetRequested()
-                elif found_user.check_password(password):
-                    user = found_user
-                else:
-                    app.logger.error(
-                        f'"{username}" {INCORRECT_LOGIN_MSG} (with local database)')
-                    raise InvalidCredentials(
-                        f"User {INCORRECT_LOGIN_MSG}")
+        # Check that user is not on a reset password procedure
+        if found_user.reset_uuid is not None:
+            raise PasswordResetRequested()
+        elif found_user.check_password(password):
+            user = found_user
         else:
-            # Check credential using LDAP request
-            user = check_credentials(username, password)
-    except LDAPException:
-        app.logger.exception(
-            f"{username} {INCORRECT_LOGIN_MSG} (with LDAP)")
-        raise InvalidCredentials(
-            "User {INCORRECT_LOGIN_MSG}")
+            app.logger.error(
+                f'"{username}" {INCORRECT_LOGIN_MSG} (with local database)')
+            raise InvalidCredentials(
+                f"User {INCORRECT_LOGIN_MSG}")
 
     if user:
         email = user.email
@@ -103,7 +89,7 @@ def authenticate_user_standard(username, password):
 
         mail_send = send_email_to_new_user_if_necessary(is_new_user, user)
 
-        app.logger.info(f'"{username}" successfully logged (with LDAP)')
+        app.logger.info(f'"{username}" successfully logged')
 
         return (
             create_access_token(identity=email),
@@ -112,8 +98,7 @@ def authenticate_user_standard(username, password):
             mail_send,
         )
 
-    app.logger.error(
-        f'"{username}" {INCORRECT_LOGIN_MSG} (with LDAP)')
+    app.logger.error(f'"{username}" {INCORRECT_LOGIN_MSG}')
     raise InvalidCredentials(
         f"User {INCORRECT_LOGIN_MSG}")
 
@@ -316,17 +301,3 @@ def refresh_authentication():
     """
     user = get_authenticated_user()
     return create_access_token(identity=user.email)
-
-
-def ldap_available():
-    """
-    Check if all LDAP configuration settings has been set
-
-    :return: boolean, LDAP setting fully available
-    """
-    data_missing = not app.config["LDAP_SERVER"] or \
-        not app.config["LDAP_BASE_DN"] or \
-        not app.config["LDAP_FILTER"] or \
-        not app.config["LDAP_USERNAME"]
-
-    return not data_missing

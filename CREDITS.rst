@@ -60,9 +60,6 @@ sostrades-webapi depends on software with compatible licenses that are listed be
 `python-dotenv (1.0.1) <https://github.com/theskumar/python-dotenv>`_
     BSD-3-Clause
 
-`python-ldap (3.4.0) <https://www.python-ldap.org/>`_
-    Python style
-
 `python-keycloak (4.0.0) <https://pypi.org/project/python-keycloak/>`_
     MIT License
 

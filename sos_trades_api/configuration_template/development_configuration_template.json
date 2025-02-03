@@ -58,15 +58,6 @@
   // Boolean to know if  test account has to be created the first time the application is launched
   "CREATE_STANDARD_USER_ACCOUNT": true,
 
-  // LDAP server url
-  "LDAP_SERVER" : "",
-  //Base request to access LDAP, for exemple "OU=Persons,DC=eu,DC=corp"
-  "LDAP_BASE_DN" : "",
-  //Request filter, for exemple: "userPrincipalName=%s@eu.corp" with ‚"%s" set to the username that is currently trying to logged in
-  "LDAP_FILTER" : "",
-  // Formatted string to build username for exemple: "%s@eu.corp"
-  "LDAP_USERNAME" : "",
-
   //SMTP server address used to send email for platform access
   "SMTP_SERVER" : "",
   //Platform support email address

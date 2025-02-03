@@ -51,7 +51,7 @@ class TestAuthentication(DatabaseUnitTestConfiguration):
     def test_login_succeeded(self):
         """
         Using a valid pair of credential, check authentication process.
-        As the account cannot be one declared into LDAP directory, the test is done using a local test account attached to the application
+        The test is done using a local test account attached to the application
         """
         from flask_jwt_extended import decode_token
 
