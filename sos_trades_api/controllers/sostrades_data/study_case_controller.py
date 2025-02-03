@@ -1009,7 +1009,7 @@ def load_study_case_preference(study_case_identifier, user_identifier):
         ).all()
 
         if len(preferences) > 0:
-            result = preferences
+            result = {preference.panel_identifier: preference.panel_opened for preference in preferences}
 
     return result
 

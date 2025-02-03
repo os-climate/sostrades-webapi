@@ -255,6 +255,9 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
                     process_metadata, repository_metadata)
 
                 # get execution status
+                study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == study_case.current_execution_id).first()
                 if study_case_execution is not None:
                     loaded_study_case.study_case.execution_status = study_case_execution.execution_status
                     loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
