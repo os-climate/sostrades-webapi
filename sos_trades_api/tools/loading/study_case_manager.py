@@ -30,6 +30,7 @@ from sostrades_core.tools.tree.serializer import DataSerializer
 
 from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_n2_matrix,
     load_processes_metadata,
     load_repositories_metadata,
 )
@@ -48,6 +49,15 @@ from sos_trades_api.tools.file_tools import (
 )
 from sos_trades_api.tools.logger.study_case_sqlalchemy_handler import (
     StudyCaseSQLAlchemyHandler,
+)
+from sos_trades_api.tools.visualisation.couplings_force_graph import (
+    get_couplings_force_graph,
+)
+from sos_trades_api.tools.visualisation.execution_workflow_graph import (
+    SoSExecutionWorkflow,
+)
+from sos_trades_api.tools.visualisation.interface_diagram import (
+    InterfaceDiagramGenerator,
 )
 
 """
@@ -381,10 +391,12 @@ class StudyCaseManager(BaseStudyManager):
                 process_metadata, repository_metadata)
 
             # if the loaded status is not yet at LOADED, load treeview post
-            # proc anyway
+            # proc anyway so that the read only mode file is available when study is loaded
             if self.load_status != LoadStatus.LOADED:
                 loaded_study_case.load_treeview_and_post_proc(
                     self, False, True, None, True)
+                loaded_study_case.load_n2_diagrams(self)
+                
             loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
             self.__write_loaded_study_case_in_json_file(
                 loaded_study_case, False)
@@ -653,6 +665,56 @@ class StudyCaseManager(BaseStudyManager):
         # it should never be there because an exception should be raised if the
         # file could not be red
         return None
+    
+
+    def get_n2_diagram_graph_data(self)-> dict:
+        """
+        Get coupling chart for visualisation part
+        """
+
+        # Get couplings
+        couplings = self.execution_engine.root_process.export_couplings()
+        if couplings is None:
+            raise Exception("Failed to export couplings")
+
+        # Get treeview data
+        treeview = self.execution_engine.get_treeview()
+        if treeview is None:
+            raise Exception("Failed to get treeview")
+
+        # Load matrix and generate graph from ontology
+        ontology_matrix_data = load_n2_matrix(treeview)
+        graph = {}
+        if len(ontology_matrix_data) > 0:
+
+            # Get couplings graph from matrix
+            graph = get_couplings_force_graph(couplings, ontology_matrix_data)
+
+        return graph
+    
+
+    def get_execution_sequence_graph_data(self)-> dict:
+        """
+        Generate execution sequence for visualisation part
+        """
+        GEMS_graph = self.execution_engine.root_process.coupling_structure.graph
+
+        # execution workflow generation
+        execution_workflow = SoSExecutionWorkflow(GEMS_graph)
+        execution_workflow.get_execution_workflow_graph()
+
+        result = execution_workflow.create_result()
+
+        return result
+    
+    def get_interface_diagram_graph_data(self)-> dict:
+        """
+        Generate execution sequence for visualisation part
+        """
+        interface_diagram = InterfaceDiagramGenerator(self)
+        result = interface_diagram.generate_interface_diagram_data()
+
+        return result
 
     @staticmethod
     def copy_pkl_file(file_name, study_case_manager, study_manager_source):
