@@ -321,17 +321,22 @@ def callback():
 
     code = request.args.get("code")
     token = keycloak.token( code)
-    userinfo = keycloak.user_info(token["access_token"])
+    # check the access permission to the platform
+    if (keycloak.has_access_to_default_resources(token["access_token"])):
+        userinfo = keycloak.user_info(token["access_token"])
 
-    access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
+        access_token, refresh_token, return_url, user = authenticate_user_keycloak(userinfo)
 
-    query_parameters = {"token": f"{access_token}###{refresh_token}"}
+        query_parameters = {"token": f"{access_token}###{refresh_token}"}
 
-    url = f"{return_url}/saml?{urlencode(query_parameters)}"
+        url = f"{return_url}/saml?{urlencode(query_parameters)}"
 
-    app.logger.info(f"Github/OAuth authentication access granted to {user.email}")
+        app.logger.info(f"Github/OAuth authentication access granted to {user.email}")
 
-    return redirect(url)
+        return redirect(url)
+    else:
+        return_url = app.config["SOS_TRADES_FRONT_END_DNS"]
+        return redirect(f'{return_url}/authentication-error')
 
 @app.route("/api/data/keycloak/oauth/logout-url", methods=["GET"])
 def logout_url():
