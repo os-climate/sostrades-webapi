@@ -145,7 +145,7 @@ def pre_requisite_for_read_only_mode(study_case_identifier: int):
         # Check if study has a read_only_file
         has_read_only = check_read_only_file_exist(study_dto)
         result = {
-            "server_is_running": False,
+            "server_is_running": status,
             "has_read_only": has_read_only
         }
         resp = make_response(jsonify(result), 200)
