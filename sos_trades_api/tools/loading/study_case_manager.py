@@ -743,7 +743,7 @@ class StudyCaseManager(BaseStudyManager):
         :param study_case_id: optional id of the study_case
         :type study_case_id: int
         """
-        data_root_dir = Config().data_root_dir
+        data_root_dir = join(Config().data_root_dir, "study_case")
         if group_id is not None:
             data_root_dir = join(data_root_dir, str(group_id))
             if study_case_id is not None:

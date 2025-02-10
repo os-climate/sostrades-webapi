@@ -19,7 +19,7 @@ from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 def check_read_only_file_exist(user_study: StudyCaseDto):
     file_exist = False
     # Create path to retrieve to the file loaded_study_case.json
-    sostrades_data_path = Path(app.config["SOS_TRADES_DATA"])
+    sostrades_data_path = Path(app.config["SOS_TRADES_DATA"], "study_case")
     group_path = sostrades_data_path / str(user_study.group_id)
     study_path = group_path / str(user_study.id)
     study_file = study_path / "loaded_study_case.json"
