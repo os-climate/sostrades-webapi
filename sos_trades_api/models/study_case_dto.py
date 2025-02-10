@@ -66,6 +66,7 @@ class StudyCaseDto:
         self.generation_pod_flavor = None
         self.last_memory_usage = ""
         self.last_cpu_usage = ""
+        self.has_read_only_file = False
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -155,6 +156,7 @@ class StudyCaseDto:
         result.update({"generation_pod_flavor": self.generation_pod_flavor})
         result.update({"last_memory_usage": self.last_memory_usage})
         result.update({"last_cpu_usage": self.last_cpu_usage})
+        result.update({"has_read_only_file": self.has_read_only_file})
 
         return result
 

@@ -238,15 +238,30 @@ def get_pod_name(identifier, pod_type, execution_identifier):
     elif pod_type == PodAllocation.TYPE_REFERENCE:
         return f"generation-g{identifier}-{uuid.uuid4()}"
 
-def get_allocation_status(pod_allocation:PodAllocation):
+
+def get_allocation_status_by_study_id(study_case_identifier: int):
+    """
+    :param study_case_identifier: study case identifier to allocate
+    :type study_case_identifier: int
+
+    :return: sos_trades_api.models.database_models.PodAllocation status (str)
+    """
+    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).first()
+
+    return pod_allocation.pod_status
+
+
+def get_allocation_status(pod_allocation: PodAllocation):
     """
     If server mode is kubernetes, check pod status and set the allocation status accordingly, save status in DB
 
-    :param study_case_identifier: study case identifier to allocate
-    :type study_case_identifier: int
+    :param pod_allocation: pod_allocation targeted from database
+    :type pod_allocation: PodAllocation
+
     :return: sos_trades_api.models.database_models.PodAllocation status and reason (str)
     """
     return pod_allocation.pod_status, pod_allocation.message
+
 
 def get_status_from_pod_phase(pod_phase, reason):
     status = PodAllocation.IN_ERROR

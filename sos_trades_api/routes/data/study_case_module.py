@@ -19,6 +19,7 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_favorite_study_case,
+    add_last_opened_study_case,
     check_study_already_exist,
     copy_study,
     create_empty_study_case,
@@ -57,6 +58,12 @@ from sos_trades_api.tools.right_management.functional.process_access_right impor
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+from sos_trades_api.tools.study_management.study_management import (
+    check_pod_allocation_is_running,
+    check_read_only_file_exist,
+    get_file_stream,
+    get_read_only,
+)
 
 
 @app.route("/api/data/study-case", methods=["GET"])
@@ -71,6 +78,31 @@ def study_cases():
         return resp
 
     raise MethodNotAllowed()
+
+
+@app.route("/api/data/study-case/<int:study_id>/read-only-mode", methods=["GET"])
+@auth_required
+def load_study_case_by_id_in_read_only(study_id):
+    """
+    Retreive the study in read only mode, return none if no read only mode found
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about this study case")
+        study_access_right = study_case_access.get_user_right_for_study(
+            study_id)
+
+        loaded_study_json = get_read_only(study_id, study_access_right)
+        # Add this study in last study opened in database
+        add_last_opened_study_case(study_id, user.id)
+        resp = make_response(jsonify(loaded_study_json), 200)
+        return resp
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
 
 @app.route("/api/data/study-case/<int:study_case_identifier>", methods=["GET"])
 @auth_required
@@ -90,6 +122,60 @@ def get_study_case(study_case_identifier: int):
         return resp
 
     raise MethodNotAllowed()
+
+
+@app.route("/api/data/study-case/<int:study_case_identifier>/pre-requisite-read-only-mode", methods=["GET"])
+@auth_required
+def pre_requisite_for_read_only_mode(study_case_identifier: int):
+    user = session["user"]
+
+    if request.method == "GET":
+        # Verify user has study case authorisation to load study (Restricted viewer)
+        study_case_access = StudyCaseAccess(user.id, study_case_identifier)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_case_identifier):
+            raise BadRequest(
+                "You do not have the necessary rights to load this study case")
+
+        # Check if pod_allocation is running
+        status = check_pod_allocation_is_running(study_case_identifier)
+
+        # Retrieve the study_dto targeted
+        study_dto = get_user_study_case(user.id, study_case_identifier)
+
+        # Check if study has a read_only_file
+        has_read_only = check_read_only_file_exist(study_dto)
+        result = {
+            "server_is_running": False,
+            "has_read_only": has_read_only
+        }
+        resp = make_response(jsonify(result), 200)
+        return resp
+
+    raise MethodNotAllowed()
+
+
+@app.route("/api/data/study-case/<int:study_id>/parameter/download", methods=["POST"])
+@auth_required
+def get_study_parameter_file_by_study_case_id(study_id):
+    if study_id is not None:
+
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.COMMENTER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about study case")
+
+        # Proceeding after rights verification
+        parameter_key = request.json.get("parameter_key", None)
+
+        if parameter_key is None:
+            raise BadRequest("Missing mandatory parameter: parameter_key")
+
+        resp = send_file(get_file_stream(study_id, parameter_key), mimetype="arrayBuffer")
+        return resp
+
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
 @app.route("/api/data/study-case", methods=["POST"])
@@ -123,7 +209,7 @@ def allocation_for_new_study_case():
             missing_parameter.append("Missing mandatory parameter: process")
         if group_id is None:
             missing_parameter.append("Missing mandatory parameter: group")
-        #reference can be None
+        # Reference can be None
         if from_type is None:
             missing_parameter.append("Missing mandatory parameter: type")
 
@@ -281,7 +367,7 @@ def update_study_case_flavor(study_id):
         return response
     else:
         raise BadRequest("Missing mandatory parameter: study_id in url")
-    
+
 
 @app.route("/api/data/study-case/<int:study_id>/update-execution-flavor", methods=["POST"])
 @auth_required
