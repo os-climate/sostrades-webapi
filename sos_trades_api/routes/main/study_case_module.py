@@ -27,7 +27,6 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_dataset_export_error_message,
     get_dataset_export_status,
     get_dataset_import_error_message,
-    get_file_stream,
     get_markdown_documentation,
     get_study_case,
     get_study_data_file_path,
@@ -46,6 +45,7 @@ from sos_trades_api.tools.authentication.authentication import auth_required
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+from sos_trades_api.tools.study_management.study_management import get_file_stream
 
 
 @app.route("/api/main/study-case/<int:study_id>", methods=["DELETE"])
@@ -328,10 +328,8 @@ def get_markdown_documentation_by_study_case_id(study_id):
         discipline_key = request.form.get("discipline_key", None)
         if discipline_key is None:
             raise BadRequest("Missing mandatory parameter: discipline key")
-        
 
-        resp = make_response(
-            jsonify(get_markdown_documentation(study_id, discipline_key)), 200)
+        resp = make_response(jsonify(get_markdown_documentation(discipline_key)), 200)
         
         return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")

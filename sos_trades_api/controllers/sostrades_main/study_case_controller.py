@@ -97,6 +97,10 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
     study_case_manager_update_from_dataset_mapping,
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.tools.study_management.study_management import (
+    get_file_stream,
+    get_loaded_study_case_in_read_only_mode,
+)
 
 """
 Study case Functions
@@ -115,6 +119,7 @@ def load_or_create_study_case(study_case_identifier):
     :type study_case_identifier: integer
     """
     with app.app_context():
+        is_study_creation = False
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         # get the studycase in database (created on data server side)
 
@@ -141,9 +146,12 @@ def load_or_create_study_case(study_case_identifier):
             else:
                 # create the study case with all info in database
                 _create_study_case(study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
+            is_study_creation = True
+            return is_study_creation
         else:
             # load the study case as it has already been created
             load_study_case(study_case_identifier)
+            return  is_study_creation
 
 
 def load_study_case(study_id, reload=False):
@@ -198,7 +206,9 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
     """
     with app.app_context():
         # check if the study needs to be created or needs reload
-        load_or_create_study_case(study_case_identifier)
+        is_study_creation = load_or_create_study_case(study_case_identifier)
+        if is_study_creation:
+            read_only_mode = True
 
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
@@ -273,31 +283,6 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
 
     # return study case in read only mode, loaded or with loading status in progress
     return loaded_study_case
-
-
-def get_loaded_study_case_in_read_only_mode(study_id, study_access_right):
-    # Proceeding after rights verification
-    # Get readonly file, in case of a restricted viewer get with no_data
-    study_json = get_study_in_read_only_mode(
-        study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
-
-    # check in read only file that the study status is DONE
-    if study_json is not None and study_json != "null":
-        study_case_value = study_json.get("study_case")
-        if study_case_value is not None:
-            # set study access rights
-            if study_access_right == AccessRights.MANAGER:
-                study_json["study_case"]["is_manager"] = True
-            elif study_access_right == AccessRights.CONTRIBUTOR:
-                study_json["study_case"]["is_contributor"] = True
-            elif study_access_right == AccessRights.COMMENTER:
-                study_json["study_case"]["is_commenter"] = True
-            else:
-                study_json["study_case"]["is_restricted_viewer"] = True
-
-            return study_json
-
-    return None
 
 
 def get_study_load_status(study_id):
@@ -922,40 +907,6 @@ def delete_study_cases(studies):
                                "please refresh your study cases list")
 
 
-def get_file_stream(study_id, parameter_key):
-    """
-    get file stream from a study file parameter
-    :param: study_id, id of the study
-    :type: integer
-    :param: parameter_key, key of the parameter to retrieve
-    :type: string
-    """
-    study_manager = study_case_cache.get_study_case(study_id, False)
-    if study_manager.load_status == LoadStatus.LOADED:
-        uuid_param = study_manager.execution_engine.dm.data_id_map[parameter_key]
-        if uuid_param in study_manager.execution_engine.dm.data_dict:
-            try:
-                file_read_bytes = study_manager.execution_engine.dm.get_parameter_data(
-                    parameter_key)
-            except Exception as error:
-                raise InvalidFile(
-                    f"The following file {parameter_key}.csv raise this error while trying to read it : {error}")
-            return file_read_bytes
-
-        else:
-            raise StudyCaseError(
-                f"Parameter {parameter_key} does not exist in this study case")
-    else:
-        # if the study is not loaded yet, read the pickle file directly to get
-        # the value
-        try:
-            parameters = study_manager.get_parameter_data(parameter_key)
-            return parameters
-        except Exception as error:
-            raise InvalidFile(
-                f"The study read only data are not accessible : {error}")
-
-
 def get_study_data_stream(study_id):
     """
     export data in a zip file and return its path
@@ -975,36 +926,6 @@ def get_study_data_stream(study_id):
         raise InvalidFile(
             f"The following study file raise this error while trying to read it : {error}")
     return zip_path
-
-
-def get_study_in_read_only_mode(study_id, no_data):
-    """
-    check if a study json file exists,
-         if true, read loaded study case in read only mode, and return the json
-         if false, return None, it will be checked on client side
-     :param: study_id, id of the study to export
-     :type: integer
-     :param: no_data, if study is loaded with no data or not
-     :type: boolean
-    """
-    study_manager = StudyCaseManager(study_id)
-    if study_manager.check_study_case_json_file_exists():
-        try:
-            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(
-                no_data)
-            # read dashboard and set it to the loaded study
-            # (it takes less time to read it apart than to have the dashboard in the read only file)
-            if len(loaded_study_json["post_processings"]) > 0:
-                dashboard = study_manager.read_dashboard_in_json_file()
-                loaded_study_json["dashboard"] = dashboard
-            return loaded_study_json
-
-        except Exception as error:
-            app.logger.error(
-                f"Study {study_id} readonly mode error while getting readonly file: {error}")
-            return "null"
-    else:
-        return "null"
 
 
 def get_study_dashboard_in_file(study_id):
@@ -1176,7 +1097,7 @@ def check_study_is_still_active_or_kill_pod():
         app.logger.debug(f"Start check on active study pod since {last_hours} hour(s)")
 
         if config.server_mode == Config.CONFIG_SERVER_MODE_K8S and last_hours is not None :
-            #delete allocation in db
+            # delete allocation in db
 
             inactive_studies = []
             try:
@@ -1188,16 +1109,16 @@ def check_study_is_still_active_or_kill_pod():
             for study_id in inactive_studies:
                 app.logger.info(f"Delete pod and allocation for study {study_id}")
 
-                #delete the file
+                # delete the file
                 delete_study_last_active_file(study_id)
                 # get associated allocation to the study
                 allocation = PodAllocation.query.filter(PodAllocation.identifier == study_id).filter(PodAllocation.pod_type == PodAllocation.TYPE_STUDY).first()
                 allocations_to_delete.append(allocation)
-            #delete service and deployment (that will delete the pod)
+            # delete service and deployment (that will delete the pod)
             delete_study_server_services_and_deployments(allocations_to_delete)
 
 
-def get_markdown_documentation(study_id, discipline_key):
+def get_markdown_documentation(discipline_key):
     spec = importlib.util.find_spec(discipline_key)
     # for the doc of a process, spec.origin = process_folder\__init__.py
     if '__init__.py' in spec.origin:
