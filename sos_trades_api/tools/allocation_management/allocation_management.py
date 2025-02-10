@@ -246,9 +246,11 @@ def get_allocation_status_by_study_id(study_case_identifier: int):
 
     :return: sos_trades_api.models.database_models.PodAllocation status (str)
     """
+    status = ""
     pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).first()
-
-    return pod_allocation.pod_status
+    if pod_allocation is not None:
+        status = pod_allocation.pod_status
+    return status
 
 
 def get_allocation_status(pod_allocation: PodAllocation):
