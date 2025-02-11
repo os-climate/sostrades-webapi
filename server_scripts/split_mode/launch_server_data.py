@@ -14,11 +14,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import argparse
 # coding: utf-8
 import os
 from os.path import dirname, join
 
 from dotenv import load_dotenv
+
+def parse_arguments():
+    # Create an argument parser
+    parser = argparse.ArgumentParser()
+
+    # Add --debug flag, default is False
+    parser.add_argument('--debug', action='store_true', help="Enable debugging")
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    return args
 
 if __name__ == "__main__":
 
@@ -30,4 +43,4 @@ if __name__ == "__main__":
     # correctly server executing environment
     from sos_trades_api.server.split_mode import data_server
 
-    data_server.app.run(host="0.0.0.0", port="8001")
+    data_server.app.run(host="0.0.0.0", port="8001", debug=parse_arguments().debug)

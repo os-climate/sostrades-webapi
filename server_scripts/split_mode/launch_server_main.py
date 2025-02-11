@@ -20,7 +20,23 @@ from os.path import dirname, join
 
 from dotenv import load_dotenv
 
+import argparse
+
+
+def parse_arguments():
+    # Create an argument parser
+    parser = argparse.ArgumentParser()
+
+    # Add --debug flag, default is False
+    parser.add_argument('--debug', action='store_true', help="Enable debugging")
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    return args
+
 if __name__ == "__main__":
+
 
     if os.environ.get("SOS_TRADES_SERVER_CONFIGURATION") is None:
         dotenv_path = join(dirname(__file__), "..", "..", ".flaskenv")
@@ -30,4 +46,4 @@ if __name__ == "__main__":
     # correctly server  executing environment
     from sos_trades_api.server.split_mode import main_server
 
-    main_server.app.run(host="0.0.0.0", port="8000")
+    main_server.app.run(host="0.0.0.0", port="8000", debug = parse_arguments().debug)
