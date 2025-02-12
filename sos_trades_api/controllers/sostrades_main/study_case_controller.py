@@ -99,7 +99,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.study_management.study_management import (
     get_file_stream,
-    get_loaded_study_case_in_read_only_mode,
+    get_loaded_study_case_in_read_only_mode, check_and_clean_read_only_file,
 )
 
 """
@@ -119,7 +119,6 @@ def load_or_create_study_case(study_case_identifier):
     :type study_case_identifier: integer
     """
     with app.app_context():
-        is_study_creation = False
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         # get the studycase in database (created on data server side)
 
@@ -146,12 +145,9 @@ def load_or_create_study_case(study_case_identifier):
             else:
                 # create the study case with all info in database
                 _create_study_case(study_case_identifier, study_case_manager.study.reference, study_case_manager.study.from_type)
-            is_study_creation = True
-            return is_study_creation
         else:
             # load the study case as it has already been created
             load_study_case(study_case_identifier)
-            return  is_study_creation
 
 
 def load_study_case(study_id, reload=False):
@@ -199,20 +195,17 @@ def light_load_study_case(study_id, reload=False):
 # END BACKGROUND LOADING FUNCTION section
 
 
-def get_study_case(user_id, study_case_identifier, study_access_right=None, read_only_mode=False):
+def get_study_case(user_id, study_case_identifier, study_access_right=None, verify_read_only_capability=True):
     """
     get a loaded studycase in read only if needed or not, launch load_or_create if it is not in cache
 
     """
     with app.app_context():
         # check if the study needs to be created or needs reload
-        is_study_creation = load_or_create_study_case(study_case_identifier)
-        if is_study_creation:
-            read_only_mode = True
+        load_or_create_study_case(study_case_identifier)
 
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
-        study_case_execution = None
 
         # retrieve study execution status
         is_read_only_possible = False
@@ -234,7 +227,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, read
         loaded_study_case = None
 
         # show read_only_mode if needed and possible
-        if read_only_mode and is_read_only_possible:
+        if verify_read_only_capability and is_read_only_possible:
             loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right)
             # Add this study in last study opened in database
             add_last_opened_study_case(study_case_identifier, user_id)
@@ -855,12 +848,12 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
         loaded_study_case = LoadedStudyCase(
             study_manager, False, False, user_id)
 
-         #get execution status
+        # Get execution status
         study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
         if study_case is not None and study_case.current_execution_id is not None:
-            study_case_execution = StudyCaseExecution.query.filter(StudyCaseExecution.id == study_case.current_execution_id).first()
-            loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
+        check_and_clean_read_only_file(loaded_study_case.study_case)
 
         return loaded_study_case
 

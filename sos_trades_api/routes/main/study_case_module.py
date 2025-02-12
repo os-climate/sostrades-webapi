@@ -82,6 +82,7 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
+        verify_read_only_capability = request.args.get("verify_read_only_capability")
         # Verify user has study case authorisation to load study (Restricted
         # viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -100,7 +101,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loaded_study = get_study_case(user.id, study_id, study_access_right, False)
+        loaded_study = get_study_case(user.id, study_id, study_access_right, verify_read_only_capability)
         loaded_study_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loaded_study_duration - study_access_right_duration :<5} sec")
@@ -449,8 +450,8 @@ def load_study_data_in_read_only_mode(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        loadedStudyJson = get_study_case(user.id, study_id, study_access_right, read_only_mode=True)
-        resp = make_response(jsonify(loadedStudyJson), 200)
+        loaded_study_json = get_study_case(user.id, study_id, study_access_right)
+        resp = make_response(jsonify(loaded_study_json), 200)
         return resp
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
