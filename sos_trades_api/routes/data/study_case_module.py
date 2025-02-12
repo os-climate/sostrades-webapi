@@ -59,8 +59,8 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
     StudyCaseAccess,
 )
 from sos_trades_api.tools.study_management.study_management import (
-    check_pod_allocation_is_running,
     check_and_clean_read_only_file,
+    check_pod_allocation_is_running,
     get_file_stream,
     get_read_only,
 )

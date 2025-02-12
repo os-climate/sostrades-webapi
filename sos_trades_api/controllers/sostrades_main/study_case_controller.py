@@ -98,8 +98,9 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.study_management.study_management import (
+    check_and_clean_read_only_file,
     get_file_stream,
-    get_loaded_study_case_in_read_only_mode, check_and_clean_read_only_file,
+    get_loaded_study_case_in_read_only_mode,
 )
 
 """
