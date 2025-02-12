@@ -16,31 +16,37 @@ from sos_trades_api.tools.allocation_management.allocation_management import (
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
-def check_read_only_file_exist(user_study: StudyCaseDto):
-    file_exist = False
-    # Create path to retrieve to the file loaded_study_case.json
-    sostrades_data_path = Path(app.config["SOS_TRADES_DATA"], "study_case")
-    group_path = sostrades_data_path / str(user_study.group_id)
-    study_path = group_path / str(user_study.id)
-    study_file = study_path / "loaded_study_case.json"
+def check_and_clean_read_only_file(user_study: StudyCaseDto) -> bool:
+    """
+    Verify if a study case has a valid read-only file and manage associated files based on execution status.
 
-    # Check if paths and file exist
-    if group_path.exists():
-        if study_path.exists():
-            if study_file.is_file():
-                if user_study.execution_status == StudyCaseExecution.FINISHED:
-                    file_exist = True
-                    return file_exist
-                else:
-                    # If StudyCaseExecution is not FINISHED, the loaded_study_case.json does not exist anymore
-                    study_file.unlink()
-                    app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
-        else:
-            app.logger.error(f"The folder of study_id {user_study.id} in the group {user_study.group_id} is not existing")
-    else:
-        app.logger.error(f"The folder of group_id {user_study.group_id} is not existing")
+    This function checks for the existence of 'loaded_study_case.json' and manages its presence
+    based on the study's execution status. If the study is not in FINISHED state,
+    it removes both 'loaded_study_case.json' and 'loaded_study_case_no_data.json' files.
 
-    return file_exist
+    Args:
+        user_study (StudyCaseDto): Study case data transfer object containing study information
+
+    Returns:
+        bool: True if the study has a valid read-only file and is in FINISHED state,
+              False otherwise
+
+    """
+    try:
+        file_exist = False
+        study_manager = StudyCaseManager(user_study.id)
+        # Check if paths and file exist
+        if study_manager.check_study_case_json_file_exists():
+            if user_study.execution_status == StudyCaseExecution.FINISHED:
+                file_exist = True
+            else:
+                # If execution_status is not FINISHED, the loaded_study_case.json does not exist anymore
+                study_manager.delete_loaded_study_case_in_json_file()
+                app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
+
+        return file_exist
+    except Exception as ex:
+        raise f"Error processing study {user_study.id}: {ex}"
 
 
 def get_read_only(study_case_identifier, study_access_right):
@@ -162,6 +168,5 @@ def check_pod_allocation_is_running(study_case_identifier):
         status = get_allocation_status_by_study_id(study_case_identifier)
         if status is not None and status == PodAllocation.RUNNING:
             is_running = True
-            return is_running
 
         return is_running
