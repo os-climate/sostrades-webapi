@@ -42,6 +42,7 @@ from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.models.loaded_study_case import LoadStatus
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
+from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
@@ -451,8 +452,8 @@ def load_study_data_in_read_only_mode(study_id):
         study_id)
 
         loaded_study_json = get_study_case(user.id, study_id, study_access_right)
-        resp = make_response(jsonify(loaded_study_json), 200)
-        return resp
+
+        return make_gzipped_response(loaded_study_json)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
