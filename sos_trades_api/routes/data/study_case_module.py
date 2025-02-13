@@ -52,6 +52,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
+from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
@@ -99,8 +100,7 @@ def load_study_case_by_id_in_read_only(study_id):
         loaded_study_json = get_read_only(study_id, study_access_right)
         # Add this study in last study opened in database
         add_last_opened_study_case(study_id, user.id)
-        resp = make_response(jsonify(loaded_study_json), 200)
-        return resp
+        return make_gzipped_response(loaded_study_json)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
