@@ -120,12 +120,13 @@ def load_or_create_study_case(study_case_identifier):
     :type study_case_identifier: integer
     """
     with app.app_context():
-        study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
-        # get the studycase in database (created on data server side)
 
+        # get the study_case in database (created on data server side)
         study_case = StudyCase.query.filter(StudyCase.id.like(study_case_identifier)).first()
         # if the study is not loaded and the creation is not started or finished, create the study
         if study_case.creation_status != StudyCase.CREATION_DONE and study_case.creation_status != ProxyDiscipline.STATUS_DONE:
+            study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
+
             study_case_manager.study.creation_status = StudyCase.CREATION_IN_PROGRESS
             study_case.creation_status = StudyCase.CREATION_IN_PROGRESS
             db.session.add(study_case)
@@ -226,12 +227,9 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
         no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
         loaded_study_case = None
-
         # show read_only_mode if needed and possible
         if verify_read_only_capability and is_read_only_possible:
             loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right)
-            # Add this study in last study opened in database
-            add_last_opened_study_case(study_case_identifier, user_id)
 
         # get loaded study in edition mode or if there was a problem with read_only mode
         if loaded_study_case is None:
@@ -272,8 +270,8 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
                 if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
                     loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
 
-                # Add this study in last study opened in database
-                add_last_opened_study_case(study_case_identifier, user_id)
+        # Add this study in last study opened in database
+        add_last_opened_study_case(study_case_identifier, user_id)
 
     # return study case in read only mode, loaded or with loading status in progress
     return loaded_study_case
