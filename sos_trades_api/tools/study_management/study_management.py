@@ -77,11 +77,12 @@ def get_read_only(study_case_identifier, study_access_right):
             is_read_only_possible = True
             # show read_only_mode if needed and possible
         if is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right)
+            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
+
     return loaded_study_case
 
 
-def get_loaded_study_case_in_read_only_mode(study_id, study_access_right):
+def get_loaded_study_case_in_read_only_mode(study_id, study_access_right, study_execution):
     # Proceeding after rights verification
     # Get readonly file, in case of a restricted viewer get with no_data
     study_json = _get_study_in_read_only_mode(
@@ -93,14 +94,19 @@ def get_loaded_study_case_in_read_only_mode(study_id, study_access_right):
         if study_case_value is not None:
             # set study access rights
             if study_access_right == AccessRights.MANAGER:
-                study_json["study_case"]["is_manager"] = True
+                study_case_value["is_manager"] = True
             elif study_access_right == AccessRights.CONTRIBUTOR:
-                study_json["study_case"]["is_contributor"] = True
+                study_case_value["is_contributor"] = True
             elif study_access_right == AccessRights.COMMENTER:
-                study_json["study_case"]["is_commenter"] = True
+                study_case_value["is_commenter"] = True
             else:
-                study_json["study_case"]["is_restricted_viewer"] = True
+                study_case_value["is_restricted_viewer"] = True
 
+            # Set execution status
+            if study_execution is not None:
+                study_case_value["execution_status"] = study_execution.execution_status
+                study_case_value["last_memory_usage"] = study_execution.memory_usage
+                study_case_value["last_cpu_usage"] = study_execution.cpu_usage
             return study_json
 
     return None
@@ -119,8 +125,10 @@ def _get_study_in_read_only_mode(study_id, no_data):
     study_manager = StudyCaseManager(study_id)
     if study_manager.check_study_case_json_file_exists():
         try:
-            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(
-                no_data)
+            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(no_data)
+
+            loaded_study_json["study_case"]['has_read_only_file'] = True
+
             # read dashboard and set it to the loaded study
             # (it takes less time to read it apart than to have the dashboard in the read only file)
             if len(loaded_study_json["post_processings"]) > 0:
