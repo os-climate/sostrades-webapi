@@ -137,7 +137,6 @@ def study_case_manager_loading(study_case_manager, no_data, read_only, profile_l
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE \
                 and not study_case_manager.check_study_case_json_file_exists():
             study_case_manager.save_study_read_only_mode_in_file()
-        
 
         study_case_manager.load_status = LoadStatus.LOADED
         gc.collect()
@@ -320,12 +319,15 @@ def study_case_manager_update_from_dataset_mapping(study_case_manager, datasets_
                                 old_value = None
                                 new_value = None
                             except Exception as error:
-                                raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}') from error
+                                raise Exception(f'Error during conversion from {param_chg.variable_type} to byte" : {error}')
                         else:
-                            study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
-                            new_value = str(param_chg.new_value)
-                            old_value = str(param_chg.old_value)
-                            old_value_bytes = None
+                            try:
+                                study_case_change = StudyCaseChange.DATASET_MAPPING_CHANGE
+                                new_value = str(param_chg.new_value)
+                                old_value = str(param_chg.old_value)
+                                old_value_bytes = None
+                            except Exception as error:
+                                raise Exception(f'Error to set new value" : {error}')
 
                         # Add change into database
                         add_change_db(
@@ -517,9 +519,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        # write loadedstudy into a json file to load the study in read only
-        # when loading
-        study_case_manager.save_study_read_only_mode_in_file()
+
         with app.app_context():
             study_case = StudyCase.query.filter(
                 StudyCase.id.like(study_case_manager.study.id)).first()
@@ -528,6 +528,10 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
             db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
+
+        # write loadedstudy into a json file to load the study in read only
+        # when loading
+        study_case_manager.save_study_read_only_mode_in_file()
 
         app.logger.info(
             f"End background reference loading {study_name}")
@@ -600,9 +604,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        # write loadedstudy into a json file to load the study in read only
-        # when loading
-        study_case_manager.save_study_read_only_mode_in_file()
+
 
         with app.app_context():
             study_case = StudyCase.query.filter(
@@ -613,6 +615,10 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
 
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
+
+        # write loadedstudy into a json file to load the study in read only
+        # when loading
+        study_case_manager.save_study_read_only_mode_in_file()
 
         app.logger.info(
             f"End of loading usecase data in background {study_case_manager.study.name}")
@@ -677,9 +683,6 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
             no_data, read_only)
 
         study_case_manager.n2_diagram = {}
-        # write loadedstudy into a json file to load the study in read only
-        # when loading
-        study_case_manager.save_study_read_only_mode_in_file()
 
         with app.app_context():
             study_case = StudyCase.query.filter(
@@ -689,6 +692,10 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
             db.session.commit()
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
+
+        # write loadedstudy into a json file to load the study in read only
+        # when loading
+        study_case_manager.save_study_read_only_mode_in_file()
 
         app.logger.info(
             f"End of loading from study in background {study_case_manager.study.name}")
