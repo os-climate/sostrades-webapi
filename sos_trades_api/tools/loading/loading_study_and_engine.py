@@ -230,9 +230,11 @@ def study_case_manager_update(study_case_manager, values, no_data, read_only):
         clean_obsolete_data_validation_entries(study_case_manager)
 
         study_case_manager.n2_diagram = {}
+
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
         # set the loadStatus to loaded to end the loading of a study
         study_case_manager.load_status = LoadStatus.LOADED
 
@@ -526,12 +528,13 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
             study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
-        # set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
 
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
+        # set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f"End background reference loading {study_name}")
@@ -613,12 +616,14 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
             db.session.add(study_case)
             db.session.commit()
 
-        # set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
-
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
+        # set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
+
+
 
         app.logger.info(
             f"End of loading usecase data in background {study_case_manager.study.name}")
@@ -690,12 +695,13 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
             study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
-        # set the loadStatus to loaded to end the loading of a study
-        study_case_manager.load_status = LoadStatus.LOADED
 
         # write loadedstudy into a json file to load the study in read only
         # when loading
         study_case_manager.save_study_read_only_mode_in_file()
+
+        # set the loadStatus to loaded to end the loading of a study
+        study_case_manager.load_status = LoadStatus.LOADED
 
         app.logger.info(
             f"End of loading from study in background {study_case_manager.study.name}")
