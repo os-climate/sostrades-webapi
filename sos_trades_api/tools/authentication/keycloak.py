@@ -100,6 +100,13 @@ class KeycloakAuthenticator:
     def user_info(self, token):
         return self.keycloak_openid.userinfo(token)
 
+    def has_access_to_default_resources(self, token):
+        '''
+        check that the user has access to the platform main resource
+        '''
+        authStatus = self.keycloak_openid.has_uma_access(token, "Default Resource")
+        return authStatus.is_authorized
+
     def logout_url(self):
         return KEYCLOAK_LOGOUT_URL.format(
             self.__keycloak_oauth_settings[KEYCLOAK_AUTH_URL],

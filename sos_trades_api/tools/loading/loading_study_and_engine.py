@@ -522,7 +522,7 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
         study_case_manager.save_study_read_only_mode_in_file()
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_manager.study.id).first()
+                StudyCase.id.like(study_case_manager.study.id)).first()
             study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
@@ -534,10 +534,11 @@ def study_case_manager_loading_from_reference(study_case_manager, no_data, read_
     except Exception:
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_manager.study.id).first()
-            study_case.creation_status = StudyCase.CREATION_ERROR
-            db.session.add(study_case)
-            db.session.commit()
+                StudyCase.id.like(study_case_manager.study.id)).first()
+            if study_case is not None:
+                study_case.creation_status = StudyCase.CREATION_ERROR
+                db.session.add(study_case)
+                db.session.commit()
         study_case_manager.load_status = LoadStatus.IN_ERROR
         exc_type, exc_value, exc_traceback = sys.exc_info()
         study_case_manager.set_error(
@@ -605,7 +606,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
 
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_manager.study.id).first()
+                StudyCase.id.like(study_case_manager.study.id)).first()
             study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()
@@ -618,7 +619,7 @@ def study_case_manager_loading_from_usecase_data(study_case_manager, no_data, re
     except Exception:
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_manager.study.id).first()
+                StudyCase.id.like(study_case_manager.study.id)).first()
             study_case.creation_status = StudyCase.CREATION_ERROR
             db.session.add(study_case)
             db.session.commit()
@@ -682,7 +683,7 @@ def study_case_manager_loading_from_study(study_case_manager, no_data, read_only
 
         with app.app_context():
             study_case = StudyCase.query.filter(
-                StudyCase.id == study_case_manager.study.id).first()
+                StudyCase.id.like(study_case_manager.study.id)).first()
             study_case.creation_status = StudyCase.CREATION_DONE
             db.session.add(study_case)
             db.session.commit()

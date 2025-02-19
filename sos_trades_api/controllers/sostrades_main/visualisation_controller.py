@@ -14,10 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    generate_n2_matrix,
-)
+
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_n2_matrix
 from sos_trades_api.server.base_server import study_case_cache
+from sos_trades_api.tools.visualisation.couplings_force_graph import (
+    get_couplings_force_graph,
+)
 from sos_trades_api.tools.visualisation.execution_workflow_graph import (
     SoSExecutionWorkflow,
 )
@@ -57,28 +59,51 @@ def get_execution_sequence_graph_data(study_id):
     return result
 
 
-def get_n2_diagram_graph_data(study_id):
+def get_n2_diagram_graph_data(study_id: int) -> dict:
     """
     Generate n2 diagram of a loaded study
-    :param study_id: id of the study
-    :type study_id: integer
 
-    :return: dictionary
+    Args:
+        study_id (int): identifier of the study
+
+    Returns:
+        dict: Graph data containing n2 diagram information
+
     """
+    graph = {}
+    # Check if study is loaded
     if not study_case_cache.is_study_case_cached(study_id):
         raise VisualisationError("Study case has to be loaded first before requesting for n2 diagram")
 
+    # Get study case manager
     study_case_manager = study_case_cache.get_study_case(study_id, False, False)
 
-    return generate_n2_matrix(study_case_manager)
+    # Get couplings
+    couplings = study_case_manager.execution_engine.root_process.export_couplings()
+    if couplings is None:
+        raise VisualisationError("Failed to export couplings")
+
+    # Get treeview data
+    treeview = study_case_manager.execution_engine.get_treeview()
+    if treeview is None:
+        raise VisualisationError("Failed to get treeview")
+
+    # Load matrix and generate graph from ontology
+    ontology_matrix_data = load_n2_matrix(treeview)
+    if len(ontology_matrix_data) > 0:
+
+        # Get couplings graph from matrix
+        graph = get_couplings_force_graph(couplings, ontology_matrix_data)
+
+    return graph
 
 
 def get_interface_diagram_data(study_id):
     """
     Retrieve study case, interface diagram data
     """
-    study = study_case_cache.get_study_case(study_id, False, False)
     try:
+        study = study_case_cache.get_study_case(study_id, False, False)
         # interface diagram generation
         interface_diagram = InterfaceDiagramGenerator(study)
         result = interface_diagram.generate_interface_diagram_data()

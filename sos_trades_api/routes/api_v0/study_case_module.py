@@ -25,7 +25,6 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_raw_logs,
 )
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
-    copy_study_case,
     get_file_stream,
     light_load_study_case,
     load_study_case,
@@ -36,7 +35,7 @@ from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseChange,
 )
-from sos_trades_api.models.loaded_study_case import LoadStatus
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.tools.authentication.authentication import (
     api_key_required,
@@ -69,7 +68,7 @@ def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
         study_access_right = study_case_access.get_user_right_for_study(study_id)
 
         # Trigger load
-        load_study_case(study_id, study_access_right, user.id)
+        load_study_case(study_id)
 
         # Wait load complete
         for _ in range(timeout):
@@ -80,10 +79,10 @@ def api_v0_load_study_case_by_id(study_id: int, timeout: int = 30):
                 break
             else:
                 time.sleep(1)
-
-        loaded_study = load_study_case(study_id, study_access_right, user.id)
-
-        flattened_tree_node = flatten_tree_node(loaded_study.treenode)
+        read_only = study_access_right == AccessRights.COMMENTER
+        no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+        loaded_study_case = LoadedStudyCase(study_manager, no_data, read_only, user.id)
+        flattened_tree_node = flatten_tree_node(loaded_study_case.study_case.treenode)
         payload = {}
 
         if flattened_tree_node:
@@ -117,7 +116,6 @@ def copy_study_case_by_id(study_id):
             user = session["user"]
             group = session["group"]
 
-
             new_study_name = request.json.get("new_study_name", None)
 
             if new_study_name is None:
@@ -131,10 +129,10 @@ def copy_study_case_by_id(study_id):
                                                  source_study_case.process, group.id, study_id, StudyCase.FROM_STUDYCASE, source_study_case.study_pod_flavor, source_study_case.execution_pod_flavor)
 
             # Retrieve the source study
-            copy_study_identifier = copy_study_case(study_case.id, study_id, user.id)
+            load_study_case(study_case.id)
 
             # Proceeding after rights verification
-            resp = make_response(jsonify(copy_study_identifier), 200)
+            resp = make_response(jsonify(study_case.id), 200)
             return resp
 
         else:
@@ -265,5 +263,3 @@ def get_study_case_raw_logs(study_id):
     else:
         resp = make_response(jsonify("No logs found."), 404)
         return resp
-
-
