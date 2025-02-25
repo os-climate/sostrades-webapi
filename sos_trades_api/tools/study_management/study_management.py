@@ -107,6 +107,10 @@ def get_loaded_study_case_in_read_only_mode(study_id, study_access_right, study_
                 study_case_value["execution_status"] = study_execution.execution_status
                 study_case_value["last_memory_usage"] = study_execution.memory_usage
                 study_case_value["last_cpu_usage"] = study_execution.cpu_usage
+
+            # set creation status to DONE if not saved in read only mode
+            study_case_value["creation_status"] = StudyCase.CREATION_DONE
+
             return study_json
 
     return None
