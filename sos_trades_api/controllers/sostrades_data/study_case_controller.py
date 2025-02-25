@@ -725,6 +725,10 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                         update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
+
+                if check_and_clean_read_only_file(user_study):
+                    user_study.has_read_only_file = True
+
                 return user_study
     return None
 

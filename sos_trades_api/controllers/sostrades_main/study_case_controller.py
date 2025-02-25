@@ -227,9 +227,13 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
         no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
 
         loaded_study_case = None
+        # get execution status
+        study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+        study_case_execution = StudyCaseExecution.query.filter(
+            StudyCaseExecution.id == study_case.current_execution_id).first()
         # show read_only_mode if needed and possible
         if verify_read_only_capability and is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right)
+            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
 
         # get loaded study in edition mode or if there was a problem with read_only mode
         if loaded_study_case is None:
@@ -269,6 +273,8 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
                 # If the root process is at done
                 if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
                     loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
+                if check_and_clean_read_only_file(loaded_study_case.study_case):
+                    loaded_study_case.study_case.has_read_only_file = True
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_case_identifier, user_id)
