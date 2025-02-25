@@ -141,7 +141,7 @@ def load_or_create_study_case(study_case_identifier):
                     study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
                     db.session.delete(study_case)
                     db.session.commit()
-                    raise Exception("Source study case is not completely created. Load it again then copy it.")
+                    raise InvalidStudy("Source study case is not completely created. Load it again then copy it.")
                 # copy the study from the source study
                 _copy_study_case(study_case_identifier, source_id)
             else:
@@ -220,7 +220,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
 
         # check there was no error during loading
         if study_case_manager.load_status == LoadStatus.IN_ERROR:
-            raise Exception(study_case_manager.error_message)
+            raise InvalidStudy(study_case_manager.error_message)
 
         # check access to data with user rights
         read_only = study_access_right == AccessRights.COMMENTER
@@ -387,7 +387,7 @@ def _create_study_case(study_case_identifier, reference, from_type=None):
             "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)), True)
 
         # Then propagate exception
-        raise Exception(study_case_manager.error_message)
+        raise InvalidStudy(study_case_manager.error_message)
 
 
 def _copy_study_case(study_id, source_study_case_identifier):
@@ -444,7 +444,7 @@ def _copy_study_case(study_id, source_study_case_identifier):
                     args=(study_manager, False, False, study_manager_source)).start()
 
             if study_manager.load_status == LoadStatus.IN_ERROR:
-                raise Exception(study_manager.error_message)
+                raise InvalidStudy(study_manager.error_message)
 
             # Update cache modification date and release study
             study_case_cache.update_study_case_modification_date(
@@ -474,7 +474,7 @@ def _copy_study_case(study_id, source_study_case_identifier):
                 "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
             # Then propagate exception
-            raise Exception(study_manager.error_message)
+            raise InvalidStudy(study_manager.error_message)
 
 def _launch_load_study_in_background(study_manager,  no_data, read_only):
     """
@@ -512,7 +512,7 @@ def update_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
             ).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
-            raise Exception(study_manager.error_message)
+            raise InvalidStudy(study_manager.error_message)
 
 
         # Releasing study
@@ -563,13 +563,13 @@ def export_study_parameters_from_datasets_mapping(study_id, user, datasets_mappi
                     args=(study_manager, datasets_mapping_deserialized, notification_id),
                 ).start()
             else:
-                raise Exception("study case is currently loading, please retry the export at the end of the loading.")
+                raise InvalidStudy("study case is currently loading, please retry the export at the end of the loading.")
         # deal with errors
         elif study_manager.dataset_export_status_dict[notification_id]  == LoadStatus.IN_ERROR:
             if notification_id in study_manager.dataset_export_error_dict.keys():
-                raise Exception(study_manager.dataset_export_error_dict[notification_id])
+                raise InvalidStudy(study_manager.dataset_export_error_dict[notification_id])
             else:
-                raise Exception("Error while exporting parameters in dataset")
+                raise InvalidStudy("Error while exporting parameters in dataset")
 
         # return the status of the export
         return study_manager.dataset_export_status_dict.get(notification_id, LoadStatus.NONE)
@@ -838,7 +838,7 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
                 target=study_case_manager_update, args=(study_manager, values, False, False)).start()
 
         if study_manager.load_status == LoadStatus.IN_ERROR:
-            raise Exception(study_manager.error_message)
+            raise InvalidStudy(study_manager.error_message)
 
         # Releasing study
         study_case_cache.release_study_case(study_id)
