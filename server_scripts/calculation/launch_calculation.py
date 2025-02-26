@@ -35,7 +35,7 @@ COMMITTED_DATE = 'committed_date'
 REPO_PATH = 'path'
 
 # Regular expression to remove connection info from url when token is used
-INFO_REGEXP = ':\/\/.*@'
+INFO_REGEXP = '://.*@'
 INFO_REPLACE = '://'
 
 

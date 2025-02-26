@@ -485,7 +485,7 @@ def database_create_user_test(username, password):
     # Set Profile
     study_user_profile = UserProfile.query.filter_by(name=UserProfile.STUDY_USER).first()
     if study_user_profile is None:
-        raise Exception(f"{UserProfile.STUDY_USER} not found in database")
+        raise UserError(f"{UserProfile.STUDY_USER} not found in database")
 
 
     # Retrieve user_test to check if it already exists
@@ -556,7 +556,7 @@ def database_set_user_access_group(group_list, username):
     # Retrieve member rights to set it at "all user" group
     right = AccessRights.query.filter_by(access_right=AccessRights.MEMBER).first()
     if right is None:
-        raise Exception(f"{right} not found in database")
+        raise ValueError(f"{right} not found in database")
 
     # Check if groups are in databases
     missing_groups = []
@@ -568,7 +568,7 @@ def database_set_user_access_group(group_list, username):
             set_user_access_group(group_selected.id, user.id, right.id)
             db.session.commit()
     if missing_groups:
-        raise Exception(f"{missing_groups} not found in database")
+        raise ValueError(f"{missing_groups} not found in database")
 
 
 def reset_local_user_password_by_name(username):
