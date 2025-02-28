@@ -3,7 +3,7 @@
 
 # External libraries
 click==8.1.7
-eventlet==0.36.1
+eventlet==0.39.0
 Flask==2.3.3
 flask-jwt-extended==4.6.0
 Flask-Migrate==4.0.7
