@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
+# Monkey patch eventlet before all imports
+import eventlet
+eventlet.monkey_patch()
+
 # Set server name
 import os
 
