@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from datetime import datetime
+from pathlib import Path
 
 from sos_trades_api.controllers.error_classes import InvalidFile, StudyCaseError
 from sos_trades_api.models.database_models import (
@@ -21,12 +23,13 @@ from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCaseExecution,
 )
-from sos_trades_api.models.loaded_study_case import LoadStatus
+from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.tools.allocation_management.allocation_management import (
     get_allocation_status_by_study_id,
 )
+from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
@@ -195,4 +198,51 @@ def check_pod_allocation_is_running(study_case_identifier):
         if status is not None and status == PodAllocation.RUNNING:
             is_running = True
 
-        return is_running
+        return False
+
+def update_read_only_files_with_visualization():
+    """"
+    Load all study case with read only files, 
+    build visualization diagrams and update diagrams in read only files
+    """
+    report = []
+    with app.app_context():
+        # get all study cases
+        study_cases = StudyCase.query.filter(
+            StudyCase.creation_status == StudyCase.CREATION_DONE).all()
+        
+        start = datetime.now()
+        app.logger.info(f"Study cases to check: {len(study_cases)}\n")
+        for study in study_cases:
+            #check there is an existing read_only_mode file
+            study_manager = StudyCaseManager(study.id)
+            if study_manager.check_study_case_json_file_exists():
+                # get the read only file content
+                study_json = study_manager.read_loaded_study_case_in_json_file()
+                if study_json is not None:
+                    # check there is no diagrams in the read_only
+                    study_case_value = study_json.get(LoadedStudyCase.N2_DIAGRAM)
+                    if study_case_value is None or len(study_case_value) == 0:
+                        app.logger.info(f"Study case {study.id} has no diagrams\n")
+                        try:
+                            # load the study from the pickle
+                            study_manager.load_study_case_from_source()
+                            app.logger.info(f"Study case {study.id} loaded\n")
+                            # load n2 diagrams
+                            loaded_study = LoadedStudyCase(study_manager, no_data=False, read_only=False, 
+                                                           user_id=None, load_post_processings=False)
+                            loaded_study.load_n2_diagrams(study_manager)
+                            app.logger.info(f"Study case {study.id} N2 built\n")
+                            # set n2 diagrams in the read only mode
+                            study_json[LoadedStudyCase.N2_DIAGRAM] = loaded_study.n2_diagram
+
+                            # save the read only mode
+                            study_file_path = Path(study_manager.dump_directory).joinpath(StudyCaseManager.LOADED_STUDY_FILE_NAME)
+                            write_object_in_json_file(study_json, study_file_path)
+                            app.logger.info(f"Study case {study.id} read only file written\n")
+                        except Exception as exp:
+                            # the study cannot be reloaded
+                            app.logger.error(f"error while updating read only mode of study {study.id}: {str(exp)}")
+                            pass
+    
+    app.logger.info(f"total time: {datetime.now()-start}\n")
