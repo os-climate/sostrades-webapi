@@ -15,7 +15,10 @@ limitations under the License.
 
 '''
 # Monkey patch eventlet before all imports
+# Ignore checks, it HAS TO be made before imports
+# ruff: noqa: E402
 import eventlet
+
 eventlet.monkey_patch()
 
 # Set server name
