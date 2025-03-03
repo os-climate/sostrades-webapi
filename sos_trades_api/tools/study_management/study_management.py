@@ -198,7 +198,7 @@ def check_pod_allocation_is_running(study_case_identifier):
         if status is not None and status == PodAllocation.RUNNING:
             is_running = True
 
-        return False
+        return is_running
 
 def update_read_only_files_with_visualization():
     """"
