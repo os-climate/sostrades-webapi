@@ -212,6 +212,8 @@ def update_read_only_files_with_visualization():
             StudyCase.creation_status == StudyCase.CREATION_DONE).all()
         
         start = datetime.now()
+        study_n2_diagrams_updated = []
+        study_in_error_at_loading = []
         app.logger.info(f"Study cases to check: {len(study_cases)}\n")
         for study in study_cases:
             #check there is an existing read_only_mode file
@@ -240,9 +242,16 @@ def update_read_only_files_with_visualization():
                             study_file_path = Path(study_manager.dump_directory).joinpath(StudyCaseManager.LOADED_STUDY_FILE_NAME)
                             write_object_in_json_file(study_json, study_file_path)
                             app.logger.info(f"Study case {study.id} read only file written\n")
+                            study_n2_diagrams_updated.append(study.id)
                         except Exception as exp:
                             # the study cannot be reloaded
                             app.logger.error(f"error while updating read only mode of study {study.id}: {str(exp)}")
+                            study_in_error_at_loading.append(study.id)
                             pass
     
-    app.logger.info(f"total time: {datetime.now()-start}\n")
+    
+    app.logger.info(f"total updated diagrams: {len(study_n2_diagrams_updated)}")
+    app.logger.info(f"updated diagrams of studies: {study_n2_diagrams_updated}")
+    app.logger.info(f"total studies in error at loading: {len(study_in_error_at_loading)}")
+    app.logger.info(f"studies in error at loading: {study_in_error_at_loading}")
+    app.logger.info(f"total time: {datetime.now()-start}")
