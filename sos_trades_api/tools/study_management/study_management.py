@@ -224,7 +224,10 @@ def update_read_only_files_with_visualization():
                 if study_json is not None:
                     # check there is no diagrams in the read_only
                     study_case_value = study_json.get(LoadedStudyCase.N2_DIAGRAM)
-                    if study_case_value is None or len(study_case_value) == 0:
+                    if (study_case_value is None or len(study_case_value) == 0 
+                        or study_case_value.get(LoadedStudyCase.N2_DIAGRAM) is None or len(study_case_value.get(LoadedStudyCase.N2_DIAGRAM)) == 0 
+                        or study_case_value.get(LoadedStudyCase.EXECUTION_SEQUENCE) is None or len(study_case_value.get(LoadedStudyCase.EXECUTION_SEQUENCE)) == 0
+                        or study_case_value.get(LoadedStudyCase.INTERFACE_DIAGRAM) is None or len(study_case_value.get(LoadedStudyCase.INTERFACE_DIAGRAM)) == 0):
                         app.logger.info(f"Study case {study.id} has no diagrams\n")
                         try:
                             # load the study from the pickle
@@ -236,7 +239,18 @@ def update_read_only_files_with_visualization():
                             loaded_study.load_n2_diagrams(study_manager)
                             app.logger.info(f"Study case {study.id} N2 built\n")
                             # set n2 diagrams in the read only mode
-                            study_json[LoadedStudyCase.N2_DIAGRAM] = loaded_study.n2_diagram
+                            if (study_case_value is None or len(study_case_value) == 0):
+                                study_json[LoadedStudyCase.N2_DIAGRAM] = loaded_study.n2_diagram
+                            else:
+                                if study_case_value.get(LoadedStudyCase.N2_DIAGRAM) is None or len(study_case_value.get(LoadedStudyCase.N2_DIAGRAM)) == 0:
+                                    study_json[LoadedStudyCase.N2_DIAGRAM][LoadedStudyCase.N2_DIAGRAM] = loaded_study.n2_diagram[LoadedStudyCase.N2_DIAGRAM]
+                                    app.logger.info(f"Study case {study.id} update coupling diagram\n")
+                                if study_case_value.get(LoadedStudyCase.EXECUTION_SEQUENCE) is None or len(study_case_value.get(LoadedStudyCase.EXECUTION_SEQUENCE)) == 0:
+                                    study_json[LoadedStudyCase.N2_DIAGRAM][LoadedStudyCase.EXECUTION_SEQUENCE] = loaded_study.n2_diagram[LoadedStudyCase.EXECUTION_SEQUENCE]
+                                    app.logger.info(f"Study case {study.id} update execution sequence diagram\n")
+                                if study_case_value.get(LoadedStudyCase.INTERFACE_DIAGRAM) is None or len(study_case_value.get(LoadedStudyCase.INTERFACE_DIAGRAM)) == 0:
+                                    study_json[LoadedStudyCase.N2_DIAGRAM][LoadedStudyCase.INTERFACE_DIAGRAM] = loaded_study.n2_diagram[LoadedStudyCase.INTERFACE_DIAGRAM]
+                                    app.logger.info(f"Study case {study.id} update interface diagram\n")
 
                             # save the read only mode
                             study_file_path = Path(study_manager.dump_directory).joinpath(StudyCaseManager.LOADED_STUDY_FILE_NAME)
@@ -249,7 +263,7 @@ def update_read_only_files_with_visualization():
                             study_in_error_at_loading.append(study.id)
                             pass
     
-    
+    app.logger.info(f"Total Study cases checked: {len(study_cases)}\n")
     app.logger.info(f"total updated diagrams: {len(study_n2_diagrams_updated)}")
     app.logger.info(f"updated diagrams of studies: {study_n2_diagrams_updated}")
     app.logger.info(f"total studies in error at loading: {len(study_in_error_at_loading)}")
