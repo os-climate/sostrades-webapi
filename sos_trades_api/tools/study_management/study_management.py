@@ -58,9 +58,11 @@ def check_and_clean_read_only_file(user_study: StudyCaseDto) -> bool:
                 file_exist = True
             else:
                 # If execution_status is not FINISHED, the loaded_study_case.json does not exist anymore
-                study_manager.delete_loaded_study_case_in_json_file()
-                app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
-
+                try:
+                    study_manager.delete_loaded_study_case_in_json_file()
+                    app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
+                except Exception as exp:
+                    app.logger.error(f"Error while deletion of read only file for {user_study.id} because his status is not Finished: {str(exp)}")
         return file_exist
     except Exception as ex:
         raise Exception(f"Error processing study {user_study.id}: {ex}")
