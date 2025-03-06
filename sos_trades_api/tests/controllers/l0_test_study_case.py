@@ -23,6 +23,9 @@ from time import sleep
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
 )
+from sos_trades_api.tools.study_management.study_management import (
+    get_loaded_study_case_in_read_only_mode,
+)
 
 """
 Test class for study procedures
@@ -873,7 +876,6 @@ class TestStudy(DatabaseUnitTestConfiguration):
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
             delete_study_cases,
-            get_study_in_read_only_mode,
             load_or_create_study_case,
         )
         from sos_trades_api.models.database_models import StudyCase
@@ -917,7 +919,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
             self.assertTrue(study_manager.check_study_case_json_file_exists(
             ), "Unable to retrieve study case read only file")
-            study_json = get_study_in_read_only_mode(study_case_copy_id, False)
+            study_json = get_loaded_study_case_in_read_only_mode(study_case_copy_id, False)
             self.assertIsNotNone(
                 study_json, "Unable to read study case read only file")
 

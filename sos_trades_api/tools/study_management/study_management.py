@@ -63,7 +63,7 @@ def check_and_clean_read_only_file(user_study: StudyCaseDto) -> bool:
 
         return file_exist
     except Exception as ex:
-        raise f"Error processing study {user_study.id}: {ex}"
+        raise Exception(f"Error processing study {user_study.id}: {ex}")
 
 
 def get_read_only(study_case_identifier, study_access_right):
