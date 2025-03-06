@@ -157,11 +157,11 @@ def load_ontology_usages(ontology_request):
     data = {"study_ontology_request": ontology_request}
 
     try:
-        app.logger.info(f"Start ontology usage access")
+        app.logger.info("Start ontology usage access")
         resp = requests.request(
             method="POST", url=complete_url, json=data, verify=ssl_path,
         )
-        app.logger.info(f"End ontology usage access")
+        app.logger.info("End ontology usage access")
         if resp.status_code == 200:
             ontology_response_data = resp.json()
 
