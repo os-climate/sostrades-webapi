@@ -920,7 +920,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import AccessRights, StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import study_case_cache
-        from sos_trades_api.tools.study_management.study_management import get_loaded_study_case_in_read_only_mode
+        from sos_trades_api.tools.study_management.study_management import (
+            get_loaded_study_case_in_read_only_mode,
+        )
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
