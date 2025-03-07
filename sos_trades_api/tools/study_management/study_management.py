@@ -32,6 +32,7 @@ from sos_trades_api.tools.allocation_management.allocation_management import (
 from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
+
 def check_study_has_read_only_mode(user_study: StudyCaseDto) -> bool:
     """
     Check read only file exists and study execution status at Finished
