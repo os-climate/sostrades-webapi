@@ -72,6 +72,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             StudyCase,
             User,
         )
+        from sos_trades_api.models.loaded_study_case import LoadStatus
+        from sos_trades_api.server.base_server import study_case_cache
+
         with DatabaseUnitTestConfiguration.app.app_context():
             # Retrieve user_test
             test_user = User.query \
@@ -132,6 +135,19 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.test_study_id = new_study_case.id
 
             load_or_create_study_case( self.test_study_id)
+            # wait study loaded
+            stop = False
+            counter = 0
+            study_manager = study_case_cache.get_study_case(self.test_study_id, False)
+            while not stop:
+                if study_manager.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_id loading too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
 
             # Create test csv studycase
             new_study_case_csv = create_empty_study_case(self.test_user_id,
@@ -148,6 +164,19 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.test_study_csv_id = new_study_case_csv.id
 
             load_or_create_study_case(self.test_study_csv_id)
+            # wait study loaded
+            stop = False
+            counter = 0
+            study_manager_test_study_csv_id = study_case_cache.get_study_case(self.test_study_csv_id, False)
+            while not stop:
+                if study_manager_test_study_csv_id.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_csv_id loading too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
 
             # Create  test clear_error studycase
             new_study_case_clear_error = create_empty_study_case(self.test_user_id,
@@ -164,6 +193,19 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.test_study_clear_error_id = new_study_case_clear_error.id
 
             load_or_create_study_case(self.test_study_clear_error_id)
+            # wait study loaded
+            stop = False
+            counter = 0
+            study_manager_test_study_clear_error_id = study_case_cache.get_study_case(self.test_study_clear_error_id, False)
+            while not stop:
+                if study_manager_test_study_clear_error_id.load_status == LoadStatus.LOADED:
+                    stop = True
+                else:
+                    if counter > 60:
+                        self.assertTrue(
+                            False, "test_study_clear_error_id loading too long, check thread")
+                    counter = counter + 1
+                    sleep(1)
 
     def tearDown(self):
         super().tearDown()
@@ -878,7 +920,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
         from sos_trades_api.models.database_models import AccessRights, StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import study_case_cache
-        from sos_trades_api.tools.study_management.study_management import get_read_only
+        from sos_trades_api.tools.study_management.study_management import get_loaded_study_case_in_read_only_mode
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -897,9 +939,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      None,
                                                      )
-
-            load_or_create_study_case(new_study_case.id)
             study_case_copy_id = new_study_case.id
+            load_or_create_study_case(study_case_copy_id)
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
@@ -917,7 +958,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
                     sleep(1)
             self.assertTrue(study_manager.check_study_case_json_file_exists(
             ), "Unable to retrieve study case read only file")
-            study_json = get_read_only(study_case_copy_id, AccessRights.MANAGER)
+            study_json = get_loaded_study_case_in_read_only_mode(study_case_copy_id, AccessRights.MANAGER, None)
             self.assertIsNotNone(
                 study_json, "Unable to read study case read only file")
 
@@ -968,9 +1009,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
                                                      None,
                                                      None,
                                                      )
-
-            load_or_create_study_case(new_study_case.id)
             study_case_copy_id = new_study_case.id
+            load_or_create_study_case(study_case_copy_id)
+            
             # wait end of study case creation
             study_manager = study_case_cache.get_study_case(study_case_copy_id, False)
             #  wait until study was updated (thread behind)
@@ -1019,7 +1060,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
-            parameter_changes = get_last_study_case_changes(new_study_case.id)
+            parameter_changes = get_last_study_case_changes(study_case_copy_id)
             self.assertTrue(len(parameter_changes) == 0)
 
             files_data = {
@@ -1052,7 +1093,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             # check if clear_error is performed in study_case_controller
             self.assertFalse(study_manager.load_status == LoadStatus.IN_ERROR)
-            parameter_changes = get_last_study_case_changes(new_study_case.id)
+            parameter_changes = get_last_study_case_changes(study_case_copy_id)
             for parameter in parameter_changes:
                 if parameter.variable_id == "test_study_for_dataset_mapping.test_disc1_disc2_coupling.Disc1.a":
                     self.assertIsNotNone(parameter.datase_id)
@@ -1062,3 +1103,16 @@ class TestStudy(DatabaseUnitTestConfiguration):
 
             studies_id_list_to_delete = [study_case_copy_id]
             delete_study_cases(studies_id_list_to_delete)
+
+if __name__ == "__main__":
+    test = TestStudy()
+    test.setUpClass()
+    test.setUp()
+    try:
+        test.test_study_case_read_only_mode()
+    except Exception as ex:
+        print(str(ex))
+
+    test.tearDown()
+    test.tearDownClass()
+

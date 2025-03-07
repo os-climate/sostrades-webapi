@@ -73,7 +73,7 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
     StudyCaseAccess,
 )
 from sos_trades_api.tools.study_management.study_management import (
-    check_and_clean_read_only_file,
+    check_study_has_read_only_mode,
 )
 
 """
@@ -675,8 +675,7 @@ def get_user_shared_study_case(user_identifier: int):
             # Display empty string if study pod flavor is None
             if user_study.study_pod_flavor is None:
                 user_study.study_pod_flavor = ""
-            if check_and_clean_read_only_file(user_study):
-                user_study.has_read_only_file = True
+            user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
 
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
@@ -726,8 +725,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
 
-                if check_and_clean_read_only_file(user_study):
-                    user_study.has_read_only_file = True
+                user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
 
                 return user_study
     return None

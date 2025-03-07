@@ -60,8 +60,8 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
     StudyCaseAccess,
 )
 from sos_trades_api.tools.study_management.study_management import (
-    check_and_clean_read_only_file,
     check_pod_allocation_is_running,
+    check_study_has_read_only_mode,
     get_file_stream,
     get_read_only,
 )
@@ -143,7 +143,7 @@ def pre_requisite_for_read_only_mode(study_case_identifier: int):
         study_dto = get_user_study_case(user.id, study_case_identifier)
 
         # Check if study has a read_only_file
-        has_read_only = check_and_clean_read_only_file(study_dto)
+        has_read_only = check_study_has_read_only_mode(study_dto)
         result = {
             "allocation_is_running": status,
             "has_read_only": has_read_only
