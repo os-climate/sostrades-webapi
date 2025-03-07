@@ -99,6 +99,7 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.study_management.study_management import (
     check_and_clean_read_only_file,
+    check_study_has_read_only_mode,
     get_file_stream,
     get_loaded_study_case_in_read_only_mode,
 )
@@ -273,8 +274,8 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
                 # If the root process is at done
                 if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
                     loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
-                if check_and_clean_read_only_file(loaded_study_case.study_case):
-                    loaded_study_case.study_case.has_read_only_file = True
+            
+                loaded_study_case.study_case.has_read_only_file = check_study_has_read_only_mode(loaded_study_case.study_case)
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_case_identifier, user_id)
