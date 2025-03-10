@@ -16,15 +16,13 @@ limitations under the License.
 '''
 
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
-from sqlalchemy import and_
 
 from sos_trades_api.models.database_models import (
     StudyCase,
     StudyCoeditionUser,
-    UserStudyPreference,
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
-from sos_trades_api.server.base_server import app, db
+from sos_trades_api.server.base_server import db
 from sos_trades_api.tools.chart_tools import load_post_processing
 
 """
@@ -41,12 +39,15 @@ class LoadStatus:
 
 class LoadedStudyCase:
 
+    N2_DIAGRAM = "n2_diagram"
+    EXECUTION_SEQUENCE = "execution_sequence"
+    INTERFACE_DIAGRAM = "interface_diagram"
+
     def __init__(self, study_case_manager, no_data, read_only, user_id, load_post_processings=False):
 
         self.study_case = StudyCaseDto(study_case_manager.study)
 
         self.load_status = study_case_manager.load_status
-        self.preference = {}
         self.no_data = no_data
         self.read_only = read_only
         self.treenode = {}
@@ -66,43 +67,33 @@ class LoadedStudyCase:
         if self.load_status == LoadStatus.LOADED:
             self.load_treeview_and_post_proc(
                 study_case_manager, no_data, read_only, user_id, load_post_processings)
+            self.load_n2_diagrams(study_case_manager)
 
     def load_treeview_and_post_proc(self, study_case_manager, no_data, read_only, user_id, load_post_proc):
         study_case_manager.execution_engine.dm.treeview = None
 
         treeview = study_case_manager.execution_engine.get_treeview(
             no_data, read_only)
-        self.n2_diagram = {}
 
         if treeview is not None:
             self.treenode = treeview.to_dict()
         self.post_processings = {}
         self.plotly = {}
-        self.n2_diagram = study_case_manager.n2_diagram
-        self.__load_user_study_preference(user_id)
-
+                
         # Loading charts if study is finished
         if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
             # Get discipline filters
             self.post_processings = load_post_processing(
                 study_case_manager.execution_engine, load_post_proc)
 
-    def __load_user_study_preference(self, user_id):
+    def load_n2_diagrams(self, study_manager):
         """
-        Load study preferences for the given user
-        :params: user_id, user identification of the preferences
-        :type: integer
+        Create visualisation diagrams
         """
-        if user_id is not None:
-            with app.app_context():
-                preferences = UserStudyPreference.query.filter(
-                    and_(UserStudyPreference.user_id == user_id, UserStudyPreference.study_case_id == self.study_case.id)).all()
-
-                if len(preferences) > 0:
-                    for preference in preferences:
-                        panel_id = preference.panel_identifier
-                        panel_opened = preference.panel_opened
-                        self.preference[panel_id] = panel_opened
+        self.n2_diagram = {}
+        self.n2_diagram[self.N2_DIAGRAM] = study_manager.get_n2_diagram_graph_data()
+        self.n2_diagram[self.INTERFACE_DIAGRAM] = study_manager.get_interface_diagram_graph_data()
+        self.n2_diagram[self.EXECUTION_SEQUENCE] = study_manager.get_execution_sequence_graph_data()
 
     def __load_user_execution_authorised(self, user_id):
         """
@@ -169,7 +160,6 @@ class LoadedStudyCase:
             "user_id_execution_authorized": self.user_id_execution_authorized,
             "no_data": self.no_data,
             "read_only": self.read_only,
-            "preference": self.preference,
             "can_reload": self.can_reload,
             "load_status": self.load_status,
             "dashboard": self.dashboard,

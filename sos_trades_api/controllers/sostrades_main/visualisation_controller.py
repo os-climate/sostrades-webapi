@@ -15,17 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from sos_trades_api.controllers.sostrades_data.ontology_controller import load_n2_matrix
 from sos_trades_api.server.base_server import study_case_cache
-from sos_trades_api.tools.visualisation.couplings_force_graph import (
-    get_couplings_force_graph,
-)
-from sos_trades_api.tools.visualisation.execution_workflow_graph import (
-    SoSExecutionWorkflow,
-)
-from sos_trades_api.tools.visualisation.interface_diagram import (
-    InterfaceDiagramGenerator,
-)
 
 """
 Visualisation Functions
@@ -48,13 +38,7 @@ def get_execution_sequence_graph_data(study_id):
     """
     study_manager = study_case_cache.get_study_case(study_id, False, False)
 
-    GEMS_graph = study_manager.execution_engine.root_process.coupling_structure.graph
-
-    # execution workflow generation
-    execution_workflow = SoSExecutionWorkflow(GEMS_graph)
-    execution_workflow.get_execution_workflow_graph()
-
-    result = execution_workflow.create_result()
+    result = study_manager.get_execution_sequence_graph_data()
 
     return result
 
@@ -79,21 +63,10 @@ def get_n2_diagram_graph_data(study_id: int) -> dict:
     study_case_manager = study_case_cache.get_study_case(study_id, False, False)
 
     # Get couplings
-    couplings = study_case_manager.execution_engine.root_process.export_couplings()
-    if couplings is None:
-        raise VisualisationError("Failed to export couplings")
-
-    # Get treeview data
-    treeview = study_case_manager.execution_engine.get_treeview()
-    if treeview is None:
-        raise VisualisationError("Failed to get treeview")
-
-    # Load matrix and generate graph from ontology
-    ontology_matrix_data = load_n2_matrix(treeview)
-    if len(ontology_matrix_data) > 0:
-
-        # Get couplings graph from matrix
-        graph = get_couplings_force_graph(couplings, ontology_matrix_data)
+    try:
+        graph = study_case_manager.get_n2_diagram_graph_data()
+    except Exception as error:
+        raise VisualisationError(str(error))
 
     return graph
 
@@ -105,8 +78,7 @@ def get_interface_diagram_data(study_id):
     try:
         study = study_case_cache.get_study_case(study_id, False, False)
         # interface diagram generation
-        interface_diagram = InterfaceDiagramGenerator(study)
-        result = interface_diagram.generate_interface_diagram_data()
+        result = study.get_interface_diagram_graph_data()
 
         return result
     except Exception as ex:

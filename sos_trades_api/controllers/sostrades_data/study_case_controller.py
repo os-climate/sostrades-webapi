@@ -72,6 +72,9 @@ from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
+from sos_trades_api.tools.study_management.study_management import (
+    check_study_has_read_only_mode,
+)
 
 """
 Study case Functions
@@ -210,8 +213,8 @@ def load_study_case_allocation(study_case_identifier):
         if study_case is not None:
             study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, study_case.study_pod_flavor)
 
-
     return study_case_allocation
+
 
 def get_study_case_allocation(study_case_identifier)-> PodAllocation:
     """
@@ -229,24 +232,23 @@ def get_study_case_allocation(study_case_identifier)-> PodAllocation:
         study_case_allocation = study_case_allocations[0]
         pod_status, message = get_allocation_status(study_case_allocation)
 
-        #if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
-        if pod_status != PodAllocation.NOT_STARTED or  (pod_status == PodAllocation.NOT_STARTED and \
+        # if the pod is not found but last pod was oomkilled, pod status not updated to keep the error trace until new loading
+        if pod_status != PodAllocation.NOT_STARTED or (pod_status == PodAllocation.NOT_STARTED and \
             study_case_allocation.pod_status != PodAllocation.IN_ERROR and study_case_allocation.pod_status != PodAllocation.OOMKILLED):
             study_case_allocation.pod_status = pod_status
             study_case_allocation.message = message
         if len(study_case_allocations) > 1:
             app.logger.warning(f"We have {len(study_case_allocations)} pod allocations for the same study (id {study_case_identifier}) but only one will be updated, is this normal ?")
 
-  
-
     return study_case_allocation
+
 
 def copy_study(source_study_case_identifier, new_study_identifier, user_identifier):
     """
     copy an existing study case with a new name but without loading this study
 
     :param source_study_case_identifier: identifier of the study case to copy
-    :type source_study_case_identifier: str
+    :type source_study_case_identifier: int
     :param new_study_identifier: id of the new study case
     :type new_study_identifier: integer
     :param user_identifier:  id user owner of the new study case
@@ -300,8 +302,7 @@ def copy_study(source_study_case_identifier, new_study_identifier, user_identifi
 
         # Copy of study data sources from the study source_study_case_identifier to study new study
         try:
-            study_case_manager = StudyCaseManager(str(new_study_identifier))
-
+            study_case_manager = StudyCaseManager(new_study_identifier)
 
             # Copy dm.pkl in the new
             study_case_manager.copy_pkl_file(DataSerializer.pkl_filename, study_case_manager, study_manager_source)
@@ -381,15 +382,13 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
                         Group).join(GroupAccessUser) \
                         .filter(GroupAccessUser.user_id == user_id) \
                         .filter(Group.id == new_group_id) \
-                        .filter(StudyCase.disabled == False).all()#noqa: E712
-                        # Ruff fix causes regression that prevent the filter to work
-
+                        .filter(StudyCase.disabled == False).all() #noqa: E712
+                    # Ruff fix causes regression that prevent the filter to work
 
                     for study in study_name_list:
                         if study.name == new_study_name:
                             raise InvalidStudy(
                                 f'The following study case name "{new_study_name}" already exist in the database for the target group')
-
 
                 # Retrieve the study group access
                 update_group_access = StudyCaseAccessGroup.query \
@@ -454,12 +453,14 @@ def edit_study(study_id, new_group_id, new_study_name, user_id):
     else:
         raise InvalidStudyExecution("This study is running, you cannot edit it during its run.")
 
+
 def get_study_execution_flavor(study_id:int):
     study = StudyCase.query.filter(StudyCase.id == study_id).first()
     execution_flavor = None
     if study is not None:
         execution_flavor = study.execution_pod_flavor
     return execution_flavor
+
 
 def edit_study_execution_flavor(study_id,  new_execution_pod_flavor:str):
     """
@@ -483,13 +484,15 @@ def edit_study_execution_flavor(study_id,  new_execution_pod_flavor:str):
     return study_is_updated
 
 
-def edit_study_flavor(study_id,  new_pod_flavor:str, restartPod: bool):
+def edit_study_flavor(study_id,  new_pod_flavor: str, restart_pod: bool):
     """
     Update pod size of a study
     :param study_id: id of the study to load
     :type study_id: integer
     :param new_pod_flavor: execution pod flavor.
     :type new_pod_flavor: str
+    :param restart_pod: restart pod or not by deleting the existing deployment.
+    :type restart_pod: bool
 
     """
     study_is_updated = False
@@ -502,7 +505,7 @@ def edit_study_flavor(study_id,  new_pod_flavor:str, restartPod: bool):
             db.session.add(study_to_update)
             db.session.commit()
             study_is_updated = True
-        if study_is_updated and restartPod:
+        if study_is_updated and restart_pod:
             pod_allocation = get_study_case_allocation(study_to_update.id)
             app.logger.info("Retrieved status of pod of kubernetes from edit_study_flavor()")
             if pod_allocation is not None:
@@ -545,7 +548,6 @@ def delete_study_cases_and_allocation(studies):
                 db.session.rollback()
                 app.logger.warning(f"Deletion of studies ({','.join(str(study) for study in studies)}) has been rollbacked")
                 raise ex
-
 
             # Once removed from db, remove it from file system
             for study in query:
@@ -673,6 +675,7 @@ def get_user_shared_study_case(user_identifier: int):
             # Display empty string if study pod flavor is None
             if user_study.study_pod_flavor is None:
                 user_study.study_pod_flavor = ""
+            user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
 
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
@@ -721,12 +724,11 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                         update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
+
+                user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
+
                 return user_study
     return None
-
-
-
-
 
 
 def add_study_information_on_status(user_study: StudyCase):
@@ -1009,7 +1011,7 @@ def load_study_case_preference(study_case_identifier, user_identifier):
         ).all()
 
         if len(preferences) > 0:
-            result = preferences
+            result = {preference.panel_identifier: preference.panel_opened for preference in preferences}
 
     return result
 
