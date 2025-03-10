@@ -79,7 +79,8 @@ def create_and_load_allocation(identifier:int, allocation_type:str, flavor:str, 
     db.session.commit()
 
     # refresh pod_allocation
-    pod_allocation = PodAllocation.query.filter(PodAllocation.id == pod_allocation.id).first()
+    pod_allocation = PodAllocation.query.filter(PodAllocation.id == pod_allocation.id,
+                                                PodAllocation.pod_type == allocation_type).first()
     return pod_allocation
 
 def load_allocation(pod_allocation:PodAllocation, log_file_path=None):
@@ -247,7 +248,8 @@ def get_allocation_status_by_study_id(study_case_identifier: int):
     :return: sos_trades_api.models.database_models.PodAllocation status (str)
     """
     status = ""
-    pod_allocation = PodAllocation.query.filter(PodAllocation.identifier == study_case_identifier).first()
+    pod_allocation = PodAllocation.query.filter(
+        PodAllocation.identifier == study_case_identifier, PodAllocation.pod_type == PodAllocation.TYPE_STUDY).first()
     if pod_allocation is not None:
         status = pod_allocation.pod_status
     return status
