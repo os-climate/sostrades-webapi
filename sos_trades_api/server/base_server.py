@@ -686,6 +686,12 @@ def update_all_pod_status_loop_method():
                 # May happen that there is an issue when logging, so we pass
                 pass
 
+def update_read_only_files_with_visualization_method():
+    from sos_trades_api.tools.study_management.study_management import (
+        update_read_only_files_with_visualization,
+    )
+    update_read_only_files_with_visualization()
+
 if app.config["ENVIRONMENT"] != UNIT_TEST:
 
     # Add custom command on flask cli to execute database setup
@@ -944,6 +950,15 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         """
         update_all_pod_status_loop_method()
 
+    # Add custom command on flask cli to update all Visualization diagrams in old read only files
+    @click.command("update_read_only_files_with_visualization")
+    @with_appcontext
+    def update_read_only_files_with_visualization():
+        """
+        update all allocations from db
+        """
+        update_read_only_files_with_visualization_method()
+
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
     app.cli.add_command(create_standard_user)
@@ -961,6 +976,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     app.cli.add_command(set_process_access_user)
     app.cli.add_command(update_pod_allocations_status)
     app.cli.add_command(update_pod_allocations_status_loop)
+    app.cli.add_command(update_read_only_files_with_visualization)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
@@ -1054,6 +1070,4 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return make_response(jsonify("pong"), 200)
-
-
 

@@ -55,6 +55,7 @@ from sos_trades_api.models.database_models import (
     StudyCaseValidation,
     User,
     UserProfile,
+    UserStudyPreference,
 )
 from sos_trades_api.models.entity_rights import (
     EntityRight,
@@ -86,7 +87,7 @@ class CustomJsonEncoder(JSONEncoder):
 
     def default(self, o):  # pylint: disable=E0202
 
-        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile)):
+        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference)):
             return o.serialize()
         elif isinstance(o, DataFrame):
             return "://dataframe"
