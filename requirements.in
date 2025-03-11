@@ -3,7 +3,7 @@
 
 # External libraries
 click==8.1.7
-git+https://github.com/eventlet/eventlet.git@refs/pull/1027/head # Fix the issue of typing after monkey patch in message server. Change this version once it is fixed
+eventlet==0.39.1
 Flask==2.3.3
 flask-jwt-extended==4.6.0
 Flask-Migrate==4.0.7
