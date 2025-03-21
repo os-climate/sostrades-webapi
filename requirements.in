@@ -3,7 +3,7 @@
 
 # External libraries
 click==8.1.7
-git+https://github.com/eventlet/eventlet.git@refs/pull/1027/head # Fix the issue of typing after monkey patch in message server. Change this version once it is fixed
+eventlet==0.39.1
 Flask==2.3.3
 flask-jwt-extended==4.6.0
 Flask-Migrate==4.0.7
@@ -33,6 +33,7 @@ simplejson==3.19.2
 SQLAlchemy==1.4.52
 urllib3==2.2.2
 werkzeug==2.3.8
+xmlsec==1.3.14
 
 # Development requirements
 # breaking change in 8.2.0 https://docs.pytest.org/en/stable/changelog.html#pytest-8-2-0-2024-04-27
