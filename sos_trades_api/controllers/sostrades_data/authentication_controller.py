@@ -248,13 +248,11 @@ def manage_keycloak_groups(user: User, group_list_associated:list[str]):
     group_set_associated = set(group_list_associated)
     group_set_keycloak = set(groups_keycloak_from_config)
 
-    # Groups to remove access (not associated but in keycloak)
-    groups_delete_access_not_associated = group_set_associated - group_set_keycloak
     # Groups to remove access (associated but not in keycloak)
     groups_delete_access_not_in_keycloak = group_set_keycloak - group_set_associated
 
     # List of all groups to remove access
-    all_different_groups = list(groups_delete_access_not_associated.union(groups_delete_access_not_in_keycloak))
+    all_different_groups = list(groups_delete_access_not_in_keycloak)
 
     # Remove user access for groups no longer associated
     if all_different_groups:
