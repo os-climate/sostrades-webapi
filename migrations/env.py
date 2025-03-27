@@ -92,9 +92,10 @@ def run_migrations_online():
             if script.upgrade_ops.is_empty():
                 directives[:] = []
                 logger.info("No changes in schema detected.")
-
+    config_dict = config.get_section(config.config_ini_section)
+    config_dict["sqlalchemy.connect_args"] = parameters
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        config_dict,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
