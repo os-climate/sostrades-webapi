@@ -634,9 +634,7 @@ def get_user_shared_study_case(user_identifier: int):
                 lambda s: s.current_execution_id is not None, all_user_studies,
             )
         ]
-        all_study_case_execution = StudyCaseExecution.query.filter(
-            StudyCaseExecution.id.in_(all_study_case_execution_identifiers),
-        ).all()
+        
 
         # Final loop to update study dto
         for user_study in all_user_studies:
@@ -650,6 +648,12 @@ def get_user_shared_study_case(user_identifier: int):
 
             # Manage last study opened list
             if user_study.id in all_last_studies_opened_identifier:
+                # refresh all study opened:
+                all_last_studies_opened = (
+                    UserLastOpenedStudy.query.filter(UserLastOpenedStudy.study_case_id.in_(all_study_identifier))
+                    .filter(UserLastOpenedStudy.user_id == user_identifier)
+                    .all()
+                )
                 for last_study_opened in all_last_studies_opened:
                     if last_study_opened.study_case_id == user_study.id:
                         user_study.opening_date = last_study_opened.opening_date
@@ -657,6 +661,9 @@ def get_user_shared_study_case(user_identifier: int):
                 user_study.is_last_study_opened = True
 
             # Manage execution status
+            all_study_case_execution = StudyCaseExecution.query.filter(
+                StudyCaseExecution.id.in_(all_study_case_execution_identifiers),
+            ).all()
             study_case_execution = list(
                 filter(
                     lambda sce: sce.study_case_id == user_study.id,
