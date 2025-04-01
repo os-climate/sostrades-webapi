@@ -311,6 +311,37 @@ class PodAllocation(db.Model):
         }
 
 
+class StudyStandAloneStatus(db.Model):
+    """Status of Stand-alone Study import/export class"""
+
+    id = Column(Integer, primary_key=True)
+    study_case_id = Column(Integer,
+                           ForeignKey(
+                               f"{StudyCase.__tablename__}.id",
+                               ondelete="CASCADE",
+                               name="fk_study_stand_alone_status_study_case_id"),
+                           nullable=False)
+    progress = Column(Integer, index=False, unique=False)
+    next_progress = Column(Integer, index=False, unique=False)
+    progress_text = Column(String(128), index=False, unique=False, server_default="")
+    is_finished = Column(Boolean, default=False, nullable=False)
+    is_in_error = Column(Boolean, default=False, nullable=False)
+    error_message = Column(Text, index=False, unique=False, nullable=True)
+
+    def serialize(self):
+        """
+        json serializer for dto purpose
+        """
+        return {
+            "id": self.id,
+            "study_case_id": self.study_case_id,
+            "progress": self.progress,
+            "next_progress": self.next_progress,
+            "progress_text": self.progress_text,
+            "is_finished": self.is_finished,
+            "is_in_error": self.is_in_error,
+            "error_message": self.error_message,
+        }
 
 
 class UserStudyPreference(db.Model):
