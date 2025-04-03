@@ -569,12 +569,6 @@ class StudyCaseManager(BaseStudyManager):
         study_file_path = Path(self.dump_directory).joinpath(
             loaded_study_case_file_name)
 
-        # check nan and infinity in post processings
-        if len(loaded_study.post_processings) > 0:
-            text_post_proc_data = json.dumps(loaded_study.post_processings, cls=CustomJsonEncoder).replace(
-                "NaN", "null").replace("Infinity", "null")
-            json_post_proc_data = json.loads(text_post_proc_data)
-            loaded_study.post_processings = json_post_proc_data
         return write_object_in_json_file(loaded_study, study_file_path)
 
     def read_loaded_study_case_in_json_file(self, no_data=False):
