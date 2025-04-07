@@ -18,9 +18,11 @@ import json
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
+from sos_trades_api.tools.file_stream.file_stream import generate_large_file
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+    add_last_opened_study_case,
     copy_study_discipline_data,
     delete_study_cases,
     export_study_parameters_from_datasets_mapping,
@@ -46,7 +48,7 @@ from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
-from sos_trades_api.tools.study_management.study_management import get_file_stream
+from sos_trades_api.tools.study_management.study_management import check_read_only_mode_available, get_file_stream, get_read_only_file_path
 
 
 @app.route("/api/main/study-case/<int:study_id>", methods=["DELETE"])
@@ -455,9 +457,14 @@ def load_study_data_in_read_only_mode(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        loaded_study_json = get_study_case(user.id, study_id, study_access_right)
-
-        return make_gzipped_response(loaded_study_json)
+        if check_read_only_mode_available(study_id):
+            add_last_opened_study_case(study_id, user.id)
+            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+            file_path = get_read_only_file_path(study_id, no_data)
+            return make_response(generate_large_file(file_path), 200)
+        else:
+            loaded_study_json = get_study_case(user.id, study_id, study_access_right)
+            return make_gzipped_response(loaded_study_json)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 

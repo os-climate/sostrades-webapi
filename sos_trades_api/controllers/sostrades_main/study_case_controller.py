@@ -98,8 +98,8 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.study_management.study_management import (
-    check_and_clean_read_only_file,
-    check_study_has_read_only_mode,
+    check_read_only_mode_available,
+    clean_read_only_file,
     get_file_stream,
     get_loaded_study_case_in_read_only_mode,
 )
@@ -275,7 +275,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
                 if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
                     loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
             
-                loaded_study_case.study_case.has_read_only_file = check_study_has_read_only_mode(loaded_study_case.study_case)
+                loaded_study_case.study_case.has_read_only_file = check_read_only_mode_available(study_case_identifier)
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_case_identifier, user_id)
@@ -855,11 +855,9 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_manager, False, False, user_id)
 
         # Get execution status
-        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
-        if study_case is not None and study_case.current_execution_id is not None:
-            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+        loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
-        check_and_clean_read_only_file(loaded_study_case.study_case)
+        clean_read_only_file(study_id)
 
         return loaded_study_case
 

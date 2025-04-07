@@ -389,19 +389,18 @@ class StudyCaseManager(BaseStudyManager):
 
             loaded_study_case.study_case.apply_ontology(
                 process_metadata, repository_metadata)
-
-            # if the loaded status is not yet at LOADED, load treeview post
-            # proc anyway so that the read only mode file is available when study is loaded
-            if self.load_status != LoadStatus.LOADED:
-                loaded_study_case.load_treeview_and_post_proc(
-                    self, False, True, None, True)
-                loaded_study_case.load_n2_diagrams(self)
-                
-            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.__write_loaded_study_case_in_json_file(
-                loaded_study_case, False)
-
+            
             if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
+                loaded_study_case.load_treeview_and_post_proc(
+                        self, False, True, None, True)
+                loaded_study_case.load_n2_diagrams(self)
+                    
+                loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+                loaded_study_case.study_case.creation_status = StudyCase.CREATION_DONE
+                
+                self.__write_loaded_study_case_in_json_file(
+                    loaded_study_case, False)
+
                 # save the study with no data for restricted read only access:
                 loaded_study_case.load_treeview_and_post_proc(
                     self, True, True, None, True)
@@ -576,17 +575,25 @@ class StudyCaseManager(BaseStudyManager):
             json_post_proc_data = json.loads(text_post_proc_data)
             loaded_study.post_processings = json_post_proc_data
         return write_object_in_json_file(loaded_study, study_file_path)
-
-    def read_loaded_study_case_in_json_file(self, no_data=False):
+    
+    def get_read_only_file_path(self, no_data=False):
         """
-        Retrieve study case loaded from json file for read only mode
+        Return the read only mode file path
+        :param no_data: if true, return the path to the reastricted viewer file instead of the read only file
+        :type no_data: bool
         """
         loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
         if no_data:
             loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
 
-        root_folder = Path(self.dump_directory)
-        study_file_path = root_folder.joinpath(loaded_study_case_file_name)
+        return Path(self.dump_directory).joinpath(loaded_study_case_file_name)
+
+
+    def read_loaded_study_case_in_json_file(self, no_data=False):
+        """
+        Retrieve study case loaded from json file for read only mode
+        """
+        study_file_path = self.get_read_only_file_path(no_data)
         loaded_study = read_object_in_json_file(study_file_path)
 
         return loaded_study
@@ -595,13 +602,12 @@ class StudyCaseManager(BaseStudyManager):
         """
         Retrieve study case loaded from json file for read only mode
         """
-        root_folder = Path(self.dump_directory)
-        study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
+        study_file_path = self.get_read_only_file_path()
         if os.path.exists(study_file_path):
             os.remove(study_file_path)
 
         # delete read only file for restricted viewer
-        study_file_path = root_folder.joinpath(self.RESTRICTED_STUDY_FILE_NAME)
+        study_file_path = self.get_read_only_file_path(no_data=True)
         if os.path.exists(study_file_path):
             os.remove(study_file_path)
 
@@ -609,10 +615,8 @@ class StudyCaseManager(BaseStudyManager):
         """
         Check study case loaded into json file for read only mode exists
         """
-        root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
-
-        return os.path.exists(file_path)
+        return os.path.exists(self.get_read_only_file_path())
+    
 
     def read_dashboard_in_json_file(self):
         """

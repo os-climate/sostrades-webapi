@@ -33,49 +33,53 @@ from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
-def check_study_has_read_only_mode(user_study: StudyCaseDto) -> bool:
+def clean_read_only_file(study_id: int) -> bool:
     """
-    Check read only file exists and study execution status at Finished
-    """
-    study_manager = StudyCaseManager(user_study.id)
-    return study_manager.check_study_case_json_file_exists() and \
-            user_study.execution_status == StudyCaseExecution.FINISHED
-    
-
-def check_and_clean_read_only_file(user_study: StudyCaseDto) -> bool:
-    """
-    Verify if a study case has a valid read-only file and manage associated files based on execution status.
-
-    This function checks for the existence of 'loaded_study_case.json' and manages its presence
-    based on the study's execution status. If the study is not in FINISHED state,
-    it removes both 'loaded_study_case.json' and 'loaded_study_case_no_data.json' files.
-
+    Delete the read only file
     Args:
-        user_study (StudyCaseDto): Study case data transfer object containing study information
+        study_id: id of the study to clean
 
     Returns:
-        bool: True if the study has a valid read-only file and is in FINISHED state,
+        bool: True if the study file has been deleted,
               False otherwise
 
     """
     try:
-        file_exist = False
-        study_manager = StudyCaseManager(user_study.id)
+        file_deleted = False
+        study_manager = StudyCaseManager(study_id)
         # Check if paths and file exist
         if study_manager.check_study_case_json_file_exists():
-            if user_study.execution_status == StudyCaseExecution.FINISHED:
-                file_exist = True
-            else:
-                # If execution_status is not FINISHED, the loaded_study_case.json does not exist anymore
-                try:
-                    study_manager.delete_loaded_study_case_in_json_file()
-                    app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
-                except Exception as exp:
-                    app.logger.error(f"Error while deletion of read only file for {user_study.id} because his status is not Finished: {str(exp)}")
-        return file_exist
+            try:
+                study_manager.delete_loaded_study_case_in_json_file()
+                file_deleted = True
+                app.logger.info(f"loaded_study_case.json for {study_id} has been deleted because his status is not Finished")
+            except Exception as exp:
+                app.logger.error(f"Error while deletion of read only file for {study_id} because his status is not Finished: {str(exp)}")
     except Exception as ex:
-        raise Exception(f"Error processing study {user_study.id}: {ex}")
+        raise Exception(f"Error processing study {study_id}: {ex}")
+    return file_deleted
 
+
+def check_read_only_mode_available(study_case_identifier):
+    # retrieve study execution status
+    study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
+
+    is_read_only_possible = False
+    if study_case is not None and study_case.current_execution_id is not None:
+        study_case_execution = StudyCaseExecution.query.filter(
+            StudyCaseExecution.id == study_case.current_execution_id).first()
+        # check that the execution is finished to show the read only mode
+        if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
+            study_manager = StudyCaseManager(study_case_identifier)
+            is_read_only_possible = study_manager.check_study_case_json_file_exists()
+    return is_read_only_possible
+
+def get_read_only_file_path(study_case_identifier, no_data=False):
+    """
+    Get the read only mode or the restricted viewer file path
+    """
+    study_manager = StudyCaseManager(study_case_identifier)
+    return study_manager.get_read_only_file_path(no_data)
 
 def get_read_only(study_case_identifier, study_access_right):
     # retrieve study execution status

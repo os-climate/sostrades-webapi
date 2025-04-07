@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import abort, jsonify, make_response, request, send_file, session
+from sos_trades_api.tools.file_stream.file_stream import generate_large_file
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
@@ -61,9 +62,9 @@ from sos_trades_api.tools.right_management.functional.study_case_access_right im
 )
 from sos_trades_api.tools.study_management.study_management import (
     check_pod_allocation_is_running,
-    check_study_has_read_only_mode,
+    check_read_only_mode_available,
     get_file_stream,
-    get_read_only,
+    get_read_only_file_path,
 )
 
 
@@ -96,12 +97,15 @@ def load_study_case_by_id_in_read_only(study_id):
                 "You do not have the necessary rights to retrieve this information about this study case")
         study_access_right = study_case_access.get_user_right_for_study(
             study_id)
-
-        loaded_study_json = get_read_only(study_id, study_access_right)
-        # Add this study in last study opened in database
-        add_last_opened_study_case(study_id, user.id)
-        return make_gzipped_response(loaded_study_json)
-    raise BadRequest("Missing mandatory parameter: study identifier in url")
+        if check_read_only_mode_available(study_id):
+            add_last_opened_study_case(study_id, user.id)
+            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+            file_path = get_read_only_file_path(study_id, no_data)
+            return make_response(generate_large_file(file_path), 200)
+        else:
+            raise BadRequest("The study is not available in read only mode")
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
 @app.route("/api/data/study-case/<int:study_case_identifier>", methods=["GET"])
@@ -143,7 +147,7 @@ def pre_requisite_for_read_only_mode(study_case_identifier: int):
         study_dto = get_user_study_case(user.id, study_case_identifier)
 
         # Check if study has a read_only_file
-        has_read_only = check_study_has_read_only_mode(study_dto)
+        has_read_only = check_read_only_mode_available(study_case_identifier)
         result = {
             "allocation_is_running": status,
             "has_read_only": has_read_only
