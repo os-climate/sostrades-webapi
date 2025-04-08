@@ -40,6 +40,7 @@ from sos_trades_api.models.database_models import (
     Group,
     StudyCase,
     StudyCaseAccessGroup,
+    StudyCaseExecution,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
@@ -394,12 +395,21 @@ class StudyCaseManager(BaseStudyManager):
                 loaded_study_case.load_treeview_and_post_proc(
                         self, False, True, None, True)
                 loaded_study_case.load_n2_diagrams(self)
-                    
+                
+                # fill loaded study data needed in read only file
                 loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
                 loaded_study_case.study_case.creation_status = StudyCase.CREATION_DONE
+                loaded_study_case.study_case.has_read_only_file = True
                 
-                self.__write_loaded_study_case_in_json_file(
-                    loaded_study_case, False)
+                # retrieve execution data
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == loaded_study_case.study_case.current_execution_id).first()
+                if study_case_execution is not None:
+                    loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+                    loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+                    loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
+                
+                self.__write_loaded_study_case_in_json_file(loaded_study_case, False)
 
                 # save the study with no data for restricted read only access:
                 loaded_study_case.load_treeview_and_post_proc(
@@ -562,11 +572,8 @@ class StudyCaseManager(BaseStudyManager):
         :param loaded_study: loaded_study_case to save
         :type loaded_study: LoadedStudyCase
         """
-        loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
-        if no_data:
-            loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
-        study_file_path = Path(self.dump_directory).joinpath(
-            loaded_study_case_file_name)
+        
+        study_file_path = self.get_read_only_file_path(no_data)
 
         return write_object_in_json_file(loaded_study, study_file_path)
     
