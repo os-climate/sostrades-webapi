@@ -461,7 +461,7 @@ def load_study_data_in_read_only_mode(study_id):
             add_last_opened_study_case(study_id, user.id)
             no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
             file_path = get_read_only_file_path(study_id, no_data)
-            return make_response(generate_large_file(file_path), 200)
+            return send_file(file_path)
         else:
             loaded_study_json = get_study_case(user.id, study_id, study_access_right)
             return make_gzipped_response(loaded_study_json)
