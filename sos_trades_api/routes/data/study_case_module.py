@@ -101,7 +101,7 @@ def load_study_case_by_id_in_read_only(study_id):
             add_last_opened_study_case(study_id, user.id)
             no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
             file_path = get_read_only_file_path(study_id, no_data)
-            return send_file(file_path, as_attachement=True)
+            return send_file(file_path)
         else:
             raise BadRequest("The study is not available in read only mode")
     else:       
