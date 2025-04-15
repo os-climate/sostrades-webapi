@@ -101,7 +101,6 @@ from sos_trades_api.tools.study_management.study_management import (
     check_read_only_mode_available,
     clean_read_only_file,
     get_file_stream,
-    get_loaded_study_case_in_read_only_mode,
 )
 
 """
@@ -198,7 +197,7 @@ def light_load_study_case(study_id, reload=False):
 # END BACKGROUND LOADING FUNCTION section
 
 
-def get_study_case(user_id, study_case_identifier, study_access_right=None, verify_read_only_capability=True):
+def get_study_case(user_id, study_case_identifier, study_access_right=None):
     """
     get a loaded studycase in read only if needed or not, launch load_or_create if it is not in cache
 
@@ -209,15 +208,6 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
 
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
-
-        # retrieve study execution status
-        is_read_only_possible = False
-        if study_case is not None and study_case.current_execution_id is not None:
-            study_case_execution = StudyCaseExecution.query.filter(
-                StudyCaseExecution.id == study_case.current_execution_id).first()
-            # check that the execution is finished to show the read only mode
-            if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
-                is_read_only_possible = True
 
         # check there was no error during loading
         if study_case_manager.load_status == LoadStatus.IN_ERROR:
@@ -232,10 +222,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         study_case_execution = StudyCaseExecution.query.filter(
             StudyCaseExecution.id == study_case.current_execution_id).first()
-        # show read_only_mode if needed and possible
-        if verify_read_only_capability and is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
-
+       
         # get loaded study in edition mode or if there was a problem with read_only mode
         if loaded_study_case is None:
 

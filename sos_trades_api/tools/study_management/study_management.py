@@ -18,13 +18,11 @@ from pathlib import Path
 
 from sos_trades_api.controllers.error_classes import InvalidFile, StudyCaseError
 from sos_trades_api.models.database_models import (
-    AccessRights,
     PodAllocation,
     StudyCase,
     StudyCaseExecution,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
-from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.tools.allocation_management.allocation_management import (
     get_allocation_status_by_study_id,
@@ -80,90 +78,6 @@ def get_read_only_file_path(study_case_identifier, no_data=False):
     """
     study_manager = StudyCaseManager(study_case_identifier)
     return study_manager.get_read_only_file_path(no_data)
-
-def get_read_only(study_case_identifier, study_access_right):
-    # retrieve study execution status
-    study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
-
-    is_read_only_possible = False
-    loaded_study_case = None
-    if study_case is not None and study_case.current_execution_id is not None:
-        study_case_execution = StudyCaseExecution.query.filter(
-            StudyCaseExecution.id == study_case.current_execution_id).first()
-        # check that the execution is finished to show the read only mode
-        if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
-            is_read_only_possible = True
-            # show read_only_mode if needed and possible
-        if is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
-
-    return loaded_study_case
-
-
-def get_loaded_study_case_in_read_only_mode(study_id, study_access_right, study_execution):
-    # Proceeding after rights verification
-    # Get readonly file, in case of a restricted viewer get with no_data
-    study_json = _get_study_in_read_only_mode(
-        study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
-
-    # check in read only file that the study status is DONE
-    if study_json is not None:
-        study_case_value = study_json.get("study_case")
-        if study_case_value is not None:
-            # set study access rights
-            if study_access_right == AccessRights.MANAGER:
-                study_case_value["is_manager"] = True
-            elif study_access_right == AccessRights.CONTRIBUTOR:
-                study_case_value["is_contributor"] = True
-            elif study_access_right == AccessRights.COMMENTER:
-                study_case_value["is_commenter"] = True
-            else:
-                study_case_value["is_restricted_viewer"] = True
-
-            # Set execution status
-            if study_execution is not None:
-                study_case_value["execution_status"] = study_execution.execution_status
-                study_case_value["last_memory_usage"] = study_execution.memory_usage
-                study_case_value["last_cpu_usage"] = study_execution.cpu_usage
-
-            # set creation status to DONE if not saved in read only mode
-            study_case_value["creation_status"] = StudyCase.CREATION_DONE
-
-            return study_json
-
-    return None
-
-
-def _get_study_in_read_only_mode(study_id, no_data):
-    """
-    check if a study json file exists,
-         if true, read loaded study case in read only mode, and return the json
-         if false, return None, it will be checked on client side
-     :param: study_id, id of the study to export
-     :type: integer
-     :param: no_data, if study is loaded with no data or not
-     :type: boolean
-    """
-    study_manager = StudyCaseManager(study_id)
-    if study_manager.check_study_case_json_file_exists():
-        try:
-            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(no_data)
-
-            loaded_study_json["study_case"]['has_read_only_file'] = True
-
-            # read dashboard and set it to the loaded study
-            # (it takes less time to read it apart than to have the dashboard in the read only file)
-            if len(loaded_study_json["post_processings"]) > 0:
-                dashboard = study_manager.read_dashboard_in_json_file()
-                loaded_study_json["dashboard"] = dashboard
-            return loaded_study_json
-
-        except Exception as error:
-            app.logger.error(
-                f"Study {study_id} readonly mode error while getting readonly file: {error}")
-            return None
-    else:
-        return None
 
 
 def get_file_stream(study_id, parameter_key):

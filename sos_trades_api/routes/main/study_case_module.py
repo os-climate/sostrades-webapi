@@ -18,7 +18,6 @@ import json
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
-from sos_trades_api.tools.file_stream.file_stream import generate_large_file
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
@@ -48,7 +47,11 @@ from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
-from sos_trades_api.tools.study_management.study_management import check_read_only_mode_available, get_file_stream, get_read_only_file_path
+from sos_trades_api.tools.study_management.study_management import (
+    check_read_only_mode_available,
+    get_file_stream,
+    get_read_only_file_path,
+)
 
 
 @app.route("/api/main/study-case/<int:study_id>", methods=["DELETE"])
@@ -90,6 +93,10 @@ def main_load_study_case_by_id(study_id):
         # Convert to lowercase to handle "True", "TRUE", "true" variants.
         # Returns True only if the value is exactly "true", False otherwise
         verify_read_only_capability = request.args.get("verify_read_only_capability", "false").lower() == "true"
+        
+        # if true, return the loading in read only mode
+        if verify_read_only_capability:
+            return load_study_data_in_read_only_mode(study_id)
 
         # Verify user has study case authorisation to load study (Restricted viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
@@ -108,7 +115,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loaded_study = get_study_case(user.id, study_id, study_access_right, verify_read_only_capability)
+        loaded_study = get_study_case(user.id, study_id, study_access_right)
         loaded_study_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loaded_study_duration - study_access_right_duration :<5} sec")
