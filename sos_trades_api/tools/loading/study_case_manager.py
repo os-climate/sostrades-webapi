@@ -14,10 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 import logging
 import os
-from os.path import join
+from os.path import exists, join
 from pathlib import Path
 from shutil import copy
 
@@ -30,11 +29,12 @@ from sostrades_core.tools.tree.serializer import DataSerializer
 
 from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_markdown_documentation_metadata,
     load_n2_matrix,
+    load_ontology_usages,
     load_processes_metadata,
     load_repositories_metadata,
 )
-from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
@@ -48,6 +48,7 @@ from sos_trades_api.tools.file_tools import (
     read_object_in_json_file,
     write_object_in_json_file,
 )
+from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
 from sos_trades_api.tools.logger.study_case_sqlalchemy_handler import (
     StudyCaseSQLAlchemyHandler,
 )
@@ -88,6 +89,8 @@ class StudyCaseManager(BaseStudyManager):
     LOADED_STUDY_FILE_NAME = "loaded_study_case.json"
     RESTRICTED_STUDY_FILE_NAME = "loaded_study_case_no_data.json"
     DASHBOARD_FILE_NAME = "dashboard.json"
+    ONTOLOGY_FILE_NAME = "ontology.json"
+    DOCUMENTATION_FOLDER_NAME = "documentation"
 
     class UnboundStudyCase:
         """
@@ -409,13 +412,27 @@ class StudyCaseManager(BaseStudyManager):
                     loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
                     loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
                 
+                #----------------------------
+                #save ontology data
+                # retrieve ontology variable names and documentation ids 
+                ontology_data = get_treenode_ontology_data(loaded_study_case.treenode)
+                self.save_ontology_usages_and_documentation({
+                                                                'disciplines': list(ontology_data.disciplines),
+                                                                'parameter_usages': list(ontology_data.parameter_usages)
+                                                            })
+
+                #-------------------------
+                #write read only mode file
                 self.__write_loaded_study_case_in_json_file(loaded_study_case, False)
+                
 
                 # save the study with no data for restricted read only access:
                 loaded_study_case.load_treeview_and_post_proc(
                     self, True, True, None, True)
                 self.__write_loaded_study_case_in_json_file(
                     loaded_study_case, True)
+
+                
 
                 #-------------------
                 # save dashboard
@@ -424,7 +441,73 @@ class StudyCaseManager(BaseStudyManager):
                 dashboard_file_path = Path(self.dump_directory).joinpath(
                     self.DASHBOARD_FILE_NAME)
                 write_object_in_json_file(dashboard, dashboard_file_path)
+    
+    def save_ontology_usages_and_documentation(self, ontology_data:dict):
+        """
+        Get ontology usage and documentation from ontology server and write result in files.
+        :param ontology_data: Request object is intended with the following data structure
+        {
+            ontology_request: {
+                disciplines: string[], // list of disciplines string identifier
+                parameter_usages: string[] // list of parameters string identifier
+            }
+        }
+        ontology usages are saved in a json file next to the read only study file. 
+        The documentation is saved in markdown files in a folder "documentation" next to the study read only file
+
+        """
+        try:
+            #fetch ontology documentation
+            all_documentation = {}
+            for doc in ontology_data['disciplines']:
+                all_documentation[doc] = load_markdown_documentation_metadata(doc)
             
+            # fetch ontology parameters usages
+            all_ontology = load_ontology_usages(ontology_data)
+        except Exception as ex:
+            raise Exception(f"Error while retrieve ontology data: {str(ex)}")
+
+        # save in ontology file
+        try:
+            # save in ontology.json file
+            ontology_file_path = Path(self.dump_directory).joinpath(self.ONTOLOGY_FILE_NAME)
+            write_object_in_json_file(all_ontology, ontology_file_path)
+
+            #create documentation folder
+            documentation_folder_path = join(self.dump_directory, self.DOCUMENTATION_FOLDER_NAME)
+            if not exists(documentation_folder_path):
+                os.makedirs(documentation_folder_path)
+            for doc_name, doc in all_documentation.items():
+                with open(join(documentation_folder_path, f'{doc_name}.md'), "w+", encoding='utf-8') as md_file:
+                    md_file.writelines(doc)
+        except Exception as ex:
+            raise Exception(f"Error while writing ontology data: {str(ex)}")
+        
+        return True
+
+    def get_local_ontology(self):
+        """
+        get content of the ontology saved file if exists, return None if not
+        """
+        ontology_data = None
+        ontology_file_path = Path(self.dump_directory).joinpath(self.ONTOLOGY_FILE_NAME)
+        if exists(ontology_file_path):
+            ontology_data = read_object_in_json_file(ontology_file_path)
+        
+        return ontology_data
+    
+    def get_local_documentation(self, documentation_name):
+        """
+        get content of the documentation md saved file if exists, return None if not
+        """
+        documentation_data = None
+        documentation_folder_path = join(self.dump_directory, self.DOCUMENTATION_FOLDER_NAME)
+        documentation_file_path = join(documentation_folder_path, f'{documentation_name}.md')
+        if exists(documentation_file_path):
+            with open(documentation_file_path, "r") as md_file:
+                    documentation_data = md_file.read()
+        
+        return documentation_data
 
     def __load_study_case_from_identifier(self):
         """

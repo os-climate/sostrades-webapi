@@ -1249,3 +1249,15 @@ def check_study_already_exist(user_identifier, group_identifier, name):
         if snl.name == name:
             is_already_exist = True
     return is_already_exist
+
+def save_ontology_and_documentation(study_id:int, ontology_data:dict):
+    study = StudyCaseManager(study_id)
+    study.save_ontology_usages_and_documentation(ontology_data)
+
+def get_local_ontology_usages(study_id:int):
+    study = StudyCaseManager(study_id)
+    return study.get_local_ontology()
+
+def get_local_documentation(study_id:int, documentation_name):
+    study = StudyCaseManager(study_id)
+    return study.get_local_documentation(documentation_name)

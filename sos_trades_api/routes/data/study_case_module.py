@@ -15,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from flask import abort, jsonify, make_response, request, send_file, session
-from sos_trades_api.tools.file_stream.file_stream import generate_large_file
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
@@ -32,6 +31,8 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     edit_study_flavor,
     get_change_file_stream,
     get_last_study_case_changes,
+    get_local_documentation,
+    get_local_ontology_usages,
     get_raw_logs,
     get_study_case_allocation,
     get_study_case_notifications,
@@ -42,6 +43,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     load_study_case_allocation,
     load_study_case_preference,
     remove_favorite_study_case,
+    save_ontology_and_documentation,
     save_study_case_preference,
     set_user_authorized_execution,
     study_case_logs,
@@ -104,6 +106,79 @@ def load_study_case_by_id_in_read_only(study_id):
             return send_file(file_path)
         else:
             raise BadRequest("The study is not available in read only mode")
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/<int:study_id>/save-ontology", methods=["POST"])
+@auth_required
+def save_ontology_usages_and_documentation(study_id):
+    """
+    Relay to ontology server to retrieve disciplines and parameters informations
+    and save it with the study files
+
+    Request object is intended with the following data structure
+        {
+            ontology_request: {
+                disciplines: string[], // list of disciplines string identifier
+                parameter_usages: string[] // list of parameters string identifier
+            }
+        }
+    """
+    if study_id is not None:
+        user = session["user"]
+        data_request = request.json.get("ontology_request", None)
+
+        missing_parameter = []
+        if data_request is None:
+            missing_parameter.append(
+                "Missing mandatory parameter: ontology_request")
+
+        if len(missing_parameter) > 0:
+            raise BadRequest("\n".join(missing_parameter))
+        
+        save_ontology_and_documentation(study_id, data_request)
+        resp = make_response(jsonify("ok", 200))
+        return resp
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/<int:study_id>/saved-ontology-usages", methods=["GET"])
+@auth_required
+def load_local_ontology_usage(study_id):
+    """
+    Get ontology usage from local saved ontology
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about this study case")
+        
+
+        return make_gzipped_response(get_local_ontology_usages(study_id))
+        
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/<int:study_id>/saved-documentation/<string:documentation_name>", methods=["GET"])
+@auth_required
+def load_local_documentation(study_id, documentation_name):
+    """
+    Get ontology documentation markdown from local saved ontology documentation
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about this study case")
+        if documentation_name is not None:
+            return make_gzipped_response(get_local_documentation(study_id, documentation_name))
+        else:
+            raise BadRequest("Missing mandatory parameter: documentation identifier")
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
