@@ -88,16 +88,7 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
-
-        # Convert string parameter to boolean. Default value is "false" if parameter is not provided
-        # Convert to lowercase to handle "True", "TRUE", "true" variants.
-        # Returns True only if the value is exactly "true", False otherwise
-        verify_read_only_capability = request.args.get("verify_read_only_capability", "false").lower() == "true"
         
-        # if true, return the loading in read only mode
-        if verify_read_only_capability:
-            return load_study_data_in_read_only_mode(study_id)
-
         # Verify user has study case authorisation to load study (Restricted viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
         study_case_access_duration = time.time()
