@@ -432,15 +432,6 @@ class StudyCaseManager(BaseStudyManager):
                 self.__write_loaded_study_case_in_json_file(
                     loaded_study_case, True)
 
-                
-
-                #-------------------
-                # save dashboard
-                dashboard = generate_dashboard(
-                    self.execution_engine, loaded_study_case.post_processings)
-                dashboard_file_path = Path(self.dump_directory).joinpath(
-                    self.DASHBOARD_FILE_NAME)
-                write_object_in_json_file(dashboard, dashboard_file_path)
     
     def save_ontology_usages_and_documentation(self, ontology_data:dict):
         """

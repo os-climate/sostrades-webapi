@@ -22,6 +22,8 @@ import numpy as np
 from flask.json.provider import JSONProvider
 from pandas import DataFrame, Index, Series
 from simplejson import JSONEncoder
+
+from sos_trades_api.models.dashboard import Dashboard
 from sostrades_core.execution_engine.namespace import Namespace
 from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import (
@@ -87,7 +89,7 @@ class CustomJsonEncoder(JSONEncoder):
 
     def default(self, o):  # pylint: disable=E0202
 
-        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference)):
+        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference, Dashboard)):
             return o.serialize()
         elif isinstance(o, DataFrame):
             return "://dataframe"
