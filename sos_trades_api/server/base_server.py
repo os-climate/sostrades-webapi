@@ -35,6 +35,7 @@ from werkzeug.exceptions import HTTPException
 
 from sos_trades_api.config import Config
 
+
 START_TIME = "start_time"
 first_line_time = time.time()
 
@@ -198,6 +199,9 @@ def database_process_setup():
     from sos_trades_api.tools.reference_management.reference_management import (
         update_database_with_references,
     )
+    from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+        migrate_all_studies_with_new_read_only_format
+    )
     """ Launch process setup in database
 
     :return boolean (success or not)
@@ -237,6 +241,10 @@ def database_process_setup():
             clean_database_with_disabled_study_case(app.logger)
             app.logger.info(
                 "Finished cleaning disabled study case, server is ready...")
+            
+            app.logger.info("Migrate read only mode in new format")
+            migrate_all_studies_with_new_read_only_format(app.logger)
+            app.logger.info("Finished Migrate read only mode in new format")
 
             database_initialized = True
         except:
@@ -960,6 +968,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         update all allocations from db
         """
         update_read_only_files_with_visualization_method()
+    
 
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)

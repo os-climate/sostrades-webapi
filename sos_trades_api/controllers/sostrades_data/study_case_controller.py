@@ -15,11 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import os
+from os.path import join
 import shutil
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from shutil import rmtree
 
+from sos_trades_api.tools.loading.study_read_only_rw_manager import StudyReadOnlyRWManager
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
 from sqlalchemy.sql.expression import and_, desc
@@ -52,7 +54,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.server.base_server import app, db
+from sos_trades_api.server.base_server import Config, app, db
 from sos_trades_api.tools.allocation_management.allocation_management import (
     create_and_load_allocation,
     delete_study_server_services_and_deployments,
@@ -1252,7 +1254,8 @@ def check_study_already_exist(user_identifier, group_identifier, name):
 
 def save_ontology_and_documentation(study_id:int, ontology_data:dict):
     study = StudyCaseManager(study_id)
-    study.save_ontology_usages_and_documentation(ontology_data)
+    study.__get_and_save_ontology_usages(ontology_data)
+    study.__get_and_save_documentations(ontology_data)
 
 def get_local_ontology_usages(study_id:int):
     study = StudyCaseManager(study_id)
@@ -1261,3 +1264,44 @@ def get_local_ontology_usages(study_id:int):
 def get_local_documentation(study_id:int, documentation_name):
     study = StudyCaseManager(study_id)
     return study.get_local_documentation(documentation_name)
+
+
+def migrate_all_studies_with_new_read_only_format(logger):
+    """
+    Check all studies of all saved studies and move files to the read only folder
+    """
+    data_root_dir = join(Config().data_root_dir, "study_case")
+    migration_file_path = join(data_root_dir, "migration_result.txt")
+    migration_errors = []
+
+    if not os.path.exists(migration_file_path):
+        logger.info("Migration starts")
+        #iterate on all group folders
+        for group_dir in os.scandir(data_root_dir):
+            if group_dir.is_dir():
+                logger.info(f"Scanning group {group_dir.name}")
+                # iterate on all studies
+                for study_dir in os.scandir(group_dir.path):
+                    
+                    if study_dir.is_dir():
+                        read_only_helper = StudyReadOnlyRWManager(study_dir.path)
+                        errors = read_only_helper.migrate_to_new_read_only_folder()
+                        migration_errors.extend(errors)
+                        if len(errors) > 0:
+                            logger.info(f"Scanning study {study_dir.name}: FAILED")
+                        else:
+                            logger.info(f"Scanning study {study_dir.name}: OK")
+        # create a file of migration state if all is well
+        if len(migration_errors) == 0:
+            logger.info(f"Migration DONE")
+            with open(migration_file_path, "w+") as migration_file:
+                migration_file.write(f'Migration DONE: {datetime.now()}')
+            logger.info(f"Migration file saved")
+        else:
+            logger.info(f"Migration FAILED")
+            migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
+            with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
+                error_file.writelines(migration_errors)
+            logger.info(f"Error file saved")
+
+

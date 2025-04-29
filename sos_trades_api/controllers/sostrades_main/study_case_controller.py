@@ -921,16 +921,16 @@ def get_study_dashboard_in_file(study_id):
      :type: integer
     """
     study_manager = StudyCaseManager(study_id)
-    if study_manager.check_dashboard_json_file_exists():
-        try:
-            dashboard = study_manager.read_dashboard_in_json_file()
+    try:
+        dashboard = study_manager.read_dashboard_in_json_file()
+        if dashboard is not None:
             return dashboard
-
-        except Exception as error:
-            app.logger.error(
-                f"Study {study_id} dashboard error while reading file: {error}")
+        else:
             return "null"
-    else:
+
+    except Exception as error:
+        app.logger.error(
+            f"Study {study_id} dashboard error while reading file: {error}")
         return "null"
 
 

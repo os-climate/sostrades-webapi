@@ -18,3 +18,51 @@ def generate_large_file(file_path):
     with open(file_path, "rb") as f:
         while chunk := f.read(50 * 1024 * 1024):  # read by blocs of 50 Mo
             yield chunk
+
+import hashlib
+import os
+
+def get_file_hash(filename, algorithm='sha256', block_size=65536):
+    """
+    Calculate the hash of a file using the specified algorithm.
+    
+    Args:
+        filename (str): Path to the file
+        algorithm (str): Hash algorithm to use (default: sha256)
+        block_size (int): Size of blocks to read (default: 64KB)
+        
+    Returns:
+        str: Hexadecimal digest of the file hash
+    """
+    hash_obj = hashlib.new(algorithm)
+    
+    with open(filename, 'rb') as file:
+        for block in iter(lambda: file.read(block_size), b''):
+            hash_obj.update(block)
+            
+    return hash_obj.hexdigest()
+
+def verify_files_after_copy(original_path, copy_path, algorithm='sha256'):
+    """
+    Verify that a copied file is identical to the original by comparing hashes.
+    
+    Args:
+        original_path (str): Path to the original file
+        copy_path (str): Path to the copied file
+        algorithm (str): Hash algorithm to use (default: sha256)
+        
+    Returns:
+        bool: True if files are identical, False otherwise
+    """
+    # Check if both files exist
+    if not os.path.isfile(original_path):
+        raise FileNotFoundError(f"Original file not found: {original_path}")
+    if not os.path.isfile(copy_path):
+        raise FileNotFoundError(f"Copied file not found: {copy_path}")
+    
+    # Calculate hashes
+    original_hash = get_file_hash(original_path, algorithm)
+    copy_hash = get_file_hash(copy_path, algorithm)
+    
+    # Compare hashes
+    return original_hash == copy_hash
