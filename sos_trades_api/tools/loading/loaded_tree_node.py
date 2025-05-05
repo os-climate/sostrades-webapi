@@ -15,7 +15,16 @@ limitations under the License.
 
 '''
 
+from dataclasses import dataclass
 from typing import Dict
+
+
+@dataclass
+class OntologyDataNames:
+    parameter_usages: set
+    disciplines: set
+
+
 
 
 def flatten_tree_node(tree_node: Dict) -> Dict:
@@ -34,3 +43,37 @@ def flatten_tree_node(tree_node: Dict) -> Dict:
         flattened_tree_node.update(flatten_tree_node(child))
 
     return flattened_tree_node
+
+def get_treenode_ontology_data(tree_node: Dict)->OntologyDataNames:
+
+    #perpare ontology dict
+    ontology_data = OntologyDataNames(set(),set())
+    
+    ontology_data.disciplines.update(tree_node.get('models_full_path_list', []))
+    
+    for data_name, data in tree_node.get('data',{}).items():
+        key = data.get('variable_key', None)
+        if (key is not None):
+            ontology_data.parameter_usages.add(key)
+
+    for disc_name, discipline in tree_node.get('data_management_disciplines', {}).items():
+        print(discipline)
+        for name, data in discipline.get('disciplinary_inputs', {}).items():
+            key = data.get('variable_key', None)
+            if (key is not None):
+                ontology_data.parameter_usages.add(key)
+        for name, data in discipline.get('disciplinary_outputs', {}).items():
+            key = data.get('variable_key', None)
+            if (key is not None):
+                ontology_data.parameter_usages.add(key)
+
+
+    for child in tree_node.get('children', {}):
+        child_ontology_data = get_treenode_ontology_data(child)
+        ontology_data.parameter_usages.update(child_ontology_data.parameter_usages)
+        ontology_data.disciplines.update(child_ontology_data.disciplines)
+    
+    return ontology_data
+
+
+                
