@@ -84,7 +84,7 @@ class StudyReadOnlyRWHelper():
         :type no_data: boolean
         """
         read_only = None
-        if self.read_only_exists():
+        if self.read_only_exists:
             read_only = read_object_in_json_file(self.get_read_only_file_path(no_data))
         
         return read_only
