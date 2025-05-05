@@ -163,7 +163,7 @@ class StudyReadOnlyRWHelper():
         Delete the read only foler containing all read only files
         """
         if exists(self.__read_only_folder_path):
-            os.remove(self.__read_only_folder_path)
+            rmtree(self.__read_only_folder_path)
 
     def migrate_to_new_read_only_folder(self):
         """
