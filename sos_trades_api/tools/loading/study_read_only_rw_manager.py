@@ -220,6 +220,16 @@ class StudyReadOnlyRWHelper():
                     if exists(file_to_copy_path):
                         # delete the original file
                         os.remove(file_to_copy_path)
+                    # check if backup file exists and delete it
+                    file_and_extension = file_name.split(".")
+                    backup_file_path = join(self.__dump_directory, 
+                        file_and_extension[0]
+                        + '_backup.'
+                        + file_and_extension[1]
+                    )
+                    if exists(backup_file_path):
+                        # delete the backup file too
+                        os.remove(backup_file_path)
                 if exists(folder_to_copy_path):
                     current_deleting = folder_to_copy_path
                     rmtree(folder_to_copy_path)
