@@ -13,14 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import hashlib
+import os
+
 
 def generate_large_file(file_path):
     with open(file_path, "rb") as f:
         while chunk := f.read(50 * 1024 * 1024):  # read by blocs of 50 Mo
             yield chunk
 
-import hashlib
-import os
 
 def get_file_hash(filename, algorithm='sha256', block_size=65536):
     """
@@ -55,9 +56,9 @@ def verify_files_after_copy(original_path, copy_path, algorithm='sha256'):
         bool: True if files are identical, False otherwise
     """
     # Check if both files exist
-    if not os.path.isfile(original_path):
+    if not os.path.exists(original_path):
         raise FileNotFoundError(f"Original file not found: {original_path}")
-    if not os.path.isfile(copy_path):
+    if not os.path.exists(copy_path):
         raise FileNotFoundError(f"Copied file not found: {copy_path}")
     
     # Calculate hashes

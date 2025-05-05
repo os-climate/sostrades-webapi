@@ -16,12 +16,11 @@ limitations under the License.
 '''
 import logging
 import os
-from os.path import exists, join
+from os.path import join
 from pathlib import Path
 from shutil import copy
 
 from eventlet import sleep
-from sos_trades_api.tools.loading.study_read_only_rw_manager import StudyReadOnlyRWManager
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
 from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
@@ -45,8 +44,10 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
-
 from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
+from sos_trades_api.tools.loading.study_read_only_rw_manager import (
+    StudyReadOnlyRWHelper,
+)
 from sos_trades_api.tools.logger.study_case_sqlalchemy_handler import (
     StudyCaseSQLAlchemyHandler,
 )
@@ -185,7 +186,7 @@ class StudyCaseManager(BaseStudyManager):
         self.n2_diagram = {}
         self.__error_message = ""
 
-        self.__read_only_rw_strategy = StudyReadOnlyRWManager(self.dump_directory)
+        self.__read_only_rw_strategy = StudyReadOnlyRWHelper(self.dump_directory)
 
     @property
     def study(self) -> StudyCase:

@@ -35,7 +35,6 @@ from werkzeug.exceptions import HTTPException
 
 from sos_trades_api.config import Config
 
-
 START_TIME = "start_time"
 first_line_time = time.time()
 
@@ -184,9 +183,10 @@ if study_id is not None:
     load_specific_study(study_id)
 
 
-
-
 def database_process_setup():
+    from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+        migrate_all_studies_with_new_read_only_format,
+    )
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
         clean_database_with_disabled_study_case,
     )
@@ -198,9 +198,6 @@ def database_process_setup():
     )
     from sos_trades_api.tools.reference_management.reference_management import (
         update_database_with_references,
-    )
-    from sos_trades_api.controllers.sostrades_data.study_case_controller import (
-        migrate_all_studies_with_new_read_only_format
     )
     """ Launch process setup in database
 

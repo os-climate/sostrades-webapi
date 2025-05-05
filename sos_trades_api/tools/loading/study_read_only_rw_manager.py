@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import os
-from os.path import join, exists, basename
-from pathlib import Path
-from shutil import copy
+from os.path import basename, exists, join
+from shutil import copy, rmtree
 
 from sos_trades_api.tools.file_stream.file_stream import verify_files_after_copy
-from sos_trades_api.tools.file_tools import read_object_in_json_file, write_object_in_json_file
+from sos_trades_api.tools.file_tools import (
+    read_object_in_json_file,
+    write_object_in_json_file,
+)
 
-class StudyReadOnlyRWManager():
+
+class StudyReadOnlyRWHelper():
     """
     Class to define how and where is written the read only mode of a study
     """
@@ -192,11 +195,12 @@ class StudyReadOnlyRWManager():
         # copy documentation folder
         folder_to_copy_path = join(self.__dump_directory, self.DOCUMENTATION_FOLDER_NAME)
         new_folder_path = join(self.__read_only_folder_path, self.DOCUMENTATION_FOLDER_NAME)
-        if exists(folder_to_copy_path) and not exists(new_folder_path):           
+        if exists(folder_to_copy_path):           
             try:
                 if not exists(self.__read_only_folder_path):
                     os.makedirs(self.__read_only_folder_path)
-                os.makedirs(new_folder_path)
+                if not exists(new_folder_path):
+                    os.makedirs(new_folder_path)
                 # check the created files
                 for file in os.scandir(folder_to_copy_path):
                     new_file_path = join(new_folder_path, file.name)
@@ -213,7 +217,8 @@ class StudyReadOnlyRWManager():
                 if exists(file_to_copy_path):
                     # delete the original file
                     os.remove(file_to_copy_path)
-        
+            if exists(folder_to_copy_path):
+                rmtree(folder_to_copy_path)
         return migration_errors
             
         

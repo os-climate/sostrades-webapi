@@ -15,13 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import os
-from os.path import join
 import shutil
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+from os.path import join
 from shutil import rmtree
 
-from sos_trades_api.tools.loading.study_read_only_rw_manager import StudyReadOnlyRWManager
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
 from sqlalchemy.sql.expression import and_, desc
@@ -71,6 +70,9 @@ from sos_trades_api.tools.execution.execution_tools import (
     update_study_case_execution_status,
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.tools.loading.study_read_only_rw_manager import (
+    StudyReadOnlyRWHelper,
+)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
@@ -1271,7 +1273,7 @@ def migrate_all_studies_with_new_read_only_format(logger):
     Check all studies of all saved studies and move files to the read only folder
     """
     data_root_dir = join(Config().data_root_dir, "study_case")
-    migration_file_path = join(data_root_dir, "migration_result.txt")
+    migration_file_path = join(data_root_dir, "migration_done.txt")
     migration_errors = []
 
     if not os.path.exists(migration_file_path):
@@ -1284,7 +1286,7 @@ def migrate_all_studies_with_new_read_only_format(logger):
                 for study_dir in os.scandir(group_dir.path):
                     
                     if study_dir.is_dir():
-                        read_only_helper = StudyReadOnlyRWManager(study_dir.path)
+                        read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
                         errors = read_only_helper.migrate_to_new_read_only_folder()
                         migration_errors.extend(errors)
                         if len(errors) > 0:
@@ -1293,15 +1295,15 @@ def migrate_all_studies_with_new_read_only_format(logger):
                             logger.info(f"Scanning study {study_dir.name}: OK")
         # create a file of migration state if all is well
         if len(migration_errors) == 0:
-            logger.info(f"Migration DONE")
+            logger.info("Migration DONE")
             with open(migration_file_path, "w+") as migration_file:
                 migration_file.write(f'Migration DONE: {datetime.now()}')
-            logger.info(f"Migration file saved")
+            logger.info("Migration file saved")
         else:
-            logger.info(f"Migration FAILED")
+            logger.info("Migration FAILED")
             migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
             with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
                 error_file.writelines(migration_errors)
-            logger.info(f"Error file saved")
+            logger.info("Error file saved")
 
 
