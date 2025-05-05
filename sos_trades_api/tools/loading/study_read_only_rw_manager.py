@@ -212,13 +212,19 @@ class StudyReadOnlyRWHelper():
                 migration_errors.append(f'Error while copying of {folder_to_copy_path}: {str(error)}\n')
 
         if all_copy_ok:
-            for file_name in list_files:
-                file_to_copy_path = join(self.__dump_directory, file_name)
-                if exists(file_to_copy_path):
-                    # delete the original file
-                    os.remove(file_to_copy_path)
-            if exists(folder_to_copy_path):
-                rmtree(folder_to_copy_path)
+            current_deleting = ''
+            try:
+                for file_name in list_files:
+                    file_to_copy_path = join(self.__dump_directory, file_name)
+                    current_deleting = file_to_copy_path
+                    if exists(file_to_copy_path):
+                        # delete the original file
+                        os.remove(file_to_copy_path)
+                if exists(folder_to_copy_path):
+                    current_deleting = folder_to_copy_path
+                    rmtree(folder_to_copy_path)
+            except Exception as error:
+                migration_errors.append(f'Error while deletion of {current_deleting}: {str(error)}\n')
         return migration_errors
             
         
