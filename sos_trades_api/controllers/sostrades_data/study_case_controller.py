@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from os.path import join
 from shutil import rmtree
+from tempfile import gettempdir
 
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer
@@ -918,6 +919,7 @@ def get_last_study_case_changes(notification_id):
         return study_case_changes
 
 
+
 def get_user_authorised_studies_for_process(
     user_identifier, process_name, repository_name,
 ):
@@ -1276,34 +1278,63 @@ def migrate_all_studies_with_new_read_only_format(logger):
     migration_file_path = join(data_root_dir, "migration_done.txt")
     migration_errors = []
 
-    if not os.path.exists(migration_file_path):
-        logger.info("Migration starts")
-        #iterate on all group folders
-        for group_dir in os.scandir(data_root_dir):
-            if group_dir.is_dir():
-                logger.info(f"Scanning group {group_dir.name}")
-                # iterate on all studies
-                for study_dir in os.scandir(group_dir.path):
-                    
-                    if study_dir.is_dir():
-                        read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
-                        errors = read_only_helper.migrate_to_new_read_only_folder()
-                        migration_errors.extend(errors)
-                        if len(errors) > 0:
-                            logger.info(f"Scanning study {study_dir.name}: FAILED")
-                        else:
-                            logger.info(f"Scanning study {study_dir.name}: OK")
-        # create a file of migration state if all is well
-        if len(migration_errors) == 0:
-            logger.info("Migration DONE")
-            with open(migration_file_path, "w+") as migration_file:
-                migration_file.write(f'Migration DONE: {datetime.now()}')
-            logger.info("Migration file saved")
-        else:
-            logger.info("Migration FAILED")
-            migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
-            with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
-                error_file.writelines(migration_errors)
-            logger.info("Error file saved")
+    # if migration file exists, the migration has already been done
+    if os.path.exists(migration_file_path):
+        logger.info("No migration to do, migration already DONE")
+        return
+
+    logger.info("Migration starts")
+    #iterate on all group folders
+    for group_dir in os.scandir(data_root_dir):
+        if not group_dir.is_dir():
+            continue
+
+        logger.info(f"Scanning group {group_dir.name}")
+        # iterate on all studies
+        for study_dir in os.scandir(group_dir.path):
+            
+            if not study_dir.is_dir():
+                continue
+
+            read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
+            errors = read_only_helper.migrate_to_new_read_only_folder()
+            migration_errors.extend(errors)
+            if len(errors) > 0:
+                logger.info(f"Scanning study {study_dir.name}: FAILED")
+            else:
+                logger.info(f"Scanning study {study_dir.name}: OK")
+
+    # create a file of migration state if all is well
+    if len(migration_errors) == 0:
+        logger.info("Migration DONE")
+        with open(migration_file_path, "w+") as migration_file:
+            migration_file.write(f'Migration DONE: {datetime.now()}')
+        logger.info("Migration file saved")
+    else:
+        logger.info("Migration FAILED")
+        migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
+        with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
+            error_file.writelines(migration_errors)
+        logger.info("Error file saved")
 
 
+def get_study_read_only_zip(study_id):
+    """
+    export study read only and data in a zip file and return its path
+    Args:
+        study_id (int), id of the study to export
+    """
+
+    zip_file_path = None
+    study_manager = StudyCaseManager(study_id)
+    
+    try:
+        tmp_folder = gettempdir()
+        file_name = f"zip_study_{study_manager.study.id}.zip"
+        zip_file_path = join(tmp_folder, file_name)
+        if not study_manager.export_study_read_only_zip(zip_file_path):
+            raise FileNotFoundError(f"Study {study_manager.study.name} has no read only to export")
+    except Exception as error:
+        raise InvalidFile(
+            f"The following study file raised this error while trying to zip it : {error}")
+    return zip_file_path

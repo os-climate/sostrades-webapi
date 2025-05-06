@@ -44,6 +44,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.file_stream.file_stream import zip_files_and_folders
 from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
 from sos_trades_api.tools.loading.study_read_only_rw_manager import (
     StudyReadOnlyRWHelper,
@@ -755,6 +756,30 @@ class StudyCaseManager(BaseStudyManager):
         result = interface_diagram.generate_interface_diagram_data()
 
         return result
+    
+    def export_study_read_only_zip(self, zip_file_path)->bool:
+
+        # create a zip archive containing the read_only_mode folder
+        # plus the pkl files
+        if not self.__read_only_rw_strategy.read_only_exists:
+            return False
+            
+        elements_to_zip = []
+
+        dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
+        status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+        # add pkl file to zip
+        if os.path.exists(dm_pkl_file):
+            elements_to_zip.append(dm_pkl_file)
+        # add status file to zip
+        if os.path.exists(status_pkl_file):
+            elements_to_zip.append(status_pkl_file)
+        # add read only files into the folder
+        elements_to_zip.append(self.__read_only_rw_strategy.read_only_folder_path)
+
+        zip_files_and_folders(zip_file_path, elements_to_zip)
+        return True
+            
 
     @staticmethod
     def copy_pkl_file(file_name, study_case_manager, study_manager_source):

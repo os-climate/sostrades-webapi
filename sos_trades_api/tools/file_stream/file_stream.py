@@ -15,6 +15,45 @@ limitations under the License.
 '''
 import hashlib
 import os
+import zipfile
+from os.path import isdir, relpath
+
+
+def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip):
+    """
+        function that zip all files and folders in the list into one archive
+        
+        :param zip_file_path (str): path to the zip file to be written
+        :param files_or_folders_path_to_zip (list[str]): list of files or folders path to write in the archive
+    """
+
+    def zip_folder(zip_file, folder_path, root_path):
+        """
+        function that zip all files in a folder and its sub folders
+        
+        :param zip_file (zipfile.ZipFile): zip file to be written
+        :param folder_path (str): path of the folder to zip
+        :param root_path (str): path of the root folder to zip to reproduce the folder organization into the zip file
+        """
+        for element in os.scandir(folder_path):
+            if isdir(element):
+                zip_folder(zip_file, element.path, root_path)
+            else:
+                zip_file.write(element.path, 
+                    relpath(element.path, root_path))
+
+    # create zip file
+    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
+
+    # iterate throught each element of the list
+    for file_or_folder_path in files_or_folders_path_to_zip:
+        if isdir(file_or_folder_path):
+            zip_folder(zip_file, file_or_folder_path, file_or_folder_path)
+        else:
+            zip_file.write(file_or_folder_path, os.path.basename(file_or_folder_path))
+    # close the zip file
+    zip_file.close()
+
 
 
 def generate_large_file(file_path):

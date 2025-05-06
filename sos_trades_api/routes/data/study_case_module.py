@@ -14,7 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from flask import abort, jsonify, make_response, request, send_file, session
+import os
+from flask import abort, after_this_request, jsonify, make_response, request, send_file, session
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
@@ -37,6 +38,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_allocation,
     get_study_case_notifications,
     get_study_execution_flavor,
+    get_study_read_only_zip,
     get_user_authorised_studies_for_process,
     get_user_shared_study_case,
     get_user_study_case,
@@ -106,6 +108,29 @@ def load_study_case_by_id_in_read_only(study_id):
             return send_file(file_path)
         else:
             raise BadRequest("The study is not available in read only mode")
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/<int:study_id>/read-only-mode/export", methods=["GET"])
+@auth_required
+def export_study_case_by_id_in_read_only(study_id):
+    """
+    Zip the study in read only mode, return none if no read only mode found
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to export this study case")
+        
+        if check_read_only_mode_available(study_id):
+            file_path = get_study_read_only_zip(study_id)
+
+            return send_file(file_path)
+        else:
+            raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
