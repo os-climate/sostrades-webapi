@@ -100,7 +100,7 @@ class StudyCaseAccess(ProcessAccess):
                 StudyCase.id == study_case_identifier,
             ).all()
             if len(study_case) == 0:
-                raise InvalidStudy("This study case doesn't exists.")
+                raise InvalidStudy("This study case doesn't exist.")
             user_study_cases_query = user_study_cases_query.filter(
                 StudyCase.id == study_case_identifier,
             )
