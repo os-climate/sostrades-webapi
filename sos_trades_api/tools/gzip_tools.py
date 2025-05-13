@@ -113,7 +113,7 @@ def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip):
                     relpath(element.path, root_path))
 
     # create zip file
-    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True, compresslevel=1)
+    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
 
     # iterate throught each element of the list
     for file_or_folder_path in files_or_folders_path_to_zip:
