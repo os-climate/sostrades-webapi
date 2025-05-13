@@ -17,7 +17,6 @@ import hashlib
 import os
 
 
-
 def generate_large_file(file_path):
     with open(file_path, "rb") as f:
         while chunk := f.read(50 * 1024 * 1024):  # read by blocs of 50 Mo

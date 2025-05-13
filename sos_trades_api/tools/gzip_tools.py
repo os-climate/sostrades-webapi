@@ -17,6 +17,8 @@ import gzip
 import io
 import json
 import os
+import zipfile
+from os.path import isdir, relpath
 from typing import Any
 
 from flask import Response
@@ -24,8 +26,7 @@ from flask import Response
 from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.code_tools import time_function
-import zipfile
-from os.path import isdir, relpath
+
 
 @time_function(app.logger)
 def make_gzipped_response(obj:Any):
