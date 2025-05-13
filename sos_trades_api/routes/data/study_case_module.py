@@ -56,7 +56,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from sos_trades_api.tools.gzip_tools import make_gzipped_response
+from sos_trades_api.tools.gzip_tools import make_gzipped_response, send_zip_file_content
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
@@ -125,9 +125,9 @@ def export_study_case_by_id_in_read_only(study_id):
                 "You do not have the necessary rights to export this study case")
         
         if check_read_only_mode_available(study_id):
-            file_path = get_study_read_only_zip(study_id)
+            file_content = get_study_read_only_zip(study_id)
 
-            return send_file(file_path)
+            return send_zip_file_content(file_content, f"zip_study_{study_id}.zip")
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       

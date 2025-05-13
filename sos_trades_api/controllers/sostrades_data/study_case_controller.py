@@ -1324,16 +1324,20 @@ def get_study_read_only_zip(study_id):
     Args:
         study_id (int), id of the study to export
     """
-    zip_file_path = None
+    zip_content = None
     study_manager = StudyCaseManager(study_id)
     try:
         tmp_folder = gettempdir()
-        file_name = f"zip_study_{study_manager.study.id}.zip"
+        file_name = f"zip_study_{study_manager.study.id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
         zip_file_path = join(tmp_folder, file_name)
         if not study_manager.export_study_read_only_zip(zip_file_path):
             raise FileNotFoundError(f"Study {study_manager.study.name} has no read only to export")
-           
+
+        # read zip file content
+        with open(zip_file_path, 'rb') as zip_file:
+            zip_content = zip_file.read()
+
     except Exception as error:
         raise InvalidFile(
             f"The following study file raised this error while trying to zip it : {error}")
-    return zip_file_path
+    return zip_content

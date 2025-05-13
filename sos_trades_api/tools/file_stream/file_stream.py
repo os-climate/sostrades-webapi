@@ -15,60 +15,6 @@ limitations under the License.
 '''
 import hashlib
 import os
-import zipfile
-from os.path import isdir, relpath
-
-
-def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip):
-    """
-        function that zip all files and folders in the list into one archive
-        
-        Args:
-            zip_file_path (str): path to the zip file to be written
-            files_or_folders_path_to_zip (list[str]): list of files or folders path to write in the archive
-    """
-    # # Create a temporary directory to organize files: too slow
-    # with tempfile.TemporaryDirectory() as temp_dir:
-    #     # Copy all files and folders to the temp directory
-    #     for path in files_or_folders_path_to_zip:
-    #         dest = os.path.join(temp_dir, os.path.basename(path))
-    #         if os.path.isdir(path):
-    #             shutil.copytree(path, dest)
-    #         else:
-    #             shutil.copy2(path, dest)
-    #     # Remove .zip extension if present for make_archive
-    #     base_name = os.path.join(zip_file_path, f'study_export_{os.path.basename(temp_dir)}')      
-        
-    #     # Create the zip archive
-    #     return shutil.make_archive(base_name, 'zip', temp_dir)
-    
-    def zip_folder(zip_file, folder_path, root_path):
-        """
-        function that zip all files in a folder and its sub folders
-        
-        Args:
-            zip_file (zipfile.ZipFile): zip file to be written
-            folder_path (str): path of the folder to zip
-            root_path (str): path of the root folder to zip to reproduce the folder organization into the zip file
-        """
-        for element in os.scandir(folder_path):
-            if isdir(element):
-                zip_folder(zip_file, element.path, root_path)
-            else:
-                zip_file.write(element.path, 
-                    relpath(element.path, root_path))
-
-    # create zip file
-    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True, compresslevel=1)
-
-    # iterate throught each element of the list
-    for file_or_folder_path in files_or_folders_path_to_zip:
-        if isdir(file_or_folder_path):
-            zip_folder(zip_file, file_or_folder_path, file_or_folder_path)
-        else:
-            zip_file.write(file_or_folder_path, os.path.basename(file_or_folder_path))
-    # close the zip file
-    zip_file.close()
 
 
 

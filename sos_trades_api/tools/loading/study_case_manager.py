@@ -44,7 +44,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.file_stream.file_stream import zip_files_and_folders
+from sos_trades_api.tools.gzip_tools import zip_files_and_folders
 from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
 from sos_trades_api.tools.loading.study_read_only_rw_manager import (
     StudyReadOnlyRWHelper,
