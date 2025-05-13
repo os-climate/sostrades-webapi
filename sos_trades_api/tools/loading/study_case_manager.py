@@ -768,6 +768,8 @@ class StudyCaseManager(BaseStudyManager):
 
         dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
         status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+        
+    
         # add pkl file to zip
         if os.path.exists(dm_pkl_file):
             elements_to_zip.append(dm_pkl_file)
