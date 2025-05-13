@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from sos_trades_api.controllers.error_classes import InvalidStudy
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
@@ -94,6 +95,12 @@ class StudyCaseAccess(ProcessAccess):
         )
 
         if study_case_identifier is not None:
+            # check the study exists
+            study_case = db.session.query(StudyCase).filter(
+                StudyCase.id == study_case_identifier,
+            ).all()
+            if len(study_case) == 0:
+                raise InvalidStudy("This study case doesn't exists.")
             user_study_cases_query = user_study_cases_query.filter(
                 StudyCase.id == study_case_identifier,
             )
