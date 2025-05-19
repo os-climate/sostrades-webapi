@@ -85,6 +85,7 @@ class LoadedStudyCase:
             # Get discipline filters
             self.post_processings = load_post_processing(
                 study_case_manager.execution_engine, load_post_proc)
+   
 
     def load_n2_diagrams(self, study_manager):
         """

@@ -18,6 +18,7 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+from os.path import join
 from shutil import rmtree
 
 from sostrades_core.tools.tree.deserialization import isevaluatable
@@ -52,7 +53,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.models.study_notification import StudyNotification
-from sos_trades_api.server.base_server import app, db
+from sos_trades_api.server.base_server import Config, app, db
 from sos_trades_api.tools.allocation_management.allocation_management import (
     create_and_load_allocation,
     delete_study_server_services_and_deployments,
@@ -69,11 +70,14 @@ from sos_trades_api.tools.execution.execution_tools import (
     update_study_case_execution_status,
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.tools.loading.study_read_only_rw_manager import (
+    StudyReadOnlyRWHelper,
+)
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
 from sos_trades_api.tools.study_management.study_management import (
-    check_study_has_read_only_mode,
+    check_read_only_mode_available,
 )
 
 """
@@ -682,7 +686,7 @@ def get_user_shared_study_case(user_identifier: int):
             # Display empty string if study pod flavor is None
             if user_study.study_pod_flavor is None:
                 user_study.study_pod_flavor = ""
-            user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
+            user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
 
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
@@ -732,7 +736,7 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
 
-                user_study.has_read_only_file = check_study_has_read_only_mode(user_study)
+                user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
 
                 return user_study
     return None
@@ -1249,3 +1253,57 @@ def check_study_already_exist(user_identifier, group_identifier, name):
         if snl.name == name:
             is_already_exist = True
     return is_already_exist
+
+def save_ontology_and_documentation(study_id:int, ontology_data:dict):
+    study = StudyCaseManager(study_id)
+    study.__get_and_save_ontology_usages(ontology_data)
+    study.__get_and_save_documentations(ontology_data)
+
+def get_local_ontology_usages(study_id:int):
+    study = StudyCaseManager(study_id)
+    return study.get_local_ontology()
+
+def get_local_documentation(study_id:int, documentation_name):
+    study = StudyCaseManager(study_id)
+    return study.get_local_documentation(documentation_name)
+
+
+def migrate_all_studies_with_new_read_only_format(logger):
+    """
+    Check all studies of all saved studies and move files to the read only folder
+    """
+    data_root_dir = join(Config().data_root_dir, "study_case")
+    migration_file_path = join(data_root_dir, "migration_done.txt")
+    migration_errors = []
+
+    if not os.path.exists(migration_file_path):
+        logger.info("Migration starts")
+        #iterate on all group folders
+        for group_dir in os.scandir(data_root_dir):
+            if group_dir.is_dir():
+                logger.info(f"Scanning group {group_dir.name}")
+                # iterate on all studies
+                for study_dir in os.scandir(group_dir.path):
+                    
+                    if study_dir.is_dir():
+                        read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
+                        errors = read_only_helper.migrate_to_new_read_only_folder()
+                        migration_errors.extend(errors)
+                        if len(errors) > 0:
+                            logger.info(f"Scanning study {study_dir.name}: FAILED")
+                        else:
+                            logger.info(f"Scanning study {study_dir.name}: OK")
+        # create a file of migration state if all is well
+        if len(migration_errors) == 0:
+            logger.info("Migration DONE")
+            with open(migration_file_path, "w+") as migration_file:
+                migration_file.write(f'Migration DONE: {datetime.now()}')
+            logger.info("Migration file saved")
+        else:
+            logger.info("Migration FAILED")
+            migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
+            with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
+                error_file.writelines(migration_errors)
+            logger.info("Error file saved")
+
+

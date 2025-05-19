@@ -183,9 +183,10 @@ if study_id is not None:
     load_specific_study(study_id)
 
 
-
-
 def database_process_setup():
+    from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+        migrate_all_studies_with_new_read_only_format,
+    )
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
         clean_database_with_disabled_study_case,
     )
@@ -237,6 +238,10 @@ def database_process_setup():
             clean_database_with_disabled_study_case(app.logger)
             app.logger.info(
                 "Finished cleaning disabled study case, server is ready...")
+            
+            app.logger.info("Migrate read only mode in new format")
+            migrate_all_studies_with_new_read_only_format(app.logger)
+            app.logger.info("Finished Migrate read only mode in new format")
 
             database_initialized = True
         except:
@@ -960,6 +965,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         update all allocations from db
         """
         update_read_only_files_with_visualization_method()
+    
 
     app.cli.add_command(init_process)
     app.cli.add_command(check_study_case_state)
