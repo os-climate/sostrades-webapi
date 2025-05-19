@@ -19,10 +19,12 @@ limitations under the License.
 import time
 
 from flask import abort, jsonify, make_response, request, send_file, session
+from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     create_empty_study_case,
     get_raw_logs,
+    add_last_opened_study_case,
 )
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_file_stream,
@@ -30,6 +32,10 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     load_study_case,
     update_study_parameters,
 )
+from sos_trades_api.tools.study_management.study_management import (
+    get_read_only,
+)
+from sos_trades_api.controllers.sostrades_data.ontology_controller import load_markdown_documentation_metadata
 from sos_trades_api.models.database_models import (
     AccessRights,
     StudyCase,
@@ -44,6 +50,10 @@ from sos_trades_api.tools.authentication.authentication import (
 from sos_trades_api.tools.loading.loaded_tree_node import flatten_tree_node
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
+)
+from sos_trades_api.tools.gzip_tools import make_gzipped_response
+from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_ontology_usages,
 )
 
 
@@ -263,3 +273,119 @@ def get_study_case_raw_logs(study_id):
     else:
         resp = make_response(jsonify("No logs found."), 404)
         return resp
+    
+@app.route("/api/v0/study-case/<int:study_id>/read-only-mode", methods=["GET"])
+@api_key_required
+@has_user_access_right(AccessRights.COMMENTER)
+def load_study_case_by_id_in_read_only(study_id):
+    """
+    Retreive the study in read only mode, return none if no read only mode found
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to retrieve this information about this study case")
+        study_access_right = study_case_access.get_user_right_for_study(
+            study_id)
+
+        loaded_study_json = get_read_only(study_id, study_access_right)
+        # Add this study in last study opened in database
+        add_last_opened_study_case(study_id, user.id)
+        return make_gzipped_response(loaded_study_json)
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/v0/ontology/ontology-usages", methods=["POST"])
+@api_key_required
+def load_ontology_request_usages():
+    """
+    Relay to ontology server to retrieve disciplines and parameters informations
+
+    Request object is intended with the following data structure
+        {
+            ontology_request: {
+                disciplines: string[], // list of disciplines string identifier
+                parameter_usages: string[] // list of parameters string identifier
+            }
+        }
+
+    Returned response is with the following data structure
+        {
+            parameter_usages : {
+                <parameter_usage_identifier> : {
+                    parameter_uri: string
+                    parameter_id: string
+                    parameter_label: string
+                    parameter_definition: string
+                    parameter_definitionSource: string
+                    parameter_ACLTag: string
+
+                    visibility: string
+                    dataframeEditionLocked: string
+                    userLevel: string
+                    range: string
+                    dataframeDescriptor: string
+                    structuring: string
+                    optional: string
+                    namespace: string
+                    numerical: string
+                    coupling: string
+                    io_type: string
+                    datatype: string
+                    unit: string
+                    editable: string
+                }
+            }
+            disciplines {
+                <discipline_identifier>: {
+                    id: string
+                    delivered: string
+                    implemented: string
+                    label: string
+                    modelType: string
+                    originSource: string
+                    pythonClass: string
+                    uri: string
+                    validator: string
+                    validated: string
+                    icon:string
+                }
+            }
+        }
+
+    """
+    data_request = request.json.get("ontology_request", None)
+
+    missing_parameter = []
+    if data_request is None:
+        missing_parameter.append(
+            "Missing mandatory parameter: ontology_request")
+
+    if len(missing_parameter) > 0:
+        raise BadRequest("\n".join(missing_parameter))
+
+    resp = make_response(jsonify(load_ontology_usages(data_request)), 200)
+    return resp
+
+
+@app.route("/api/v0/ontology/<string:identifier>/markdown_documentation", methods=["GET"])
+@api_key_required
+def load_markdown_documentation(identifier):
+    """
+    Relay to ontology server to retrieve the whole sos_trades models links diagram
+    Object returned is a form of d3 js data structure
+
+    Returned response is with the following data structure
+        {
+            Markdown_documentation:
+                document: string,
+            }
+        }
+    """
+    user = session["user"]
+    app.logger.info(user)
+
+    resp = make_response(jsonify(load_markdown_documentation_metadata(identifier)), 200)
+    return resp
