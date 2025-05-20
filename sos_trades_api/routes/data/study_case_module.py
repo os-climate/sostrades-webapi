@@ -19,7 +19,6 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_favorite_study_case,
-    add_last_opened_study_case,
     check_study_already_exist,
     copy_study,
     create_empty_study_case,
@@ -66,7 +65,6 @@ from sos_trades_api.tools.study_management.study_management import (
     check_pod_allocation_is_running,
     check_read_only_mode_available,
     get_file_stream,
-    get_read_only_file_path,
 )
 
 
@@ -83,31 +81,6 @@ def study_cases():
 
     raise MethodNotAllowed()
 
-
-@app.route("/api/data/study-case/<int:study_id>/read-only-mode", methods=["GET"])
-@auth_required
-def load_study_case_by_id_in_read_only(study_id):
-    """
-    Retreive the study in read only mode, return none if no read only mode found
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
-        if check_read_only_mode_available(study_id):
-            add_last_opened_study_case(study_id, user.id)
-            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
-            file_path = get_read_only_file_path(study_id, no_data)
-            return send_file(file_path)
-        else:
-            raise BadRequest("The study is not available in read only mode")
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 @app.route("/api/data/study-case/<int:study_id>/save-ontology", methods=["POST"])
 @auth_required

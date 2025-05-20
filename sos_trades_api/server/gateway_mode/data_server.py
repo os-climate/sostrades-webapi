@@ -34,5 +34,22 @@ config = base_server.config
 #     config.server_mode == config.CONFIG_SERVER_MODE_K8S:
 #     launch_thread_update_pod_allocation_status()
 
+# register blueprints
+from sos_trades_api.blueprints.ontology.ontology_blueprint import (
+    init_ontology_routes,
+    ontology_blueprint,
+)
+from sos_trades_api.blueprints.study_case.read_only.read_only_blueprint import (
+    init_read_only_routes,
+    read_only_blueprint,
+)
+from sos_trades_api.tools.authentication.authentication import auth_required
+
+init_ontology_routes(auth_required)
+app.register_blueprint(ontology_blueprint, url_prefix="/api/data/ontology")
+
+init_read_only_routes(auth_required)
+app.register_blueprint(read_only_blueprint, url_prefix="/api/data/study-case")
+
 # load & register APIs
 from sos_trades_api.routes.data import *
