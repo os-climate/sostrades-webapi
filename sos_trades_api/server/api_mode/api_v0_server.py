@@ -50,7 +50,7 @@ init_ontology_routes(api_key_required)
 app.register_blueprint(ontology_blueprint, url_prefix="/api/v0/ontology")
 
 init_read_only_routes(api_key_required)
-app.register_blueprint(read_only_blueprint, url_prefix="/api/data/study-case")
+app.register_blueprint(read_only_blueprint, url_prefix="/api/v0/study-case")
 
 from sos_trades_api.routes.api_v0 import *
 
