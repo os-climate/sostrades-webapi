@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import json
 import os
 import os.path
 from builtins import classmethod
@@ -180,8 +181,11 @@ class TestStudy(DatabaseUnitTestConfiguration):
             # check read only is created
             read_only_file = study_manager.get_read_only_file_path()
             self.assertTrue(read_only_file.endswith('.json'))
-            self.assertTrue(study_manager.check_study_case_json_file_exists())
-            read_only_content = study_manager.read_loaded_study_case_in_json_file()
+            
+            read_only_content = None
+            with open(read_only_file, 'r') as json_file:
+                read_only_content = json.load(json_file)
+            self.assertTrue(read_only_content is not None)
 
             # check the structure of the read only mode
             # check studycase data
@@ -204,6 +208,7 @@ class TestStudy(DatabaseUnitTestConfiguration):
             self.assertTrue('value' in list(read_only_content['treenode']['data_management_disciplines'][self.test_study_name]['numerical_parameters'].values())[0])
 
             #check treenode
+            
             self.assertTrue('model_name_full_path' in read_only_content['treenode'])  
             self.assertTrue('children' in read_only_content['treenode'])  
             self.assertTrue(len(read_only_content['treenode']['children']) > 0)
