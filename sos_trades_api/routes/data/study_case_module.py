@@ -143,7 +143,7 @@ def import_study_case_zip():
 
     if len(request.files) != 1:
         raise BadRequest("Missing mandatory parameter: no file found in request")
-    if request.form.get('group_id', None) is not None:
+    if request.form.get('group_id', None) is None:
         raise BadRequest("Missing mandatory parameter: group_id")
     group_id = int(request.form.get('group_id'))
 
