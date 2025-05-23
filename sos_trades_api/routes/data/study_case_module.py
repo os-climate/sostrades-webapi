@@ -48,7 +48,10 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     set_user_authorized_execution,
     study_case_logs,
 )
-from sos_trades_api.controllers.sostrades_data.study_case_stand_alone_controller import create_study_stand_alone_from_zip, get_study_stand_alone_zip
+from sos_trades_api.controllers.sostrades_data.study_case_stand_alone_controller import (
+    create_study_stand_alone_from_zip,
+    get_study_stand_alone_zip,
+)
 from sos_trades_api.models.database_models import (
     AccessRights,
     StudyCase,

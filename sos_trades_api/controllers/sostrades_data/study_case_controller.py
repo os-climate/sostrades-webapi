@@ -20,7 +20,6 @@ from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from os.path import join
 from shutil import rmtree
-from tempfile import gettempdir
 
 from sostrades_core.tools.tree.deserialization import isevaluatable
 from sostrades_core.tools.tree.serializer import DataSerializer

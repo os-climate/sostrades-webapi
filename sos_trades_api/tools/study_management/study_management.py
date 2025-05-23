@@ -138,7 +138,7 @@ def update_study_case_creation_status(study_case_id, new_creation_status, error=
     # check that the study case exists
     study_case = StudyCase.query.filter(StudyCase.id == study_case_id).first()
     if study_case is None:
-        raise StudyCaseError(f"Study creation error: study case should exists but was not found")
+        raise StudyCaseError("Study creation error: study case should exists but was not found")
     if error is not None:
         study_case.error = error
     # update study case status

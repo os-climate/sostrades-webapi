@@ -14,20 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from datetime import datetime
 import json
-import os
-from tempfile import gettempdir
-from os.path import join, exists, dirname
 import threading
+from datetime import datetime
+from os.path import join
+from tempfile import gettempdir
 from zipfile import ZipFile
+
 from sos_trades_api.controllers.error_classes import InvalidFile, StudyCaseError
-from sos_trades_api.controllers.sostrades_data.study_case_controller import create_empty_study_case
-from sos_trades_api.models.database_models import StudyCase, db
-from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
-from sos_trades_api.tools.study_management.study_management import update_study_case_creation_status
+from sos_trades_api.controllers.sostrades_data.study_case_controller import (
+    create_empty_study_case,
+)
+from sos_trades_api.models.database_models import StudyCase
 from sos_trades_api.server.base_server import app
-from sostrades_core.tools.folder_operations import makedirs_safe
+from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
+from sos_trades_api.tools.study_management.study_management import (
+    update_study_case_creation_status,
+)
 
 
 def get_study_stand_alone_zip(study_id):
@@ -67,9 +70,9 @@ def create_study_stand_alone_from_zip(user_id, group_id, zip_file):
         files_list = zfile.namelist()
 
         # read metadata file
-        if not "metadata.json" in files_list:
+        if "metadata.json" not in files_list:
             raise InvalidFile(
-                f"The Study Stand alone zip file is not valid : the metadata file is missing")
+                "The Study Stand alone zip file is not valid : the metadata file is missing")
         
         with zfile.open("metadata.json") as metadata_file:
 
@@ -82,7 +85,7 @@ def create_study_stand_alone_from_zip(user_id, group_id, zip_file):
                     f"Error while reading the metadata of the study stand-alone zip: {str(error)}")
     if study_metadata is None:
         raise InvalidFile(
-            f"The Study Stand alone zip file is not valid : metadata not found")
+            "The Study Stand alone zip file is not valid : metadata not found")
             
     # create study case
     study_case = create_empty_study_case(user_id, study_metadata.name, study_metadata.repository,
