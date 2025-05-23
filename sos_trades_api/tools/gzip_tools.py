@@ -17,8 +17,6 @@ import gzip
 import io
 import json
 import os
-import zipfile
-from os.path import isdir, relpath
 from typing import Any
 
 from flask import Response
@@ -26,7 +24,8 @@ from flask import Response
 from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.code_tools import time_function
-
+import zipfile
+from os.path import isdir, relpath, dirname
 
 @time_function(app.logger)
 def make_gzipped_response(obj:Any):
@@ -87,13 +86,14 @@ def send_zip_file_content(zip_content: bytes, filename: str = None):
         if 'gzip_buffer' in locals():
             gzip_buffer.close()
 
-def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip):
+def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip, metadata = None):
     """
         function that zip all files and folders in the list into one archive
         
         Args:
             zip_file_path (str): path to the zip file to be written
             files_or_folders_path_to_zip (list[str]): list of files or folders path to write in the archive
+            metadata (str or bytes): metadata content to add in a metadata.json file
     """
     
     def zip_folder(zip_file, folder_path, root_path):
@@ -113,13 +113,19 @@ def zip_files_and_folders(zip_file_path, files_or_folders_path_to_zip):
                     relpath(element.path, root_path))
 
     # create zip file
-    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
+    zip_file = zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True, compresslevel=1)
 
     # iterate throught each element of the list
     for file_or_folder_path in files_or_folders_path_to_zip:
         if isdir(file_or_folder_path):
-            zip_folder(zip_file, file_or_folder_path, file_or_folder_path)
+            zip_folder(zip_file, file_or_folder_path, dirname(file_or_folder_path))
         else:
             zip_file.write(file_or_folder_path, os.path.basename(file_or_folder_path))
+
+    # add metadata file
+    if metadata is not None:
+        zip_file.writestr("metadata.json", metadata)
+        
     # close the zip file
     zip_file.close()
+

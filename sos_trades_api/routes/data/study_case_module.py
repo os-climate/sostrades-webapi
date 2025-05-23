@@ -37,7 +37,6 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     get_study_case_allocation,
     get_study_case_notifications,
     get_study_execution_flavor,
-    get_study_read_only_zip,
     get_user_authorised_studies_for_process,
     get_user_shared_study_case,
     get_user_study_case,
@@ -49,6 +48,7 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     set_user_authorized_execution,
     study_case_logs,
 )
+from sos_trades_api.controllers.sostrades_data.study_case_stand_alone_controller import create_study_stand_alone_from_zip, get_study_stand_alone_zip
 from sos_trades_api.models.database_models import (
     AccessRights,
     StudyCase,
@@ -110,9 +110,9 @@ def load_study_case_by_id_in_read_only(study_id):
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
-@app.route("/api/data/study-case/<int:study_id>/read-only-mode/export", methods=["GET"])
+@app.route("/api/data/study-case/<int:study_id>/stand-alone/export", methods=["GET"])
 @auth_required
-def export_study_case_by_id_in_read_only(study_id):
+def export_study_case_by_id_in_stand_alone(study_id):
     """
     Zip the study in read only mode, return none if no read only mode found
     """
@@ -125,13 +125,39 @@ def export_study_case_by_id_in_read_only(study_id):
                 "You do not have the necessary rights to export this study case")
         
         if check_read_only_mode_available(study_id):
-            file_path = get_study_read_only_zip(study_id)
+            file_path = get_study_stand_alone_zip(study_id)
 
             return send_file(file_path)
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/stand-alone/import", methods=["POST"])
+@auth_required
+def import_study_case_zip():
+    """
+    Create a study in stand alone from an uploaded zip file
+    """
+    user = session["user"]
+
+    if len(request.files) != 1:
+        raise BadRequest("Missing mandatory parameter: no file found in request")
+    if request.form.get('group_id', None) is not None:
+        raise BadRequest("Missing mandatory parameter: group_id")
+    group_id = int(request.form.get('group_id'))
+
+    zipFile = None
+    for file_name, file in request.files.items():
+        if not file_name.endswith(".zip"):
+            raise BadRequest(
+                f"The Study Stand alone zip file is not valid : the file {file_name} is not a zip file")
+        zipFile = file
+        continue
+    created_study = create_study_stand_alone_from_zip(user.id, group_id, zipFile)
+    resp = make_response(jsonify(created_study), 200)
+    return resp
+
 
 @app.route("/api/data/study-case/<int:study_id>/save-ontology", methods=["POST"])
 @auth_required

@@ -218,6 +218,7 @@ class StudyCase(db.Model):
     FROM_REFERENCE = "Reference"
     FROM_USECASE = "UsecaseData"
     FROM_STUDYCASE = "Study"
+    FROM_STANDALONE= "Stand-alone"
 
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer,
@@ -249,6 +250,7 @@ class StudyCase(db.Model):
     disabled = Column(Boolean, default=False, nullable=False)
     study_pod_flavor = Column(String(64), unique=False, nullable=True)
     execution_pod_flavor = Column(String(64), unique=False, nullable=True)
+    is_stand_alone = Column(Boolean, default=False)
 
     def serialize(self):
         """
@@ -267,6 +269,7 @@ class StudyCase(db.Model):
             "creation_status": self.creation_status,
             "study_pod_flavor": self.study_pod_flavor,
             "execution_pod_flavor": self.execution_pod_flavor,
+            "is_stand_alone": self.is_stand_alone
         }
 
 class PodAllocation(db.Model):
