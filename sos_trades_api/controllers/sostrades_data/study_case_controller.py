@@ -135,6 +135,9 @@ def create_empty_study_case(
         study_case.study_pod_flavor = study_pod_flavor
         study_case.execution_pod_flavor = execution_pod_flavor
 
+        if from_type == StudyCase.FROM_STANDALONE:
+            study_case.is_stand_alone = True
+
         # Save study_case
         db.session.add(study_case)
         db.session.commit()
@@ -215,6 +218,9 @@ def load_study_case_allocation(study_case_identifier):
         app.logger.info("study case create allocation")
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         if study_case is not None:
+            if study_case.is_stand_alone:
+                raise InvalidStudy("A stand alone study case cannot be loaded in edition mode")
+            
             study_case_allocation = create_and_load_allocation(study_case_identifier, PodAllocation.TYPE_STUDY, study_case.study_pod_flavor)
 
     return study_case_allocation
@@ -601,7 +607,8 @@ def get_user_shared_study_case(user_identifier: int):
             if repository_key not in repositories_metadata:
                 repositories_metadata.append(repository_key)
 
-            add_study_information_on_status(user_study)
+            if not user_study.is_stand_alone:
+                add_study_information_on_status(user_study)
 
         process_metadata = load_processes_metadata(processes_metadata)
         repository_metadata = load_repositories_metadata(repositories_metadata)
@@ -664,6 +671,14 @@ def get_user_shared_study_case(user_identifier: int):
 
                 user_study.is_last_study_opened = True
 
+            # Display empty string if study pod flavor is None
+            if user_study.study_pod_flavor is None:
+                user_study.study_pod_flavor = ""
+            user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
+
+            if user_study.is_stand_alone:
+                continue
+
             # Manage execution status
             all_study_case_execution = StudyCaseExecution.query.filter(
                 StudyCaseExecution.id.in_(all_study_case_execution_identifiers),
@@ -682,11 +697,6 @@ def get_user_shared_study_case(user_identifier: int):
                     update_study_case_execution_status(user_study.id, current_execution)
                 user_study.execution_status = current_execution.execution_status
                 user_study.error = current_execution.message
-
-            # Display empty string if study pod flavor is None
-            if user_study.study_pod_flavor is None:
-                user_study.study_pod_flavor = ""
-            user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
 
         result = sorted(all_user_studies, key=lambda res: res.is_favorite, reverse=True)
 
@@ -713,7 +723,8 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
         )
         for user_study in all_user_studies:
             if user_study.id == study_identifier:
-                add_study_information_on_status(user_study)
+                if not user_study.is_stand_alone:
+                    add_study_information_on_status(user_study)
 
                 # load ontology
                 process_key = f"{user_study.repository}.{user_study.process}"
@@ -722,6 +733,11 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                 repository_metadata = load_repositories_metadata([repository_key])
                 # Update ontology display name
                 user_study.apply_ontology(process_metadata, repository_metadata)
+
+                user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
+
+                if user_study.is_stand_alone:
+                    return user_study
 
                 # update study case execution status
                 study_case_execution = StudyCaseExecution.query.filter(
@@ -735,8 +751,6 @@ def get_user_study_case(user_identifier: int, study_identifier: int):
                         update_study_case_execution_status(user_study.id, current_execution)
                     user_study.execution_status = current_execution.execution_status
                     user_study.error = current_execution.message
-
-                user_study.has_read_only_file = check_read_only_mode_available(user_study.id)
 
                 return user_study
     return None
@@ -916,6 +930,7 @@ def get_last_study_case_changes(notification_id):
                 db.session.commit()
 
         return study_case_changes
+
 
 
 def get_user_authorised_studies_for_process(
@@ -1276,34 +1291,43 @@ def migrate_all_studies_with_new_read_only_format(logger):
     migration_file_path = join(data_root_dir, "migration_done.txt")
     migration_errors = []
 
-    if not os.path.exists(migration_file_path):
-        logger.info("Migration starts")
-        #iterate on all group folders
-        for group_dir in os.scandir(data_root_dir):
-            if group_dir.is_dir():
-                logger.info(f"Scanning group {group_dir.name}")
-                # iterate on all studies
-                for study_dir in os.scandir(group_dir.path):
-                    
-                    if study_dir.is_dir():
-                        read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
-                        errors = read_only_helper.migrate_to_new_read_only_folder()
-                        migration_errors.extend(errors)
-                        if len(errors) > 0:
-                            logger.info(f"Scanning study {study_dir.name}: FAILED")
-                        else:
-                            logger.info(f"Scanning study {study_dir.name}: OK")
-        # create a file of migration state if all is well
-        if len(migration_errors) == 0:
-            logger.info("Migration DONE")
-            with open(migration_file_path, "w+") as migration_file:
-                migration_file.write(f'Migration DONE: {datetime.now()}')
-            logger.info("Migration file saved")
-        else:
-            logger.info("Migration FAILED")
-            migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
-            with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
-                error_file.writelines(migration_errors)
-            logger.info("Error file saved")
+    # if migration file exists, the migration has already been done
+    if os.path.exists(migration_file_path):
+        logger.info("No migration to do, migration already DONE")
+        return
+
+    logger.info("Migration starts")
+    #iterate on all group folders
+    for group_dir in os.scandir(data_root_dir):
+        if not group_dir.is_dir():
+            continue
+
+        logger.info(f"Scanning group {group_dir.name}")
+        # iterate on all studies
+        for study_dir in os.scandir(group_dir.path):
+            
+            if not study_dir.is_dir():
+                continue
+
+            read_only_helper = StudyReadOnlyRWHelper(study_dir.path)
+            errors = read_only_helper.migrate_to_new_read_only_folder()
+            migration_errors.extend(errors)
+            if len(errors) > 0:
+                logger.info(f"Scanning study {study_dir.name}: FAILED")
+            else:
+                logger.info(f"Scanning study {study_dir.name}: OK")
+
+    # create a file of migration state if all is well
+    if len(migration_errors) == 0:
+        logger.info("Migration DONE")
+        with open(migration_file_path, "w+") as migration_file:
+            migration_file.write(f'Migration DONE: {datetime.now()}')
+        logger.info("Migration file saved")
+    else:
+        logger.info("Migration FAILED")
+        migration_errors.insert(0, f'Migration FAILED: {datetime.now()}\n' )
+        with open(join(data_root_dir, "migration_errors.txt"),"a+") as error_file:
+            error_file.writelines(migration_errors)
+        logger.info("Error file saved")
 
 

@@ -67,6 +67,7 @@ class StudyCaseDto:
         self.last_memory_usage = ""
         self.last_cpu_usage = ""
         self.has_read_only_file = False
+        self.is_stand_alone = False
 
         if study_case_instance is not None:
             self.id = study_case_instance.id
@@ -84,6 +85,7 @@ class StudyCaseDto:
             self.study_type = "Study"
             self.study_pod_flavor = study_case_instance.study_pod_flavor
             self.execution_pod_flavor = study_case_instance.execution_pod_flavor
+            self.is_stand_alone = study_case_instance.is_stand_alone
 
             # Retrieve group owner
             if owner_group is None:
@@ -157,6 +159,7 @@ class StudyCaseDto:
         result.update({"last_memory_usage": self.last_memory_usage})
         result.update({"last_cpu_usage": self.last_cpu_usage})
         result.update({"has_read_only_file": self.has_read_only_file})
+        result.update({"is_stand_alone": self.is_stand_alone})
 
         return result
 

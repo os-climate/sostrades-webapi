@@ -230,7 +230,8 @@ def update_database_with_process(additional_repository_list=None, logger=None, d
                 # Retrieve all study cases associated to process
                 sc_process = StudyCase.query \
                     .filter(StudyCase.process == process_deleted.name) \
-                    .filter(StudyCase.repository == process_deleted.process_path).all()
+                    .filter(StudyCase.repository == process_deleted.process_path)\
+                    .filter(StudyCase.is_stand_alone == False).all()
 
                 if len(sc_process) > 0:
                     scs_ids_to_delete = []

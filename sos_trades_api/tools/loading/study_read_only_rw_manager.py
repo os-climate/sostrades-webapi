@@ -15,7 +15,9 @@ limitations under the License.
 '''
 import os
 from os.path import basename, exists, join
-from shutil import copy, rmtree
+from shutil import copy
+
+from sostrades_core.tools.folder_operations import makedirs_safe, rmtree_safe
 
 from sos_trades_api.tools.file_stream.file_stream import verify_files_after_copy
 from sos_trades_api.tools.file_tools import (
@@ -45,16 +47,23 @@ class StudyReadOnlyRWHelper():
         self.__dashboard_file_path = join(self.__read_only_folder_path, self.DASHBOARD_FILE_NAME)
 
     @property
+    def read_only_folder_path(self):
+        return self.__read_only_folder_path
+
+    @property
     def read_only_exists(self):
         return exists(self.__read_only_file_path)
+    
+    @property
+    def ontology_files_exists(self):
+        return exists(self.__ontology_file_path) and exists(self.__documentation_folder_path)
 
     def __write_object_in_read_only_folder(self, object, file_path) -> str:
         """
         Return the read only foler of the study, 
         if the folder doesn't exists it is created
         """
-        if not exists(self.__read_only_folder_path):
-            os.mkdir(self.__read_only_folder_path)
+        makedirs_safe(self.__read_only_folder_path, exist_ok=True)
         return write_object_in_json_file(object, file_path)
     
     def get_read_only_file_path(self, no_data=False):
@@ -71,8 +80,9 @@ class StudyReadOnlyRWHelper():
     def write_study_case_in_read_only_file(self, loaded_study, no_data=False):
         """
         Save study case loaded into json file for read only mode
-        :param loaded_study: loaded_study_case to save
-        :type loaded_study: LoadedStudyCase
+        Args:
+            loaded_study (LoadedStudyCase): loaded_study_case to save
+        Return True if the write succeeded
         """
         return self.__write_object_in_read_only_folder(loaded_study, self.get_read_only_file_path(no_data))
     
@@ -80,8 +90,10 @@ class StudyReadOnlyRWHelper():
     def read_study_case_in_read_only_file(self, no_data=False):
         """
         Read study case loaded into json file for read only mode
-        :param no_data: if data reading rights
-        :type no_data: boolean
+        Args:
+            no_data (bool): if data reading rights
+        Return:
+            json read only file content
         """
         read_only = None
         if self.read_only_exists:
@@ -92,13 +104,19 @@ class StudyReadOnlyRWHelper():
     def write_dashboard(self, dashboard_data):
         """
         save dashboard data in a json file named dashboard.json
-        :param dashboard_data: dashboard data in json format
+        Args:
+             dashboard_data (dict): dashboard data in json format
+
+        Return:
+            True if the write succeeded
         """
         return self.__write_object_in_read_only_folder(dashboard_data, self.__dashboard_file_path)
 
     def read_dashboard(self):
         """
         get content of the dashboard saved file if exists, return None if not
+        Return:
+            Dashboard file content
         """
         dashboard_data = None
         if exists(self.__dashboard_file_path):
@@ -109,13 +127,18 @@ class StudyReadOnlyRWHelper():
     def write_ontology(self, ontology_data):
         """
         save ontology data in a json file named ontology.json
-        :param ontology_data: ontology data in json format
+        Args:
+            ontology_data (dict): ontology data in json format
+        Return:
+            True if the write succeeded
         """
         return self.__write_object_in_read_only_folder(ontology_data, self.__ontology_file_path)
 
     def read_ontology(self):
         """
         get content of the ontology saved file if exists, return None if not
+        Return:
+            Ontology file content
         """
         ontology_data = None
         if exists(self.__ontology_file_path):
@@ -127,10 +150,12 @@ class StudyReadOnlyRWHelper():
     def write_documentations(self, documentation_data_dict):
         """
         save documentations in the documentation folder, each documentation written in a .md file
-        : param documentation_data_dict: dict[documentation_name, documentation_data]
+        Args:
+            documentation_data_dict: dict[documentation_name, documentation_data]
+        Return:
+            True if the write succeeded
         """
-        if not exists(self.__documentation_folder_path):
-            os.makedirs(self.__documentation_folder_path)
+        makedirs_safe(self.__documentation_folder_path, exist_ok=True)
 
         for doc_name, doc in documentation_data_dict.items():
             with open(join(self.__documentation_folder_path, f'{doc_name}.md'), "w+", encoding='utf-8') as md_file:
@@ -139,6 +164,8 @@ class StudyReadOnlyRWHelper():
     def read_documentation(self, documentation_name):
         """
         get content of the documentation md saved file if exists, return None if not
+        Return:
+            documentation file content
         """
         documentation_data = None
         documentation_file_path = join(self.__documentation_folder_path, f'{documentation_name}.md')
@@ -151,90 +178,97 @@ class StudyReadOnlyRWHelper():
     def copy_file_in_read_only_folder(self, file_path:str):
         """
         Copy a file into the read only folder
-        :param file_path: path of the file to copy
-        :type file_path: str
+        Args:
+            file_path (str): path of the file to copy
         """
-        if exists(file_path):
-            file_name = basename(file_path)
-            copy(file_path, join(self.__read_only_folder_path, file_name))
+        if not exists(file_path):
+            return
+        file_name = basename(file_path)
+        copy(file_path, join(self.__read_only_folder_path, file_name))
 
     def delete_read_only_mode(self):
         """
         Delete the read only foler containing all read only files
         """
-        if exists(self.__read_only_folder_path):
-            rmtree(self.__read_only_folder_path)
+        if not exists(self.__read_only_folder_path):
+            return
+        
+        rmtree_safe(self.__read_only_folder_path)
+            
 
     def migrate_to_new_read_only_folder(self):
         """
         function that copy all existing read only files into the read only folder, 
         check the copied file and then delete removed files
+        Return:
+            (list[str]) migrations errors, empty if all succeeded
         """
         list_files = [self.LOADED_STUDY_FILE_NAME, 
                       self.RESTRICTED_STUDY_FILE_NAME,
                       self.ONTOLOGY_FILE_NAME,
                       self.DASHBOARD_FILE_NAME]
         migration_errors = []
-        all_copy_ok = True
         for file_name in list_files:
             file_to_copy_path = join(self.__dump_directory, file_name)
-            if exists(file_to_copy_path):
-                if not exists(self.__read_only_folder_path):
-                    os.makedirs(self.__read_only_folder_path)
-                new_file_path = join(self.__read_only_folder_path, file_name)
+            if not exists(file_to_copy_path):
+                continue
 
-                try:
-                    copy(file_to_copy_path, new_file_path)
-                    # check the created file
-                    if not verify_files_after_copy(file_to_copy_path, new_file_path):
-                        all_copy_ok = False
-                        migration_errors.append(f'Check of {file_to_copy_path} and {new_file_path} invalid\n')
-                except Exception as error:
-                    migration_errors.append(f'Error while copying of {file_to_copy_path}: {str(error)}\n')
+            makedirs_safe(self.__read_only_folder_path, exist_ok=True)
+            new_file_path = join(self.__read_only_folder_path, file_name)
+
+            try:
+                copy(file_to_copy_path, new_file_path)
+                # check the created file
+                if not verify_files_after_copy(file_to_copy_path, new_file_path):
+                    migration_errors.append(f'Check of {file_to_copy_path} and {new_file_path} invalid\n')
+            except Exception as error:
+                migration_errors.append(f'Error while copying of {file_to_copy_path}: {str(error)}\n')
         
         # copy documentation folder
         folder_to_copy_path = join(self.__dump_directory, self.DOCUMENTATION_FOLDER_NAME)
         new_folder_path = join(self.__read_only_folder_path, self.DOCUMENTATION_FOLDER_NAME)
         if exists(folder_to_copy_path):           
             try:
-                if not exists(self.__read_only_folder_path):
-                    os.makedirs(self.__read_only_folder_path)
-                if not exists(new_folder_path):
-                    os.makedirs(new_folder_path)
+                makedirs_safe(new_folder_path, exist_ok=True)
                 # check the created files
                 for file in os.scandir(folder_to_copy_path):
                     new_file_path = join(new_folder_path, file.name)
                     copy(file.path, new_folder_path)
                     if not verify_files_after_copy(file.path, new_file_path):
-                        all_copy_ok = False
                         migration_errors.append(f'Check of {file.path} and {new_file_path} invalid\n')
             except Exception as error:
                 migration_errors.append(f'Error while copying of {folder_to_copy_path}: {str(error)}\n')
 
-        if all_copy_ok:
-            current_deleting = ''
-            try:
-                for file_name in list_files:
-                    file_to_copy_path = join(self.__dump_directory, file_name)
-                    current_deleting = file_to_copy_path
-                    if exists(file_to_copy_path):
-                        # delete the original file
-                        os.remove(file_to_copy_path)
-                    # check if backup file exists and delete it
-                    file_and_extension = file_name.split(".")
-                    backup_file_path = join(self.__dump_directory, 
-                        file_and_extension[0]
-                        + '_backup.'
-                        + file_and_extension[1]
-                    )
-                    if exists(backup_file_path):
-                        # delete the backup file too
-                        os.remove(backup_file_path)
-                if exists(folder_to_copy_path):
-                    current_deleting = folder_to_copy_path
-                    rmtree(folder_to_copy_path)
-            except Exception as error:
-                migration_errors.append(f'Error while deletion of {current_deleting}: {str(error)}\n')
+        # if there is errors, stop the process now
+        if len(migration_errors) > 0:
+            return migration_errors
+        
+        # else delete old files
+        current_deleting = ''
+        try:
+            # delete read only files
+            for file_name in list_files:
+                file_to_copy_path = join(self.__dump_directory, file_name)
+                current_deleting = file_to_copy_path
+                if exists(file_to_copy_path):
+                    os.remove(file_to_copy_path)
+                # check if backup file exists and delete it
+                file_and_extension = file_name.split(".")
+                backup_file_path = join(self.__dump_directory, 
+                    file_and_extension[0]
+                    + '_backup.'
+                    + file_and_extension[1]
+                )
+                current_deleting = backup_file_path
+                if exists(backup_file_path):
+                    os.remove(backup_file_path)
+            # delete documentation folder
+            current_deleting = folder_to_copy_path
+            if exists(folder_to_copy_path):
+                rmtree_safe(folder_to_copy_path)
+        except Exception as error:
+            migration_errors.append(f'Error while deletion of {current_deleting}: {str(error)}\n')
+
         return migration_errors
             
         

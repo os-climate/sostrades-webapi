@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 import logging
 import os
 from os.path import join
@@ -44,6 +45,7 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
+from sos_trades_api.tools.gzip_tools import zip_files_and_folders
 from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
 from sos_trades_api.tools.loading.study_read_only_rw_manager import (
     StudyReadOnlyRWHelper,
@@ -113,6 +115,7 @@ class StudyCaseManager(BaseStudyManager):
             self.disabled = None
             self.study_pod_flavor = None
             self.execution_pod_flavor = None
+            self.is_stand_alone = False
 
         def init_from_study_case(self, study_case: StudyCase):
             """
@@ -139,6 +142,27 @@ class StudyCaseManager(BaseStudyManager):
             self.disabled = study_case.disabled
             self.study_pod_flavor = study_case.study_pod_flavor
             self.execution_pod_flavor = study_case.execution_pod_flavor
+            self.is_stand_alone = study_case.is_stand_alone
+        
+        def serialize_standalone(self):
+            """
+            json serializer for study in stand-alone purpose
+            """
+            return {
+                "name": self.name,
+                "repository": self.repository,
+                "process": self.process,
+                "description": self.description
+            }
+        
+        def deserialize_standalone(self, json_data):
+            """
+            json deserializer for study in stand-alone purpose
+            """
+            self.name = json_data["name"]
+            self.repository = json_data["repository"]
+            self.process = json_data["process"]
+            self.description = json_data["description"]
 
     def __init__(self, study_identifier):
         """
@@ -228,15 +252,22 @@ class StudyCaseManager(BaseStudyManager):
         file_path = ""
 
         if self.__study is not None:
+            
+            if self.__study.is_stand_alone:
+                # find the execution log file in the read only folder with names that ends with "-execution.log" 
+               for file in os.listdir(self.__read_only_rw_strategy.read_only_folder_path):
+                    if file.endswith("-execution.log"):
+                        file_path = os.path.join(self.__read_only_rw_strategy.read_only_folder_path, file)
+                        break
+            else:
+                study_execution_identifier = self.__study.current_execution_id
+                if specific_study_case_execution_identifier is not None:
+                    study_execution_identifier = specific_study_case_execution_identifier
 
-            study_execution_identifier = self.__study.current_execution_id
-            if specific_study_case_execution_identifier is not None:
-                study_execution_identifier = specific_study_case_execution_identifier
-
-            file_path = os.path.join(
-                self.dump_directory,
-                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
-            )
+                file_path = os.path.join(
+                    self.dump_directory,
+                    f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
+                )
 
         return file_path
 
@@ -252,16 +283,26 @@ class StudyCaseManager(BaseStudyManager):
         file_path = ""
 
         if self.__study is not None:
+            if self.__study.is_stand_alone:
+                # find the execution log file in the read only folder with names that ends with "-execution.log" 
+               for file in os.listdir(self.__read_only_rw_strategy.read_only_folder_path):
+                    if file.endswith("-execution.log"):
+                        file_path = os.path.join(
+                            str(self.__study.group_id),
+                            str(self.__study.id),
+                            self.__read_only_rw_strategy.READ_ONLY_FOLDER_NAME,
+                            file)
+                        break
+            else:
+                study_execution_identifier = self.__study.current_execution_id
+                if specific_study_case_execution_identifier is not None:
+                    study_execution_identifier = specific_study_case_execution_identifier
 
-            study_execution_identifier = self.__study.current_execution_id
-            if specific_study_case_execution_identifier is not None:
-                study_execution_identifier = specific_study_case_execution_identifier
-
-            file_path = os.path.join(
-                str(self.__study.group_id),
-                str(self.__study.id),
-                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
-            )
+                file_path = os.path.join(
+                    str(self.__study.group_id),
+                    str(self.__study.id),
+                    f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
+                )
 
         return file_path
 
@@ -648,7 +689,7 @@ class StudyCaseManager(BaseStudyManager):
     def get_read_only_file_path(self, no_data=False):
         """
         Return the read only mode file path
-        :param no_data: if true, return the path to the reastricted viewer file instead of the read only file
+        :param no_data: if true, return the path to the restricted viewer file instead of the read only file
         :type no_data: bool
         """
         return self.__read_only_rw_strategy.get_read_only_file_path(no_data)
@@ -755,6 +796,43 @@ class StudyCaseManager(BaseStudyManager):
         result = interface_diagram.generate_interface_diagram_data()
 
         return result
+    
+    def export_study_read_only_zip(self, zip_file_path)->bool:
+
+        # create a zip archive containing the read_only_mode folder
+        # plus the pkl files
+        if not self.__read_only_rw_strategy.read_only_exists:
+            return False
+            
+        elements_to_zip = []
+
+        dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
+        status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+        
+        # add pkl file to zip
+        if os.path.exists(dm_pkl_file):
+            elements_to_zip.append(dm_pkl_file)
+        # add status file to zip
+        if os.path.exists(status_pkl_file):
+            elements_to_zip.append(status_pkl_file)
+
+         # Add study metadata in the zip file
+        metadata = self.__study.serialize_standalone()
+
+        # add read only files into the folder
+        elements_to_zip.append(self.__read_only_rw_strategy.read_only_folder_path)
+
+        zip_files_and_folders(zip_file_path, elements_to_zip, json.dumps(metadata))
+
+        return True
+    
+    def check_study_standalone_files(self)->bool:
+        dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
+        status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+ 
+        # add pkl file to zip
+        return os.path.exists(dm_pkl_file) and os.path.exists(status_pkl_file) and self.__read_only_rw_strategy.read_only_exists
+
 
     @staticmethod
     def copy_pkl_file(file_name, study_case_manager, study_manager_source):
