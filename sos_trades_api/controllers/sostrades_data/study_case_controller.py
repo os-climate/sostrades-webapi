@@ -1295,6 +1295,11 @@ def migrate_all_studies_with_new_read_only_format(logger):
     if os.path.exists(migration_file_path):
         logger.info("No migration to do, migration already DONE")
         return
+    
+    # if there is no study, no migration to do
+    if os.path.exists(data_root_dir):
+        logger.info("No migration to do, no study to check")
+        return
 
     logger.info("Migration starts")
     #iterate on all group folders
