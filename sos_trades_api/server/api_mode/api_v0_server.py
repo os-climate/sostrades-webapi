@@ -42,7 +42,7 @@ from sos_trades_api.blueprints.ontology.ontology_blueprint import (
 )
 from sos_trades_api.tools.authentication.authentication import api_key_required
 
-from sos_trades_api.blueprints.study_case.read_only.read_only_blueprint import (read_only_blueprint,
+from sos_trades_api.blueprints.study_case.read_only_blueprint import (read_only_blueprint,
     init_read_only_routes,
 )
 

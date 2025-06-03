@@ -115,46 +115,6 @@ def save_ontology_usages_and_documentation(study_id):
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
-@app.route("/api/data/study-case/<int:study_id>/saved-ontology-usages", methods=["GET"])
-@auth_required
-def load_local_ontology_usage(study_id):
-    """
-    Get ontology usage from local saved ontology
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        
-
-        return make_gzipped_response(get_local_ontology_usages(study_id))
-        
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
-
-@app.route("/api/data/study-case/<int:study_id>/saved-documentation/<string:documentation_name>", methods=["GET"])
-@auth_required
-def load_local_documentation(study_id, documentation_name):
-    """
-    Get ontology documentation markdown from local saved ontology documentation
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        if documentation_name is not None:
-            return make_gzipped_response(get_local_documentation(study_id, documentation_name))
-        else:
-            raise BadRequest("Missing mandatory parameter: documentation identifier")
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
-
 
 @app.route("/api/data/study-case/<int:study_case_identifier>", methods=["GET"])
 @auth_required

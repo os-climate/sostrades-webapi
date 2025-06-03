@@ -39,7 +39,7 @@ from sos_trades_api.blueprints.ontology.ontology_blueprint import (
     init_ontology_routes,
     ontology_blueprint,
 )
-from sos_trades_api.blueprints.study_case.read_only.read_only_blueprint import (
+from sos_trades_api.blueprints.study_case.read_only_blueprint import (
     init_read_only_routes,
     read_only_blueprint,
 )
