@@ -1297,7 +1297,7 @@ def migrate_all_studies_with_new_read_only_format(logger):
         return
     
     # if there is no study, no migration to do
-    if os.path.exists(data_root_dir):
+    if not os.path.exists(data_root_dir):
         logger.info("No migration to do, no study to check")
         return
 
