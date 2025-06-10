@@ -21,6 +21,7 @@ from sos_trades_api.models.database_models import (
     PodAllocation,
     StudyCase,
     StudyCaseExecution,
+    db,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, study_case_cache
@@ -70,6 +71,9 @@ def check_read_only_mode_available(study_case_identifier):
         if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
             study_manager = StudyCaseManager(study_case_identifier)
             is_read_only_possible = study_manager.check_study_case_json_file_exists()
+    elif study_case.is_stand_alone:
+        study_manager = StudyCaseManager(study_case_identifier)
+        is_read_only_possible = study_manager.check_study_case_json_file_exists()
     return is_read_only_possible
 
 def get_read_only_file_path(study_case_identifier, no_data=False):
@@ -128,6 +132,20 @@ def check_pod_allocation_is_running(study_case_identifier):
             is_running = True
 
         return is_running
+    
+def update_study_case_creation_status(study_case_id, new_creation_status, error=None):
+    
+    # check that the study case exists
+    study_case = StudyCase.query.filter(StudyCase.id == study_case_id).first()
+    if study_case is None:
+        raise StudyCaseError("Study creation error: study case should exists but was not found")
+    if error is not None:
+        study_case.error = error
+    # update study case status
+    study_case.creation_status = new_creation_status
+    db.session.add(study_case)
+    db.session.commit()
+    
 
 def update_read_only_files_with_visualization():
     """"
