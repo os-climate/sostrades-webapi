@@ -16,7 +16,7 @@ kubernetes # Linked to kubernetes version deployed
 mysqlclient==2.2.7
 numpy==1.26.4
 pandas==2.2.2
-plotly==5.24.0
+plotly==6.1.2
 psutil==6.0.0
 PyJWT==2.8.0
 python-dotenv==1.0.1
@@ -26,7 +26,7 @@ python-engineio==4.5.1  # Must be added to freeze version, so message server wor
 python-socketio==5.8.0  # Must be added to freeze version, so message server works
 python3-saml==1.9.0
 pytz==2024.1
-PyYAML==6.0.1
+PyYAML==6.0.2
 requests==2.32.3
 simplejson==3.19.2
 SQLAlchemy==1.4.52
