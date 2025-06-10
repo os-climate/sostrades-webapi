@@ -28,7 +28,7 @@ python-socketio==5.8.0  # Must be added to freeze version, so message server wor
 python3-saml==1.9.0
 pytz==2024.1
 PyYAML==6.0.1
-requests==2.32.3
+requests==2.32.4
 simplejson==3.19.2
 SQLAlchemy==1.4.52
 urllib3==2.2.2
