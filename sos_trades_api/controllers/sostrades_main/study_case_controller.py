@@ -34,6 +34,7 @@ from sostrades_core.datasets.dataset_mapping import (
 )
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from sostrades_core.tools.folder_operations import rmtree_safe
 from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
     ProcessBuilderParameterType,
 )
@@ -878,7 +879,7 @@ def delete_study_cases(studies):
             for study in query:
                 folder = StudyCaseManager.get_root_study_data_folder(
                     study.group_id, study.id)
-                rmtree(folder, ignore_errors=True)
+                rmtree_safe(folder)
 
             return f"All the studies (identifier(s) {studies}) have been deleted in the database"
         else:
