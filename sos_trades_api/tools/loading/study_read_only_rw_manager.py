@@ -58,6 +58,10 @@ class StudyReadOnlyRWHelper():
     def ontology_files_exists(self):
         return exists(self.__ontology_file_path) and exists(self.__documentation_folder_path)
 
+    @property
+    def dashboard_file_exists(self):
+        return exists(self.__dashboard_file_path)
+
     def __write_object_in_read_only_folder(self, object, file_path) -> str:
         """
         Return the read only foler of the study, 
@@ -76,6 +80,12 @@ class StudyReadOnlyRWHelper():
             return self.__read_only_file_nodata_path
         else:
             return self.__read_only_file_path
+
+    def get_dashboard_file_path(self):
+        """
+        Return the dashboard file path
+        """
+        return self.__dashboard_file_path
     
     def write_study_case_in_read_only_file(self, loaded_study, no_data=False):
         """

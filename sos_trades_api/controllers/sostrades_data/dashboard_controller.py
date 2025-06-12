@@ -36,6 +36,6 @@ def save_study_dashboard_in_file(dashboard_data):
      :type: Object({study_case_id, items})
     """
     study_manager = StudyCaseManager(dashboard_data['study_case_id'])
-    dashboard_file_path = Path(study_manager.dump_directory).joinpath(study_manager.DASHBOARD_FILE_NAME)
+    dashboard_file_path = study_manager.get_dashboard_file_path()
     write_object_in_json_file(dashboard_data, dashboard_file_path)
     return

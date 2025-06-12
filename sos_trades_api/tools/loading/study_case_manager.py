@@ -789,6 +789,12 @@ class StudyCaseManager(BaseStudyManager):
         result = interface_diagram.generate_interface_diagram_data()
 
         return result
+
+    def check_dashboard_json_file_exists(self):
+        return self.__read_only_rw_strategy.dashboard_file_exists
+
+    def get_dashboard_file_path(self):
+        return self.__read_only_rw_strategy.get_dashboard_file_path()
     
     def export_study_read_only_zip(self, zip_file_path)->bool:
 
