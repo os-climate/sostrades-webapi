@@ -40,6 +40,7 @@ from sostrades_core.tools.post_processing.tables.table_style import TableStyles
 
 from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
+from sos_trades_api.models.dashboard import Dashboard
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
@@ -87,7 +88,7 @@ class CustomJsonEncoder(JSONEncoder):
 
     def default(self, o):  # pylint: disable=E0202
 
-        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference)):
+        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference, Dashboard)):
             return o.serialize()
         elif isinstance(o, DataFrame):
             return "://dataframe"
