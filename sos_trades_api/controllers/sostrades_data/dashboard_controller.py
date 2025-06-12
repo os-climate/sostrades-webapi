@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.file_tools import write_object_in_json_file
