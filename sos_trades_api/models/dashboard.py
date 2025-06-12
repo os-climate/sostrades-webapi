@@ -16,7 +16,8 @@ limitations under the License.
 
 import abc
 from enum import Enum
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Dict, List, Optional, Union
+
 
 class DashboardAttributes(str, Enum):
     STUDY_CASE_ID = 'study_case_id'
@@ -184,11 +185,11 @@ class DashboardSection(BaseItem):
             "data": {
                 "title": self.data["title"],
                 "items": serialized_items,
-                "shown": self.data.get["shown"],
+                "shown": self.data["shown"],
             },
         }
 
-        if expanded_size is self.data:
+        if "expanded_size" in self.data:
             result["data"]["expanded_size"] = self.data["expanded_size"]
 
         if hasattr(self, 'max_rows'):

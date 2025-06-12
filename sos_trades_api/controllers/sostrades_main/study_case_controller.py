@@ -23,7 +23,6 @@ import traceback
 from datetime import datetime, timezone
 from os import remove
 from os.path import join
-from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
