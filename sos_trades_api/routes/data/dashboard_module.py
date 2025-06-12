@@ -1,14 +1,19 @@
 from urllib import request
 
+from flask import jsonify, make_response, session
 from werkzeug.exceptions import BadRequest
 
-from sos_trades_api.controllers.sostrades_data.dashboard_controller import save_study_dashboard_in_file, get_study_dashboard_in_file
+from sos_trades_api.controllers.sostrades_data.dashboard_controller import (
+    get_study_dashboard_in_file,
+    save_study_dashboard_in_file,
+)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from flask import session, abort, request, jsonify, make_response
+from sos_trades_api.tools.right_management.functional.study_case_access_right import (
+    StudyCaseAccess,
+)
 
-from sos_trades_api.tools.right_management.functional.study_case_access_right import StudyCaseAccess
 
 @app.route("/api/data/dashboard/<int:study_id>", methods=["GET"])
 @auth_required

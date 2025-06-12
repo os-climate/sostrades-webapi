@@ -4,6 +4,7 @@ from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
+
 def get_study_dashboard_in_file(study_id):
     """
     check if a dashboard json file exists,
