@@ -43,7 +43,7 @@ def get_dashboard_data(study_id):
                 "You do not have the necessary rights to load this study case")
 
         # Proceeding after rights verification
-        return get_study_dashboard_in_file(study_id)
+        return make_response(get_study_dashboard_in_file(study_id), 200)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 @app.route("/api/data/dashboard/<int:study_id>", methods=["POST"])
