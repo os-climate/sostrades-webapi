@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from flask import jsonify, request, make_response, session
+from flask import jsonify, make_response, request, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_data.dashboard_controller import (
