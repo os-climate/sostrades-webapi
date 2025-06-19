@@ -23,7 +23,6 @@ import traceback
 from datetime import datetime, timezone
 from os import remove
 from os.path import join
-from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
@@ -34,6 +33,7 @@ from sostrades_core.datasets.dataset_mapping import (
 )
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from sostrades_core.tools.folder_operations import rmtree_safe
 from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
     ProcessBuilderParameterType,
 )
@@ -257,11 +257,6 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None):
                     loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
                     loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
 
-                # Read dashboard and set it to the loaded studycase
-                # If the root process is at done
-                if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
-                    loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
-            
                 loaded_study_case.study_case.has_read_only_file = check_read_only_mode_available(study_case_identifier)
 
         # Add this study in last study opened in database
@@ -883,7 +878,7 @@ def delete_study_cases(studies):
             for study in query:
                 folder = StudyCaseManager.get_root_study_data_folder(
                     study.group_id, study.id)
-                rmtree(folder, ignore_errors=True)
+                rmtree_safe(folder)
 
             return f"All the studies (identifier(s) {studies}) have been deleted in the database"
         else:
@@ -910,28 +905,6 @@ def get_study_data_stream(study_id):
         raise InvalidFile(
             f"The following study file raise this error while trying to read it : {error}")
     return zip_path
-
-
-def get_study_dashboard_in_file(study_id):
-    """
-    check if a dashboard json file exists,
-         if true, read dashboard file, and return the json
-         if false, return None, it will be checked on client side
-     :param: study_id, id of the study to export
-     :type: integer
-    """
-    study_manager = StudyCaseManager(study_id)
-    try:
-        dashboard = study_manager.read_dashboard_in_json_file()
-        if dashboard is not None:
-            return dashboard
-        else:
-            return "null"
-
-    except Exception as error:
-        app.logger.error(
-            f"Study {study_id} dashboard error while reading file: {error}")
-        return "null"
 
 
 def get_study_data_file_path(study_id) -> str:

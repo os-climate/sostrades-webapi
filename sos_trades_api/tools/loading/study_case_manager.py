@@ -24,7 +24,6 @@ from shutil import copy
 from eventlet import sleep
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
-from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
 from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
 from sostrades_core.tools.tree.serializer import DataSerializer
 
@@ -470,12 +469,6 @@ class StudyCaseManager(BaseStudyManager):
                     self, True, True, None, True)
                 self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, True)
 
-                #-------------------
-                # save dashboard
-                dashboard = generate_dashboard(
-                    self.execution_engine, loaded_study_case.post_processings)
-                self.__read_only_rw_strategy.write_dashboard(dashboard)
-
                 #------------------
                 # save execution logs in read only folder
                 self.__read_only_rw_strategy.copy_file_in_read_only_folder(self.raw_log_file_path_absolute())
@@ -796,6 +789,12 @@ class StudyCaseManager(BaseStudyManager):
         result = interface_diagram.generate_interface_diagram_data()
 
         return result
+
+    def check_dashboard_json_file_exists(self):
+        return self.__read_only_rw_strategy.dashboard_file_exists
+
+    def get_dashboard_file_path(self):
+        return self.__read_only_rw_strategy.get_dashboard_file_path()
     
     def export_study_read_only_zip(self, zip_file_path)->bool:
 
