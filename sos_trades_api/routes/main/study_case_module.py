@@ -21,6 +21,7 @@ from flask import abort, jsonify, make_response, request, send_file, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_main.study_case_controller import (
+    add_last_opened_study_case,
     copy_study_discipline_data,
     delete_study_cases,
     export_study_parameters_from_datasets_mapping,
@@ -46,7 +47,11 @@ from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
-from sos_trades_api.tools.study_management.study_management import get_file_stream
+from sos_trades_api.tools.study_management.study_management import (
+    check_read_only_mode_available,
+    get_file_stream,
+    get_read_only_file_path,
+)
 
 
 @app.route("/api/main/study-case/<int:study_id>", methods=["DELETE"])
@@ -83,12 +88,7 @@ def main_load_study_case_by_id(study_id):
 
         # Checking if user can access study data
         user = session["user"]
-
-        # Convert string parameter to boolean. Default value is "false" if parameter is not provided
-        # Convert to lowercase to handle "True", "TRUE", "true" variants.
-        # Returns True only if the value is exactly "true", False otherwise
-        verify_read_only_capability = request.args.get("verify_read_only_capability", "false").lower() == "true"
-
+        
         # Verify user has study case authorisation to load study (Restricted viewer)
         study_case_access = StudyCaseAccess(user.id, study_id)
         study_case_access_duration = time.time()
@@ -106,7 +106,7 @@ def main_load_study_case_by_id(study_id):
         app.logger.info(
             f"User {user.id:<5} => get_user_right_for_study {study_access_right_duration - check_user_right_for_study_duration:<5} sec")
 
-        loaded_study = get_study_case(user.id, study_id, study_access_right, verify_read_only_capability)
+        loaded_study = get_study_case(user.id, study_id, study_access_right)
         loaded_study_duration = time.time()
         app.logger.info(
             f"User {user.id:<5} => loadedStudy_duration {loaded_study_duration - study_access_right_duration :<5} sec")
@@ -455,9 +455,14 @@ def load_study_data_in_read_only_mode(study_id):
         study_access_right = study_case_access.get_user_right_for_study(
         study_id)
 
-        loaded_study_json = get_study_case(user.id, study_id, study_access_right)
-
-        return make_gzipped_response(loaded_study_json)
+        if check_read_only_mode_available(study_id):
+            add_last_opened_study_case(study_id, user.id)
+            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+            file_path = get_read_only_file_path(study_id, no_data)
+            return send_file(file_path)
+        else:
+            loaded_study_json = get_study_case(user.id, study_id, study_access_right)
+            return make_gzipped_response(loaded_study_json)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 

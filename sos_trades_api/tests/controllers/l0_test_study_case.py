@@ -917,12 +917,9 @@ class TestStudy(DatabaseUnitTestConfiguration):
             delete_study_cases,
             load_or_create_study_case,
         )
-        from sos_trades_api.models.database_models import AccessRights, StudyCase
+        from sos_trades_api.models.database_models import StudyCase
         from sos_trades_api.models.loaded_study_case import LoadStatus
         from sos_trades_api.server.base_server import study_case_cache
-        from sos_trades_api.tools.study_management.study_management import (
-            get_loaded_study_case_in_read_only_mode,
-        )
 
         with DatabaseUnitTestConfiguration.app.app_context():
             study_test = StudyCase.query.filter(
@@ -958,9 +955,12 @@ class TestStudy(DatabaseUnitTestConfiguration):
                             False, "test_update_study_parameters update study parameter too long, check thread")
                     counter = counter + 1
                     sleep(1)
+            #set root process status to done to create the read only mode
+            study_manager.execution_engine.root_process.status = 'DONE'
+            study_manager.save_study_read_only_mode_in_file()
             self.assertTrue(study_manager.check_study_case_json_file_exists(
             ), "Unable to retrieve study case read only file")
-            study_json = get_loaded_study_case_in_read_only_mode(study_case_copy_id, AccessRights.MANAGER, None)
+            study_json = study_manager.read_loaded_study_case_in_json_file()
             self.assertIsNotNone(
                 study_json, "Unable to read study case read only file")
 

@@ -24,28 +24,30 @@ from shutil import copy
 from eventlet import sleep
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
-from sostrades_core.tools.dashboard.dashboard_factory import generate_dashboard
 from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
 from sostrades_core.tools.tree.serializer import DataSerializer
 
 from sos_trades_api.config import Config
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
+    load_markdown_documentation_metadata,
     load_n2_matrix,
+    load_ontology_usages,
     load_processes_metadata,
     load_repositories_metadata,
 )
-from sos_trades_api.models.custom_json_encoder import CustomJsonEncoder
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
     StudyCase,
     StudyCaseAccessGroup,
+    StudyCaseExecution,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
 from sos_trades_api.server.base_server import app, db
-from sos_trades_api.tools.file_tools import (
-    read_object_in_json_file,
-    write_object_in_json_file,
+from sos_trades_api.tools.gzip_tools import zip_files_and_folders
+from sos_trades_api.tools.loading.loaded_tree_node import get_treenode_ontology_data
+from sos_trades_api.tools.loading.study_read_only_rw_manager import (
+    StudyReadOnlyRWHelper,
 )
 from sos_trades_api.tools.logger.study_case_sqlalchemy_handler import (
     StudyCaseSQLAlchemyHandler,
@@ -84,10 +86,7 @@ class InvalidStudy(StudyCaseError):
 
 class StudyCaseManager(BaseStudyManager):
     BACKUP_FILE_NAME = "_backup"
-    LOADED_STUDY_FILE_NAME = "loaded_study_case.json"
-    RESTRICTED_STUDY_FILE_NAME = "loaded_study_case_no_data.json"
-    DASHBOARD_FILE_NAME = "dashboard.json"
-
+    
     class UnboundStudyCase:
         """
         Class that manage a study case object without being linked to sqlalchemy session
@@ -115,6 +114,7 @@ class StudyCaseManager(BaseStudyManager):
             self.disabled = None
             self.study_pod_flavor = None
             self.execution_pod_flavor = None
+            self.is_stand_alone = False
 
         def init_from_study_case(self, study_case: StudyCase):
             """
@@ -141,6 +141,27 @@ class StudyCaseManager(BaseStudyManager):
             self.disabled = study_case.disabled
             self.study_pod_flavor = study_case.study_pod_flavor
             self.execution_pod_flavor = study_case.execution_pod_flavor
+            self.is_stand_alone = study_case.is_stand_alone
+        
+        def serialize_standalone(self):
+            """
+            json serializer for study in stand-alone purpose
+            """
+            return {
+                "name": self.name,
+                "repository": self.repository,
+                "process": self.process,
+                "description": self.description
+            }
+        
+        def deserialize_standalone(self, json_data):
+            """
+            json deserializer for study in stand-alone purpose
+            """
+            self.name = json_data["name"]
+            self.repository = json_data["repository"]
+            self.process = json_data["process"]
+            self.description = json_data["description"]
 
     def __init__(self, study_identifier):
         """
@@ -157,6 +178,7 @@ class StudyCaseManager(BaseStudyManager):
 
         self.__rw_strategy = None
         self.__get_read_write_strategy()
+
 
         self.__root_dir = self.get_root_study_data_folder(
             self.__study.group_id, self.__study.id,
@@ -186,6 +208,8 @@ class StudyCaseManager(BaseStudyManager):
 
         self.n2_diagram = {}
         self.__error_message = ""
+
+        self.__read_only_rw_strategy = StudyReadOnlyRWHelper(self.dump_directory)
 
     @property
     def study(self) -> StudyCase:
@@ -227,15 +251,22 @@ class StudyCaseManager(BaseStudyManager):
         file_path = ""
 
         if self.__study is not None:
+            
+            if self.__study.is_stand_alone:
+                # find the execution log file in the read only folder with names that ends with "-execution.log" 
+               for file in os.listdir(self.__read_only_rw_strategy.read_only_folder_path):
+                    if file.endswith("-execution.log"):
+                        file_path = os.path.join(self.__read_only_rw_strategy.read_only_folder_path, file)
+                        break
+            else:
+                study_execution_identifier = self.__study.current_execution_id
+                if specific_study_case_execution_identifier is not None:
+                    study_execution_identifier = specific_study_case_execution_identifier
 
-            study_execution_identifier = self.__study.current_execution_id
-            if specific_study_case_execution_identifier is not None:
-                study_execution_identifier = specific_study_case_execution_identifier
-
-            file_path = os.path.join(
-                self.dump_directory,
-                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
-            )
+                file_path = os.path.join(
+                    self.dump_directory,
+                    f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
+                )
 
         return file_path
 
@@ -251,16 +282,26 @@ class StudyCaseManager(BaseStudyManager):
         file_path = ""
 
         if self.__study is not None:
+            if self.__study.is_stand_alone:
+                # find the execution log file in the read only folder with names that ends with "-execution.log" 
+               for file in os.listdir(self.__read_only_rw_strategy.read_only_folder_path):
+                    if file.endswith("-execution.log"):
+                        file_path = os.path.join(
+                            str(self.__study.group_id),
+                            str(self.__study.id),
+                            self.__read_only_rw_strategy.READ_ONLY_FOLDER_NAME,
+                            file)
+                        break
+            else:
+                study_execution_identifier = self.__study.current_execution_id
+                if specific_study_case_execution_identifier is not None:
+                    study_execution_identifier = specific_study_case_execution_identifier
 
-            study_execution_identifier = self.__study.current_execution_id
-            if specific_study_case_execution_identifier is not None:
-                study_execution_identifier = specific_study_case_execution_identifier
-
-            file_path = os.path.join(
-                str(self.__study.group_id),
-                str(self.__study.id),
-                f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
-            )
+                file_path = os.path.join(
+                    str(self.__study.group_id),
+                    str(self.__study.id),
+                    f"sc{self.__study.id}-sce{study_execution_identifier}-execution.log",
+                )
 
         return file_path
 
@@ -389,33 +430,113 @@ class StudyCaseManager(BaseStudyManager):
 
             loaded_study_case.study_case.apply_ontology(
                 process_metadata, repository_metadata)
-
-            # if the loaded status is not yet at LOADED, load treeview post
-            # proc anyway so that the read only mode file is available when study is loaded
-            if self.load_status != LoadStatus.LOADED:
+            
+            if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
                 loaded_study_case.load_treeview_and_post_proc(
-                    self, False, True, None, True)
+                        self, False, True, None, True)
                 loaded_study_case.load_n2_diagrams(self)
                 
-            loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-            self.__write_loaded_study_case_in_json_file(
-                loaded_study_case, False)
+                # fill loaded study data needed in read only file
+                loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+                loaded_study_case.study_case.creation_status = StudyCase.CREATION_DONE
+                loaded_study_case.study_case.has_read_only_file = True
+                
+                # retrieve execution data
+                study_case_execution = StudyCaseExecution.query.filter(
+                    StudyCaseExecution.id == loaded_study_case.study_case.current_execution_id).first()
+                if study_case_execution is not None:
+                    loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+                    loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+                    loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
+                
+                #----------------------------
+                #save ontology data
+                # retrieve ontology variable names and documentation ids  
+                ontology_data = get_treenode_ontology_data(loaded_study_case.treenode)
+                self.__get_and_save_ontology_usages({
+                                                'disciplines': list(ontology_data.disciplines),
+                                                'parameter_usages': list(ontology_data.parameter_usages)
+                                            })
+                self.__get_and_save_documentations(list(ontology_data.disciplines))
 
-            if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
+                #-------------------------
+                #write read only mode file
+                self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, False)
+                
+
                 # save the study with no data for restricted read only access:
                 loaded_study_case.load_treeview_and_post_proc(
                     self, True, True, None, True)
-                self.__write_loaded_study_case_in_json_file(
-                    loaded_study_case, True)
+                self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, True)
 
-                #-------------------
-                # save dashboard
-                dashboard = generate_dashboard(
-                    self.execution_engine, loaded_study_case.post_processings)
-                dashboard_file_path = Path(self.dump_directory).joinpath(
-                    self.DASHBOARD_FILE_NAME)
-                write_object_in_json_file(dashboard, dashboard_file_path)
+                #------------------
+                # save execution logs in read only folder
+                self.__read_only_rw_strategy.copy_file_in_read_only_folder(self.raw_log_file_path_absolute())
+
+    
+    def __get_and_save_ontology_usages(self, ontology_data:dict):
+        """
+        Get ontology usage from ontology server and save result.
+        :param ontology_data: Request object is intended with the following data structure
+        {
+            ontology_request: {
+                disciplines: string[], // list of disciplines string identifier
+                parameter_usages: string[] // list of parameters string identifier
+            }
+        }
+        ontology usages are saved in a json file next to the read only study file. 
+        """
+        try:
+            # fetch ontology parameters usages
+            all_ontology = load_ontology_usages(ontology_data)
+        except Exception as ex:
+            raise Exception(f"Error while retrieve ontology data: {str(ex)}")
+
+        # save in ontology file
+        try:
+            # save in ontology.json file
+            self.__read_only_rw_strategy.write_ontology(all_ontology)
+        except Exception as ex:
+            raise Exception(f"Error while writing ontology data: {str(ex)}")
+        
+        return True
+    
+    def __get_and_save_documentations(self, documentations_list):
+        """
+        Get documentation from ontology server and write result in files.
+        :param documentations_list: list of disciplines ids to get there documentation
+        The documentation is saved in markdown files in a folder "documentation" next to the study read only file
+
+        """
+        try:
+            #fetch ontology documentation
+            all_documentation = {}
+            for doc in documentations_list:
+                all_documentation[doc] = load_markdown_documentation_metadata(doc)
             
+        except Exception as ex:
+            raise Exception(f"Error while retrieve documentation data: {str(ex)}")
+
+        # save in ontology file
+        try:
+            #save documentations in folder
+            self.__read_only_rw_strategy.write_documentations(all_documentation)
+        except Exception as ex:
+            raise Exception(f"Error while writing documentation data: {str(ex)}")
+        
+        return True
+
+    def get_local_ontology(self):
+        """
+        get content of the ontology saved file if exists, return None if not
+        """
+        return self.__read_only_rw_strategy.read_ontology()
+    
+    def get_local_documentation(self, documentation_name):
+        """
+        get content of the documentation md saved file if exists, return None if not
+        """
+        return self.__read_only_rw_strategy.read_documentation(documentation_name)
 
     def __load_study_case_from_identifier(self):
         """
@@ -557,88 +678,41 @@ class StudyCaseManager(BaseStudyManager):
 
         return reload_done
 
-    def __write_loaded_study_case_in_json_file(self, loaded_study, no_data=False):
+    
+    def get_read_only_file_path(self, no_data=False):
         """
-        Save study case loaded into json file for read only mode
-        :param loaded_study: loaded_study_case to save
-        :type loaded_study: LoadedStudyCase
+        Return the read only mode file path
+        :param no_data: if true, return the path to the restricted viewer file instead of the read only file
+        :type no_data: bool
         """
-        loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
-        if no_data:
-            loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
-        study_file_path = Path(self.dump_directory).joinpath(
-            loaded_study_case_file_name)
+        return self.__read_only_rw_strategy.get_read_only_file_path(no_data)
 
-        # check nan and infinity in post processings
-        if len(loaded_study.post_processings) > 0:
-            text_post_proc_data = json.dumps(loaded_study.post_processings, cls=CustomJsonEncoder).replace(
-                "NaN", "null").replace("Infinity", "null")
-            json_post_proc_data = json.loads(text_post_proc_data)
-            loaded_study.post_processings = json_post_proc_data
-        return write_object_in_json_file(loaded_study, study_file_path)
 
     def read_loaded_study_case_in_json_file(self, no_data=False):
         """
         Retrieve study case loaded from json file for read only mode
         """
-        loaded_study_case_file_name = self.LOADED_STUDY_FILE_NAME
-        if no_data:
-            loaded_study_case_file_name = self.RESTRICTED_STUDY_FILE_NAME
-
-        root_folder = Path(self.dump_directory)
-        study_file_path = root_folder.joinpath(loaded_study_case_file_name)
-        loaded_study = read_object_in_json_file(study_file_path)
-
-        return loaded_study
+        return self.__read_only_rw_strategy.read_study_case_in_read_only_file(no_data)
 
     def delete_loaded_study_case_in_json_file(self):
         """
-        Retrieve study case loaded from json file for read only mode
+        Delete the read only foler containing all read only files
         """
-        root_folder = Path(self.dump_directory)
-        study_file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
-        if os.path.exists(study_file_path):
-            os.remove(study_file_path)
+        self.__read_only_rw_strategy.delete_read_only_mode()
 
-        # delete read only file for restricted viewer
-        study_file_path = root_folder.joinpath(self.RESTRICTED_STUDY_FILE_NAME)
-        if os.path.exists(study_file_path):
-            os.remove(study_file_path)
 
     def check_study_case_json_file_exists(self):
         """
         Check study case loaded into json file for read only mode exists
         """
-        root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.LOADED_STUDY_FILE_NAME)
-
-        return os.path.exists(file_path)
+        return self.__read_only_rw_strategy.read_only_exists
+    
 
     def read_dashboard_in_json_file(self):
         """
         Retrieve dashboard from json file
         """
-        root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
-        return read_object_in_json_file(file_path)
-
-    def delete_dashboard_json_file(self):
-        """
-        delete dashboard json file
-        """
-        root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    def check_dashboard_json_file_exists(self):
-        """
-        Check dashboard json file exists
-        """
-        root_folder = Path(self.dump_directory)
-        file_path = root_folder.joinpath(self.DASHBOARD_FILE_NAME)
-
-        return os.path.exists(file_path)
+        return self.__read_only_rw_strategy.read_dashboard()
 
     def get_parameter_data(self, parameter_key):
         """
@@ -715,6 +789,49 @@ class StudyCaseManager(BaseStudyManager):
         result = interface_diagram.generate_interface_diagram_data()
 
         return result
+
+    def check_dashboard_json_file_exists(self):
+        return self.__read_only_rw_strategy.dashboard_file_exists
+
+    def get_dashboard_file_path(self):
+        return self.__read_only_rw_strategy.get_dashboard_file_path()
+    
+    def export_study_read_only_zip(self, zip_file_path)->bool:
+
+        # create a zip archive containing the read_only_mode folder
+        # plus the pkl files
+        if not self.__read_only_rw_strategy.read_only_exists:
+            return False
+            
+        elements_to_zip = []
+
+        dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
+        status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+        
+        # add pkl file to zip
+        if os.path.exists(dm_pkl_file):
+            elements_to_zip.append(dm_pkl_file)
+        # add status file to zip
+        if os.path.exists(status_pkl_file):
+            elements_to_zip.append(status_pkl_file)
+
+         # Add study metadata in the zip file
+        metadata = self.__study.serialize_standalone()
+
+        # add read only files into the folder
+        elements_to_zip.append(self.__read_only_rw_strategy.read_only_folder_path)
+
+        zip_files_and_folders(zip_file_path, elements_to_zip, json.dumps(metadata))
+
+        return True
+    
+    def check_study_standalone_files(self)->bool:
+        dm_pkl_file = join(self.dump_directory, DataSerializer.pkl_filename)
+        status_pkl_file = join(self.dump_directory, DataSerializer.disc_status_filename)
+ 
+        # add pkl file to zip
+        return os.path.exists(dm_pkl_file) and os.path.exists(status_pkl_file) and self.__read_only_rw_strategy.read_only_exists
+
 
     @staticmethod
     def copy_pkl_file(file_name, study_case_manager, study_manager_source):

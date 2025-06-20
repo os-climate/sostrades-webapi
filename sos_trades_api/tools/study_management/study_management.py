@@ -18,13 +18,12 @@ from pathlib import Path
 
 from sos_trades_api.controllers.error_classes import InvalidFile, StudyCaseError
 from sos_trades_api.models.database_models import (
-    AccessRights,
     PodAllocation,
     StudyCase,
     StudyCaseExecution,
+    db,
 )
 from sos_trades_api.models.loaded_study_case import LoadedStudyCase, LoadStatus
-from sos_trades_api.models.study_case_dto import StudyCaseDto
 from sos_trades_api.server.base_server import app, study_case_cache
 from sos_trades_api.tools.allocation_management.allocation_management import (
     get_allocation_status_by_study_id,
@@ -33,133 +32,56 @@ from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
-def check_study_has_read_only_mode(user_study: StudyCaseDto) -> bool:
+def clean_read_only_file(study_id: int) -> bool:
     """
-    Check read only file exists and study execution status at Finished
-    """
-    study_manager = StudyCaseManager(user_study.id)
-    return study_manager.check_study_case_json_file_exists() and \
-            user_study.execution_status == StudyCaseExecution.FINISHED
-    
-
-def check_and_clean_read_only_file(user_study: StudyCaseDto) -> bool:
-    """
-    Verify if a study case has a valid read-only file and manage associated files based on execution status.
-
-    This function checks for the existence of 'loaded_study_case.json' and manages its presence
-    based on the study's execution status. If the study is not in FINISHED state,
-    it removes both 'loaded_study_case.json' and 'loaded_study_case_no_data.json' files.
-
+    Delete the read only file
     Args:
-        user_study (StudyCaseDto): Study case data transfer object containing study information
+        study_id: id of the study to clean
 
     Returns:
-        bool: True if the study has a valid read-only file and is in FINISHED state,
+        bool: True if the study file has been deleted,
               False otherwise
 
     """
     try:
-        file_exist = False
-        study_manager = StudyCaseManager(user_study.id)
+        file_deleted = False
+        study_manager = StudyCaseManager(study_id)
         # Check if paths and file exist
         if study_manager.check_study_case_json_file_exists():
-            if user_study.execution_status == StudyCaseExecution.FINISHED:
-                file_exist = True
-            else:
-                # If execution_status is not FINISHED, the loaded_study_case.json does not exist anymore
-                try:
-                    study_manager.delete_loaded_study_case_in_json_file()
-                    app.logger.info(f"loaded_study_case.json for {user_study.id} has been deleted because his status is not Finished")
-                except Exception as exp:
-                    app.logger.error(f"Error while deletion of read only file for {user_study.id} because his status is not Finished: {str(exp)}")
-        return file_exist
+            try:
+                study_manager.delete_loaded_study_case_in_json_file()
+                file_deleted = True
+                app.logger.info(f"loaded_study_case.json for {study_id} has been deleted because his status is not Finished")
+            except Exception as exp:
+                app.logger.error(f"Error while deletion of read only file for {study_id} because his status is not Finished: {str(exp)}")
     except Exception as ex:
-        raise Exception(f"Error processing study {user_study.id}: {ex}")
+        raise Exception(f"Error processing study {study_id}: {ex}")
+    return file_deleted
 
 
-def get_read_only(study_case_identifier, study_access_right):
+def check_read_only_mode_available(study_case_identifier):
     # retrieve study execution status
     study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
 
     is_read_only_possible = False
-    loaded_study_case = None
     if study_case is not None and study_case.current_execution_id is not None:
         study_case_execution = StudyCaseExecution.query.filter(
             StudyCaseExecution.id == study_case.current_execution_id).first()
         # check that the execution is finished to show the read only mode
         if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
-            is_read_only_possible = True
-            # show read_only_mode if needed and possible
-        if is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
+            study_manager = StudyCaseManager(study_case_identifier)
+            is_read_only_possible = study_manager.check_study_case_json_file_exists()
+    elif study_case.is_stand_alone:
+        study_manager = StudyCaseManager(study_case_identifier)
+        is_read_only_possible = study_manager.check_study_case_json_file_exists()
+    return is_read_only_possible
 
-    return loaded_study_case
-
-
-def get_loaded_study_case_in_read_only_mode(study_id, study_access_right, study_execution):
-    # Proceeding after rights verification
-    # Get readonly file, in case of a restricted viewer get with no_data
-    study_json = _get_study_in_read_only_mode(
-        study_id, study_access_right == AccessRights.RESTRICTED_VIEWER)
-
-    # check in read only file that the study status is DONE
-    if study_json is not None:
-        study_case_value = study_json.get("study_case")
-        if study_case_value is not None:
-            # set study access rights
-            if study_access_right == AccessRights.MANAGER:
-                study_case_value["is_manager"] = True
-            elif study_access_right == AccessRights.CONTRIBUTOR:
-                study_case_value["is_contributor"] = True
-            elif study_access_right == AccessRights.COMMENTER:
-                study_case_value["is_commenter"] = True
-            else:
-                study_case_value["is_restricted_viewer"] = True
-
-            # Set execution status
-            if study_execution is not None:
-                study_case_value["execution_status"] = study_execution.execution_status
-                study_case_value["last_memory_usage"] = study_execution.memory_usage
-                study_case_value["last_cpu_usage"] = study_execution.cpu_usage
-
-            # set creation status to DONE if not saved in read only mode
-            study_case_value["creation_status"] = StudyCase.CREATION_DONE
-
-            return study_json
-
-    return None
-
-
-def _get_study_in_read_only_mode(study_id, no_data):
+def get_read_only_file_path(study_case_identifier, no_data=False):
     """
-    check if a study json file exists,
-         if true, read loaded study case in read only mode, and return the json
-         if false, return None, it will be checked on client side
-     :param: study_id, id of the study to export
-     :type: integer
-     :param: no_data, if study is loaded with no data or not
-     :type: boolean
+    Get the read only mode or the restricted viewer file path
     """
-    study_manager = StudyCaseManager(study_id)
-    if study_manager.check_study_case_json_file_exists():
-        try:
-            loaded_study_json = study_manager.read_loaded_study_case_in_json_file(no_data)
-
-            loaded_study_json["study_case"]['has_read_only_file'] = True
-
-            # read dashboard and set it to the loaded study
-            # (it takes less time to read it apart than to have the dashboard in the read only file)
-            if len(loaded_study_json["post_processings"]) > 0:
-                dashboard = study_manager.read_dashboard_in_json_file()
-                loaded_study_json["dashboard"] = dashboard
-            return loaded_study_json
-
-        except Exception as error:
-            app.logger.error(
-                f"Study {study_id} readonly mode error while getting readonly file: {error}")
-            return None
-    else:
-        return None
+    study_manager = StudyCaseManager(study_case_identifier)
+    return study_manager.get_read_only_file_path(no_data)
 
 
 def get_file_stream(study_id, parameter_key):
@@ -210,6 +132,20 @@ def check_pod_allocation_is_running(study_case_identifier):
             is_running = True
 
         return is_running
+    
+def update_study_case_creation_status(study_case_id, new_creation_status, error=None):
+    
+    # check that the study case exists
+    study_case = StudyCase.query.filter(StudyCase.id == study_case_id).first()
+    if study_case is None:
+        raise StudyCaseError("Study creation error: study case should exists but was not found")
+    if error is not None:
+        study_case.error = error
+    # update study case status
+    study_case.creation_status = new_creation_status
+    db.session.add(study_case)
+    db.session.commit()
+    
 
 def update_read_only_files_with_visualization():
     """"

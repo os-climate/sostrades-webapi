@@ -23,7 +23,6 @@ import traceback
 from datetime import datetime, timezone
 from os import remove
 from os.path import join
-from shutil import rmtree
 from tempfile import gettempdir
 
 import pandas as pd
@@ -34,6 +33,7 @@ from sostrades_core.datasets.dataset_mapping import (
 )
 from sostrades_core.execution_engine.data_manager import DataManager
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
+from sostrades_core.tools.folder_operations import rmtree_safe
 from sostrades_core.tools.proc_builder.process_builder_parameter_type import (
     ProcessBuilderParameterType,
 )
@@ -98,10 +98,9 @@ from sos_trades_api.tools.loading.loading_study_and_engine import (
 )
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 from sos_trades_api.tools.study_management.study_management import (
-    check_and_clean_read_only_file,
-    check_study_has_read_only_mode,
+    check_read_only_mode_available,
+    clean_read_only_file,
     get_file_stream,
-    get_loaded_study_case_in_read_only_mode,
 )
 
 """
@@ -198,7 +197,7 @@ def light_load_study_case(study_id, reload=False):
 # END BACKGROUND LOADING FUNCTION section
 
 
-def get_study_case(user_id, study_case_identifier, study_access_right=None, verify_read_only_capability=True):
+def get_study_case(user_id, study_case_identifier, study_access_right=None):
     """
     get a loaded studycase in read only if needed or not, launch load_or_create if it is not in cache
 
@@ -209,15 +208,6 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
 
         study_case_manager = study_case_cache.get_study_case(study_case_identifier, False)
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
-
-        # retrieve study execution status
-        is_read_only_possible = False
-        if study_case is not None and study_case.current_execution_id is not None:
-            study_case_execution = StudyCaseExecution.query.filter(
-                StudyCaseExecution.id == study_case.current_execution_id).first()
-            # check that the execution is finished to show the read only mode
-            if study_case_execution is not None and study_case_execution.execution_status == StudyCaseExecution.FINISHED:
-                is_read_only_possible = True
 
         # check there was no error during loading
         if study_case_manager.load_status == LoadStatus.IN_ERROR:
@@ -232,10 +222,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
         study_case = StudyCase.query.filter(StudyCase.id == study_case_identifier).first()
         study_case_execution = StudyCaseExecution.query.filter(
             StudyCaseExecution.id == study_case.current_execution_id).first()
-        # show read_only_mode if needed and possible
-        if verify_read_only_capability and is_read_only_possible:
-            loaded_study_case = get_loaded_study_case_in_read_only_mode(study_case_identifier, study_access_right, study_case_execution)
-
+       
         # get loaded study in edition mode or if there was a problem with read_only mode
         if loaded_study_case is None:
 
@@ -270,12 +257,7 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None, veri
                     loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
                     loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
 
-                # Read dashboard and set it to the loaded studycase
-                # If the root process is at done
-                if study_case_manager.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
-                    loaded_study_case.dashboard = get_study_dashboard_in_file(study_case_identifier)
-            
-                loaded_study_case.study_case.has_read_only_file = check_study_has_read_only_mode(loaded_study_case.study_case)
+                loaded_study_case.study_case.has_read_only_file = check_read_only_mode_available(study_case_identifier)
 
         # Add this study in last study opened in database
         add_last_opened_study_case(study_case_identifier, user_id)
@@ -855,11 +837,9 @@ def update_study_parameters(study_id, user, files_list, file_info, parameters_to
             study_manager, False, False, user_id)
 
         # Get execution status
-        study_case = StudyCase.query.filter(StudyCase.id == study_id).first()
-        if study_case is not None and study_case.current_execution_id is not None:
-            loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
+        loaded_study_case.study_case.execution_status = StudyCaseExecution.NOT_EXECUTED
 
-        check_and_clean_read_only_file(loaded_study_case.study_case)
+        clean_read_only_file(study_id)
 
         return loaded_study_case
 
@@ -898,7 +878,7 @@ def delete_study_cases(studies):
             for study in query:
                 folder = StudyCaseManager.get_root_study_data_folder(
                     study.group_id, study.id)
-                rmtree(folder, ignore_errors=True)
+                rmtree_safe(folder)
 
             return f"All the studies (identifier(s) {studies}) have been deleted in the database"
         else:
@@ -925,28 +905,6 @@ def get_study_data_stream(study_id):
         raise InvalidFile(
             f"The following study file raise this error while trying to read it : {error}")
     return zip_path
-
-
-def get_study_dashboard_in_file(study_id):
-    """
-    check if a dashboard json file exists,
-         if true, read dashboard file, and return the json
-         if false, return None, it will be checked on client side
-     :param: study_id, id of the study to export
-     :type: integer
-    """
-    study_manager = StudyCaseManager(study_id)
-    if study_manager.check_dashboard_json_file_exists():
-        try:
-            dashboard = study_manager.read_dashboard_in_json_file()
-            return dashboard
-
-        except Exception as error:
-            app.logger.error(
-                f"Study {study_id} dashboard error while reading file: {error}")
-            return "null"
-    else:
-        return "null"
 
 
 def get_study_data_file_path(study_id) -> str:
