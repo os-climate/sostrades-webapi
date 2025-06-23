@@ -17,6 +17,7 @@ from flask import Blueprint, send_file, session
 from werkzeug.exceptions import BadRequest
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_last_opened_study_case,
+    check_read_only_mode_available,
     get_local_documentation,
     get_local_ontology_usages,
 )
@@ -52,13 +53,13 @@ def init_read_only_routes(decorator):
             study_access_right = study_case_access.get_user_right_for_study(
                 study_id)
 
-            loaded_study_json_path = get_read_only_file_path(study_id, False)
-            # loaded_study_json = None
-            # with open(loaded_study_json_path, 'r') as json_file:
-            #     loaded_study_json = json.load(json_file)
-            # Add this study in last study opened in database
-            add_last_opened_study_case(study_id, user.id)
-            return send_file(loaded_study_json_path)
+            if check_read_only_mode_available(study_id):
+                add_last_opened_study_case(study_id, user.id)
+                no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
+                file_path = get_read_only_file_path(study_id, no_data)
+                return send_file(file_path)
+            else:
+                raise BadRequest("The study is not available in read only mode")
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
     @read_only_blueprint.route("/<int:study_id>/saved-ontology-usages", methods=["GET"])
