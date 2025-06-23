@@ -17,6 +17,7 @@ limitations under the License.
 # Set server name
 import os
 
+
 os.environ["SERVER_NAME"] = "API_V0_SERVER"
 os.environ["SOS_TRADES_SERVER_MODE"] = "mono"
 
@@ -34,5 +35,22 @@ app.template_folder = os.path.join(
 )
 
 # load & register APIs
+# register blueprints
+from sos_trades_api.blueprints.ontology.ontology_blueprint import (
+    init_ontology_routes,
+    ontology_blueprint,
+)
+from sos_trades_api.tools.authentication.authentication import api_key_required
+
+from sos_trades_api.blueprints.study_case.read_only_blueprint import (read_only_blueprint,
+    init_read_only_routes,
+)
+
+init_ontology_routes(api_key_required)
+app.register_blueprint(ontology_blueprint, url_prefix="/api/v0/ontology")
+
+init_read_only_routes(api_key_required)
+app.register_blueprint(read_only_blueprint, url_prefix="/api/v0/study-case")
+
 from sos_trades_api.routes.api_v0 import *
 

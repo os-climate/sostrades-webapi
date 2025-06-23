@@ -14,16 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 '''
-from flask import jsonify, make_response, request, session
-from werkzeug.exceptions import BadRequest
+from flask import jsonify, make_response, session
 
 from sos_trades_api.controllers.sostrades_data.ontology_controller import (
-    load_markdown_documentation_metadata,
     load_models,
     load_models_status_filtered,
     load_ontology_general_information,
     load_ontology_processes,
-    load_ontology_usages,
     load_parameter_label_list,
     load_parameters,
 )
@@ -35,79 +32,6 @@ from sos_trades_api.tools.authentication.authentication import (
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
-
-
-@app.route("/api/data/ontology/ontology-usages", methods=["POST"])
-@auth_required
-def load_ontology_request_usages():
-    """
-    Relay to ontology server to retrieve disciplines and parameters informations
-
-    Request object is intended with the following data structure
-        {
-            ontology_request: {
-                disciplines: string[], // list of disciplines string identifier
-                parameter_usages: string[] // list of parameters string identifier
-            }
-        }
-
-    Returned response is with the following data structure
-        {
-            parameter_usages : {
-                <parameter_usage_identifier> : {
-                    parameter_uri: string
-                    parameter_id: string
-                    parameter_label: string
-                    parameter_definition: string
-                    parameter_definitionSource: string
-                    parameter_ACLTag: string
-
-                    visibility: string
-                    dataframeEditionLocked: string
-                    userLevel: string
-                    range: string
-                    dataframeDescriptor: string
-                    structuring: string
-                    optional: string
-                    namespace: string
-                    numerical: string
-                    coupling: string
-                    io_type: string
-                    datatype: string
-                    unit: string
-                    editable: string
-                }
-            }
-            disciplines {
-                <discipline_identifier>: {
-                    id: string
-                    delivered: string
-                    implemented: string
-                    label: string
-                    modelType: string
-                    originSource: string
-                    pythonClass: string
-                    uri: string
-                    validator: string
-                    validated: string
-                    icon:string
-                }
-            }
-        }
-
-    """
-    data_request = request.json.get("ontology_request", None)
-
-    missing_parameter = []
-    if data_request is None:
-        missing_parameter.append(
-            "Missing mandatory parameter: ontology_request")
-
-    if len(missing_parameter) > 0:
-        raise BadRequest("\n".join(missing_parameter))
-
-    resp = make_response(jsonify(load_ontology_usages(data_request)), 200)
-    return resp
 
 
 @app.route("/api/data/ontology/models/status", methods=["GET"])
@@ -219,26 +143,6 @@ def load_ontology_parameter_labels():
 
     return resp
 
-
-@app.route("/api/data/ontology/<string:identifier>/markdown_documentation", methods=["GET"])
-@auth_required
-def load_markdown_documentation(identifier):
-    """
-    Relay to ontology server to retrieve the whole sos_trades models links diagram
-    Object returned is a form of d3 js data structure
-
-    Returned response is with the following data structure
-        {
-            Markdown_documentation:
-                document: string,
-            }
-        }
-    """
-    user = session["user"]
-    app.logger.info(user)
-
-    resp = make_response(jsonify(load_markdown_documentation_metadata(identifier)), 200)
-    return resp
 
 
 @app.route("/api/data/ontology/full_process_list", methods=["GET"])
