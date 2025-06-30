@@ -30,8 +30,6 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     edit_study_flavor,
     get_change_file_stream,
     get_last_study_case_changes,
-    get_local_documentation,
-    get_local_ontology_usages,
     get_raw_logs,
     get_study_case_allocation,
     get_study_case_notifications,
@@ -58,7 +56,6 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )

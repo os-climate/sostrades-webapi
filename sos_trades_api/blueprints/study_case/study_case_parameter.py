@@ -15,12 +15,12 @@ limitations under the License.
 '''
 from flask import Blueprint, request, send_file, session
 from werkzeug.exceptions import BadRequest
+
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.tools.right_management.functional.study_case_access_right import (
     StudyCaseAccess,
 )
 from sos_trades_api.tools.study_management.study_management import get_file_stream
-
 
 parameter_blueprint = Blueprint('parameter', __name__)
 

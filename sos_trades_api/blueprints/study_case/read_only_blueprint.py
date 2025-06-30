@@ -15,6 +15,7 @@ limitations under the License.
 '''
 from flask import Blueprint, send_file, session
 from werkzeug.exceptions import BadRequest
+
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_last_opened_study_case,
     check_read_only_mode_available,

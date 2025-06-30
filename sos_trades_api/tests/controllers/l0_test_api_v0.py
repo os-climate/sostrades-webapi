@@ -17,10 +17,9 @@ limitations under the License.
 import json
 import os
 import os.path
+import time
 from builtins import classmethod
 from time import sleep
-import time
-
 
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
     DatabaseUnitTestConfiguration,
@@ -54,19 +53,22 @@ class TestStudy(DatabaseUnitTestConfiguration):
     def setUp(self):
         super().setUp()
 
+        from sos_trades_api.controllers.sostrades_data.reference_controller import (
+            generate_reference,
+            get_generation_status,
+        )
         from sos_trades_api.controllers.sostrades_data.study_case_controller import (
             create_empty_study_case,
         )
         from sos_trades_api.controllers.sostrades_main.study_case_controller import (
             load_or_create_study_case,
         )
-        from sos_trades_api.controllers.sostrades_data.reference_controller import generate_reference, get_generation_status
-        from sos_trades_api.models.database_models import ReferenceStudy
         from sos_trades_api.models.database_models import (
             AccessRights,
             Group,
             Process,
             ProcessAccessUser,
+            ReferenceStudy,
             StudyCase,
             User,
         )
@@ -173,8 +175,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
             DatabaseUnitTestConfiguration.db.session.commit()
 
     def test_read_only_mode_access(self):
-        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
         from sos_trades_api.server.base_server import app
+        from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
         with app.app_context():
             study_manager = StudyCaseManager(self.test_study_id)
 

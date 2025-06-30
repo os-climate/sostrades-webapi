@@ -22,7 +22,6 @@ from sos_trades_api.controllers.sostrades_data.ontology_controller import (
 )
 from sos_trades_api.controllers.sostrades_data.study_case_controller import app
 
-
 ontology_blueprint = Blueprint('ontology', __name__)
 
 def init_ontology_routes(decorator):
