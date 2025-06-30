@@ -280,7 +280,7 @@ def update_study_parameters_by_study_case_id(study_id):
 
 @app.route("/api/main/study-case/<int:study_id>/parameter/download", methods=["POST"])
 @auth_required
-def get_study_parameter_file_by_study_case_id(study_id):
+def get_study_parameter_file_by_study_case_id_main(study_id):
     if study_id is not None:
 
         user = session["user"]

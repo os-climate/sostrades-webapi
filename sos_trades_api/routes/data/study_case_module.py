@@ -19,7 +19,6 @@ from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
 from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     add_favorite_study_case,
-    add_last_opened_study_case,
     check_study_already_exist,
     copy_study,
     create_empty_study_case,
@@ -31,8 +30,6 @@ from sos_trades_api.controllers.sostrades_data.study_case_controller import (
     edit_study_flavor,
     get_change_file_stream,
     get_last_study_case_changes,
-    get_local_documentation,
-    get_local_ontology_usages,
     get_raw_logs,
     get_study_case_allocation,
     get_study_case_notifications,
@@ -59,7 +56,6 @@ from sos_trades_api.models.database_models import (
 )
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
-from sos_trades_api.tools.gzip_tools import make_gzipped_response
 from sos_trades_api.tools.right_management.functional.process_access_right import (
     ProcessAccess,
 )
@@ -70,7 +66,6 @@ from sos_trades_api.tools.study_management.study_management import (
     check_pod_allocation_is_running,
     check_read_only_mode_available,
     get_file_stream,
-    get_read_only_file_path,
 )
 
 
@@ -87,31 +82,6 @@ def study_cases():
 
     raise MethodNotAllowed()
 
-
-@app.route("/api/data/study-case/<int:study_id>/read-only-mode", methods=["GET"])
-@auth_required
-def load_study_case_by_id_in_read_only(study_id):
-    """
-    Retreive the study in read only mode, return none if no read only mode found
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        study_access_right = study_case_access.get_user_right_for_study(
-            study_id)
-        if check_read_only_mode_available(study_id):
-            add_last_opened_study_case(study_id, user.id)
-            no_data = study_access_right == AccessRights.RESTRICTED_VIEWER
-            file_path = get_read_only_file_path(study_id, no_data)
-            return send_file(file_path)
-        else:
-            raise BadRequest("The study is not available in read only mode")
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 @app.route("/api/data/study-case/<int:study_id>/stand-alone/export", methods=["GET"])
 @auth_required
@@ -192,46 +162,6 @@ def save_ontology_usages_and_documentation(study_id):
         save_ontology_and_documentation(study_id, data_request)
         resp = make_response(jsonify("ok", 200))
         return resp
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
-
-@app.route("/api/data/study-case/<int:study_id>/saved-ontology-usages", methods=["GET"])
-@auth_required
-def load_local_ontology_usage(study_id):
-    """
-    Get ontology usage from local saved ontology
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        
-
-        return make_gzipped_response(get_local_ontology_usages(study_id))
-        
-    else:       
-        raise BadRequest("Missing mandatory parameter: study identifier in url")
-
-@app.route("/api/data/study-case/<int:study_id>/saved-documentation/<string:documentation_name>", methods=["GET"])
-@auth_required
-def load_local_documentation(study_id, documentation_name):
-    """
-    Get ontology documentation markdown from local saved ontology documentation
-    """
-    if study_id is not None:
-        user = session["user"]
-        # Verify user has study case authorisation to load study (Commenter)
-        study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.RESTRICTED_VIEWER, study_id):
-            raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
-        if documentation_name is not None:
-            return make_gzipped_response(get_local_documentation(study_id, documentation_name))
-        else:
-            raise BadRequest("Missing mandatory parameter: documentation identifier")
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
