@@ -212,7 +212,7 @@ def update_study_parameters_by_study_case_id(study_id: int):
 @app.route("/api/v0/study-case/<int:study_id>/parameter/download", methods=["POST"])
 @api_key_required
 @has_user_access_right(AccessRights.COMMENTER)
-def get_study_parameter_file_by_study_case_id(study_id: int):
+def get_study_parameter_file_by_study_case_id_api(study_id: int):
     """
     Return fileIO for study parameter
     """
@@ -263,3 +263,4 @@ def get_study_case_raw_logs(study_id):
     else:
         resp = make_response(jsonify("No logs found."), 404)
         return resp
+ 
