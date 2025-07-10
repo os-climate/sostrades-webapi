@@ -68,8 +68,8 @@ class DashboardText(BaseItem):
             item_type=DisplayableItemType.TEXT,
             x=x,
             y=y,
-            cols=3,
-            rows=2,
+            cols=12,
+            rows=8,
             min_cols=1,
             min_rows=1,
             data={"content": content}
@@ -100,10 +100,10 @@ class DashboardGraph(BaseItem):
             item_type=DisplayableItemType.GRAPH,
             x=x,
             y=y,
-            cols=4,
-            rows=3,
-            min_cols=3,
-            min_rows=2,
+            cols=16,
+            rows=12,
+            min_cols=12,
+            min_rows=8,
             data={"graphData": graph_data}
         )
 
@@ -156,10 +156,10 @@ class DashboardSection(BaseItem):
             item_type=DisplayableItemType.SECTION,
             x=x,
             y=y,
-            cols=10,
-            rows=5,
-            min_cols=10,
-            min_rows=4,
+            cols=40,
+            rows=20,
+            min_cols=40,
+            min_rows=16,
             data={"title": title, "items": items, "shown": shown}
         )
 
@@ -220,8 +220,8 @@ class Dashboard:
             item_type = item_data.get("type")
             if item_type == DisplayableItemType.TEXT.value:
                 item = DashboardText(content=item_data["data"].get("content", ""), item_id=item_data.get("id"), x=item_data.get("x", 0), y=item_data.get("y", 0))
-                item.cols = item_data.get("cols", 3)
-                item.rows = item_data.get("rows", 2)
+                item.cols = item_data.get("cols", 12)
+                item.rows = item_data.get("rows", 8)
                 item.min_cols = item_data.get("min_cols", 1)
                 item.min_rows = item_data.get("min_rows", 1)
                 items.append(item)
@@ -235,10 +235,10 @@ class Dashboard:
                     x=item_data.get("x", 0),
                     y=item_data.get("y", 0),
                 )
-                item.cols = item_data.get("cols", 4)
-                item.rows = item_data.get("rows", 3)
-                item.min_cols = item_data.get("min_cols", 3)
-                item.min_rows = item_data.get("min_rows", 2)
+                item.cols = item_data.get("cols", 16)
+                item.rows = item_data.get("rows", 12)
+                item.min_cols = item_data.get("min_cols", 12)
+                item.min_rows = item_data.get("min_rows", 8)
                 items.append(item)
                 # items.append(DashboardGraph(**item_data))
             elif item_type == DisplayableItemType.SECTION.value:
@@ -252,8 +252,8 @@ class Dashboard:
                             x=section_item_data.get("x", 0),
                             y=section_item_data.get("y", 0),
                         )
-                        section_item.cols = section_item_data.get("cols", 3)
-                        section_item.rows = section_item_data.get("rows", 2)
+                        section_item.cols = section_item_data.get("cols", 12)
+                        section_item.rows = section_item_data.get("rows", 8)
                         section_item.min_cols = section_item_data.get("min_cols", 1)
                         section_item.min_rows = section_item_data.get("min_rows", 1)
                         section_items.append(section_item)
@@ -266,10 +266,10 @@ class Dashboard:
                             x=section_item_data.get("x", 0),
                             y=section_item_data.get("y", 0)
                         )
-                        section_item.cols = section_item_data.get("cols", 4)
-                        section_item.rows = section_item_data.get("rows", 3)
-                        section_item.min_cols = section_item_data.get("min_cols", 3)
-                        section_item.min_rows = section_item_data.get("min_rows", 2)
+                        section_item.cols = section_item_data.get("cols", 16)
+                        section_item.rows = section_item_data.get("rows", 12)
+                        section_item.min_cols = section_item_data.get("min_cols", 12)
+                        section_item.min_rows = section_item_data.get("min_rows", 8)
                         section_items.append(section_item)
                 item = DashboardSection(
                     title=item_data["data"].get("title", ""),
@@ -280,10 +280,10 @@ class Dashboard:
                     y=item_data.get("y", 0),
                     item_id=item_data.get("id")
                 )
-                item.cols = item_data.get("cols", 10)
-                item.rows = item_data.get("rows", 5)
-                item.min_cols = item_data.get("min_cols", 10)
-                item.min_rows = item_data.get("min_rows", 4)
+                item.cols = item_data.get("cols", 40)
+                item.rows = item_data.get("rows", 20)
+                item.min_cols = item_data.get("min_cols", 40)
+                item.min_rows = item_data.get("min_rows", 16)
                 if "max_rows" in item_data:
                     item.max_rows = item_data["max_rows"]
                 items.append(item)
