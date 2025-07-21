@@ -114,11 +114,30 @@ def on_reload(data):
     room = data["study_case_id"]
     user = get_authenticated_user()
 
+    # Add notification to database
+    add_notification_db(data["study_case_id"], user, UserCoeditionAction.RELOAD, CoeditionMessage.RELOAD)
+
     # Emit notification
     emit("study-reloaded",
          {"author": f"{user.firstname} {user.lastname}",
           "type": UserCoeditionAction.RELOAD,
           "message": CoeditionMessage.RELOAD},
+         room=room)
+    
+@socketio.on("reload-read-only")
+@auth_refresh_required
+def on_reload_read_only(data):
+    room = data["study_case_id"]
+    user = get_authenticated_user()
+
+    # Add notification to database
+    add_notification_db(data["study_case_id"], user, UserCoeditionAction.RELOAD_READ_ONLY, CoeditionMessage.RELOAD_READ_ONLY)
+
+    # Emit notification
+    emit("study-read-only-reloaded",
+         {"author": f"{user.firstname} {user.lastname}",
+          "type": UserCoeditionAction.RELOAD_READ_ONLY,
+          "message": CoeditionMessage.RELOAD_READ_ONLY},
          room=room)
 
 
