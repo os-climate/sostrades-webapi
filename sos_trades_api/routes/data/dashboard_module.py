@@ -1,6 +1,4 @@
-from urllib import request
-
-from flask import jsonify, make_response, session
+from flask import jsonify, make_response, request, session
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_data.dashboard_controller import (
