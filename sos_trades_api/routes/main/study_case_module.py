@@ -476,9 +476,9 @@ def reload_study_data_in_read_only_mode(study_id):
         user = session["user"]
         # Verify user has study case authorisation to load study (Commenter)
         study_case_access = StudyCaseAccess(user.id, study_id)
-        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
             raise BadRequest(
-                "You do not have the necessary rights to retrieve this information about this study case")
+                "You do not have the necessary rights to regenerate the read only mode of this study case")
         study_access_right = study_case_access.get_user_right_for_study(study_id)
 
         
