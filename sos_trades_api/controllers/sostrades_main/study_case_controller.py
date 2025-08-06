@@ -266,6 +266,40 @@ def get_study_case(user_id, study_case_identifier, study_access_right=None):
     return loaded_study_case
 
 
+def reload_read_only_mode(user_id, study_id, study_access_right=None):
+    """
+    Reload read only mode for a study case
+    :param study_id: id of the
+    :type study_id: integer
+    """
+    with app.app_context():
+        study_manager = study_case_cache.get_study_case(study_id, False)
+        
+        if study_manager.load_status == LoadStatus.LOADED:
+            study_manager.load_status = LoadStatus.IN_PROGESS
+            threading.Thread(
+                target=thread_reload_read_only_mode, args=(study_manager, False)).start()
+        else:
+            raise Exception("Study case is not loaded, cannot reload read only mode")
+        
+    return get_study_case(user_id, study_id, study_access_right)
+
+def thread_reload_read_only_mode(study_manager, no_data):
+    """
+    Thread to reload read only mode for a study case
+    
+    """
+    try:
+        study_manager.save_study_read_only_mode_in_file()
+        study_manager.load_status = LoadStatus.LOADED
+    except Exception as error:
+        study_manager.set_error(
+            f"Error while reloading read only mode: {error}", True)
+        study_manager.load_status = LoadStatus.IN_ERROR
+        raise StudyCaseError(error)
+
+
+
 def get_study_load_status(study_id):
     """
     Check study case is in cache and return its status

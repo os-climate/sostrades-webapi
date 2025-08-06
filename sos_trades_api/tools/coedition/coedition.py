@@ -42,10 +42,12 @@ class UserCoeditionAction:
     EXECUTION_STOPPED = "execution stopped"
     CLAIM = "claim"
     RELOAD = "reload"
+    RELOAD_READ_ONLY = "read only regenerated"
     EDIT = "edit"
     DELETE = "delete"
     VALIDATION_CHANGE = "validation_change"
     EXPORT = "export"
+
 
     @classmethod
     def get_attribute_for_value(cls, value):
@@ -65,6 +67,7 @@ class CoeditionMessage:
     EXECUTION_STOPPED = "Study case execution has been stopped by user."
     CLAIM = "User just claimed the study case execution right."
     RELOAD = "User just reload the study case."
+    RELOAD_READ_ONLY = "User just regenerated the study case read only."
     IMPORT_DATASET = "User just updated parameter from dataset"
     EXPORT_DATASET = "User just exported parameters into dataset"
 
