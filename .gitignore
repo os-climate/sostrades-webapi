@@ -2,6 +2,8 @@ __pycache__
 .project
 .pydevproject
 .flaskenv
+.python-version
+uv.lock
 .settings/
 coverage.xml
 nosetests.xml
