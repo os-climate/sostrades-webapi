@@ -34,6 +34,7 @@ from sos_trades_api.controllers.sostrades_main.study_case_controller import (
     get_study_data_stream,
     get_study_load_status,
     load_study_case,
+    reload_read_only_mode,
     save_study_is_active,
     set_study_data_file,
     update_study_parameters,
@@ -463,6 +464,26 @@ def load_study_data_in_read_only_mode(study_id):
         else:
             loaded_study_json = get_study_case(user.id, study_id, study_access_right)
             return make_gzipped_response(loaded_study_json)
+    raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/main/study-case/<int:study_id>/read-only-mode/reload", methods=["GET"])
+@auth_required
+def reload_study_data_in_read_only_mode(study_id):
+    """
+    regenerate the study in read only mode, return none if no read only mode found
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.MANAGER, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to regenerate the read only mode of this study case")
+        study_access_right = study_case_access.get_user_right_for_study(study_id)
+
+        
+        loaded_study_json = reload_read_only_mode(user.id, study_id, study_access_right)
+        return make_gzipped_response(loaded_study_json)
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 
