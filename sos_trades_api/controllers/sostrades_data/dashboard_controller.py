@@ -36,7 +36,7 @@ def get_study_dashboard_in_file(study_id):
         except Exception as error:
             app.logger.error(
                 f"Study {study_id} dashboard error while reading file: {error}")
-            return {}
+            raise error
     else:
         return {}
 

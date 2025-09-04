@@ -45,6 +45,11 @@ def get_dashboard_data(study_id):
 
         # Proceeding after rights verification
         dashboard_json = get_study_dashboard_in_file(study_id)
+
+        # if no dashboard, return empty
+        if dashboard_json is None or len(dashboard_json) == 0:
+            return make_response({}, 200)
+
         structure_type = detect_dashboard_structure(dashboard_json)
         if structure_type == 'new':
             try:
