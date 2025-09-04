@@ -410,6 +410,27 @@ class StudyCaseManager(BaseStudyManager):
         # Persist data using the current persistence strategy
         self.dump_study(self.dump_directory)
 
+    # def update_dashboard(self):
+        # load dashboard json from file if exists else nothing
+        # old_dashboard =  self.__read_only_rw_strategy.read_dashboard()
+        # generate new dashboard from current execution and old layout
+
+        # new_dashboard = dashboard_factory.generate_dashboard(self.study.id,  old_dashboard)
+        # def generate_dashboard(study_id, old_dashboard):
+        #     data = {}
+        #     for key, item in old_dashboard.get("layout",{}):
+        #         if item.get("item_type") == "graph":
+        #             #get discipline key + chart filters+ plot index from key
+        #             post_processing_factory = PostProcessingFactory()
+        #
+        #             filter_post_processings = post_processing_factory.get_post_processing_filters_by_discipline(name)
+        #             if filter_post_processings is NOT equal to chart filters.get('selected_value')
+        #                 data[key] = load_post_processing(study_id, discipline_key, object_filters, module_name)[plot_index]
+        #         if item.get("item_type") == "text":
+        #             data[key] = old_dashboard.get("data", {}).get(key, {})
+        #     return { "layout":old_dashboard.get("layout",{}), "data":data}
+        # self.__read_only_rw_strategy.write_dashboard(new_dashboard)
+
     def save_study_read_only_mode_in_file(self):
         """
         save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
