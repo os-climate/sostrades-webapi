@@ -21,7 +21,11 @@ from sos_trades_api.controllers.sostrades_data.dashboard_controller import (
     get_study_dashboard_in_file,
     save_study_dashboard_in_file,
 )
-from sos_trades_api.models.dashboard import Dashboard, migrate_from_old_format, detect_dashboard_structure
+from sos_trades_api.models.dashboard import (
+    Dashboard,
+    detect_dashboard_structure,
+    migrate_from_old_format,
+)
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.authentication.authentication import auth_required
