@@ -14,23 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import abc
+from __future__ import annotations
+
+import json
+import re
+import time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 
 class DashboardAttributes(str, Enum):
     STUDY_CASE_ID = 'study_case_id'
-    ITEMS = 'items'
-
+    LAYOUT = 'layout'
+    DATA = 'data'
 
 class DisplayableItemType(str, Enum):
     TEXT = 'text'
     GRAPH = 'graph'
     SECTION = 'section'
 
-
-class BaseItem(abc.ABC):
+class ItemLayout:
     def __init__(
             self,
             item_id: str,
@@ -39,255 +42,304 @@ class BaseItem(abc.ABC):
             y: int,
             cols: int,
             rows: int,
-            min_cols: int,
-            min_rows: int,
-            data: Dict[str, Any],
-            max_rows: Optional[int] = None
+            minCols: int,
+            minRows: int,
+            children: Optional[List[str]] = None
     ):
-        self.id = item_id
-        self.type = item_type
+        self.item_id = item_id
+        self.item_type = item_type
         self.x = x
         self.y = y
         self.cols = cols
         self.rows = rows
-        self.min_cols = min_cols
-        self.min_rows = min_rows
-        self.data = data
-        if max_rows:
-            self.max_rows = max_rows
-
-    @abc.abstractmethod
-    def serialize(self) -> dict:
-        pass
-
-
-class DashboardText(BaseItem):
-    def __init__(self, content: str = '', item_id: Optional[str] = None, x: int = 0, y: int = 0):
-        super().__init__(
-            item_id=item_id,
-            item_type=DisplayableItemType.TEXT,
-            x=x,
-            y=y,
-            cols=3,
-            rows=2,
-            min_cols=1,
-            min_rows=1,
-            data={"content": content}
-        )
+        self.minCols = minCols
+        self.minRows = minRows
+        self.children = children if children is not None else []
 
     def serialize(self) -> dict:
-        return {
-            "id": self.id,
-            "type": self.type,
-            "x": self.x,
-            "y": self.y,
-            "cols": self.cols,
-            "rows": self.rows,
-            "min_cols": self.min_cols,
-            "min_rows": self.min_rows,
-            "data": self.data,
-        }
-
-
-class DashboardGraph(BaseItem):
-    def __init__(self, discipline_name: str, name: str, plot_index: int, graph_data: dict, x: int = 0, y: int = 0):
-        self.discipline_name = discipline_name
-        self.name = name
-        self.plot_index = plot_index
-        item_id = f"{discipline_name}-{name}-{plot_index}"
-        super().__init__(
-            item_id=item_id,
-            item_type=DisplayableItemType.GRAPH,
-            x=x,
-            y=y,
-            cols=4,
-            rows=3,
-            min_cols=3,
-            min_rows=2,
-            data={"graphData": graph_data}
-        )
-
-    @property
-    def identifier(self) -> str:
-        return f"{self.discipline_name}-{self.name}-{self.plot_index}"
-
-    @property
-    def get_title(self) -> str:
-        import re
-        title = self.data["graphData"]["layout"]["title"]["text"]
-        return re.sub(r'<[^>]*>', '', title)
-
-    def serialize(self) -> dict:
-        return {
-            "id": self.id,
-            "type": self.type,
-            "x": self.x,
-            "y": self.y,
-            "cols": self.cols,
-            "rows": self.rows,
-            "min_cols": self.min_cols,
-            "min_rows": self.min_rows,
-            "discipline_name": self.discipline_name,
-            "name": self.name,
-            "plot_index": self.plot_index,
-            "data": self.data
-        }
-
-
-class DashboardSection(BaseItem):
-    def __init__(self,
-                 title: str = '',
-                 items: List[Union['DashboardText', 'DashboardGraph', 'DashboardSection']] = None,
-                 shown: bool = True,
-                 expanded_size: Optional[int] = None,
-                 x: int = 0,
-                 y: int = 0,
-                 item_id: Optional[str] = None
-    ):
-        if items is None:
-            items = []
-
-        if item_id is None:
-            import time
-            item_id = f"section-{int(time.time() * 1000)}"
-
-        super().__init__(
-            item_id=item_id,
-            item_type=DisplayableItemType.SECTION,
-            x=x,
-            y=y,
-            cols=10,
-            rows=5,
-            min_cols=10,
-            min_rows=4,
-            data={"title": title, "items": items, "shown": shown}
-        )
-
-        if expanded_size is not None:
-            self.data["expanded_size"] = expanded_size
-
-    def serialize(self) -> dict:
-        serialized_items = []
-        for item in self.data["items"]:
-            if isinstance(item, (DashboardText, DashboardGraph, DashboardSection)):
-                serialized_items.append(item.serialize())
-            else:
-                serialized_items.append(item)
         result = {
-            "id": self.id,
-            "type": self.type,
+            "item_id": self.item_id,
+            "item_type": self.item_type.value,
             "x": self.x,
             "y": self.y,
             "cols": self.cols,
             "rows": self.rows,
-            "min_cols": self.min_cols,
-            "min_rows": self.min_rows,
-            "data": {
-                "title": self.data["title"],
-                "items": serialized_items,
-                "shown": self.data["shown"],
-            },
+            "minCols": self.minCols,
+            "minRows": self.minRows,
+        }
+        if self.children:
+            result['children'] = self.children
+
+        return result
+
+
+class TextData:
+    def __init__(self, content: str = ''):
+        self.content = content
+
+    def serialize(self) -> dict:
+        return {
+            "content": self.content
         }
 
-        if "expanded_size" in self.data:
-            result["data"]["expanded_size"] = self.data["expanded_size"]
 
-        if hasattr(self, 'max_rows'):
-            result["max_rows"] = self.max_rows
+class GraphData:
+    def __init__(
+            self,
+            disciplineName: str,
+            name: str,
+            plotIndex: int,
+            postProcessingFilters: List = None,
+            graphData: Dict = None,
+            title: str = None
+    ):
+        self.disciplineName = disciplineName
+        self.name = name
+        self.plotIndex = plotIndex
+        self.postProcessingFilters = postProcessingFilters if postProcessingFilters is not None else []
+        self.graphData = graphData if graphData is not None else {}
+        self.title = title
+
+        if not self.title and self.graphData and 'layout' in self.graphData and 'title' in self.graphData['layout']:
+            self.title = re.sub(r'<[^>]*>', '', self.graphData['layout']['title']['text'])
+
+    def serialize(self) -> dict:
+        return {
+            "disciplineName": self.disciplineName,
+            "name": self.name,
+            "plotIndex": self.plotIndex,
+            "postProcessingFilters": self.postProcessingFilters,
+            "graphData": self.graphData,
+            "title": self.title
+        }
+
+
+class SectionData:
+    def __init__(
+            self,
+            title: str = '',
+            shown: bool = True,
+            expandedSize: Optional[int] = None
+    ):
+        self.title = title
+        self.shown = shown
+        self.expandedSize = expandedSize
+
+    def serialize(self) -> dict:
+        result = {
+            "title": self.title,
+            "shown": self.shown,
+        }
+
+        if self.expandedSize is not None:
+            result["expandedSize"] = self.expandedSize
 
         return result
 
 
 class Dashboard:
-    def __init__(self, study_case_id: int, items: List[Union[DashboardText, DashboardGraph, DashboardSection]]):
-        self.study_id = study_case_id
-        self.items = items
+    def __init__(
+            self,
+            study_case_id: int,
+            layout: Dict[str, ItemLayout] = None,
+            data: Dict[str, Union[TextData, GraphData, SectionData]] = None
+    ):
+        self.study_case_id = study_case_id
+        self.layout = layout if layout is not None else {}
+        self.data = data if data is not None else {}
 
     def serialize(self) -> dict:
+        serialized_layout = {}
+        serialized_data = {}
+
+        for key, value in self.layout.items():
+            serialized_layout[key] = value.serialize()
+
+        for key, value in self.data.items():
+            serialized_data[key] = value.serialize()
+
         return {
-            "study_case_id": self.study_id,
-            "items": [item.serialize() for item in self.items],
+            DashboardAttributes.STUDY_CASE_ID.value: self.study_case_id,
+            DashboardAttributes.LAYOUT.value: serialized_layout,
+            DashboardAttributes.DATA.value: serialized_data
         }
 
     @classmethod
-    def create(cls, json_data: dict) -> 'Dashboard':
-        """ create a Dashboard instance from JSON data"""
+    def deserialize(cls, json_data: dict) -> Dashboard:
+        """
+        Create a Dashboard instance from JSON data
+        """
         study_case_id = json_data.get(DashboardAttributes.STUDY_CASE_ID.value)
-        items_data = json_data.get(DashboardAttributes.ITEMS.value, [])
+        layout_data = json_data.get(DashboardAttributes.LAYOUT.value, {})
+        data_data = json_data.get(DashboardAttributes.DATA.value, {})
 
-        items = []
-        for item_data in items_data:
-            item_type = item_data.get("type")
-            if item_type == DisplayableItemType.TEXT.value:
-                item = DashboardText(content=item_data["data"].get("content", ""), item_id=item_data.get("id"), x=item_data.get("x", 0), y=item_data.get("y", 0))
-                item.cols = item_data.get("cols", 3)
-                item.rows = item_data.get("rows", 2)
-                item.min_cols = item_data.get("min_cols", 1)
-                item.min_rows = item_data.get("min_rows", 1)
-                items.append(item)
-                # items.append(DashboardText(**item_data))
-            elif item_type == DisplayableItemType.GRAPH.value:
-                item = DashboardGraph(
-                    discipline_name=item_data.get("discipline_name", ""),
-                    name=item_data.get("name", ""),
-                    plot_index=item_data.get("plot_index", 0),
-                    graph_data=item_data.get("data", {}).get("graphData", {}),
-                    x=item_data.get("x", 0),
-                    y=item_data.get("y", 0),
-                )
-                item.cols = item_data.get("cols", 4)
-                item.rows = item_data.get("rows", 3)
-                item.min_cols = item_data.get("min_cols", 3)
-                item.min_rows = item_data.get("min_rows", 2)
-                items.append(item)
-                # items.append(DashboardGraph(**item_data))
-            elif item_type == DisplayableItemType.SECTION.value:
-                section_items = []
-                for section_item_data in item_data["data"].get("items", []):
-                    section_item_type = section_item_data.get("type")
-                    if section_item_type == DisplayableItemType.TEXT.value:
-                        section_item = DashboardText(
-                            content=section_item_data["data"].get("content", ""),
-                            item_id=section_item_data.get("id"),
-                            x=section_item_data.get("x", 0),
-                            y=section_item_data.get("y", 0),
-                        )
-                        section_item.cols = section_item_data.get("cols", 3)
-                        section_item.rows = section_item_data.get("rows", 2)
-                        section_item.min_cols = section_item_data.get("min_cols", 1)
-                        section_item.min_rows = section_item_data.get("min_rows", 1)
-                        section_items.append(section_item)
-                    elif section_item_type == DisplayableItemType.GRAPH.value:
-                        section_item = DashboardGraph(
-                            discipline_name=section_item_data.get("discipline_name", ""),
-                            name=section_item_data.get("name", ""),
-                            plot_index=section_item_data.get("plot_index", 0),
-                            graph_data=section_item_data.get("data", {}).get("graphData", {}),
-                            x=section_item_data.get("x", 0),
-                            y=section_item_data.get("y", 0)
-                        )
-                        section_item.cols = section_item_data.get("cols", 4)
-                        section_item.rows = section_item_data.get("rows", 3)
-                        section_item.min_cols = section_item_data.get("min_cols", 3)
-                        section_item.min_rows = section_item_data.get("min_rows", 2)
-                        section_items.append(section_item)
-                item = DashboardSection(
-                    title=item_data["data"].get("title", ""),
-                    items=section_items,
-                    shown=item_data["data"].get("shown", True),
-                    expanded_size=item_data["data"].get("expanded_size"),
-                    x=item_data.get("x", 0),
-                    y=item_data.get("y", 0),
-                    item_id=item_data.get("id")
-                )
-                item.cols = item_data.get("cols", 10)
-                item.rows = item_data.get("rows", 5)
-                item.min_cols = item_data.get("min_cols", 10)
-                item.min_rows = item_data.get("min_rows", 4)
-                if "max_rows" in item_data:
-                    item.max_rows = item_data["max_rows"]
-                items.append(item)
-                # items.append(DashboardSection(**item_data))
-            else:
-                raise ValueError(f"Unknown item type: {item_type}")
-        return cls(study_case_id, items)
+        layout = {}
+        data = {}
+
+        # process layout and data
+        for key, value in layout_data.items():
+            item_id = value.get('item_id')
+            item_type = DisplayableItemType(value.get('item_type'))
+            layout[key] = ItemLayout(
+                item_id=item_id,
+                item_type=item_type,
+                x=int(value.get('x', 0)),
+                y=int(value.get('y', 0)),
+                cols=int(value.get('cols', 1)),
+                rows=int(value.get('rows', 1)),
+                minCols=int(value.get('minCols', 1)),
+                minRows=int(value.get('minRows', 1))
+            )
+            if 'children' in value:
+                layout[key].children = value['children']
+            if key in data_data:
+                item_data = data_data[key]
+                if item_type == DisplayableItemType.TEXT:
+                    data[key] = TextData(content=item_data.get('content', ''))
+                elif item_type == DisplayableItemType.GRAPH:
+                    data[key] = GraphData(
+                        disciplineName=item_data.get('disciplineName', ''),
+                        name=item_data.get('name', ''),
+                        plotIndex=int(item_data.get('plotIndex', 0)),
+                        postProcessingFilters=item_data.get('postProcessingFilters', []),
+                        graphData=item_data.get('graphData', {}),
+                        title=item_data.get('title')
+                    )
+                elif item_type == DisplayableItemType.SECTION:
+                    data[key] = SectionData(
+                        title=item_data.get('title', ''),
+                        shown=item_data.get('shown', True),
+                        expandedSize=item_data.get('expandedSize')
+                    )
+
+        for data_key in data_data.keys():
+            if data_key not in layout:
+                item_data = data_data[data_key]
+                if 'content' in item_data:
+                    data[data_key] = TextData(content=item_data.get('content', ''))
+                else:
+                    data[data_key] = GraphData(
+                        disciplineName=item_data.get('disciplineName', ''),
+                        name=item_data.get('name', ''),
+                        plotIndex=int(item_data.get('plotIndex', 0)),
+                        postProcessingFilters=item_data.get('postProcessingFilters', []),
+                        graphData=item_data.get('graphData', {}),
+                        title=item_data.get('title')
+                    )
+
+        return cls(study_case_id=study_case_id, layout=layout, data=data)
+
+def detect_dashboard_structure(json_data: dict) -> str:
+    """
+    Detect if dashboard uses old or new structure
+    """
+    if 'items' in json_data and isinstance(json_data['items'], List):
+        return 'old'
+    elif 'layout' in json_data and 'data' in json_data and isinstance(json_data['layout'], dict) and isinstance(json_data['data'], dict):
+        return 'new'
+    else:
+        return 'unknown'
+
+def migrate_from_old_format(dashboard_json):
+    """
+    Migrate old dashboard data format to the new format.
+    This method assumes that the old format has a specific structure that needs to be transformed.
+    """
+    old_data = json.loads(dashboard_json) if isinstance(dashboard_json, str) else dashboard_json
+
+    new_dashboard = {
+        'study_case_id': old_data.get(DashboardAttributes.STUDY_CASE_ID.value, 0),
+        'layout': {},
+        'data': {}
+    }
+    old_items = old_data.get('items', [])
+
+    for old_item in old_items:
+        item_type = old_item.get('type')
+        if item_type == DisplayableItemType.GRAPH:
+            # not possible to migrate graph item -> lacking filters to create the new item_id
+            continue
+        layout, data = migrate_item_by_type(old_item)
+        item_id = layout['item_id']
+        new_dashboard['layout'][item_id] = layout
+        new_dashboard['data'][item_id] = data
+        if item_type == DisplayableItemType.SECTION:
+            old_section_items = old_item.get('data', {}).get('items', [])
+            for child_item in old_section_items:
+                if item_type == DisplayableItemType.GRAPH:
+                    # not possible to migrate graph item -> lacking filters to create the new item_id
+                    continue
+                child_layout, child_data = migrate_item_by_type(child_item)
+                new_dashboard['data'][child_item.get('id')] = child_data
+
+    return new_dashboard
+
+def migrate_item_by_type(old_item):
+    """
+    Helper function to migrate item base on its type
+    """
+    item_type = old_item.get('type')
+    if item_type == DisplayableItemType.TEXT:
+        return migrate_text_item(old_item)
+    elif item_type == DisplayableItemType.SECTION:
+        return migrate_section_item(old_item)
+    else:
+        raise ValueError(f"Unknown item type: {item_type}")
+
+def migrate_text_item(old_item):
+    """
+    Migrate a text item from the old format to the new format.
+    """
+    item_id = old_item.get('id', f"text_{int(time.time() * 1000)}")
+    layout = {
+        'item_id': item_id,
+        'item_type': DisplayableItemType.TEXT.value,
+        'x': old_item.get('x', 0),
+        'y': old_item.get('y', 0),
+        'cols': old_item.get('cols', 12),
+        'rows': old_item.get('rows', 8),
+        'minCols': old_item.get('minCols', 1),
+        'minRows': old_item.get('minRows', 1),
+    }
+
+    data = {
+        'content': old_item.get('data', {}).get('content', '')
+    }
+
+    return layout, data
+
+def migrate_section_item(old_item):
+    """
+    Migrate a section item from the old format to the new format.
+    """
+    item_id = old_item.get('id', f"section_{int(time.time() * 1000)}")
+    children_ids = []
+    old_section_items = old_item.get('data', {}).get('items', [])
+    for child_item in old_section_items:
+        if child_item.get('type') == DisplayableItemType.GRAPH:
+            # not possible to migrate graph item -> lacking filters to create the new item_id
+            continue
+        child_id = child_item.get('id')
+        if child_id:
+            children_ids.append(child_id)
+
+    layout = {
+        'item_id': item_id,
+        'item_type': DisplayableItemType.SECTION.value,
+        'x': old_item.get('x', 0),
+        'y': old_item.get('y', 0),
+        'cols': old_item.get('cols', 40),
+        'rows': old_item.get('rows', 20),
+        'minCols': old_item.get('minCols', 40),
+        'minRows': old_item.get('minRows', 16),
+        'children': children_ids
+    }
+
+    old_section_data = old_item.get('data', {})
+    data = {
+        'title': old_section_data.get('title', ''),
+        'shown': old_section_data.get('shown', True),
+        'expandedSize': old_section_data.get('expandedSize')
+    }
+
+    return layout, data
