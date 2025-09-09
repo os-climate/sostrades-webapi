@@ -24,6 +24,10 @@ from shutil import copy
 from eventlet import sleep
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.dashboard.dashboard_factory import (
+    get_default_dashboard_in_process_repo,
+    update_dashboard_charts,
+)
 from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
 from sostrades_core.tools.tree.serializer import DataSerializer
 
@@ -494,6 +498,23 @@ class StudyCaseManager(BaseStudyManager):
                 # save execution logs in read only folder
                 self.__read_only_rw_strategy.copy_file_in_read_only_folder(self.raw_log_file_path_absolute())
 
+                # update dashboard file
+                #----------------------
+                # check that there is already a dashboard file, if not create a new one
+                dashboard = self.__read_only_rw_strategy.read_dashboard()
+                if dashboard is None or len(dashboard) == 0:
+                    # check that there is a default dashboard in process repo
+                    dashboard = get_default_dashboard_in_process_repo(self.execution_engine)
+                try:
+                    if dashboard is not None and len(dashboard) > 0:
+                        # update chart data
+                        updated_dashboard = update_dashboard_charts(self.execution_engine, dashboard)
+                        if updated_dashboard is not None and len(updated_dashboard) > 0:
+                            # update study id
+                            updated_dashboard['study_case_id'] = self.study.id
+                            self.__read_only_rw_strategy.write_dashboard(updated_dashboard)
+                except Exception as ex:
+                    self.logger.error(f"Error while updating dashboard data: {str(ex)}")
     
     def __get_and_save_ontology_usages(self, ontology_data:dict):
         """
@@ -734,6 +755,12 @@ class StudyCaseManager(BaseStudyManager):
         Retrieve dashboard from json file
         """
         return self.__read_only_rw_strategy.read_dashboard()
+    
+    def write_dashboard_json_file(self, dashboard):
+        """
+        Write dashboard into json file
+        """
+        return self.__read_only_rw_strategy.write_dashboard(dashboard)
 
     def get_parameter_data(self, parameter_key):
         """

@@ -15,7 +15,6 @@ limitations under the License.
 '''
 
 from sos_trades_api.server.base_server import app
-from sos_trades_api.tools.file_tools import write_object_in_json_file
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
 
@@ -49,7 +48,12 @@ def save_study_dashboard_in_file(dashboard_data):
      :param: dashboard_data, data of the dashboard to save
      :type: Object({study_case_id, items})
     """
+    if dashboard_data is None or len(dashboard_data) == 0:
+        # dashboard is empty, nothing to save
+        return
+    if 'study_case_id' not in dashboard_data:
+        raise ValueError(
+            "study_case_id is missing in dashboard data, cannot save dashboard")
     study_manager = StudyCaseManager(dashboard_data['study_case_id'])
-    dashboard_file_path = study_manager.get_dashboard_file_path()
-    write_object_in_json_file(dashboard_data, dashboard_file_path)
+    study_manager.write_dashboard_json_file(dashboard_data)
     return
