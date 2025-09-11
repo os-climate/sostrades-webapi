@@ -87,45 +87,49 @@ class CustomJsonEncoder(JSONEncoder):
         super().__init__(*args, **kwargs)
 
     def default(self, o):  # pylint: disable=E0202
+        try:
+            if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference, Dashboard)):
+                return o.serialize()
+            elif isinstance(o, DataFrame):
+                return "://dataframe"
+            elif isinstance(o, Index):
+                return "://index"
+            elif isinstance(o, np.ndarray):
+                return "://ndarray"
+            elif isinstance(o, np.bool_):
+                return bool(o)
+            elif isinstance(o, Series):
+                return list(o)
+            elif isinstance(o, type):
+                return str(o).lower()
+            elif isinstance(o, (ChartFilter, InstanciatedTable, TableStyles, TwoAxesInstanciatedChart)):
+                return o.to_dict()
+            elif isinstance(o, np.integer):
+                return int(o)
+            elif isinstance(o, float):
+                return float(o)
+            elif isinstance(o, complex):
+                return o.real
+            elif isinstance(o, (datetime, np.dtype)):
+                return str(o)
+            elif isinstance(o, StudyCaseExecutionLog):
+                return o.serialize()
+            elif isinstance(o, Namespace):
+                return o.to_dict()
+            elif isinstance(o, (AccessRights, GroupEntityRights, ProcessEntityRights, StudyCaseDto, StudyCaseEntityRights)):
+                return o.serialize()
+            elif isinstance(o, PostProcessingBundle):
+                return o.to_dict()
+            elif isinstance(o, InstantiatedPlotlyNativeChart):
+                return o.to_plotly_dict()
+            elif isinstance(o, set):
+                return list(o)
 
-        if isinstance(o, (AccessRightsSelectable, CalculationDashboard, EntityRight, EntityRights, Group, GroupAccessUser, Link, LoadedGroup, LoadedProcess, LoadedStudyCase, LoadedStudyCaseExecutionStatus, ModelStatus, News, PodAllocation, ReferenceStudy, StudyCase, StudyCaseChange, StudyCaseLog, StudyCaseValidation, StudyNotification, User, UserApplicationRight, UserDto, UserProfile, UserStudyPreference, Dashboard)):
-            return o.serialize()
-        elif isinstance(o, DataFrame):
-            return "://dataframe"
-        elif isinstance(o, Index):
-            return "://index"
-        elif isinstance(o, np.ndarray):
-            return "://ndarray"
-        elif isinstance(o, Series):
-            return list(o)
-        elif isinstance(o, type):
-            return str(o).lower()
-        elif isinstance(o, (ChartFilter, InstanciatedTable, TableStyles, TwoAxesInstanciatedChart)):
-            return o.to_dict()
-        elif isinstance(o, np.integer):
-            return int(o)
-        elif isinstance(o, float):
-            return float(o)
-        elif isinstance(o, complex):
-            return o.real
-        elif isinstance(o, (datetime, np.dtype)):
-            return str(o)
-        elif isinstance(o, StudyCaseExecutionLog):
-            return o.serialize()
-        elif isinstance(o, Namespace):
-            return o.to_dict()
-        elif isinstance(o, (AccessRights, GroupEntityRights, ProcessEntityRights, StudyCaseDto, StudyCaseEntityRights)):
-            return o.serialize()
-        elif isinstance(o, PostProcessingBundle):
-            return o.to_dict()
-        elif isinstance(o, InstantiatedPlotlyNativeChart):
-            return o.to_plotly_dict()
-        elif isinstance(o, set):
-            return list(o)
-
-        # default, if not one of the specified object. Caller's problem if this is not
-        # serializable.
-        return JSONEncoder.default(self, o)
+            # default, if not one of the specified object. Caller's problem if this is not
+            # serializable.
+            return JSONEncoder.default(self, o)
+        except Exception as e:
+            raise TypeError("Custom json encoder error : %s" % (type(o).__name__, str(e))) from e
 
 
 class CustomJsonProvider(JSONProvider):
