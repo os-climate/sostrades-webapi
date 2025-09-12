@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+from sostrades_core.tools.dashboard.dashboard import Dashboard
+
 from sos_trades_api.server.base_server import app
 from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
@@ -55,5 +57,6 @@ def save_study_dashboard_in_file(dashboard_data):
         raise ValueError(
             "study_case_id is missing in dashboard data, cannot save dashboard")
     study_manager = StudyCaseManager(dashboard_data['study_case_id'])
-    study_manager.write_dashboard_json_file(dashboard_data)
+    dashboard = Dashboard.deserialize(dashboard_data)
+    study_manager.write_dashboard_json_file(dashboard)
     return

@@ -23,6 +23,7 @@ from flask.json.provider import JSONProvider
 from pandas import DataFrame, Index, Series
 from simplejson import JSONEncoder
 from sostrades_core.execution_engine.namespace import Namespace
+from sostrades_core.tools.dashboard.dashboard import Dashboard
 from sostrades_core.tools.post_processing.charts.chart_filter import ChartFilter
 from sostrades_core.tools.post_processing.charts.two_axes_instanciated_chart import (
     TwoAxesInstanciatedChart,
@@ -40,7 +41,6 @@ from sostrades_core.tools.post_processing.tables.table_style import TableStyles
 
 from sos_trades_api.models.access_rights_selectable import AccessRightsSelectable
 from sos_trades_api.models.calculation_dashboard import CalculationDashboard
-from sos_trades_api.models.dashboard import Dashboard
 from sos_trades_api.models.database_models import (
     AccessRights,
     Group,
@@ -129,7 +129,7 @@ class CustomJsonEncoder(JSONEncoder):
             # serializable.
             return JSONEncoder.default(self, o)
         except Exception as e:
-            raise TypeError("Custom json encoder error : %s" % (type(o).__name__, str(e))) from e
+            raise TypeError("Custom json encoder error for %s : %s" % (type(o).__name__, str(e))) from e
 
 
 class CustomJsonProvider(JSONProvider):

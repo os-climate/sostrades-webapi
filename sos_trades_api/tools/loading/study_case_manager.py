@@ -24,6 +24,7 @@ from shutil import copy
 from eventlet import sleep
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.dashboard.dashboard import Dashboard
 from sostrades_core.tools.dashboard.dashboard_factory import (
     get_default_dashboard_in_process_repo,
     update_dashboard_charts,
@@ -504,16 +505,16 @@ class StudyCaseManager(BaseStudyManager):
                     #----------------------
                     # check that there is already a dashboard file, if not create a new one
                     dashboard = self.__read_only_rw_strategy.read_dashboard()
-                    if dashboard is None or len(dashboard) == 0:
+                    if dashboard is None:
                         # check that there is a default dashboard in process repo
                         dashboard = get_default_dashboard_in_process_repo(self.execution_engine)
                     try:
-                        if dashboard is not None and len(dashboard) > 0:
+                        if dashboard is not None:
                             # update chart data
                             updated_dashboard = update_dashboard_charts(self.execution_engine, dashboard)
-                            if updated_dashboard is not None and len(updated_dashboard) > 0:
+                            if updated_dashboard is not None:
                                 # update study id
-                                updated_dashboard['study_case_id'] = self.study.id
+                                updated_dashboard.study_case_id = self.study.id
                                 self.__read_only_rw_strategy.write_dashboard(updated_dashboard)
                     except Exception as ex:
                         self.logger.error(f"Error while updating dashboard data: {str(ex)}")
@@ -757,10 +758,11 @@ class StudyCaseManager(BaseStudyManager):
         return self.__read_only_rw_strategy.read_only_exists
     
 
-    def read_dashboard_in_json_file(self):
+    def read_dashboard_in_json_file(self)-> Dashboard:
         """
         Retrieve dashboard from json file
         """
+
         return self.__read_only_rw_strategy.read_dashboard()
     
     def write_dashboard_json_file(self, dashboard):
