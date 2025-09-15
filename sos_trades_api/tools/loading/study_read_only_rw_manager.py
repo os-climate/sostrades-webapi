@@ -123,7 +123,9 @@ class StudyReadOnlyRWHelper():
         Return:
             True if the write succeeded
         """
-        dashboard_json = Dashboard.serialize(dashboard)
+        if dashboard is None:
+            return False
+        dashboard_json = dashboard.serialize()
         return self.__write_object_in_read_only_folder(dashboard_json, self.__dashboard_file_path)
 
     def read_dashboard(self)-> Dashboard:

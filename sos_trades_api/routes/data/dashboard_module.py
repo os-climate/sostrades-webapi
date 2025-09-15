@@ -48,7 +48,9 @@ def get_dashboard_data(study_id):
         # Proceeding after rights verification
         try:
             dashboard = get_study_dashboard_in_file(study_id)
-            serialized_dashboard = Dashboard.serialize(dashboard)
+            if dashboard is None:
+                return make_response(jsonify({}), 200)
+            serialized_dashboard = dashboard.serialize()
             return make_response(serialized_dashboard, 200)
         except Exception as error:
             app.logger.error(f"Error loading dashboard for study {study_id}: {str(error)}")
@@ -76,9 +78,10 @@ def update_dashboard_data(study_id):
             # app.logger.info(f"Received request to update dashboard data: {request_json}")
             dashboard = Dashboard.deserialize(request_json)
             # app.logger.info(f"deserialized Dashboard: {dashboard}")
-            serialized_dashboard = Dashboard.serialize(dashboard)
-            # app.logger.info(f"serialized Dashboard: {serialized_dashboard}")
-            save_study_dashboard_in_file(dashboard_data=serialized_dashboard)
+            if dashboard is not None:
+                serialized_dashboard = dashboard.serialize()
+                # app.logger.info(f"serialized Dashboard: {serialized_dashboard}")
+                save_study_dashboard_in_file(dashboard_data=serialized_dashboard)
             return make_response(jsonify("Dashboard data saved in file"), 200)
         except Exception as e:
             raise BadRequest(f"Invalid dashboard data: {str(e)}")
