@@ -39,7 +39,7 @@ def get_study_dashboard_in_file(study_id):
                 f"Study {study_id} dashboard error while reading file: {error}")
             raise error
     else:
-        return {}
+        return None
 
 
 def save_study_dashboard_in_file(dashboard_data):
