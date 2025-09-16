@@ -15,16 +15,14 @@ limitations under the License.
 '''
 
 from flask import jsonify, make_response, request, session
+from sostrades_core.tools.dashboard.dashboard import (
+    Dashboard,
+)
 from werkzeug.exceptions import BadRequest
 
 from sos_trades_api.controllers.sostrades_data.dashboard_controller import (
     get_study_dashboard_in_file,
     save_study_dashboard_in_file,
-)
-from sos_trades_api.models.dashboard import (
-    Dashboard,
-    detect_dashboard_structure,
-    migrate_from_old_format,
 )
 from sos_trades_api.models.database_models import AccessRights
 from sos_trades_api.server.base_server import app
@@ -48,32 +46,15 @@ def get_dashboard_data(study_id):
                 "You do not have the necessary rights to load this study case")
 
         # Proceeding after rights verification
-        dashboard_json = get_study_dashboard_in_file(study_id)
-
-        # if no dashboard, return empty
-        if dashboard_json is None or len(dashboard_json) == 0:
-            return make_response({}, 200)
-
-        structure_type = detect_dashboard_structure(dashboard_json)
-        if structure_type == 'new':
-            try:
-                dashboard = Dashboard.deserialize(dashboard_json)
-                serialized_dashboard = Dashboard.serialize(dashboard)
-                return make_response(serialized_dashboard, 200)
-            except Exception as e:
-                raise BadRequest(f"Invalid new dashboard structure: {str(e)}")
-        elif structure_type == 'old':
-            try:
-                # Attempt to migrate old dashboard data format
-                dashboard = migrate_from_old_format(dashboard_json)
-                deserialized_dashboard = Dashboard.deserialize(dashboard)
-                serialized_dashboard = Dashboard.serialize(deserialized_dashboard)
-                save_study_dashboard_in_file(dashboard_data=serialized_dashboard)
-                return make_response(serialized_dashboard, 200)
-            except Exception as e:
-                raise BadRequest(f"Dashboard migration failed: {str(e)}")
-        else:
-            raise BadRequest("Unknown dashboard structure format")
+        try:
+            dashboard = get_study_dashboard_in_file(study_id)
+            if dashboard is None:
+                return make_response(jsonify({}), 200)
+            serialized_dashboard = dashboard.serialize()
+            return make_response(serialized_dashboard, 200)
+        except Exception as error:
+            app.logger.error(f"Error loading dashboard for study {study_id}: {str(error)}")
+            return BadRequest(f"Error loading dashboard: {str(error)}")
     raise BadRequest("Missing mandatory parameter: study identifier in url")
 
 @app.route("/api/data/dashboard/<int:study_id>", methods=["POST"])
@@ -97,9 +78,10 @@ def update_dashboard_data(study_id):
             # app.logger.info(f"Received request to update dashboard data: {request_json}")
             dashboard = Dashboard.deserialize(request_json)
             # app.logger.info(f"deserialized Dashboard: {dashboard}")
-            serialized_dashboard = Dashboard.serialize(dashboard)
-            # app.logger.info(f"serialized Dashboard: {serialized_dashboard}")
-            save_study_dashboard_in_file(dashboard_data=serialized_dashboard)
+            if dashboard is not None:
+                serialized_dashboard = dashboard.serialize()
+                # app.logger.info(f"serialized Dashboard: {serialized_dashboard}")
+                save_study_dashboard_in_file(dashboard_data=serialized_dashboard)
             return make_response(jsonify("Dashboard data saved in file"), 200)
         except Exception as e:
             raise BadRequest(f"Invalid dashboard data: {str(e)}")

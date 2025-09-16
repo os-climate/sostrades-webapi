@@ -17,6 +17,9 @@ import os
 from os.path import basename, exists, join
 from shutil import copy
 
+from sostrades_core.tools.dashboard.dashboard import (
+    Dashboard,
+)
 from sostrades_core.tools.folder_operations import makedirs_safe, rmtree_safe
 
 from sos_trades_api.tools.file_stream.file_stream import verify_files_after_copy
@@ -111,7 +114,7 @@ class StudyReadOnlyRWHelper():
         
         return read_only
     
-    def write_dashboard(self, dashboard_data):
+    def write_dashboard(self, dashboard:Dashboard):
         """
         save dashboard data in a json file named dashboard.json
         Args:
@@ -120,19 +123,26 @@ class StudyReadOnlyRWHelper():
         Return:
             True if the write succeeded
         """
-        return self.__write_object_in_read_only_folder(dashboard_data, self.__dashboard_file_path)
+        if dashboard is None:
+            return False
+        dashboard_json = dashboard.serialize()
+        return self.__write_object_in_read_only_folder(dashboard_json, self.__dashboard_file_path)
 
-    def read_dashboard(self):
+    def read_dashboard(self)-> Dashboard:
         """
         get content of the dashboard saved file if exists, return None if not
         Return:
             Dashboard file content
         """
-        dashboard_data = None
+        dashboard = None
         if exists(self.__dashboard_file_path):
-            dashboard_data = read_object_in_json_file(self.__dashboard_file_path)
-        
-        return dashboard_data
+            dashboard_json = read_object_in_json_file(self.__dashboard_file_path)
+            try:
+                dashboard = Dashboard.deserialize(dashboard_json)
+            except Exception as e:
+                raise Exception(f"Dashboard deserialization failed: {str(e)}")
+            
+        return dashboard
 
     def write_ontology(self, ontology_data):
         """
