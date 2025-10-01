@@ -171,7 +171,7 @@ def authenticate_api_key(authorization):
     from sos_trades_api.models.database_models import UserApiKey
     user_api_key = UserApiKey.query.filter(
         UserApiKey.api_key == api_key,
-        UserApiKey.is_active == True
+        UserApiKey.is_active
     ).first()
 
     if user_api_key is not None:
