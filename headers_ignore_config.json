@@ -58,6 +58,7 @@
         "migrations/versions/2db3dd3d7e5c_increase_size_of_repository.py",
         "migrations/versions/6d471f14fb35_update_column_execution_message.py",
         "migrations/versions/4800f7e11ae2_add_stand_alone_status.py",
+        "migrations/versions/7d5cb767db48_add_user_api_key_table.py",
         "sos_trades_api/version.info"
     ],
     "airbus_rev_commit": "09b208"
