@@ -650,6 +650,151 @@ def database_list_api_key():
                 app.logger.info(device)
 
 
+def database_create_user_api_key(username, api_key_name):
+    """
+    Create a new api key for the given user in database
+
+    :param username: User identifier to assign api key
+    :type username: str
+    :param api_key_name: Name to set to the api key
+    :type api_key_name: str
+    """
+    from sos_trades_api.models.database_models import User, UserApiKey
+
+    with app.app_context():
+        # Find the user
+        user = User.query.filter(User.username == username).first()
+
+        if user is None:
+            app.logger.error(f"User '{username}' does not exist.")
+            exit()
+
+        # Check if user already has an API key with this name
+        existing_key = UserApiKey.query.filter(
+            UserApiKey.user_id == user.id,
+            UserApiKey.key_name == api_key_name
+        ).first()
+
+        if existing_key:
+            app.logger.error(f"User '{username}' already has an API key named '{api_key_name}'")
+            exit()
+
+        # Create new API key
+        user_api_key = UserApiKey(api_key_name, user.id)
+
+        db.session.add(user_api_key)
+        db.session.commit()
+
+        app.logger.info("The following user API key has been created")
+        app.logger.info(user_api_key)
+
+
+def database_renew_user_api_key(username, api_key_name):
+    """
+    Renew api key for the given user in database
+
+    :param username: User identifier with assigned api key
+    :type username: str
+    :param api_key_name: Name of the api key to renew
+    :type api_key_name: str
+    """
+    from sos_trades_api.models.database_models import User, UserApiKey
+
+    with app.app_context():
+        # Find the user
+        user = User.query.filter(User.username == username).first()
+
+        if user is None:
+            app.logger.error(f"User '{username}' does not exist.")
+            exit()
+
+        # Find the API key
+        user_api_key = UserApiKey.query.filter(
+            UserApiKey.user_id == user.id,
+            UserApiKey.key_name == api_key_name
+        ).first()
+
+        if user_api_key is None:
+            app.logger.error(f"No API key named '{api_key_name}' found for user '{username}'")
+            exit()
+
+        # Generate new key
+        user_api_key.api_key = UserApiKey.create_key()
+
+        db.session.add(user_api_key)
+        db.session.commit()
+
+        app.logger.info("The following user API key has been renewed")
+        app.logger.info(user_api_key)
+
+
+def database_revoke_user_api_key(username, api_key_name):
+    """
+    Revoke api key for the given user in database
+
+    :param username: User identifier with assigned api key
+    :type username: str
+    :param api_key_name: Name of the api key to revoke
+    :type api_key_name: str
+    """
+    from sos_trades_api.models.database_models import User, UserApiKey
+
+    with app.app_context():
+        # Find the user
+        user = User.query.filter(User.username == username).first()
+
+        if user is None:
+            app.logger.error(f"User '{username}' does not exist.")
+            exit()
+
+        # Find the API key
+        user_api_key = UserApiKey.query.filter(
+            UserApiKey.user_id == user.id,
+            UserApiKey.key_name == api_key_name
+        ).first()
+
+        if user_api_key is None:
+            app.logger.error(f"No API key named '{api_key_name}' found for user '{username}'")
+            exit()
+
+        db.session.delete(user_api_key)
+        db.session.commit()
+
+        app.logger.info("The following user API key has been revoked")
+        app.logger.info(user_api_key)
+
+
+def database_list_user_api_keys(username=None):
+    """
+    List all user API keys or API keys for a specific user
+
+    :param username: Optional user identifier to filter by
+    :type username: str
+    """
+    from sos_trades_api.models.database_models import User, UserApiKey
+
+    with app.app_context():
+        if username:
+            # List API keys for specific user
+            user = User.query.filter(User.username == username).first()
+            if user is None:
+                app.logger.error(f"User '{username}' does not exist.")
+                exit()
+            
+            user_api_keys = UserApiKey.query.filter(UserApiKey.user_id == user.id).all()
+            app.logger.info(f"API keys for user '{username}':")
+        else:
+            # List all user API keys
+            user_api_keys = UserApiKey.query.all()
+            app.logger.info("All user API keys:")
+
+        if len(user_api_keys) == 0:
+            app.logger.info("No user API keys found")
+        else:
+            for user_api_key in user_api_keys:
+                app.logger.info(user_api_key)
+
+
 def clean_all_allocations_method():
     from sos_trades_api.tools.allocation_management.allocation_management import (
         clean_all_allocations_type_study,
@@ -919,6 +1064,59 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         """
         database_list_api_key()
 
+    @click.command("create_user_api_key")
+    @click.argument("username")
+    @click.argument("api_key_name")
+    @with_appcontext
+    def create_user_api_key(username, api_key_name):
+        """
+        Create an API key for a specific user
+        :param username: the username to create api key for
+        :type username: str
+        :param api_key_name: name to set to the api key
+        :type api_key_name: str
+        """
+        database_create_user_api_key(username, api_key_name)
+
+    @click.command("renew_user_api_key")
+    @click.argument("username")
+    @click.argument("api_key_name")
+    @with_appcontext
+    def renew_user_api_key(username, api_key_name):
+        """
+        Renew an API key for a specific user
+        :param username: the username to renew api key for
+        :type username: str
+        :param api_key_name: name of the api key to renew
+        :type api_key_name: str
+        """
+        database_renew_user_api_key(username, api_key_name)
+
+    @click.command("revoke_user_api_key")
+    @click.argument("username")
+    @click.argument("api_key_name")
+    @with_appcontext
+    def revoke_user_api_key(username, api_key_name):
+        """
+        Revoke an API key for a specific user
+        :param username: the username to revoke api key for
+        :type username: str
+        :param api_key_name: name of the api key to revoke
+        :type api_key_name: str
+        """
+        database_revoke_user_api_key(username, api_key_name)
+
+    @click.command("list_user_api_keys")
+    @click.argument("username", required=False)
+    @with_appcontext
+    def list_user_api_keys(username):
+        """
+        List user API keys (all or for a specific user)
+        :param username: optional username to filter by
+        :type username: str
+        """
+        database_list_user_api_keys(username)
+
     # Add custom command on flask cli to clean allocations, services and
     # deployments
     @click.command("clean_all_allocations")
@@ -977,6 +1175,10 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     app.cli.add_command(renew_api_key)
     app.cli.add_command(revoke_api_key)
     app.cli.add_command(list_api_key)
+    app.cli.add_command(create_user_api_key)
+    app.cli.add_command(renew_user_api_key)
+    app.cli.add_command(revoke_user_api_key)
+    app.cli.add_command(list_user_api_keys)
     app.cli.add_command(clean_all_allocations)
     app.cli.add_command(clean_inactive_study_pod)
     app.cli.add_command(create_user_test)

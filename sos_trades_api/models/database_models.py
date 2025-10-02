@@ -1117,3 +1117,61 @@ class Device(db.Model):
     def create_key():
         return uuid.uuid4().hex
 
+
+class UserApiKey(db.Model):
+    """
+    Class that manages API access for individual users
+    """
+
+    id = db.Column(Integer, primary_key=True)
+    key_name = Column(String(120), nullable=False)
+    api_key = Column(String(80), unique=True, nullable=False)
+    user_id = db.Column(Integer, ForeignKey(f"{User.__tablename__}.id", ondelete="CASCADE", name="fk_user_api_key_user_id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=str(datetime.now().astimezone(pytz.UTC)))
+    last_used = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    def __init__(self, key_name, user_id):
+        self.key_name = key_name
+        self.user_id = user_id
+        self.api_key = UserApiKey.create_key()
+        self.is_active = True
+
+    def serialize(self):
+        """
+        json serializer for dto purpose
+        """
+        return {
+            "id": self.id,
+            "key_name": self.key_name,
+            "api_key": self.api_key,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_used": self.last_used.isoformat() if self.last_used else None,
+            "is_active": self.is_active,
+        }
+
+    def __repr__(self):
+        """
+        serialize for log purpose this class
+        :return: str
+        """
+        builder = [
+            f"id: {self.id}",
+            f"key_name: {self.key_name}",
+            f"api_key: {self.api_key}",
+            f"user_id: {self.user_id}",
+            f"created_at: {self.created_at}",
+            f"last_used: {self.last_used}",
+            f"is_active: {self.is_active}",
+        ]
+        return "\n".join(builder)
+
+    @staticmethod
+    def create_key():
+        return uuid.uuid4().hex
+
+    def update_last_used(self):
+        """Update the last_used timestamp"""
+        self.last_used = datetime.now().astimezone(pytz.UTC)
+

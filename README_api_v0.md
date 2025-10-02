@@ -16,7 +16,19 @@ Each request has to be authorize using an api key provided using Authorization h
 - Authorization header : 
   'Authorization': 'Bearer <api_key>'
   
-Api key has to be created and provided using flask command  'create_api_key'
+Api key has to be created and provided using flask command:
+
+**For group-based API keys (legacy):**
+```bash
+flask create_api_key <group_name> <api_key_name>
+```
+
+**For user-based API keys (recommended):**
+```bash
+flask create_user_api_key <username> <api_key_name>
+```
+
+**Note:** User-based API keys provide better security isolation and are the recommended approach for new integrations.
 
 ### Load a study case
 
