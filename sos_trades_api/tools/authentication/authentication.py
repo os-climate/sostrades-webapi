@@ -149,23 +149,36 @@ def authenticate_api_key(authorization):
     if "Bearer" not in authorization:
         abort(401, "Missing Authorization header")
 
-    # Extract token from value and do the base64 decoding
+    # Extract token from value
     bearer_token = authorization.replace("Bearer ", "")
-    decoded_bearer_token = base64.b64decode(bearer_token).decode("utf-8")
-
+    
+    # Try to determine if it's a raw API key (hex) or base64 encoded
+    decoded_bearer_token = ""
     api_key = ""
     user_identifier = ""
-
-    # User-identifier is optional so check if token contains only key or the key and user
-    if ":" not in decoded_bearer_token:
-        api_key = decoded_bearer_token
+    
+    # First, try to use the token as-is (for UserApiKey system)
+    if len(bearer_token) == 32 and all(c in '0123456789abcdef' for c in bearer_token.lower()):
+        # This looks like a hex API key (UserApiKey format)
+        api_key = bearer_token
+        decoded_bearer_token = bearer_token
     else:
-        split_decoded_bearer_token = decoded_bearer_token.split(":")
+        # Try base64 decoding (legacy Device format)
+        try:
+            decoded_bearer_token = base64.b64decode(bearer_token).decode("utf-8")
+        except Exception:
+            abort(401, "Invalid API key format")
+        
+        # User-identifier is optional so check if token contains only key or the key and user
+        if ":" not in decoded_bearer_token:
+            api_key = decoded_bearer_token
+        else:
+            split_decoded_bearer_token = decoded_bearer_token.split(":")
 
-        if len(split_decoded_bearer_token) > 2:
-            abort(401, "Invalid Authorization header format")
-        api_key = split_decoded_bearer_token[0]
-        user_identifier = split_decoded_bearer_token[1]
+            if len(split_decoded_bearer_token) > 2:
+                abort(401, "Invalid Authorization header format")
+            api_key = split_decoded_bearer_token[0]
+            user_identifier = split_decoded_bearer_token[1]
 
     # First, check if this is a user-based API key in the new UserApiKey table
     from sos_trades_api.models.database_models import UserApiKey
