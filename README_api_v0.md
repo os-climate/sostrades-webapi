@@ -253,3 +253,21 @@ with open("/path/to/my/file", "w") as fs:
     fs.write(response.text)
 ```
 
+### Load study case read-only in html 
+
+Provide post-processing graphs in a templated html. 
+
+    https://<host>/api/v0/<int:study_id>/read-only
+
+- GET parameters : 
+  - *study_id* : study identifier (integer)
+
+- response content : Json
+
+```python
+import requests
+
+# Its assumed that a bearer token as been previously requested
+response = requests.get(
+    "https://<host>/api/v0/<int:study_id>/read-only",
+    headers={"Authorization": "Bearer <api_key>"})
