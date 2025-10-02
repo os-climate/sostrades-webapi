@@ -15,7 +15,13 @@ limitations under the License.
 
 '''
 
-import ldap
+# Import LDAP optionnel - désactivé si la bibliothèque n'est pas disponible
+try:
+    import ldap
+    LDAP_AVAILABLE = True
+except ImportError:
+    ldap = None
+    LDAP_AVAILABLE = False
 
 from sos_trades_api.models.database_models import User
 from sos_trades_api.server.base_server import app
@@ -50,6 +56,9 @@ def check_credentials(username, password):
     Returns user information on success or a describing exception in case of faillure
 
     """
+    # Vérifier si LDAP est disponible
+    if not LDAP_AVAILABLE:
+        raise LDAPException("LDAP authentication is not available - python-ldap library not installed")
     # ---- LDAP properties
     # - Request
     ldap_filter = app.config["LDAP_FILTER"] % username
