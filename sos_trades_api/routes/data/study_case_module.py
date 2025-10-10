@@ -108,11 +108,16 @@ def export_study_case_by_id_in_stand_alone(study_id):
             app.logger.info(f"File exists: {os.path.exists(file_path)}")
             app.logger.info(f"File size: {os.path.getsize(file_path) if os.path.exists(file_path) else 'N/A'}")
 
-            return send_file(
+            response =  send_file(
                 file_path,
                 as_attachment=True,
                 download_name=file_name,
                 mimetype='application/zip')
+            response.headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
