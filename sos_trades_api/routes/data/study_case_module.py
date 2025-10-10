@@ -160,12 +160,12 @@ def export_study_case_by_id_in_stand_alone_base64(study_id):
                 file_data = base64.b64encode(f.read()).decode('utf-8')
             
             # Return as JSON to avoid proxy detection
-            return {
+            return jsonify({
                 'filename': file_name,
                 'data': file_data,
                 'size': file_size,
                 'mimetype': 'application/zip'
-            }
+            })
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
