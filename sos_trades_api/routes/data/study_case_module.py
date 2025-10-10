@@ -112,11 +112,13 @@ def export_study_case_by_id_in_stand_alone(study_id):
                 file_path,
                 as_attachment=True,
                 download_name=file_name,
-                mimetype='application/zip')
+                mimetype='application/octet-stream')
+            response.headers['Content-Type'] = 'application/octet-stream'
             response.headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
             return response
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
