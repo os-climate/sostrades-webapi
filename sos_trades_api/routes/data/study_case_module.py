@@ -125,6 +125,52 @@ def export_study_case_by_id_in_stand_alone(study_id):
     else:       
         raise BadRequest("Missing mandatory parameter: study identifier in url")
 
+@app.route("/api/data/study-case/<int:study_id>/stand-alone/export-base64", methods=["GET"])
+@auth_required
+def export_study_case_by_id_in_stand_alone_base64(study_id):
+    """
+    Export a study case as a base64 encoded string to bypass proxy restrictions
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to export this study case")
+        
+        if check_read_only_mode_available(study_id):
+            import base64
+            import os
+            
+            file_name = f"study_{study_id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+            file_path = get_study_stand_alone_zip(study_id, file_name)
+
+            app.logger.info(f"Export file path: {file_path}")
+            app.logger.info(f"File exists: {os.path.exists(file_path)}")
+            
+            if not os.path.exists(file_path):
+                raise BadRequest("Export file not found")
+            
+            file_size = os.path.getsize(file_path)
+            app.logger.info(f"File size: {file_size}")
+            
+            # Read file and encode in base64
+            with open(file_path, 'rb') as f:
+                file_data = base64.b64encode(f.read()).decode('utf-8')
+            
+            # Return as JSON to avoid proxy detection
+            return {
+                'filename': file_name,
+                'data': file_data,
+                'size': file_size,
+                'mimetype': 'application/zip'
+            }
+        else:
+            raise BadRequest("Export not possible, the study is not available in read only mode")
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
 @app.route("/api/data/study-case/stand-alone/import", methods=["POST"])
 @auth_required
 def import_study_case_zip():
