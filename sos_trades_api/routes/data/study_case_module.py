@@ -14,6 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
+from datetime import datetime
+
 from flask import abort, jsonify, make_response, request, send_file, session
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
@@ -98,9 +101,18 @@ def export_study_case_by_id_in_stand_alone(study_id):
                 "You do not have the necessary rights to export this study case")
         
         if check_read_only_mode_available(study_id):
-            file_path = get_study_stand_alone_zip(study_id)
+            file_name = f"zip_study_{study_id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+            file_path = get_study_stand_alone_zip(study_id, file_name)
 
-            return send_file(file_path)
+            app.logger.info(f"Export file path: {file_path}")
+            app.logger.info(f"File exists: {os.path.exists(file_path)}")
+            app.logger.info(f"File size: {os.path.getsize(file_path) if os.path.exists(file_path) else 'N/A'}")
+
+            return send_file(
+                file_path,
+                as_attachment=True,
+                download_name=file_name,
+                mimetype='application/zip')
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
