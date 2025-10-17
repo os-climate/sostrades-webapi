@@ -197,6 +197,62 @@ def import_study_case_zip():
     return resp
 
 
+@app.route("/api/data/study-case/stand-alone/import-base64", methods=["POST"])
+@auth_required
+def import_study_case_zip_base64():
+    """
+    Create a study in stand alone from a base64 encoded zip file to bypass proxy restrictions
+    """
+    user = session["user"]
+
+    # Récupérer les données JSON
+    file_data = request.json.get('file_data', None)
+    filename = request.json.get('filename', None)
+    group_id = request.json.get('group_id', None)
+
+    missing_parameter = []
+    if file_data is None:
+        missing_parameter.append("Missing mandatory parameter: file_data")
+    if filename is None:
+        missing_parameter.append("Missing mandatory parameter: filename")
+    if group_id is None:
+        missing_parameter.append("Missing mandatory parameter: group_id")
+
+    if len(missing_parameter) > 0:
+        raise BadRequest("\n".join(missing_parameter))
+
+    if not filename.endswith(".zip"):
+        raise BadRequest(f"The Study Stand alone zip file is not valid : the file {filename} is not a zip file")
+
+    try:
+        import base64
+        import io
+        from werkzeug.datastructures import FileStorage
+        
+        # Décoder les données Base64
+        zip_binary_data = base64.b64decode(file_data)
+        
+        # Créer un objet FileStorage à partir des données binaires
+        zip_stream = io.BytesIO(zip_binary_data)
+        zip_file = FileStorage(
+            stream=zip_stream,
+            filename=filename,
+            content_type='application/zip'
+        )
+        
+        app.logger.info(f"Import base64 file: {filename}, size: {len(zip_binary_data)} bytes")
+        
+        # Utiliser la fonction existante d'import
+        created_study = create_study_stand_alone_from_zip(user.id, int(group_id), zip_file)
+        
+        resp = make_response(jsonify(created_study), 200)
+        return resp
+        
+    except Exception as e:
+        app.logger.error(f"Error importing base64 study: {str(e)}")
+        raise BadRequest(f"Import failed: {str(e)}")
+
+
 @app.route("/api/data/study-case/<int:study_id>/save-ontology", methods=["POST"])
 @auth_required
 def save_ontology_usages_and_documentation(study_id):
