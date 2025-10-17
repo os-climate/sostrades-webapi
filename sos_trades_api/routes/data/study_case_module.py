@@ -227,6 +227,7 @@ def import_study_case_zip_base64():
     try:
         import base64
         import io
+
         from werkzeug.datastructures import FileStorage
         
         # Décoder les données Base64
