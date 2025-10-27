@@ -20,7 +20,7 @@ import re
 import sys
 import time
 import traceback as tb
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join
 
 import click
@@ -249,6 +249,83 @@ def database_process_setup():
                 "An error occurs during database setup")
 
     return database_initialized
+
+
+def generate_study_analysis_report(logger):
+    """
+    Generate a CSV report analyzing study cases based on modification dates and notification dates.
+    For each study, determine if it's older than one year old based on the most recent date
+    between modification date and last notification date.
+    """
+    import csv
+    from datetime import datetime
+    from sqlalchemy import func
+    from sos_trades_api.models.database_models import StudyCase, Notification
+    
+    try:
+        # Define one year old threshold
+        one_year_ago = datetime.now() - timedelta(days=365)
+        
+        # Query all studies with their last notification date
+        studies_query = db.session.query(
+            StudyCase.id,
+            StudyCase.name,
+            StudyCase.modification_date,
+            func.max(Notification.created).label('last_notification_date')
+        ).outerjoin(
+            Notification, StudyCase.id == Notification.study_case_id
+        ).group_by(
+            StudyCase.id, StudyCase.name, StudyCase.modification_date
+        ).all()
+        
+        # Process results
+        study_analysis = []
+        for study in studies_query:
+            study_id = study.id
+            study_name = study.name or ""  # Handle None values
+            study_modification_date = study.modification_date
+            study_last_notification_date = study.last_notification_date
+            
+            # Determine the most recent date
+            if study_last_notification_date:
+                most_recent_date = max(study_modification_date, study_last_notification_date)
+            else:
+                most_recent_date = study_modification_date
+
+            # Check if older than one year ago
+            one_year_old = most_recent_date < one_year_ago if most_recent_date else True
+            
+            study_analysis.append({
+                'study_id': study_id,
+                'study_name': study_name,
+                'study_modification_date': study_modification_date.strftime('%Y-%m-%d') if study_modification_date else '',
+                'study_last_notification_date': study_last_notification_date.strftime('%Y-%m-%d') if study_last_notification_date else '',
+                'one_year_old': one_year_old
+            })
+        
+        # Sort by study_id
+        study_analysis.sort(key=lambda x: x['study_id'])
+        
+        # Write to CSV file
+        csv_file_path = os.path.join(config.data_root_dir, 'study_analysis_report.csv')
+        with open(csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['study_id', 'study_name', 'study_modification_date', 'study_last_notification_date', 'one_year_old']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            
+            writer.writeheader()
+            for row in study_analysis:
+                writer.writerow(row)
+        
+        logger.info(f"Study analysis report generated successfully: {csv_file_path}")
+        logger.info(f"Total studies analyzed: {len(study_analysis)}")
+        
+        # Log summary statistics
+        old_studies_count = sum(1 for study in study_analysis if study['one_year_old'])
+        logger.info(f"Studies older than {one_year_ago.strftime('%Y-%m-%d')}: {old_studies_count}/{len(study_analysis)}")
+        
+    except Exception as e:
+        logger.error(f"Error generating study analysis report: {str(e)}")
+        raise
 
 
 def check_identity_provider_availability():
@@ -879,6 +956,15 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         """
         database_check_study_case_state(with_deletion)
 
+    @click.command("write_used_study_cases_report")
+    @with_appcontext
+    def write_used_study_cases_report():
+        """
+        Write the last update report for study cases in database
+        """
+        with app.app_context():
+            generate_study_analysis_report(app.logger)
+
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
     @click.command("create_standard_user")
@@ -1187,6 +1273,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     app.cli.add_command(update_pod_allocations_status)
     app.cli.add_command(update_pod_allocations_status_loop)
     app.cli.add_command(update_read_only_files_with_visualization)
+    app.cli.add_command(write_used_study_cases_report)
 
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
