@@ -266,62 +266,83 @@ def generate_study_analysis_report(logger):
         # Define one year old threshold
         one_year_ago = datetime.now() - timedelta(days=365)
         
-        # Query all studies with their last notification date
+        # Optimized query: Use subquery for better performance with large datasets
+        # First, get the last notification date for each study in a subquery
+        notification_subquery = db.session.query(
+            Notification.study_case_id,
+            func.max(Notification.created).label('last_notification_date')
+        ).group_by(Notification.study_case_id).subquery()
+        
+        # Then join with StudyCase table
         studies_query = db.session.query(
             StudyCase.id,
             StudyCase.name,
             StudyCase.modification_date,
-            func.max(Notification.created).label('last_notification_date')
+            notification_subquery.c.last_notification_date
         ).outerjoin(
-            Notification, StudyCase.id == Notification.study_case_id
-        ).group_by(
-            StudyCase.id, StudyCase.name, StudyCase.modification_date
-        ).all()
+            notification_subquery, StudyCase.id == notification_subquery.c.study_case_id
+        ).order_by(StudyCase.id)
         
-        # Process results
-        study_analysis = []
-        for study in studies_query:
-            study_id = study.id
-            study_name = study.name or ""  # Handle None values
-            study_modification_date = study.modification_date
-            study_last_notification_date = study.last_notification_date
-            
-            # Determine the most recent date
-            if study_last_notification_date:
-                most_recent_date = max(study_modification_date, study_last_notification_date)
-            else:
-                most_recent_date = study_modification_date
-
-            # Check if older than one year ago
-            one_year_old = most_recent_date < one_year_ago if most_recent_date else True
-            
-            study_analysis.append({
-                'study_id': study_id,
-                'study_name': study_name,
-                'study_modification_date': study_modification_date.strftime('%Y-%m-%d') if study_modification_date else '',
-                'study_last_notification_date': study_last_notification_date.strftime('%Y-%m-%d') if study_last_notification_date else '',
-                'one_year_old': one_year_old
-            })
-        
-        # Sort by study_id
-        study_analysis.sort(key=lambda x: x['study_id'])
-        
-        # Write to CSV file
+        # Write to CSV file and process results in batches for memory efficiency
         csv_file_path = os.path.join(config.data_root_dir, 'study_analysis_report.csv')
+        batch_size = 1000  # Process 1000 studies at a time
+        offset = 0
+        total_studies = 0
+        old_studies_count = 0
+        
+        logger.info("Starting study analysis processing...")
+        
         with open(csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
             fieldnames = ['study_id', 'study_name', 'study_modification_date', 'study_last_notification_date', 'one_year_old']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            
             writer.writeheader()
-            for row in study_analysis:
-                writer.writerow(row)
+            
+            while True:
+                # Get a batch of studies
+                batch_studies = studies_query.offset(offset).limit(batch_size).all()
+                
+                if not batch_studies:
+                    break  # No more studies to process
+                    
+                logger.info(f"Processing batch {offset//batch_size + 1}: studies {offset + 1} to {offset + len(batch_studies)}")
+                
+                for study in batch_studies:
+                    study_id = study.id
+                    study_name = study.name or ""  # Handle None values
+                    study_modification_date = study.modification_date
+                    study_last_notification_date = study.last_notification_date
+                    
+                    # Determine the most recent date
+                    if study_last_notification_date:
+                        most_recent_date = max(study_modification_date, study_last_notification_date)
+                    else:
+                        most_recent_date = study_modification_date
+
+                    # Check if older than one year ago
+                    one_year_old = most_recent_date < one_year_ago if most_recent_date else True
+                    
+                    # Write directly to CSV
+                    writer.writerow({
+                        'study_id': study_id,
+                        'study_name': study_name,
+                        'study_modification_date': study_modification_date.strftime('%Y-%m-%d') if study_modification_date else '',
+                        'study_last_notification_date': study_last_notification_date.strftime('%Y-%m-%d') if study_last_notification_date else '',
+                        'one_year_old': one_year_old
+                    })
+                    
+                    total_studies += 1
+                    if one_year_old:
+                        old_studies_count += 1
+                
+                offset += batch_size
+        
+        logger.info(f"Completed processing {total_studies} studies")
         
         logger.info(f"Study analysis report generated successfully: {csv_file_path}")
-        logger.info(f"Total studies analyzed: {len(study_analysis)}")
+        logger.info(f"Total studies analyzed: {total_studies}")
         
         # Log summary statistics
-        old_studies_count = sum(1 for study in study_analysis if study['one_year_old'])
-        logger.info(f"Studies older than {one_year_ago.strftime('%Y-%m-%d')}: {old_studies_count}/{len(study_analysis)}")
+        logger.info(f"Studies older than {one_year_ago.strftime('%Y-%m-%d')}: {old_studies_count}/{total_studies}")
         
     except Exception as e:
         logger.error(f"Error generating study analysis report: {str(e)}")
