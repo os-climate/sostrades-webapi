@@ -20,7 +20,7 @@ import re
 import sys
 import time
 import traceback as tb
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join
 
 import click
@@ -302,7 +302,7 @@ def check_identity_provider_availability():
             app.logger.info("Keycloak IdP/oauth settings.json file found")
 
 
-def database_check_study_case_state(with_deletion=False):
+def database_check_study_case_state(from_days=30, with_load=False, with_deletion=False, print_report=True):
     """
     Check study case state in database
 
@@ -313,17 +313,18 @@ def database_check_study_case_state(with_deletion=False):
     :param with_deletion: delete every failed or unreferenced study
     :type with_deletion: boolean
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
     from os import listdir, path
     from shutil import rmtree
 
+    from sqlalchemy import func
     from urllib3 import disable_warnings
     from urllib3.exceptions import InsecureRequestWarning
 
     from sos_trades_api.controllers.sostrades_main.study_case_controller import (
         delete_study_cases,
     )
-    from sos_trades_api.models.database_models import Group, StudyCase
+    from sos_trades_api.models.database_models import Notification, StudyCase
     from sos_trades_api.tools.loading.study_case_manager import StudyCaseManager
 
     studies_to_delete = []
@@ -340,8 +341,23 @@ def database_check_study_case_state(with_deletion=False):
 
     with app.app_context():
 
-        all_study_case = StudyCase.query.all()
-        all_group = Group.query.all()
+        notification_subquery = db.session.query(
+            Notification.study_case_id,
+            func.max(Notification.created).label('last_notification_date')
+        ).group_by(Notification.study_case_id).subquery()
+        
+        all_study_cases = db.session.query(
+            StudyCase.id,
+            StudyCase.name,
+            StudyCase.group_id,
+            StudyCase.modification_date,
+            StudyCase.repository,
+            StudyCase.process,
+            notification_subquery.c.last_notification_date
+        ).outerjoin(
+            notification_subquery, StudyCase.id == notification_subquery.c.study_case_id
+        ).order_by(StudyCase.id).all()
+
 
         print("\nCheck file system regarding available data's")
         base_path = StudyCaseManager.get_root_study_data_folder()
@@ -368,62 +384,80 @@ def database_check_study_case_state(with_deletion=False):
                     if path.isdir(built_study_path) and study_folder.isdigit():
                         study_on_disk[int(study_folder)] = int(group_folder)
 
-        print(f"\n{len(all_study_case)} study case(s) to check.\n")
+        print(f"\n{len(all_study_cases)} study case(s) to check.\n")
 
-        study_loaded_synthesis = []
-        # Try to load each of them
-        for study_case in all_study_case:
+        study_loaded_synthesis = ["study id", "group id", "study name", "study repository", "study process",
+                                  "modification date", "last notification date", "is date ok"]
+        study_logs = ["study id | group id | study name | study repository | study process | modification date | last notification date | is date ok | is load ok"]
+        date_limit = datetime.now() - timedelta(days=from_days)
+        
+        # check each study case
+        for study_case in all_study_cases:
+            
+            # check date
+            study_modification_date = study_case.modification_date
+            study_last_notification_date = study_case.last_notification_date
+            
+            # Determine the most recent date
+            if study_last_notification_date:
+                most_recent_date = max(study_modification_date, study_last_notification_date)
+            else:
+                most_recent_date = study_modification_date
+            is_date_ok = most_recent_date > date_limit if most_recent_date else False
+
+            study_result = [
+                str(study_case.id),
+                str(study_case.group_id),
+                study_case.name or "",
+                study_case.repository.split('.')[0] if study_case.repository else "",
+                study_case.process,
+                study_case.modification_date.strftime('%Y-%m-%d') if study_case.modification_date else '',
+                study_case.last_notification_date.strftime('%Y-%m-%d') if study_case.last_notification_date else '',
+                str(is_date_ok)
+            ]
+            
+            # check the study can be loaded
             is_load_ok = False
-            is_date_ok = False
-            try:
-                study_case_manager = StudyCaseManager(study_case.id)
-                study_case_manager.load_study_case_from_source()
-                is_load_ok = True
+            if with_load:
+                try:
+                    study_case_manager = StudyCaseManager(study_case.id)
+                    study_case_manager.load_study_case_from_source()
+                    is_load_ok = True
+                except:
+                    is_load_ok = False
+                
+                study_result.append(str(is_load_ok))
 
-                current_date = datetime.now().astimezone(timezone.utc).replace(tzinfo=None)
-                date_delta = current_date - study_case.modification_date
-                print(
-                    f"DATE CHECK : {current_date} - {study_case.modification_date} - {date_delta.days}")
-                is_date_ok = date_delta.days > 30
-
-            except:
-                is_load_ok = False
+            study_logs.append(" | ".join(study_result))
+            study_loaded_synthesis.append(",".join(study_result))
 
             # Remove study from study_on_disk dictionary
             if study_case.id in study_on_disk and study_on_disk[study_case.id] == study_case.group_id:
                 del study_on_disk[study_case.id]
 
-            study_group_result = list(
-                filter(lambda g: g.id == study_case.group_id, all_group))
-            group_name = "Unknown"
-            if len(study_group_result) == 1:
-                group_name = study_group_result[0].name
+            if not (is_date_ok and (is_load_ok or not with_load)):
+                studies_to_delete.append(study_case.id)
 
-            if is_load_ok:
-                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | SUCCESS"
-            elif is_date_ok:
-                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | PARTIAL"
-            else:
-                message = f"{study_case.id:<5} | {study_case.name:<30} | {study_case.repository:<70} | {study_case.process:<35} | {study_case.modification_date} | {group_name:<15} | FAILED"
-                if with_deletion:
-                    studies_to_delete.append(study_case.id)
-            study_loaded_synthesis.append(message)
-
-        print("\n".join(study_loaded_synthesis))
+        print('\n'.join(study_logs))
 
         if with_deletion and len(studies_to_delete) > 0:
             delete_study_cases(studies_to_delete)
             print(f"All failed database studies deleted {studies_to_delete}.")
-
+        
+        #check folders on disk not referenced in database
         for study_folder, group_folder in study_on_disk.items():
-            study_group_result = list(
-                filter(lambda g: g.id == int(group_folder), all_group))
-            group_name = "Unknown"
-            if len(study_group_result) == 1:
-                group_name = f"{study_group_result[0].name}?"
-            print(
-                f'{study_folder:<5} | {" ":<30} | {" ":<70} | {" ":<35} | {" ":<19} | {group_name:<15} | UNREFERENCED')
-
+            study_result = [
+                str(study_folder),
+                str(group_folder),
+                "UNKNOWN",
+                "UNKNOWN",
+                "UNKNOWN",
+                "UNKNOWN",
+                "UNKNOWN",
+                "UNKNOWN"
+            ]
+            study_loaded_synthesis.append(','.join(study_result))
+            print(' | '.join(study_result))
             if with_deletion:
                 folder = join(base_path, f"{group_folder}", f"{study_folder}")
                 folders_to_delete.append(folder)
@@ -432,6 +466,12 @@ def database_check_study_case_state(with_deletion=False):
             for folder in folders_to_delete:
                 rmtree(folder, ignore_errors=True)
                 print(f"Folder {folder:<128} deleted.")
+        
+        if print_report:
+            report_file_path = join(config.data_root_dir, "study_case_check_report.csv")
+            with open(report_file_path, "w", encoding="utf-8") as report_file:
+                report_file.write('\n'.join(study_loaded_synthesis))
+            print(f"\nStudy case check report saved to {report_file_path}")
 
 
 def database_create_standard_user(username, email, firstname, lastname):
@@ -865,19 +905,26 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
         database_process_setup()
 
     @click.command("check_study_case_state")
+    @click.argument("days", type=int, default=365)
+    @click.option("-wl", "--with_load", is_flag=True)
     @click.option("-wd", "--with_deletion", is_flag=True)
+    @click.option("-report", "--print_report", is_flag=True)
     @with_appcontext
-    def check_study_case_state(with_deletion):
+    def check_study_case_state(days, with_load=False, with_deletion=False, print_report=False):
         """
         Check study case state in database
         Try to load each of them and store loading status and last modification date
         Give as outputs all study case that cannot be loaded and have more than one month
         with no changes.
 
-        :param with_deletion: delete every failed or unreferenced study
-        :type with_deletion: boolean
+        Args:
+            days (int): number of days to consider a study as old
+            with_load (bool): try to load each study case
+            with_deletion (bool): delete every failed or unreferenced study
+            print_report (bool): print report to csv file
+
         """
-        database_check_study_case_state(with_deletion)
+        database_check_study_case_state(days, with_load, with_deletion, print_report)
 
     # Add custom command on flask cli to execute database init data setup
     # (mainly for manage gunicorn launch and avoid all worker to execute the command)
@@ -1188,6 +1235,7 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     app.cli.add_command(update_pod_allocations_status_loop)
     app.cli.add_command(update_read_only_files_with_visualization)
 
+    
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
     # token attempts to access an endpoint
