@@ -1234,8 +1234,8 @@ if app.config["ENVIRONMENT"] != UNIT_TEST:
     app.cli.add_command(update_pod_allocations_status)
     app.cli.add_command(update_pod_allocations_status_loop)
     app.cli.add_command(update_read_only_files_with_visualization)
-    app.cli.add_command(write_used_study_cases_report)
 
+    
     # Using the expired_token_loader decorator, we will now call
     # this function whenever an expired but otherwise valid access
     # token attempts to access an endpoint
