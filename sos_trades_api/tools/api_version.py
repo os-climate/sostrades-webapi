@@ -28,8 +28,6 @@ api version methods
 def application_version():
     """
     Methods that build the API version
-    Version is retrieve throught a version.info file located in the project directory or generated if not
-    (generated one will be suffixed by a star '*'
 
     :return: string with version (DD.MM.YY* format or free string format))
     """
@@ -41,13 +39,6 @@ def application_version():
         return f'{datetime.now().strftime("%d.%m.%Y")}*' # id dev always give the last date
 
     try:
-        # before we take it from version.info file.
-        # path = join(dirname(sos_trades_api.__file__), "version.info")
-
-        # if exists(path):
-        #     version = open(path).read().strip()
-        # in waiting to have a better version.info file content 
-        # we get it from git_commit_info file
         git_commits_info_file_path = join(dirname(sos_trades_api.__file__), "git_commits_info.json")
         if exists(git_commits_info_file_path):
             with open(git_commits_info_file_path, 'r') as json_file:
