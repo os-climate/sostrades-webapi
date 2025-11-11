@@ -23,7 +23,7 @@ python-dotenv==1.1.0
 python-ldap==3.4.0; platform_system!='Windows'
 python-keycloak==5.5.1
 python-engineio==4.5.1  # Must be added to freeze version, so message server works
-python-socketio==5.8.0  # Must be added to freeze version, so message server works
+python-socketio==5.14.0  # Must be added to freeze version, so message server works
 python3-saml==1.16.0
 pytz==2025.2
 PyYAML==6.0.2
