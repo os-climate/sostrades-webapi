@@ -33,7 +33,24 @@ from sos_trades_api.tools.authentication.authentication import (
 )
 from sos_trades_api.tools.authentication.github import GitHubSettings
 from sos_trades_api.tools.authentication.keycloak import KeycloakAuthenticator
-from sos_trades_api.tools.authentication.ldap import LDAPException, check_credentials
+
+# Import LDAP optionnel
+try:
+    from sos_trades_api.tools.authentication.ldap import (
+        LDAPException,
+        check_credentials,
+    )
+    LDAP_AVAILABLE = True
+except ImportError:
+    # Définir des classes/fonctions de remplacement si LDAP n'est pas disponible
+    class LDAPException(Exception):
+        pass
+    
+    def check_credentials(username, password):
+        raise LDAPException("LDAP authentication is not available - python-ldap library not installed")
+    
+    LDAP_AVAILABLE = False
+
 from sos_trades_api.tools.authentication.saml import (
     SamlAuthenticationError,
     manage_saml_assertion,
@@ -89,8 +106,12 @@ def authenticate_user_standard(username, password):
                     raise InvalidCredentials(
                         f"User {INCORRECT_LOGIN_MSG}")
         else:
-            # Check credential using LDAP request
-            user = check_credentials(username, password)
+            # Check credential using LDAP request (si disponible)
+            if LDAP_AVAILABLE:
+                user = check_credentials(username, password)
+            else:
+                app.logger.warning(f"LDAP authentication attempted but not available for user '{username}'")
+                raise InvalidCredentials("LDAP authentication is not available")
     except LDAPException:
         app.logger.exception(
             f"{username} {INCORRECT_LOGIN_MSG} (with LDAP)")

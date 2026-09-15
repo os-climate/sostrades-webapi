@@ -169,6 +169,7 @@ class ExecutionEngineThread(threading.Thread):
                         # Persist data using the current persistance strategy
                         self.__study_manager.save_study_case()
                         self.__study_manager.save_study_read_only_mode_in_file()
+                        # self.__study_manager.update_dashboard()
                     except Exception as error:
                         self.__execution_logger.exception(
                             f"The following exception occurs during study dumping.\n{error!s}")

@@ -55,36 +55,11 @@ def load_post_processing(study_id, namespace, filters, discipline_module=""):
     all_post_processing_data = []
     discipline_list = []
     post_processing_factory = PostProcessingFactory()
-    try:
-        discipline_list = study_manager.execution_engine.dm.get_disciplines_with_name(
-            namespace)
+    all_post_processing_data = post_processing_factory.get_post_processings_by_discipline_name(
+        namespace, discipline_module, study_manager.execution_engine, filters
+    )
 
-        # Check if discipline of the node has to be filtered
-        if discipline_module != "":
-            match_discipline = list(filter(
-                lambda d: d.get_module() == discipline_module, discipline_list))
-
-            if len(match_discipline) > 0:
-                discipline_list = match_discipline
-            else:
-                discipline_list = []
-
-        for discipline in discipline_list:
-            post_processings = post_processing_factory.get_post_processing_by_discipline(
-                discipline, filters)
-            all_post_processing_data.extend(post_processings)
-
-    except KeyError:
-        pass
-        # Discipline not found
-
-    # Try fo find associated namespace object in namespace manager
-
-    if discipline_module == PostProcessingFactory.NAMESPACED_POST_PROCESSING_NAME:
-        post_processings = post_processing_factory.get_post_processing_by_namespace(
-            study_manager.execution_engine, namespace, filters)
-
-        all_post_processing_data.extend(post_processings)
+    
 
     return all_post_processing_data
 

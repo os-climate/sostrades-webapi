@@ -16,7 +16,19 @@ Each request has to be authorize using an api key provided using Authorization h
 - Authorization header : 
   'Authorization': 'Bearer <api_key>'
   
-Api key has to be created and provided using flask command  'create_api_key'
+Api key has to be created and provided using flask command:
+
+**For group-based API keys (legacy):**
+```bash
+flask create_api_key <group_name> <api_key_name>
+```
+
+**For user-based API keys (recommended):**
+```bash
+flask create_user_api_key <username> <api_key_name>
+```
+
+**Note:** User-based API keys provide better security isolation and are the recommended approach for new integrations.
 
 ### Load a study case
 
@@ -241,3 +253,21 @@ with open("/path/to/my/file", "w") as fs:
     fs.write(response.text)
 ```
 
+### Load study case read-only in html 
+
+Provide post-processing graphs in a templated html. 
+
+    https://<host>/api/v0/<int:study_id>/read-only
+
+- GET parameters : 
+  - *study_id* : study identifier (integer)
+
+- response content : Json
+
+```python
+import requests
+
+# Its assumed that a bearer token as been previously requested
+response = requests.get(
+    "https://<host>/api/v0/<int:study_id>/read-only",
+    headers={"Authorization": "Bearer <api_key>"})

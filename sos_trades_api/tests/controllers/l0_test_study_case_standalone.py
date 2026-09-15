@@ -18,6 +18,7 @@ import os
 import os.path
 import time
 from builtins import classmethod
+from datetime import datetime
 from time import sleep
 
 from sos_trades_api.tests.controllers.unit_test_basic_config import (
@@ -189,7 +190,8 @@ class TestStudy(DatabaseUnitTestConfiguration):
             file_path = None
             # export the study in stand alone
             if check_read_only_mode_available(self.test_study_id):
-                file_path = get_study_stand_alone_zip(self.test_study_id)
+                file_name = f"zip_study_{self.test_study_id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+                file_path = get_study_stand_alone_zip(self.test_study_id, file_name)
             self.assertIsNotNone(file_path, "the zip file has not been created")
             self.assertTrue(os.path.exists(file_path))
             self.assertTrue(os.path.isfile(file_path))

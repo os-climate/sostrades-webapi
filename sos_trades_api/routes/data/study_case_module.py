@@ -14,6 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import os
+from datetime import datetime
+
 from flask import abort, jsonify, make_response, request, send_file, session
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
@@ -98,9 +101,71 @@ def export_study_case_by_id_in_stand_alone(study_id):
                 "You do not have the necessary rights to export this study case")
         
         if check_read_only_mode_available(study_id):
-            file_path = get_study_stand_alone_zip(study_id)
+            file_name = f"zip_study_{study_id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+            file_path = get_study_stand_alone_zip(study_id, file_name)
 
-            return send_file(file_path)
+            app.logger.info(f"Export file path: {file_path}")
+            app.logger.info(f"File exists: {os.path.exists(file_path)}")
+            app.logger.info(f"File size: {os.path.getsize(file_path) if os.path.exists(file_path) else 'N/A'}")
+
+            response =  send_file(
+                file_path,
+                as_attachment=True,
+                download_name=file_name,
+                mimetype='application/octet-stream')
+            response.headers['Content-Type'] = 'application/octet-stream'
+            response.headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            return response
+        else:
+            raise BadRequest("Export not possible, the study is not available in read only mode")
+    else:       
+        raise BadRequest("Missing mandatory parameter: study identifier in url")
+
+@app.route("/api/data/study-case/<int:study_id>/stand-alone/export-base64", methods=["GET"])
+@auth_required
+def export_study_case_by_id_in_stand_alone_base64(study_id):
+    """
+    Export a study case as a base64 encoded string to bypass proxy restrictions
+    """
+    if study_id is not None:
+        user = session["user"]
+        # Verify user has study case authorisation to load study (Commenter)
+        study_case_access = StudyCaseAccess(user.id, study_id)
+        if not study_case_access.check_user_right_for_study(AccessRights.CONTRIBUTOR, study_id):
+            raise BadRequest(
+                "You do not have the necessary rights to export this study case")
+        
+        if check_read_only_mode_available(study_id):
+            import base64
+            import os
+            
+            file_name = f"study_{study_id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+            file_path = get_study_stand_alone_zip(study_id, file_name)
+
+            app.logger.info(f"Export file path: {file_path}")
+            app.logger.info(f"File exists: {os.path.exists(file_path)}")
+            
+            if not os.path.exists(file_path):
+                raise BadRequest("Export file not found")
+            
+            file_size = os.path.getsize(file_path)
+            app.logger.info(f"File size: {file_size}")
+            
+            # Read file and encode in base64
+            with open(file_path, 'rb') as f:
+                file_data = base64.b64encode(f.read()).decode('utf-8')
+            
+            # Return as JSON to avoid proxy detection
+            return jsonify({
+                'filename': file_name,
+                'data': file_data,
+                'size': file_size,
+                'mimetype': 'application/zip'
+            })
         else:
             raise BadRequest("Export not possible, the study is not available in read only mode")
     else:       
@@ -130,6 +195,63 @@ def import_study_case_zip():
     created_study = create_study_stand_alone_from_zip(user.id, group_id, zipFile)
     resp = make_response(jsonify(created_study), 200)
     return resp
+
+
+@app.route("/api/data/study-case/stand-alone/import-base64", methods=["POST"])
+@auth_required
+def import_study_case_zip_base64():
+    """
+    Create a study in stand alone from a base64 encoded zip file to bypass proxy restrictions
+    """
+    user = session["user"]
+
+    # Récupérer les données JSON
+    file_data = request.json.get('file_data', None)
+    filename = request.json.get('filename', None)
+    group_id = request.json.get('group_id', None)
+
+    missing_parameter = []
+    if file_data is None:
+        missing_parameter.append("Missing mandatory parameter: file_data")
+    if filename is None:
+        missing_parameter.append("Missing mandatory parameter: filename")
+    if group_id is None:
+        missing_parameter.append("Missing mandatory parameter: group_id")
+
+    if len(missing_parameter) > 0:
+        raise BadRequest("\n".join(missing_parameter))
+
+    if not filename.endswith(".zip"):
+        raise BadRequest(f"The Study Stand alone zip file is not valid : the file {filename} is not a zip file")
+
+    try:
+        import base64
+        import io
+
+        from werkzeug.datastructures import FileStorage
+        
+        # Décoder les données Base64
+        zip_binary_data = base64.b64decode(file_data)
+        
+        # Créer un objet FileStorage à partir des données binaires
+        zip_stream = io.BytesIO(zip_binary_data)
+        zip_file = FileStorage(
+            stream=zip_stream,
+            filename=filename,
+            content_type='application/zip'
+        )
+        
+        app.logger.info(f"Import base64 file: {filename}, size: {len(zip_binary_data)} bytes")
+        
+        # Utiliser la fonction existante d'import
+        created_study = create_study_stand_alone_from_zip(user.id, int(group_id), zip_file)
+        
+        resp = make_response(jsonify(created_study), 200)
+        return resp
+        
+    except Exception as e:
+        app.logger.error(f"Error importing base64 study: {str(e)}")
+        raise BadRequest(f"Import failed: {str(e)}")
 
 
 @app.route("/api/data/study-case/<int:study_id>/save-ontology", methods=["POST"])

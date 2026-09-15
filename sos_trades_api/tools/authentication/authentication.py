@@ -130,53 +130,96 @@ def local_only(func):
         return func(*args, **kwargs)
     return wrapper
 
-def set_user_from_api_key(authorization):
+def authenticate_api_key(authorization):
     """
-    Extract api-key information from authorization header
-    authorization header has the following form: Bearer base64encodedkey
-
-    Once decoded the key has the following form: <apikey>:<user-identifier>
+    Authenticate and establish user session from API key
+    
+    Extracts api-key information from authorization header and validates it.
+    Authorization header has the following form: Bearer base64encodedkey
+    
+    Once decoded the key can have two forms:
+    - <apikey> (uses API key owner)
+    - <apikey>:<user-identifier> (uses specific user, must be valid for the API key)
+    
     :param authorization: bearer with base64 encoded key
     :type authorization: str
-    :return: User
+    :raises: 401 for invalid format/key, 403 for unauthorized access
     """
     # Checks that Authorization is a Bearer token
     if "Bearer" not in authorization:
         abort(401, "Missing Authorization header")
 
-    # Extract token from value and do the base64 decoding
+    # Extract token from value
     bearer_token = authorization.replace("Bearer ", "")
-    decoded_bearer_token = base64.b64decode(bearer_token).decode("utf-8")
-
+    
+    # Try to determine if it's a raw API key (hex) or base64 encoded
+    decoded_bearer_token = ""
     api_key = ""
     user_identifier = ""
-
-    # User-identifier is optional so check if token contains only key or the key and user
-    if ":" not in decoded_bearer_token:
-        api_key = decoded_bearer_token
+    
+    # First, try to use the token as-is (for UserApiKey system)
+    if len(bearer_token) == 32 and all(c in '0123456789abcdef' for c in bearer_token.lower()):
+        # This looks like a hex API key (UserApiKey format)
+        api_key = bearer_token
+        decoded_bearer_token = bearer_token
     else:
-        split_decoded_bearer_token = decoded_bearer_token.split(":")
+        # Try base64 decoding (legacy Device format)
+        try:
+            decoded_bearer_token = base64.b64decode(bearer_token).decode("utf-8")
+        except Exception:
+            abort(401, "Invalid API key format")
+        
+        # User-identifier is optional so check if token contains only key or the key and user
+        if ":" not in decoded_bearer_token:
+            api_key = decoded_bearer_token
+        else:
+            split_decoded_bearer_token = decoded_bearer_token.split(":")
 
-        if len(split_decoded_bearer_token) > 2:
-            abort(401, "Missing Authorization header")
-        api_key = split_decoded_bearer_token[0]
-        user_identifier = split_decoded_bearer_token[1]
+            if len(split_decoded_bearer_token) > 2:
+                abort(401, "Invalid Authorization header format")
+            api_key = split_decoded_bearer_token[0]
+            user_identifier = split_decoded_bearer_token[1]
 
-    # Check api key validity
+    # First, check if this is a user-based API key in the new UserApiKey table
+    from sos_trades_api.models.database_models import UserApiKey
+    user_api_key = UserApiKey.query.filter(
+        UserApiKey.api_key == api_key,
+        UserApiKey.is_active
+    ).first()
+
+    if user_api_key is not None:
+        # This is a user-based API key
+        user = User.query.filter(User.id == user_api_key.user_id).first()
+        
+        if user is None:
+            abort(403, "User associated with api-key not found")
+            
+        # If user_identifier is provided, it must match the API key owner
+        if user_identifier != "" and user_identifier != user.email:
+            abort(403, "User identifier does not match API key owner")
+            
+        # Update last_used timestamp
+        user_api_key.update_last_used()
+        db.session.commit()
+            
+        session["user"] = user
+        session["group"] = None  # No group for user-based API keys
+        return
+
+    # Check legacy Device-based API keys (group-based only)
     api_key_device = Device.query.filter(Device.device_key == api_key).first()
 
     if api_key_device is None:
         abort(401, "Invalid api-key")
 
-    # Get api-key associated group
-    api_key_group = Group.query.filter(Group.id == api_key_device.group_id).one()
+    # This is a group-based API key (legacy behavior)
+    api_key_group = Group.query.filter(Group.id == api_key_device.group_id).first()
 
     if api_key_group is None:
         abort(401, "Invalid api-key")
 
     # If user-identifier is not set then get the group owner as user
     # otherwise check the user is member of the group
-    user = None
     if user_identifier == "":
         result = db.session.query(User, Group, GroupAccessUser, AccessRights) \
             .filter(User.id == GroupAccessUser.user_id) \
@@ -189,7 +232,10 @@ def set_user_from_api_key(authorization):
             abort(403, "Api-key unauthorized")
         user = result.User
     else:
-        user = User.query.filter(User.email == user_identifier).one()
+        user = User.query.filter(User.email == user_identifier).first()
+        if user is None:
+            abort(403, "User not found")
+            
         group = GroupAccess(user.id)
         is_member_of_group = \
             group.check_user_right_for_group(AccessRights.MANAGER, group_id=api_key_group.id) or \
@@ -215,7 +261,7 @@ def api_key_required(func):
 
                 if not auth_header:
                     abort(401, "Missing Authorization header")
-                set_user_from_api_key(auth_header)
+                authenticate_api_key(auth_header)
 
             return func(*args, **kwargs)
         except (UserNotFound, AccountInactive, AccessDenied, InvalidSignatureError) as error:

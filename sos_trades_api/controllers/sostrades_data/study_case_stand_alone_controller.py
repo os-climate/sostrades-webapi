@@ -33,7 +33,7 @@ from sos_trades_api.tools.study_management.study_management import (
 )
 
 
-def get_study_stand_alone_zip(study_id):
+def get_study_stand_alone_zip(study_id, file_name: str):
     """
     export study read only and data in a zip file and return its path
     Args:
@@ -43,7 +43,7 @@ def get_study_stand_alone_zip(study_id):
     study_manager = StudyCaseManager(study_id)
     try:
         tmp_folder = gettempdir()
-        file_name = f"zip_study_{study_manager.study.id}_{datetime.now().strftime('%d-%m-%Y-%H-%M-%S-%f')}.zip"
+        
         zip_file_path = join(tmp_folder, file_name)
         if not study_manager.export_study_read_only_zip(zip_file_path):
             raise FileNotFoundError(f"Study {study_manager.study.name} has no read only to export")

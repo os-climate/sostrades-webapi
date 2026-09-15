@@ -57,7 +57,6 @@ def get_treenode_ontology_data(tree_node: Dict)->OntologyDataNames:
             ontology_data.parameter_usages.add(key)
 
     for disc_name, discipline in tree_node.get('data_management_disciplines', {}).items():
-        print(discipline)
         for name, data in discipline.get('disciplinary_inputs', {}).items():
             key = data.get('variable_key', None)
             if (key is not None):

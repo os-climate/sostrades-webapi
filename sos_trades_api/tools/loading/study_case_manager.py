@@ -24,6 +24,11 @@ from shutil import copy
 from eventlet import sleep
 from sostrades_core.execution_engine.proxy_discipline import ProxyDiscipline
 from sostrades_core.study_manager.base_study_manager import BaseStudyManager
+from sostrades_core.tools.dashboard.dashboard import Dashboard
+from sostrades_core.tools.dashboard.dashboard_factory import (
+    get_default_dashboard_in_process_repo,
+    update_dashboard_charts,
+)
 from sostrades_core.tools.rw.load_dump_dm_data import CryptedLoadDump, DirectLoadDump
 from sostrades_core.tools.tree.serializer import DataSerializer
 
@@ -410,69 +415,114 @@ class StudyCaseManager(BaseStudyManager):
         # Persist data using the current persistence strategy
         self.dump_study(self.dump_directory)
 
+    # def update_dashboard(self):
+        # load dashboard json from file if exists else nothing
+        # old_dashboard =  self.__read_only_rw_strategy.read_dashboard()
+        # generate new dashboard from current execution and old layout
+
+        # new_dashboard = dashboard_factory.generate_dashboard(self.study.id,  old_dashboard)
+        # def generate_dashboard(study_id, old_dashboard):
+        #     data = {}
+        #     for key, item in old_dashboard.get("layout",{}):
+        #         if item.get("item_type") == "graph":
+        #             #get discipline key + chart filters+ plot index from key
+        #             post_processing_factory = PostProcessingFactory()
+        #
+        #             filter_post_processings = post_processing_factory.get_post_processing_filters_by_discipline(name)
+        #             if filter_post_processings is NOT equal to chart filters.get('selected_value')
+        #                 data[key] = load_post_processing(study_id, discipline_key, object_filters, module_name)[plot_index]
+        #         if item.get("item_type") == "text":
+        #             data[key] = old_dashboard.get("data", {}).get(key, {})
+        #     return { "layout":old_dashboard.get("layout",{}), "data":data}
+        # self.__read_only_rw_strategy.write_dashboard(new_dashboard)
+
     def save_study_read_only_mode_in_file(self):
         """
         save loaded study case into a json file to be retrieved before loading is completed, and save the dashboard
         """
 
         with app.app_context():
-            # check study status is DONE
+            try:
+                
+                # check study status is DONE
 
-            #-------------------
-            # save loaded study in read only mode
-            loaded_study_case = LoadedStudyCase(self, False, True, None, True)
-            # Apply ontology
-            process_metadata = load_processes_metadata(
-                [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
+                #-------------------
+                # save loaded study in read only mode
+                loaded_study_case = LoadedStudyCase(self, False, True, None, True)
+                # Apply ontology
+                process_metadata = load_processes_metadata(
+                    [f"{loaded_study_case.study_case.repository}.{loaded_study_case.study_case.process}"])
 
-            repository_metadata = load_repositories_metadata(
-                [loaded_study_case.study_case.repository])
+                repository_metadata = load_repositories_metadata(
+                    [loaded_study_case.study_case.repository])
 
-            loaded_study_case.study_case.apply_ontology(
-                process_metadata, repository_metadata)
+                loaded_study_case.study_case.apply_ontology(
+                    process_metadata, repository_metadata)
+                
+                if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
+                    loaded_study_case.load_treeview_and_post_proc(
+                            self, False, True, None, True)
+                    loaded_study_case.load_n2_diagrams(self)
+                    
+                    # fill loaded study data needed in read only file
+                    loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
+                    loaded_study_case.study_case.creation_status = StudyCase.CREATION_DONE
+                    loaded_study_case.study_case.has_read_only_file = True
+                    
+                    # retrieve execution data
+                    study_case_execution = StudyCaseExecution.query.filter(
+                        StudyCaseExecution.id == loaded_study_case.study_case.current_execution_id).first()
+                    if study_case_execution is not None:
+                        loaded_study_case.study_case.execution_status = study_case_execution.execution_status
+                        loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
+                        loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
+                    
+                    #----------------------------
+                    #save ontology data
+                    # retrieve ontology variable names and documentation ids  
+                    ontology_data = get_treenode_ontology_data(loaded_study_case.treenode)
+                    self.__get_and_save_ontology_usages({
+                                                    'disciplines': list(ontology_data.disciplines),
+                                                    'parameter_usages': list(ontology_data.parameter_usages)
+                                                })
+                    self.__get_and_save_documentations(list(ontology_data.disciplines))
+
+                    #-------------------------
+                    #write read only mode file
+                    self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, False)
+                    
+
+                    # save the study with no data for restricted read only access:
+                    loaded_study_case.load_treeview_and_post_proc(
+                        self, True, True, None, True)
+                    self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, True)
+
+                    #------------------
+                    # save execution logs in read only folder
+                    self.__read_only_rw_strategy.copy_file_in_read_only_folder(self.raw_log_file_path_absolute())
+
+                    # update dashboard file
+                    #----------------------
+                    # check that there is already a dashboard file, if not create a new one
+                    dashboard = self.__read_only_rw_strategy.read_dashboard()
+                    if dashboard is None:
+                        # check that there is a default dashboard in process repo
+                        dashboard = get_default_dashboard_in_process_repo(self.execution_engine)
+                    try:
+                        if dashboard is not None:
+                            # update chart data
+                            updated_dashboard = update_dashboard_charts(self.execution_engine, dashboard)
+                            if updated_dashboard is not None:
+                                # update study id
+                                updated_dashboard.study_case_id = self.study.id
+                                self.__read_only_rw_strategy.write_dashboard(updated_dashboard)
+                    except Exception as ex:
+                        self.logger.error(f"Error while updating dashboard data: {str(ex)}")
+            except Exception as ex:
+                self.logger.error(f"Error while saving read only mode file: {str(ex)}")
+                self.__read_only_rw_strategy.delete_read_only_mode()
+
             
-            if self.execution_engine.root_process.status == ProxyDiscipline.STATUS_DONE:
-                loaded_study_case.load_treeview_and_post_proc(
-                        self, False, True, None, True)
-                loaded_study_case.load_n2_diagrams(self)
-                
-                # fill loaded study data needed in read only file
-                loaded_study_case.load_status = LoadStatus.READ_ONLY_MODE
-                loaded_study_case.study_case.creation_status = StudyCase.CREATION_DONE
-                loaded_study_case.study_case.has_read_only_file = True
-                
-                # retrieve execution data
-                study_case_execution = StudyCaseExecution.query.filter(
-                    StudyCaseExecution.id == loaded_study_case.study_case.current_execution_id).first()
-                if study_case_execution is not None:
-                    loaded_study_case.study_case.execution_status = study_case_execution.execution_status
-                    loaded_study_case.study_case.last_memory_usage = study_case_execution.memory_usage
-                    loaded_study_case.study_case.last_cpu_usage = study_case_execution.cpu_usage
-                
-                #----------------------------
-                #save ontology data
-                # retrieve ontology variable names and documentation ids  
-                ontology_data = get_treenode_ontology_data(loaded_study_case.treenode)
-                self.__get_and_save_ontology_usages({
-                                                'disciplines': list(ontology_data.disciplines),
-                                                'parameter_usages': list(ontology_data.parameter_usages)
-                                            })
-                self.__get_and_save_documentations(list(ontology_data.disciplines))
-
-                #-------------------------
-                #write read only mode file
-                self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, False)
-                
-
-                # save the study with no data for restricted read only access:
-                loaded_study_case.load_treeview_and_post_proc(
-                    self, True, True, None, True)
-                self.__read_only_rw_strategy.write_study_case_in_read_only_file(loaded_study_case, True)
-
-                #------------------
-                # save execution logs in read only folder
-                self.__read_only_rw_strategy.copy_file_in_read_only_folder(self.raw_log_file_path_absolute())
-
     
     def __get_and_save_ontology_usages(self, ontology_data:dict):
         """
@@ -708,11 +758,18 @@ class StudyCaseManager(BaseStudyManager):
         return self.__read_only_rw_strategy.read_only_exists
     
 
-    def read_dashboard_in_json_file(self):
+    def read_dashboard_in_json_file(self)-> Dashboard:
         """
         Retrieve dashboard from json file
         """
+
         return self.__read_only_rw_strategy.read_dashboard()
+    
+    def write_dashboard_json_file(self, dashboard):
+        """
+        Write dashboard into json file
+        """
+        return self.__read_only_rw_strategy.write_dashboard(dashboard)
 
     def get_parameter_data(self, parameter_key):
         """
