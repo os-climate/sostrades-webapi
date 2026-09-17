@@ -36,7 +36,7 @@ dependencies = [
     "python-engineio==4.5.1",
     "python-keycloak==5.5.1",
     "python-ldap ; sys_platform == 'win32'",
-    "python-socketio==5.8.0",
+    "python-socketio==5.14.0",
     "python3-saml==1.16.0",
     "pytz==2025.2",
     "pyyaml==6.0.2",
