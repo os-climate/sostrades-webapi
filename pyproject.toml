@@ -45,7 +45,7 @@ dependencies = [
     "sostrades-core>=0.1.1",
     "sostrades-ontology>=0.1.0",
     "sqlalchemy==1.4.52",
-    "urllib3==2.3.0",
+    "urllib3==2.6.3",
     "werkzeug==2.3.8",
     "xmlsec==1.3.14",
 ]
